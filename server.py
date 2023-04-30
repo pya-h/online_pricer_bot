@@ -2,6 +2,7 @@ from telegram.ext import *
 from telegram import *
 from coins_api import *
 from decouple import config
+# from threading import Thread
 
 
 BOT_TOKEN = config('API_TOKEN')
@@ -34,6 +35,10 @@ COIN_NAMES = {
 priceSourceObject = CoinMarketCap(CMC_API_KEY, COIN_NAMES)
 # priceSourceObject = CoinGecko(COIN_NAMES)
 
+COMMANDS = (CMD_GET, CMD_SELECT_COINS, ) = ('دریافت قیمت ها', 'تنظیم لیست سکه ها',)
+menu_main = [[KeyboardButton(CMD_GET), KeyboardButton(CMD_SELECT_COINS)]]
+
+
 async def anounce_prices(context):
     res = priceSourceObject.get()
     await context.bot.send_message(chat_id=CHANNEL_ID, text=res)
@@ -49,8 +54,8 @@ async def cmd_schedule_channel_update(update, context):
 
 
 async def cmd_get_prices(update, context):
-    text = priceSourceObject.get()
-    await update.message.reply_text(text)
+    await update.message.reply_text(priceSourceObject.latest_prices if priceSourceObject.latest_prices else priceSourceObject.get(),
+                                    reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 
 async def stop_schedule(update, context):
@@ -60,20 +65,27 @@ async def stop_schedule(update, context):
     for job in current_jobs:
         job.schedule_removal()
     channel_sequence_initiated = False
-    await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.')
+    await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 async def change_source_to_coingecko(update, context):
     global priceSourceObject
     priceSourceObject = CoinGecko(COIN_NAMES)
-    await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.')
+    await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 async def change_source_to_coinmarketcap(update, context):
     global priceSourceObject
     priceSourceObject = CoinMarketCap(CMC_API_KEY, COIN_NAMES)
-    await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.')
+    await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 
-if __name__ == '__main__':
+async def handle_messages(update, context):
+    msg = update.message.text
+
+    if msg == CMD_GET:
+        await cmd_get_prices(update, context)
+
+
+def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", cmd_schedule_channel_update))
@@ -81,8 +93,15 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("stop", stop_schedule))
     app.add_handler(CommandHandler("gecko", change_source_to_coingecko))
     app.add_handler(CommandHandler("marketcap", change_source_to_coinmarketcap))
-
+    app.add_handler(MessageHandler(filters.ALL, handle_messages))
     # app.add_handler(MessageHandler(filters.ALL, message_handler))
 
     print("Server is up and running...")
+    # main_thread = Thread(target=app.run_polling)
+    # main_thread.run()
+
     app.run_polling()
+
+
+if __name__ == '__main__':
+    main()

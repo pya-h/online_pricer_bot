@@ -16,20 +16,22 @@ class CoinGecko:
         # }
         self.params = params
         self.coin_names = coin_names
+        self.latest_prices = ''
+
 
     def set_params(self, pms):
         self.params = pms
 
     def get(self):
         coins = self.send_request()
-        text = ''
+        self.latest_prices = ''
         for coin in coins:
             name = coin['name']
             symbol = coin['symbol'].upper()
             if symbol in self.coin_names:
                 price = coin['market_data']['current_price']['usd']
-                text += f'🔸 {name} ({symbol}): {price}$\n{self.coin_names[symbol]}: {price} دلار\n\n'
-        return text
+                self.latest_prices += f'🔸 {name} ({symbol}): {price}$\n{self.coin_names[symbol]}: {price} دلار\n\n'
+        return self.latest_prices
 
     # --------- COINGECKO -----------
     def send_request(self):
@@ -58,6 +60,7 @@ class CoinMarketCap:
         self.price_unit = price_unit
         self.coin_names = coin_names
         self.symbols_list = None
+        self.latest_prices = ''
         self.update_symbols_list()
 
     def set_price_unit(self, pu):
@@ -79,16 +82,15 @@ class CoinMarketCap:
 
     def get(self):
         data = self.send_request()
-        text = ''
+        self.latest_prices = ''
         for coin in self.coin_names:
             price = data[coin][0]['quote'][self.price_unit]['price']
             name = data[coin][0]['name']
 
-            text += f'🔸 {name} ({coin}): {price}$\n{self.coin_names[coin]}: {price} دلار\n\n'
-        return text
+            self.latest_prices += f'🔸 {name} ({coin}): {price}$\n{self.coin_names[coin]}: {price} دلار\n\n'
+        return self.latest_prices
 
     def send_request_classic(self):
-
         from requests import Request, Session
         from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
         parameters = {
