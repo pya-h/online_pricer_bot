@@ -48,7 +48,7 @@ class CoinGecko:
             symbol = coin['symbol'].upper()
             if symbol in self.desired_coins:
                 price = coin['market_data']['current_price']['usd']
-                res += f'🔸 {name} ({symbol}): {price}$\n{COIN_NAMES[symbol]}: {price} دلار\n\n'
+                res += '🔸 %s (%s): %.3f$\n%s: %d دلار\n\n' % (name, symbol, price, COIN_NAMES[symbol], price*10000)
         return res
 
     def get(self):
@@ -112,7 +112,7 @@ class CoinMarketCap:
         for coin in self.desired_coins:
             price = data[coin][0]['quote'][self.price_unit]['price']
             name = data[coin][0]['name']
-            res += f'🔸 {name} ({coin}): {price}$\n{COIN_NAMES[coin]}: {price} دلار\n\n'
+            res += '🔸 %s (%s): %.3f$\n%s: %d دلار\n\n' % (name, coin, price, COIN_NAMES[coin], price*10000)
         return res
 
 

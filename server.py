@@ -2,7 +2,8 @@ from telegram.ext import *
 from telegram import *
 from coins_api import *
 from decouple import config
-# from threading import Thread
+# from threading import Event
+# from time import sleep
 
 
 BOT_TOKEN = config('API_TOKEN')
@@ -42,10 +43,12 @@ async def anounce_prices(context):
 
 
 async def cmd_welcome(update, context):
-    await update.message.reply_text("خوش آمدید!")
+    await update.message.reply_text("خوش آمدید!", reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 async def cmd_get_prices(update, context):
-    await update.message.reply_text(priceSourceObject.get_latest() if priceSourceObject.latest_data and is_channel_updates_started else priceSourceObject.get(),
+    await update.message.reply_text(priceSourceObject.get_latest()
+                                    if priceSourceObject.latest_data and is_channel_updates_started
+                                    else priceSourceObject.get(),
                 reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 async def handle_messages(update, context):
@@ -88,7 +91,7 @@ async def cmd_change_source_to_coinmarketcap(update, context):
 
 
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(BOT_TOKEN).read_timeout(10.0).write_timeout(10.0).build()
     app.add_handler(CommandHandler("start", cmd_welcome))
     app.add_handler(CommandHandler("get", cmd_get_prices))
     # ADMIN SECTION
@@ -102,7 +105,6 @@ def main():
     print("Server is up and running...")
     # main_thread = Thread(target=app.run_polling)
     # main_thread.run()
-
     app.run_polling()
 
 
