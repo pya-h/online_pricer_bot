@@ -56,6 +56,20 @@ async def handle_messages(update, context):
 
     if msg == CMD_GET:
         await cmd_get_prices(update, context)
+    elif msg == CMD_SELECT_COINS:
+        buttons = []
+        row = []
+        i = 0
+        for coin in COIN_NAMES:
+            row.append(InlineKeyboardButton(COIN_NAMES[coin], callback_data=coin))
+            i += 1
+            if i >= 5:
+                buttons.append(row)
+                row = []
+                i = 0
+        await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=InlineKeyboardMarkup(buttons))
+
+
 
 async def cmd_schedule_channel_update(update, context):
     global is_channel_updates_started
