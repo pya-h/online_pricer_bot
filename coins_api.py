@@ -22,10 +22,12 @@ COIN_NAMES = {
     'SHIB': 'شیبا اینو'
 }
 
+MAX_COIN_SELECTION = len(COIN_NAMES)
+
 class CoinGecko:
     URL = 'https://api.coingecko.com/api/v3/coins/'
     Source = "CoinGecko"
-    def __init__(self, desired_coins, params=None) -> None:
+    def __init__(self, params=None) -> None:
         # params = {
         #     'vs_currency': "usd",
         #     'order': "market_cap_desc",
@@ -35,29 +37,30 @@ class CoinGecko:
         #     'price_change_percentage': "24h",
         # }
         self.params = params
-        self.desired_coins = desired_coins
         self.latest_data = ''
 
     def set_params(self, pms):
         self.params = pms
 
-    def extract_desired_prices(self, data):
+    def extract_prices(self, data, desired_coins):
+        if not desired_coins:
+            desired_coins = list(COIN_NAMES.keys())[:MAX_COIN_SELECTION]
         res = ''
         for coin in data:
             name = coin['name']
             symbol = coin['symbol'].upper()
-            if symbol in self.desired_coins:
+            if symbol in desired_coins:
                 price = coin['market_data']['current_price']['usd']
                 res += '🔸 %s (%s): %.3f$\n%s: %d دلار\n\n' % (name, symbol, price, COIN_NAMES[symbol], price*10000)
-        return res
+        return res + f"\n\nمنبع: {CoinGecko.Source}"
 
-    def get(self):
-        self.latest_data = self.send_request()
-        return self.extract_desired_prices(self.latest_data)
 
-    def get_latest(self):
-        return self.extract_desired_prices(self.latest_data)
+    def get(self, desired_coins=None):
+        self.latest_data = self.send_request() # update latest
+        return self.extract_prices(self.latest_data, desired_coins)  # then make message
 
+    def get_latest(self, desired_coins=None):
+        return self.extract_prices(self.latest_data, desired_coins)
 
     # --------- COINGECKO -----------
     def send_request(self):
@@ -69,11 +72,7 @@ class CoinGecko:
 # --------- COINMARKETCAP -----------
 class CoinMarketCap:
     URL = 'https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
-    Source = "CoinMarkerCap"
-
-    def set_desired_coins(self, c_names):
-        self.desired_coins = c_names
-        self.update_symbols_list()
+    Source = "CoinMarketCap"
 
     def update_symbols_list(self):
         self.symbols_list = ''
@@ -82,12 +81,11 @@ class CoinMarketCap:
         self.symbols_list = self.symbols_list[:-1]  #remove last ','
 
 
-    def __init__(self, api_key, desired_coins, price_unit='USD') -> None:
+    def __init__(self, api_key, price_unit='USD') -> None:
         self.api_key = api_key
         self.price_unit = price_unit
-        self.desired_coins = desired_coins
         self.symbols_list = None
-        self.latest_data = ''
+        self.latest_data = None
         self.update_symbols_list()
 
     def set_price_unit(self, pu):
@@ -107,21 +105,24 @@ class CoinMarketCap:
         return latest_cap.data
 
 
-    def extract_desired_prices(self, data):
+    def extract_prices(self, data, desired_coins):
+        if not desired_coins:
+            desired_coins = list(COIN_NAMES.keys())[:MAX_COIN_SELECTION]
+
         res = ''
-        for coin in self.desired_coins:
+        for coin in desired_coins:
             price = data[coin][0]['quote'][self.price_unit]['price']
             name = data[coin][0]['name']
             res += '🔸 %s (%s): %.3f$\n%s: %d دلار\n\n' % (name, coin, price, COIN_NAMES[coin], price*10000)
-        return res
+        return res + f"\n\nمنبع: {CoinMarketCap.Source}"
 
 
-    def get(self):
+    def get(self, desired_coins=None):
         self.latest_data = self.send_request() # update latest
-        return self.extract_desired_prices(self.latest_data)  # then make message
+        return self.extract_prices(self.latest_data, desired_coins)  # then make message
 
-    def get_latest(self):
-        return self.extract_desired_prices(self.latest_data)
+    def get_latest(self, desired_coins=None):
+        return self.extract_prices(self.latest_data, desired_coins)
 
     def send_request_classic(self):
         from requests import Request, Session
