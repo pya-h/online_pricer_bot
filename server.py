@@ -191,13 +191,15 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).read_timeout(20.0).write_timeout(20.0).build()
     app.add_handler(CommandHandler("start", cmd_welcome))
     app.add_handler(CommandHandler("get", cmd_get_prices))
+    app.add_handler(CommandHandler("selectcoins", cmd_select_coins))
+    app.add_handler(CommandHandler("leave", cmd_leave))
+
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
     app.add_handler(CommandHandler("schedule", cmd_schedule_channel_update))
     app.add_handler(CommandHandler("stop", cmd_stop_schedule))
     app.add_handler(CommandHandler("gecko", cmd_change_source_to_coingecko))
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
-    app.add_handler(CommandHandler("leave", cmd_leave))
     app.add_handler(MessageHandler(filters.ALL, handle_messages))
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
 
