@@ -1,4 +1,6 @@
-API_TOKEN=6062617222:AAFPLg1YoGMBvQrfQi9ih7FwJCUtZPW6AOI
-CHANNEL_ID=
-SCHEDULE_JOB_NAME=channel_scheduler
-COINMARKETCAP_API_KEY=
+API_TOKEN='your telegram bot api token'
+CHANNEL_ID='id of the channel you want to be autoupdated by this bot; remember to add this bot to that channel too'
+SCHEDULE_JOB_NAME='job name for the task scheduler that updates the channel. name anything you want'
+COINMARKETCAP_API_KEY='api key that you've got from the coinmarketcap website.'
+ADMIN_USERNAME='username for the bot admin. after logging in with this user & password, the bot user will have admin previllages'
+ADMIN_PASSWORD='password for the admin, ...'

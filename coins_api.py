@@ -2,7 +2,7 @@ import json
 import requests
 import coinmarketcapapi as cmc_api
 
-
+USD_TO_TOMANS_RATE = 53000
 COIN_NAMES = {
     'BTC': 'بیت کوین',
     "ETH": 'اتریوم',
@@ -51,7 +51,7 @@ class CoinGecko:
             symbol = coin['symbol'].upper()
             if symbol in desired_coins:
                 price = coin['market_data']['current_price']['usd']
-                res += '🔸 %s (%s): %.3f$\n%s: %d دلار\n\n' % (name, symbol, price, COIN_NAMES[symbol], price*10000)
+                res += '🔸 %s (%s): %.3f$\n%s: %d تومان\n\n' % (name, symbol, price, COIN_NAMES[symbol], price*USD_TO_TOMANS_RATE)
         return res + f"\n\nمنبع: {CoinGecko.Source}"
 
 
@@ -113,7 +113,7 @@ class CoinMarketCap:
         for coin in desired_coins:
             price = data[coin][0]['quote'][self.price_unit]['price']
             name = data[coin][0]['name']
-            res += '🔸 %s (%s): %.3f$\n%s: %d دلار\n\n' % (name, coin, price, COIN_NAMES[coin], price*10000)
+            res += '🔸 %s (%s): %.3f$\n%s: %d تومان\n\n' % (name, coin, price, COIN_NAMES[coin], price*USD_TO_TOMANS_RATE)
         return res + f"\n\nمنبع: {CoinMarketCap.Source}"
 
 
