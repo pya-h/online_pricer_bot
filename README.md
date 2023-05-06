@@ -14,13 +14,15 @@ Requirements (.env file):
     /start : Start the bot
     /get get : current prices as a response inside the bot
     /selectcoins : select your desired coins that you want to keep track of their prices.
-        once you selected your desired coins, any message you'll get by /get command will just show the price of your desired coins.
+        once you selected your desired coins, any message you'll get by
+        /get command will just show the price of your desired coins.
         Note that the channel message containing the price list will not be affected by your desired list.
-    /gop user password : tries to login you as admin by the username and password you provied in the command arguments
+    /gop user password : tries to login you as admin by the username
+         and password you provied in the command arguments
     /leave : leave the bot. will free the bot memory of the customizations you made so far.
 # Bot Commands needing admin privillages
-    /schedule time_interval : start scheduling the channel update by the interval you've sent in the argument. if interval isnt provided,
-        the default interval will be used (5 minutes.)
+    /schedule time_interval : start scheduling the channel update by the interval you've sent in the argument.
+        if interval isnt provided, the default interval will be used (5 minutes.)
     /gecko change the source of cryptocurrency prices to CoinGecko
     /marketcap change the source of cryptocurrency prices to CoinMarketCap
     /stop stop the channel update queue
@@ -31,4 +33,5 @@ Requirements (.env file):
     /schedule username password interval
     /gecko username password
     ...
-    once you did one admin command as above, the further authorization for other admin commands, won't be needed.
+    once you did one admin command as above, the further authorization
+        for other admin commands, won't be needed.
