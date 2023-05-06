@@ -10,8 +10,8 @@
     * ADMIN_USERNAME | ADMIN_PASWORD: desired admin credentials.
     * pip install -r requirements.txt
 
-    Read env_format.txt file and create a .env file considering that
-        , with your own CMC_API_KEY and CHANNEL_ID though!
+    Create a .env file considering env_format.txt file,
+         with your own CMC_API_KEY and CHANNEL_ID though!
 
 # Common Bot Commands:
     /start : Start the bot
