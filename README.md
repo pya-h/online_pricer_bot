@@ -15,13 +15,13 @@
 
 # Common Bot Commands:
     /start : Start the bot
-    /get get : current prices as a response inside the bot
+    /get: get current prices as a response inside the bot
     /selectcoins : select your desired coins that you want to keep track of their prices.
         once you selected your desired coins, any message you'll get by
         /get command will just show the price of your desired coins.
         Note that the channel message containing the price list
         will not be affected by your desired list.
-    /gop user password : tries to login you as admin by the username
+    /god user password : tries to login you as admin by the username
          and password you provied in the command arguments
     /leave : leave the bot. will free the bot memory of the customizations you made so far.
 # Bot Commands needing admin privillages
