@@ -176,9 +176,9 @@ async def handle_inline_keyboard_callbacks(update, context):
                 account.desired_coins.append(data["value"])
             else:
                 account.desired_coins.remove(data["value"])
-            await query.edit_message_text(text="سکه های موردنظر شما: \n" + ', '.join(account.desired_coins), reply_markup=coins_keyboard)
+            await query.edit_message_text(text="سکه های موردنظر شما: \n" + '، '.join([COIN_NAMES[x] for x in account.desired_coins]), reply_markup=coins_keyboard)
         else:
-            await query.edit_message_text(text="لیست نهایی سکه های موردنظر شما: \n" + ', '.join(account.desired_coins))
+            await query.edit_message_text(text="لیست نهایی سکه های موردنظر شما: \n" + '، '.join([COIN_NAMES[x] for x in account.desired_coins]))
     elif data['type'] == 'leave':
         if data['value']:
             Account.Leave(update.effective_chat.id)
@@ -208,13 +208,4 @@ def main():
     app.run_polling()
 
 if __name__ == '__main__':
-#    e = Event()
-#    restart_delay = 0
-#    while not e.wait(restart_delay):
-#        try:
-            main()
-#        except Exception as ex:
-#            print(ex)
-#        finally:
-#            restart_delay += 10
-#            print(f"Bot will be restarted {restart_delay} secs later...")
+    main()
