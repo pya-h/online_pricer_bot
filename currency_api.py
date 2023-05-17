@@ -1,6 +1,6 @@
 from api_manager import *
 
-CURRENCIES = {
+CURRENCIES_PERSIAN_NAMES = {
     "USD": "دلار (آمریکا)",
     "EUR": "یورو (اروپا)",
     "AED": "درهم (امارات)",
@@ -59,7 +59,7 @@ class SourceArena(APIManager):
 
     def __init__(self, token, params=None) -> None:
         self.token = token
-        super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency", source="Sourcearena.ir", dict_persian_names=CURRENCIES)
+        super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency", source="Sourcearena.ir", dict_persian_names=CURRENCIES_PERSIAN_NAMES)
 
     def extract_api_response(self, desired_ones=None):
         desired_ones = self.get_desired_ones(desired_ones)
@@ -67,11 +67,11 @@ class SourceArena(APIManager):
         res = ''
         for curr in self.latest_data:
             slug = curr['slug'].upper()
-            price = float(curr['price'])
+            price = float(curr['price']) / 10
             if slug == 'USD':
                 self.set_usd_price(price)
             if slug in desired_ones:
-                _, toman = self.rounded_prices(price)
+                toman, _ = self.rounded_prices(price, False)
                 res += f'🔸 {self.dict_persian_names[slug]}: {toman:,} تومان\n\n'
         return self.signed_message(res)
 

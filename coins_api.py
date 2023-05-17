@@ -2,7 +2,7 @@ import coinmarketcapapi as cmc_api
 from api_manager import *
 
 
-COIN_NAMES = {
+COINS_PERSIAN_NAMES = {
     'BTC': 'بیت کوین',
     "ETH": 'اتریوم',
     'USDT': 'تتر',
@@ -141,7 +141,7 @@ class CoinGecko(APIManager):
         #     'sparkline': False,
         #     'price_change_percentage': "24h",
         # }
-        super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/', source="CoinGecko", dict_persian_names=COIN_NAMES)
+        super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/', source="CoinGecko.com", dict_persian_names=COINS_PERSIAN_NAMES)
 
     def extract_api_response(self, desired_coins):
         desired_coins = self.get_desired_ones(desired_coins)
@@ -162,7 +162,7 @@ class CoinGecko(APIManager):
 class CoinMarketCap(APIManager):
 
     def __init__(self, api_key, price_unit='USD', params=None) -> None:
-        super(CoinMarketCap, self).__init__(url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', source="CoinMarketCap", dict_persian_names=COIN_NAMES)
+        super(CoinMarketCap, self).__init__(url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', source="CoinMarketCap.com", dict_persian_names=COINS_PERSIAN_NAMES)
         self.api_key = api_key
         self.price_unit = price_unit
         self.symbols_list = None
@@ -170,7 +170,7 @@ class CoinMarketCap(APIManager):
 
     def update_symbols_list(self):
         self.symbols_list = ''
-        for cn in COIN_NAMES:
+        for cn in COINS_PERSIAN_NAMES:
             self.symbols_list += cn + ","
         self.symbols_list = self.symbols_list[:-1]  #remove last ','
 

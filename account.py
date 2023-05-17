@@ -5,6 +5,8 @@ ADMIN_PASSWORD = config('ADMIN_PASSWORD')
 
 class Account:
     Instances = {}
+    MaxDesiredCoins = 5
+    MaxDesiredCurrencies = 10
 
     @staticmethod
     def Get(chat_id):

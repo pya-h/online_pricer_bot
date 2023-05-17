@@ -4,7 +4,7 @@ import requests, json
 
 class APIManager:
 
-    UsdInTomans = 52000
+    UsdInTomans = 52000  # not important, its just a defalt value that will be updated at first api get from sourcearena.ir
     def __init__(self, url, source, dict_persian_names, max_desired_selection = 5, params=None) -> None:
         self.URL = url
         self.Source = source
@@ -41,10 +41,10 @@ class APIManager:
         data = json.loads(response.text)
         return data
 
-    def rounded_prices(self, price):
-        rounded_usd = round(price, 3)
-        rounded_toman = round(price * self.UsdInTomans, 3)
-        return rounded_usd, rounded_toman
+    def rounded_prices(self, price, convert=True):
+        rounded_price = round(price, 2)
+        converted_rounded_price = round(price * self.UsdInTomans, 2) if convert else None
+        return rounded_price, converted_rounded_price
 
     def crypto_description_row(self, name, symbol, price):
         rp_usd, rp_toman = self.rounded_prices(price)
