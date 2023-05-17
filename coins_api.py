@@ -1,14 +1,13 @@
-import json
-import requests
 import coinmarketcapapi as cmc_api
+from api_manager import *
 
-USD_TO_TOMANS_RATE = 53000
 
 COIN_NAMES = {
     'BTC': 'بیت کوین',
     "ETH": 'اتریوم',
     'USDT': 'تتر',
     "BNB": 'بایننس کوین',
+    'DOGE': 'دوج کوین',
     'XRP': 'ریپل',
     "ADA": 'کاردانو',
     'SOL': 'سولانا',
@@ -19,7 +18,6 @@ COIN_NAMES = {
     "LTC": 'لایت کوین',
     'BCH': 'بیت کوین کش',
     "XMR": 'مونرو',
-    'DOGE': 'دوج کوین',
     'SHIB': 'شیبا اینو',
     "LINK": "چین لینک",
     "ATOM": "کازماس",
@@ -100,39 +98,40 @@ COIN_NAMES = {
     "GMT": "استپن",
     "SUSHI": "سوشی سوآپ",
     "KDA": "کادنا",
-    "BRISE": "برایس",
     "BabyDoge": "بیبی دوج کوین",
     "YFI": "یرن فایننس",
     "C98": "کوین 98",
-    "MBOX": "موباکس",
     "CFX": "کانفلاکس",
-    "FLUX": "فلاکس",
-    "BLOK": "بلاک توپیا",
-    "LEO": "لئو",
-    "OKB": "اوکی بی",
-    "RPL": "راکت پول",
-    "BIT": "بیت دائو",
-    "IMX": "ایمیوتیبل ایکس",
     "LUNA": "ترا",
-    "GMX": "جی ام ایکس",
     "PEPE": "پپه",
     "SUI": "سویی",
-    "ELON": "دوج ایلان مارس",
-    "ZEN": "هورایزن",
-    "ONT": "آنتولوژی",
-    "SC": "سیاکوین",
-    "HOT": "هولو",
-    "GLM": "گولم",
-    "ZRX": "زیرو ایکس پروتکل",
-    "KLV": "کلور",
+
+
+    # "BLOK": "بلاک توپیا",
+    # "FLUX": "فلاکس",
+    # "MBOX": "موباکس",
+    # "BRISE": "برایس",
+    # "LEO": "لئو",
+    # "OKB": "اوکی بی",
+    # "RPL": "راکت پول",
+    # "BIT": "بیت دائو",
+    # "IMX": "ایمیوتیبل ایکس",
+    # "GMX": "جی ام ایکس",
+    # "ELON": "دوج ایلان مارس",
+    # "ZEN": "هورایزن",
+    # "ONT": "آنتولوژی",
+    # "SC": "سیاکوین",
+    # "HOT": "هولو",
+    # "GLM": "گولم",
+    # "ZRX": "زیرو ایکس پروتکل",
+    # "KLV": "کلور",
+
 
 }
 
-MAX_COIN_SELECTION = 15
+# --------- COINGECKO -----------
 
-class CoinGecko:
-    URL = 'https://api.coingecko.com/api/v3/coins/'
-    Source = "CoinGecko"
+class CoinGecko(APIManager):
     def __init__(self, params=None) -> None:
         # params = {
         #     'vs_currency': "usd",
@@ -142,43 +141,31 @@ class CoinGecko:
         #     'sparkline': False,
         #     'price_change_percentage': "24h",
         # }
-        self.params = params
-        self.latest_data = ''
+        super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/', source="CoinGecko", dict_persian_names=COIN_NAMES)
 
-    def set_params(self, pms):
-        self.params = pms
+    def extract_api_response(self, desired_coins):
+        desired_coins = self.get_desired_ones(desired_coins)
 
-    def extract_prices(self, data, desired_coins):
-        if not desired_coins:
-            desired_coins = list(COIN_NAMES.keys())[:MAX_COIN_SELECTION]
         res = ''
-        for coin in data:
+        for coin in self.latest_data:
             name = coin['name']
             symbol = coin['symbol'].upper()
             if symbol in desired_coins:
                 price = coin['market_data']['current_price']['usd']
-                res += '🔸 %s (%s): %.3f$\n%s: %d تومان\n\n' % (name, symbol, price, COIN_NAMES[symbol], price*USD_TO_TOMANS_RATE)
-        return res + f"\n\nمنبع: {CoinGecko.Source}"
+                res += '🔸 %s (%s): %.3f$\n%s: %d تومان\n\n' % (name, symbol, price, self.dict_persian_names[symbol], price*self.usd_in_tomans)
+        return self.signed_message(res)
 
-
-    def get(self, desired_coins=None):
-        self.latest_data = self.send_request() # update latest
-        return self.extract_prices(self.latest_data, desired_coins)  # then make message
-
-    def get_latest(self, desired_coins=None):
-        return self.extract_prices(self.latest_data, desired_coins)
-
-    # --------- COINGECKO -----------
-    def send_request(self):
-        response = requests.get(CoinGecko.URL, json=self.params)
-        data = json.loads(response.text)
-        return data
 
 
 # --------- COINMARKETCAP -----------
-class CoinMarketCap:
-    URL = 'https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
-    Source = "CoinMarketCap"
+class CoinMarketCap(APIManager):
+
+    def __init__(self, api_key, price_unit='USD', params=None) -> None:
+        super(CoinMarketCap, self).__init__(url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', source="CoinMarketCap", dict_persian_names=COIN_NAMES)
+        self.api_key = api_key
+        self.price_unit = price_unit
+        self.symbols_list = None
+        self.update_symbols_list()
 
     def update_symbols_list(self):
         self.symbols_list = ''
@@ -186,71 +173,56 @@ class CoinMarketCap:
             self.symbols_list += cn + ","
         self.symbols_list = self.symbols_list[:-1]  #remove last ','
 
-
-    def __init__(self, api_key, price_unit='USD') -> None:
-        self.api_key = api_key
-        self.price_unit = price_unit
-        self.symbols_list = None
-        self.latest_data = None
-        self.update_symbols_list()
-
     def set_price_unit(self, pu):
         self.price_unit = pu
 
     def send_request(self):
         cmc = cmc_api.CoinMarketCapAPI(self.api_key)
+        latest_cap = cmc.cryptocurrency_quotes_latest(symbol=self.symbols_list, convert=self.price_unit)
+        return latest_cap.data
 
+        # other useful functions
         # print(cmc.cryptocurrency_info(symbol="BTC"))
 
         # print(cmc.cryptocurrency_map().data[0])
 
-        latest_cap = cmc.cryptocurrency_quotes_latest(symbol=self.symbols_list, convert=self.price_unit)
         # dict_cap = json.loads(latest_cap)
         # usd = latest_cap.data['BTC'][0]['quote']['USD']['price']
         # usd2 = latest_cap.data['ETH'][0]['quote']['USD']['price']
-        return latest_cap.data
 
 
-    def extract_prices(self, data, desired_coins):
-        if not desired_coins:
-            desired_coins = list(COIN_NAMES.keys())[:MAX_COIN_SELECTION]
+    def extract_api_response(self, desired_coins):
+        desired_coins = self.get_desired_ones(desired_coins)
 
         res = ''
-        for coin in desired_coins:
-            price = data[coin][0]['quote'][self.price_unit]['price']
-            name = data[coin][0]['name']
-            res += '🔸 %s (%s): %.3f$\n%s: %d تومان\n\n' % (name, coin, price, COIN_NAMES[coin], price*USD_TO_TOMANS_RATE)
-        return res + f"\n\nمنبع: {CoinMarketCap.Source}"
+        if self.latest_data:
+            for coin in desired_coins:
+                price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
+                name = self.latest_data[coin][0]['name']
+                res += '🔸 %s (%s): %.3f$\n%s: %d تومان\n\n' % (name, coin, price, self.dict_persian_names[coin], price*self.usd_in_tomans)
+        return self.signed_message(res)
 
+    # def send_request_classic(self):
+    #     from requests import Request, Session
+    #     from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
+    #     parameters = {
+    #         'start':'1',
+    #         'limit':'5000',
+    #         'convert': self.price_unit,
+    #     }
+    #     headers = {
+    #         'Accepts': 'application/json',
+    #         'X-CMC_PRO_API_KEY': self.api_key,
+    #     }
 
-    def get(self, desired_coins=None):
-        self.latest_data = self.send_request() # update latest
-        return self.extract_prices(self.latest_data, desired_coins)  # then make message
+    #     session = Session()
+    #     session.headers.update(headers)
 
-    def get_latest(self, desired_coins=None):
-        return self.extract_prices(self.latest_data, desired_coins)
-
-    def send_request_classic(self):
-        from requests import Request, Session
-        from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
-        parameters = {
-            'start':'1',
-            'limit':'5000',
-            'convert': self.price_unit,
-        }
-        headers = {
-            'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': self.api_key,
-        }
-
-        session = Session()
-        session.headers.update(headers)
-
-        try:
-            response = session.get(CoinMarketCap.URL, params=parameters)
-            data = json.loads(response.text)
-            return data
-        except (ConnectionError, Timeout, TooManyRedirects) as e:
-            print(e)
+    #     try:
+    #         response = session.get(CoinMarketCap.URL, params=parameters)
+    #         data = json.loads(response.text)
+    #         return data
+    #     except (ConnectionError, Timeout, TooManyRedirects) as e:
+    #         print(e)
 
 

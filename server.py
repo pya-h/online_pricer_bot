@@ -1,5 +1,6 @@
 from telegram.ext import *
 from telegram import *
+from currency_api import *
 from coins_api import *
 from decouple import config
 from account import Account
@@ -13,6 +14,7 @@ BOT_TOKEN = config('API_TOKEN')
 CHANNEL_ID = config('CHANNEL_ID')
 SCHEDULE_JOB_NAME = config('SCHEDULE_JOB_NAME')
 CMC_API_KEY = config('COINMARKETCAP_API_KEY')
+CURRENCY_TOKEN = config('CURRENCY_TOKEN')
 
 # main keyboard (soft keyboard of course)
 menu_main = [
@@ -29,38 +31,45 @@ def construct_coins_keyboard():
     row = []
     i = 0
     for coin in COIN_NAMES:
-        row.append(InlineKeyboardButton(COIN_NAMES[coin], callback_data=json.dumps({"type": "urcoins", "value": coin})))
-        i += 1 + int(len(COIN_NAMES[coin]) / 10)
+        row.append(InlineKeyboardButton(coin, callback_data=json.dumps({"type": "urcoins", "value": coin})))
+        i += 1 if len(coin) <= 5 else 2
         if i >= 5:
             btns.append(row)
             row = []
             i = 0
 
-    btns.append([InlineKeyboardButton("حله!", callback_data=json.dumps({"type": "urcoins", "value": "#OK"}))])
+    btns.append([InlineKeyboardButton("ثبت!", callback_data=json.dumps({"type": "urcoins", "value": "#OK"}))])
     coins_keyboard = InlineKeyboardMarkup(btns)
 
 # global variables
-priceSourceObject = CoinMarketCap(CMC_API_KEY)  # api manager object: instance of CoinGecko or CoinMarketCap
+cryptoManager = CoinMarketCap(CMC_API_KEY)  # api manager object: instance of CoinGecko or CoinMarketCap
+currencyManager = SourceArena(CURRENCY_TOKEN)
 is_channel_updates_started = False
 
 
+def construct_new_message(desired_coins=None, desired_currencies=None, extactly_right_now=True) -> str:
+    currencies = currencyManager.get(desired_currencies) if extactly_right_now else currencyManager.get_latest(desired_currencies)
+    print(cryptoManager.usd_in_tomans)
+    cryptos = cryptoManager.get(desired_coins) if extactly_right_now else cryptoManager.get_latest(desired_coins)
+    return currencies + "\n\n\n" + cryptos
+
 async def notify_changes(context):
-    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {priceSourceObject.Source} تغییر یافت.")
+    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {cryptoManager.Source} تغییر یافت.")
 
 
 async def anounce_prices(context):
-    global priceSourceObject
+    global cryptoManager
+    global currencyManager
     res = ''
     try:
-        res = priceSourceObject.get()
+        res = construct_new_message()
     except Exception as ex:
-        print(f"Geting api from {priceSourceObject.Source} failed: ", ex)
-        if priceSourceObject.Source.lower() == 'coinmarketcap':
-            priceSourceObject = CoinGecko()
-            res = priceSourceObject.get()
+        print(f"Geting api from {cryptoManager.Source} failed: ", ex)
+        if cryptoManager.Source.lower() == 'coinmarketcap':
+            cryptoManager = CoinGecko()
         else:
-            priceSourceObject = CoinMarketCap(CMC_API_KEY)
-            res = priceSourceObject.get()
+            cryptoManager = CoinMarketCap(CMC_API_KEY)
+        res = construct_new_message()
         await notify_changes(context)
 
     await context.bot.send_message(chat_id=CHANNEL_ID, text=res)
@@ -73,11 +82,10 @@ async def cmd_welcome(update, context):
 
 async def cmd_get_prices(update, context):
     account = Account.Get(update.effective_chat.id)
+    is_latest_data_valid = currencyManager and currencyManager.latest_data and cryptoManager and cryptoManager.latest_data and is_channel_updates_started
+    message = construct_new_message(desired_coins=account.desired_coins, desired_currencies=account.desired_currencies, extactly_right_now=not is_latest_data_valid)
 
-    await update.message.reply_text(priceSourceObject.get_latest(account.desired_coins)
-                                    if priceSourceObject.latest_data and is_channel_updates_started
-                                    else priceSourceObject.get(account.desired_coins),
-                reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+    await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 
 async def cmd_select_coins(update, context):
@@ -116,7 +124,7 @@ async def cmd_stop_schedule(update, context):
         for job in current_jobs:
             job.schedule_removal()
         is_channel_updates_started = False
-        priceSourceObject.latest_prices = ''
+        cryptoManager.latest_prices = ''
         await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
     else:
         await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!')
@@ -124,8 +132,8 @@ async def cmd_stop_schedule(update, context):
 
 async def cmd_change_source_to_coingecko(update, context):
     if Account.Get(update.effective_chat.id).authorization(context.args):
-        global priceSourceObject
-        priceSourceObject = CoinGecko()
+        global cryptoManager
+        cryptoManager = CoinGecko()
         await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
         await notify_changes(context)
     else:
@@ -133,8 +141,8 @@ async def cmd_change_source_to_coingecko(update, context):
 
 async def cmd_change_source_to_coinmarketcap(update, context):
     if Account.Get(update.effective_chat.id).authorization(context.args):
-        global priceSourceObject
-        priceSourceObject = CoinMarketCap(CMC_API_KEY)
+        global cryptoManager
+        cryptoManager = CoinMarketCap(CMC_API_KEY)
         await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
         await notify_changes(context)
     else:

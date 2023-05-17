@@ -6,6 +6,7 @@
 # Requirements (.env file):
     * BOT API TOKEN: The token you got from the botfather
     * CMC_API-KEY: API KEY obtained from CoinMarketCap API section.
+    *
     * CHANNEL_ID: The id of the channel you want to add this bot as an admin to.
     * ADMIN_USERNAME | ADMIN_PASWORD: desired admin credentials.
     * pip install -r requirements.txt

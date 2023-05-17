@@ -4,3 +4,4 @@ SCHEDULE_JOB_NAME='job name for the task scheduler that updates the channel. nam
 COINMARKETCAP_API_KEY='api key that you've got from the coinmarketcap website.'
 ADMIN_USERNAME='username for the bot admin. after logging in with this user & password, the bot user will have admin previllages'
 ADMIN_PASSWORD='password for the admin, ...'
+CURRENCY_TOKEN='token accuired from the sourcearena.ir'

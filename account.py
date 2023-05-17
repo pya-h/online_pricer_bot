@@ -16,6 +16,7 @@ class Account:
         self.is_admin = False
         self.chat_id = chat_id
         self.desired_coins = []
+        self.desired_currencies = []
         Account.Instances[chat_id] = self
 
     def authorization(self, args):
