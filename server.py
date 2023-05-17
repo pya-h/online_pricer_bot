@@ -49,7 +49,7 @@ is_channel_updates_started = False
 
 def construct_new_message(desired_coins=None, desired_currencies=None, extactly_right_now=True) -> str:
     currencies = currencyManager.get(desired_currencies) if extactly_right_now else currencyManager.get_latest(desired_currencies)
-    print(cryptoManager.usd_in_tomans)
+    print(cryptoManager.UsdInTomans)
     cryptos = cryptoManager.get(desired_coins) if extactly_right_now else cryptoManager.get_latest(desired_coins)
     return currencies + "\n\n\n" + cryptos
 

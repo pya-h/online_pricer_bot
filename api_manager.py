@@ -4,6 +4,7 @@ import requests, json
 
 class APIManager:
 
+    UsdInTomans = 52000
     def __init__(self, url, source, dict_persian_names, max_desired_selection = 5, params=None) -> None:
         self.URL = url
         self.Source = source
@@ -11,10 +12,9 @@ class APIManager:
         self.latest_data = []
         self.dict_persian_names = dict_persian_names
         self.MAX_DESIRED_SELECTION = max_desired_selection
-        self.usd_in_tomans = 52000
 
     def set_usd_price(self, value):
-        self.usd_in_tomans = value
+        APIManager.UsdInTomans = value
 
     def set_params(self, pms):
         self.params = pms
