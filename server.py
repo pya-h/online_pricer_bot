@@ -190,7 +190,7 @@ async def handle_inline_keyboard_callbacks(update, context):
     account = Account.Get(update.effective_chat.id)
     await query.answer()
     data = json.loads(query.data)
-    if data["type"] == "urcoins":
+    if data["type"] == "coins":
         if data["value"] != "#OK" and len(account.desired_coins) < Account.MaxDesiredCoins:
             if not data["value"] in account.desired_coins:
                 account.desired_coins.append(data["value"])
@@ -200,7 +200,7 @@ async def handle_inline_keyboard_callbacks(update, context):
                                           reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
         else:
             await query.edit_message_text(text="لیست نهایی سکه های موردنظر شما: \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]))
-    elif data["type"] == "urcurrs":
+    elif data["type"] == "currencies":
         if data["value"] != "#OK" and len(account.desired_currencies) < Account.MaxDesiredCurrencies:
             if not data["value"] in account.desired_currencies:
                 account.desired_currencies.append(data["value"])
