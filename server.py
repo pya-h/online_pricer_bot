@@ -8,7 +8,7 @@ import json
 
 
 # contants such as keyboard button texts
-COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_LEAVE) = ('دریافت قیمت ها', 'تنظیم بازار رمزارزها', "تنظیم بازار ارز، سکه و نفت" 'ترک بات')
+COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_LEAVE) = ('دریافت قیمت ها', 'تنظیم بازار رمزارزها', "تنظیم بازار ارز، سکه و نفت", 'ترک بات')
 # environment values
 BOT_TOKEN = config('API_TOKEN')
 CHANNEL_ID = config('CHANNEL_ID')
@@ -24,7 +24,7 @@ menu_main = [
 ]
 
 # this function creates inline keyboard for selecting coin/currency as desired ones
-def newInlineKeyboard(all_choices: dict, selected_ones: list = [], show_full_names = False):
+def newInlineKeyboard(name, all_choices: dict, selected_ones: list = [], show_full_names = False):
     btns = []
     row = []
     i = 0
@@ -33,13 +33,13 @@ def newInlineKeyboard(all_choices: dict, selected_ones: list = [], show_full_nam
         i += 1 + int(len(btn_text) / 5)
         if choice in selected_ones:
             btn_text += "✅"
-        row.append(InlineKeyboardButton(btn_text, callback_data=json.dumps({"type": "urcoins", "value": choice})))
+        row.append(InlineKeyboardButton(btn_text, callback_data=json.dumps({"type": name, "value": choice})))
         if i >= 5:
             btns.append(row)
             row = []
             i = 0
 
-    btns.append([InlineKeyboardButton("ثبت!", callback_data=json.dumps({"type": "urcoins", "value": "#OK"}))])
+    btns.append([InlineKeyboardButton("ثبت!", callback_data=json.dumps({"type": name, "value": "#OK"}))])
     return InlineKeyboardMarkup(btns)
 
 # global variables
@@ -98,11 +98,11 @@ async def cmd_get_prices(update, context):
 
 async def cmd_select_coins(update, context):
     account = Account.Get(update.effective_chat.id)
-    await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard(COINS_PERSIAN_NAMES, account.desired_coins))
+    await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
 
 async def cmd_select_currencies(update, context):
     account = Account.Get(update.effective_chat.id)
-    await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard(COINS_PERSIAN_NAMES, account.desired_currencies, True))
+    await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
 
 
 async def cmd_schedule_channel_update(update, context):
@@ -191,24 +191,24 @@ async def handle_inline_keyboard_callbacks(update, context):
     await query.answer()
     data = json.loads(query.data)
     if data["type"] == "urcoins":
-        if data["value"] != "#OK" or len(account.desired_coins) < Account.MaxDesiredCoins:
+        if data["value"] != "#OK" and len(account.desired_coins) < Account.MaxDesiredCoins:
             if not data["value"] in account.desired_coins:
                 account.desired_coins.append(data["value"])
             else:
                 account.desired_coins.remove(data["value"])
-            await query.edit_message_text(text="سکه های موردنظر شما (حداکثر {Account.MaxDesiredCoins} مورد): \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]), \
-                                          reply_markup=newInlineKeyboard(COINS_PERSIAN_NAMES, account.desired_coins))
+            await query.edit_message_text(text=f"سکه های موردنظر شما (حداکثر {Account.MaxDesiredCoins} مورد): \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]), \
+                                          reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
         else:
             await query.edit_message_text(text="لیست نهایی سکه های موردنظر شما: \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]))
     elif data["type"] == "urcurrs":
-        if data["value"] != "#OK" or len(account.desired_currencies) < Account.MaxDesiredCurrencies:
+        if data["value"] != "#OK" and len(account.desired_currencies) < Account.MaxDesiredCurrencies:
             if not data["value"] in account.desired_currencies:
                 account.desired_currencies.append(data["value"])
             else:
                 account.desired_currencies.remove(data["value"])
-            await query.edit_message_text(text="انتخاب های شما در بازار ارز و سکه و ... (حداکثر {Account.MaxDesiredCurrencies} مورد): \n" + \
+            await query.edit_message_text(text=f"انتخاب های شما در بازار ارز و سکه و ... (حداکثر {Account.MaxDesiredCurrencies} مورد): \n" + \
                                           '، '.join([CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]), \
-                                              reply_markup=newInlineKeyboard(CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
+                                              reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
         else:
             await query.edit_message_text(text="لیست نهایی بازار ارز و سکه و ...  موردنظر شما: \n" + '، '.join([CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]))
     elif data['type'] == 'leave':
