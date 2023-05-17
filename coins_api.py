@@ -152,7 +152,8 @@ class CoinGecko(APIManager):
             symbol = coin['symbol'].upper()
             if symbol in desired_coins:
                 price = coin['market_data']['current_price']['usd']
-                res += '🔸 %s (%s): %.3f$\n%s: %d تومان\n\n' % (name, symbol, price, self.dict_persian_names[symbol], price * self.UsdInTomans)
+                res += self.crypto_description_row(name, symbol, price)
+
         return self.signed_message(res)
 
 
@@ -199,7 +200,7 @@ class CoinMarketCap(APIManager):
             for coin in desired_coins:
                 price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
                 name = self.latest_data[coin][0]['name']
-                res += '🔸 %s (%s): %.3f$\n%s: %d تومان\n\n' % (name, coin, price, self.dict_persian_names[coin], price * self.UsdInTomans)
+                res += self.crypto_description_row(name, coin, price)
         return self.signed_message(res)
 
     # def send_request_classic(self):

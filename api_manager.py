@@ -41,3 +41,11 @@ class APIManager:
         data = json.loads(response.text)
         return data
 
+    def rounded_prices(self, price):
+        rounded_usd = round(price, 3)
+        rounded_toman = round(price * self.UsdInTomans, 3)
+        return rounded_usd, rounded_toman
+
+    def crypto_description_row(self, name, symbol, price):
+        rp_usd, rp_toman = self.rounded_prices(price)
+        return f'🔸 {name} ({symbol}): {rp_usd:,}$\n{self.dict_persian_names[symbol]}: {rp_toman:,} تومان\n\n'

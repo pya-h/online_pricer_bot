@@ -67,12 +67,12 @@ class SourceArena(APIManager):
         res = ''
         for curr in self.latest_data:
             slug = curr['slug'].upper()
-            price = curr['price']
-            print(slug)
+            price = float(curr['price'])
             if slug == 'USD':
                 self.set_usd_price(price)
             if slug in desired_ones:
-                res += '🔸 %s: %s تومان\n\n' % (self.dict_persian_names[slug], price)
+                _, toman = self.rounded_prices(price)
+                res += f'🔸 {self.dict_persian_names[slug]}: {toman:,} تومان\n\n'
         return self.signed_message(res)
 
     # --------- Currency -----------
