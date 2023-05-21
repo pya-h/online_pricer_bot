@@ -1,17 +1,38 @@
 from decouple import config
 from db_interface import *
+from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
+
+
 ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
 
+GARBAGE_COLLECT_INTERVAL = 30
 
 class Account:
     Instances = {}
     MaxDesiredCoins = 5
     MaxDesiredCurrencies = 10
     Database = DatabaseInterface.Get()
+    Scheduler = None
+
+    @staticmethod
+    def GarbageCollect():
+        now = datetime.now()
+        garbage = []
+        for chat_id, account in enumerate(Account.Instances):
+            if (now - account.last_interaction).total_seconds() / 60 >= 15:
+                garbage.append(chat_id)
+        # because changing dict size in a loop on itself causes error,
+        # we first collect redundant chat_id s and then delete them from the memory
+        for g in garbage:
+            del Account.Instances[g]
+        print("Garbage collected at: ", now)
+
     @staticmethod
     def Get(chat_id):
         if chat_id in Account.Instances:
+            Account.Instances[chat_id].last_interaction = datetime.now()
             return Account.Instances[chat_id]
         row = Account.Database.get(chat_id)
         if row:
@@ -31,7 +52,16 @@ class Account:
         self.chat_id = chat_id
         self.desired_coins = cryptos
         self.desired_currencies = currencies
-        Account.Instances[chat_id] = self
+        self.last_interaction = datetime.now()
+        Account.Instances[chat_id] = self  # this is for optimizing bot performance
+        # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
+
+        if not Account.Scheduler:
+            # start garbage collector to optimize memory use
+            Account.Scheduler = BackgroundScheduler()
+            Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=GARBAGE_COLLECT_INTERVAL*60)
+            Account.Scheduler.start()
+
 
     def authorization(self, args):
         if self.is_admin:

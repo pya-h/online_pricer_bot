@@ -98,7 +98,7 @@ async def anounce_prices(context):
 async def cmd_welcome(update, context):
     acc = Account.Get(update.effective_chat.id)  # get old or create new account => automatically will be added to Account.Instances
     if await is_a_member(acc, context):
-        await update.message.reply_text("خوش آمدید!", reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+        await update.message.reply_text(f"{update.message.chat.first_name} خوش اومدی!", reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
     else:
         await ask2join(update)
 
@@ -194,7 +194,7 @@ async def cmd_leave(update, context):
 
 
 async def handle_messages(update, context):
-    
+
     msg = update.message.text
 
     if msg == CMD_GET:
