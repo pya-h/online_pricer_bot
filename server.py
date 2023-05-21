@@ -30,7 +30,7 @@ async def is_a_member(account: Account, context: CallbackContext):
     return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
 
 async def ask2join(update):
-    await update.message.reply_text("Please subscribe to below channels first:", reply_markup=InlineKeyboardMarkup([
+    await update.message.reply_text("لطفا جهت استفاده از این بات ابتدا در کانال های زیر عضو شوید:", reply_markup=InlineKeyboardMarkup([
         [InlineKeyboardButton("@Crypto_AKSA", url="https://t.me/Crypto_AKSA"),
         InlineKeyboardButton("@Online_pricer", url="https://t.me/Online_pricer")]
     ]))
@@ -98,7 +98,7 @@ async def anounce_prices(context):
 async def cmd_welcome(update, context):
     acc = Account.Get(update.effective_chat.id)  # get old or create new account => automatically will be added to Account.Instances
     if await is_a_member(acc, context):
-        await update.message.reply_text(f"{update.message.chat.first_name} خوش اومدی!", reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+        await update.message.reply_text(f"{update.message.chat.first_name} خوش اومدی", reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
     else:
         await ask2join(update)
 
@@ -115,14 +115,14 @@ async def cmd_get_prices(update, context):
 async def cmd_select_coins(update, context):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
+        await update.message.reply_text("رمزارز های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
     else:
         await ask2join(update)
 
 async def cmd_select_currencies(update, context):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
+        await update.message.reply_text("گزینه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
     else:
         await ask2join(update)
 

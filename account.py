@@ -20,8 +20,8 @@ class Account:
     def GarbageCollect():
         now = datetime.now()
         garbage = []
-        for chat_id, account in enumerate(Account.Instances):
-            if (now - account.last_interaction).total_seconds() / 60 >= 15:
+        for chat_id in Account.Instances:
+            if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= 15:
                 garbage.append(chat_id)
         # because changing dict size in a loop on itself causes error,
         # we first collect redundant chat_id s and then delete them from the memory
