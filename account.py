@@ -18,14 +18,14 @@ class Account:
             currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
             return Account(row[0], currs.split(";") if currs else [], cryptos.split(';') if cryptos else [])
-        
+
         return Account(chat_id=chat_id)
-        
+
 
     def save(self):
-        Account.Database.add(self)
-        # or update
-        
+        Account.Database.update(self)
+
+
     def __init__(self, chat_id, currencies=[], cryptos=[]) -> None:
         self.is_admin = False
         self.chat_id = chat_id

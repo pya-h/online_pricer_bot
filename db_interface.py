@@ -1,5 +1,4 @@
 import sqlite3
-from account import *
 
 TABLE_ACCOUNTS = "accounts"  # T_ as in TABLE
 
@@ -27,7 +26,8 @@ class DatabaseInterface:
 
                 print(f"{TABLE_ACCOUNTS} table created successfuly.")
 
-            print("Database setup completed.")    
+            print("Database setup completed.")
+            cursor.close()
             connection.close()
         except Exception as ex:
             if connection:
@@ -57,14 +57,26 @@ class DatabaseInterface:
     def get(self, chat_id):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
-
         cursor.execute(f"SELECT * FROM {TABLE_ACCOUNTS} WHERE id=?", (chat_id, ))
-
         row = cursor.fetchone()
         cursor.close()
         connection.close()
         return row
-        
+
+    def update(self, account):
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {TABLE_ACCOUNTS} WHERE id=?", (account.chat_id, ))
+        if cursor.fetchone(): # if account with his chat id has been saved before in the database
+            cursor.execute(f'UPDATE {TABLE_ACCOUNTS} SET currencies=?, cryptos=? WHERE chat_id=?', \
+                (account.str_desired_currencies(), account.str_desired_coins(), account.chat_id))
+        else:
+            cursor.execute(f"INSERT INTO {TABLE_ACCOUNTS} (id, currencies, cryptos) VALUES (?, ?, ?)", \
+                (account.chat_id, account.str_desired_currencies(), account.str_desired_coins()))
+            print("New account started using this bot with chat_id=: ", account.chat_id)
+        cursor.close()
+        connection.close()
+
     def __init__(self, name="data.db"):
         self._name = name
         self.setup()
