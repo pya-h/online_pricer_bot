@@ -15,13 +15,25 @@ CHANNEL_ID = config('CHANNEL_ID')
 SCHEDULE_JOB_NAME = config('SCHEDULE_JOB_NAME')
 CMC_API_KEY = config('COINMARKETCAP_API_KEY')
 CURRENCY_TOKEN = config('CURRENCY_TOKEN')
-
+SECOND_CHANNEL_ID = config('SECOND_CHANNEL_ID')
 # main keyboard (soft keyboard of course)
 menu_main = [
     [KeyboardButton(CMD_GET)],
     [KeyboardButton(CMD_SELECT_COINS)],
     [KeyboardButton(CMD_SELECT_CURRENCIES)],
 ]
+
+
+async def is_a_member(account: Account, context: CallbackContext):
+    chat1 = await context.bot.get_chat_member(CHANNEL_ID, account.chat_id)
+    chat2 = await context.bot.get_chat_member(SECOND_CHANNEL_ID, account.chat_id)
+    return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
+
+async def ask2join(update):
+    await update.message.reply_text("Please subscribe to below channels first:", reply_markup=InlineKeyboardMarkup([
+        [InlineKeyboardButton("@Crypto_AKSA", url="https://t.me/Crypto_AKSA"),
+        InlineKeyboardButton("@Online_pricer", url="https://t.me/Online_pricer")]
+    ]))
 
 # this function creates inline keyboard for selecting coin/currency as desired ones
 def newInlineKeyboard(name, all_choices: dict, selected_ones: list = [], show_full_names = False):
@@ -67,7 +79,7 @@ async def notify_changes(context):
 
 async def anounce_prices(context):
     global cryptoManager
-    global currencyManager
+    global currencyManagerSECOND_CHANNEL_ID
     res = ''
     try:
         res = construct_new_message()
@@ -84,25 +96,35 @@ async def anounce_prices(context):
 
 
 async def cmd_welcome(update, context):
-    Account.Get(update.effective_chat.id)  # get old or create new account => automatically will be added to Account.Instances
-    await update.message.reply_text("خوش آمدید!", reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
-
+    acc = Account.Get(update.effective_chat.id)  # get old or create new account => automatically will be added to Account.Instances
+    if await is_a_member(acc, context):
+        await update.message.reply_text("خوش آمدید!", reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+    else:
+        await ask2join(update)
 
 async def cmd_get_prices(update, context):
     account = Account.Get(update.effective_chat.id)
-    is_latest_data_valid = currencyManager and currencyManager.latest_data and cryptoManager and cryptoManager.latest_data and is_channel_updates_started
-    message = construct_new_message(desired_coins=account.desired_coins, desired_currencies=account.desired_currencies, extactly_right_now=not is_latest_data_valid)
+    if await is_a_member(account, context):
+        is_latest_data_valid = currencyManager and currencyManager.latest_data and cryptoManager and cryptoManager.latest_data and is_channel_updates_started
+        message = construct_new_message(desired_coins=account.desired_coins, desired_currencies=account.desired_currencies, extactly_right_now=not is_latest_data_valid)
 
-    await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
-
+        await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+    else:
+        await ask2join(update)
 
 async def cmd_select_coins(update, context):
     account = Account.Get(update.effective_chat.id)
-    await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
+    if await is_a_member(account, context):
+        await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
+    else:
+        await ask2join(update)
 
 async def cmd_select_currencies(update, context):
     account = Account.Get(update.effective_chat.id)
-    await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
+    if await is_a_member(account, context):
+        await update.message.reply_text("سکه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
+    else:
+        await ask2join(update)
 
 
 async def cmd_schedule_channel_update(update, context):
@@ -159,9 +181,11 @@ async def cmd_change_source_to_coinmarketcap(update, context):
 
 async def cmd_admin_login(update, context):
     account = Account.Get(update.effective_chat.id)
-    await update.message.reply_text('اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.' if account.authorization(context.args)
-
-                               else 'اطلاعات وارد شده صحیح نیستند!')
+    if await is_a_member(account, context):
+        await update.message.reply_text('اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.' if account.authorization(context.args)
+                                else 'اطلاعات وارد شده صحیح نیستند!')
+    else:
+        await ask2join(update)
 
 async def cmd_leave(update, context):
     await update.message.reply_text('اطلاعات و شخصی سازی های شما حذف خواهند شد. ادامه می دهید؟', reply_markup=InlineKeyboardMarkup([
@@ -170,6 +194,7 @@ async def cmd_leave(update, context):
 
 
 async def handle_messages(update, context):
+    
     msg = update.message.text
 
     if msg == CMD_GET:
@@ -200,6 +225,8 @@ async def handle_inline_keyboard_callbacks(update, context):
                                           reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
         else:
             await query.edit_message_text(text="لیست نهایی سکه های موردنظر شما: \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]))
+            account.save()
+
     elif data["type"] == "currencies":
         if data["value"] != "#OK" and len(account.desired_currencies) < Account.MaxDesiredCurrencies:
             if not data["value"] in account.desired_currencies:
@@ -211,6 +238,8 @@ async def handle_inline_keyboard_callbacks(update, context):
                                               reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
         else:
             await query.edit_message_text(text="لیست نهایی بازار ارز و سکه و ...  موردنظر شما: \n" + '، '.join([CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]))
+            account.save()
+
     elif data['type'] == 'leave':
         if data['value']:
             Account.Leave(update.effective_chat.id)
