@@ -154,13 +154,12 @@ class CoinGecko(APIManager):
                 price = coin['market_data']['current_price']['usd']
                 res += self.crypto_description_row(name, symbol, price)
 
-        return self.signed_message(res)
+        return res
 
 
 
 # --------- COINMARKETCAP -----------
 class CoinMarketCap(APIManager):
-
     def __init__(self, api_key, price_unit='USD', params=None) -> None:
         super(CoinMarketCap, self).__init__(url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', source="CoinMarketCap.com", dict_persian_names=COINS_PERSIAN_NAMES)
         self.api_key = api_key
@@ -182,15 +181,6 @@ class CoinMarketCap(APIManager):
         latest_cap = cmc.cryptocurrency_quotes_latest(symbol=self.symbols_list, convert=self.price_unit)
         return latest_cap.data
 
-        # other useful functions
-        # print(cmc.cryptocurrency_info(symbol="BTC"))
-
-        # print(cmc.cryptocurrency_map().data[0])
-
-        # dict_cap = json.loads(latest_cap)
-        # usd = latest_cap.data['BTC'][0]['quote']['USD']['price']
-        # usd2 = latest_cap.data['ETH'][0]['quote']['USD']['price']
-
 
     def extract_api_response(self, desired_coins):
         desired_coins = self.get_desired_ones(desired_coins)
@@ -201,29 +191,7 @@ class CoinMarketCap(APIManager):
                 price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
                 name = self.latest_data[coin][0]['name']
                 res += self.crypto_description_row(name, coin, price)
-        return self.signed_message(res)
 
-    # def send_request_classic(self):
-    #     from requests import Request, Session
-    #     from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
-    #     parameters = {
-    #         'start':'1',
-    #         'limit':'5000',
-    #         'convert': self.price_unit,
-    #     }
-    #     headers = {
-    #         'Accepts': 'application/json',
-    #         'X-CMC_PRO_API_KEY': self.api_key,
-    #     }
-
-    #     session = Session()
-    #     session.headers.update(headers)
-
-    #     try:
-    #         response = session.get(CoinMarketCap.URL, params=parameters)
-    #         data = json.loads(response.text)
-    #         return data
-    #     except (ConnectionError, Timeout, TooManyRedirects) as e:
-    #         print(e)
-
-
+        if res:
+            res = f'📌 قیمت لحظه ای بازار ارز دیجیتال:\n{res}'
+        return res

@@ -11,8 +11,7 @@ GARBAGE_COLLECT_INTERVAL = 30
 
 class Account:
     Instances = {}
-    MaxDesiredCoins = 5
-    MaxDesiredCurrencies = 10
+    MaxSelectionInDesiredOnes = 20
     Database = DatabaseInterface.Get()
     Scheduler = None
 

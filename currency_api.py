@@ -1,4 +1,5 @@
 from api_manager import *
+from flag import flag
 
 CURRENCIES_PERSIAN_NAMES = {
     "USD": "دلار (آمریکا)",
@@ -55,16 +56,63 @@ CURRENCIES_PERSIAN_NAMES = {
 }
 
 
+FLAG_ICONS = {
+    "USD": ":us:",
+    "EUR": ":eu:",
+    "AED": ":aE:",
+    "GBP": ":gb:",
+    "TRY": ':tr:',
+    "CHF": ':ch:',
+    "CNY": ":cn:",
+    "JPY": ":jp:",
+    "KRW": ":kr:",
+    "CAD": ":ca:",
+    "AUD": ":au:",
+    "NZD": ":nz:",
+    "SGD": ":sg:",
+    "HKD": ":hk:",
+    "INR": ":in:",
+    "PKR": ":pk:",
+    "AFN": ":af:",
+    "DKK": ":dk:",
+    "SEK": ":se:",
+    "NOK": ":no:",
+    "SAR": ":SA:",
+    "QAR": ":qa:",
+    "OMR": ":om:",
+    "KWD": ":kw:",
+    "BHD": ":bh:",
+    "IQD": ":iq:",
+    "MYR": ":my:",
+    "THB": ":th:",
+    "RUB": ":ru:",
+    "AZN": ":az:",
+    "TMM": ":tm:",
+    "AMD": ":am:",
+    "GEL": ":ge:",
+    "KGS": ":kg:",
+    "TJS": ":tj:",
+    "SYP": ":sy:",
+}
 class SourceArena(APIManager):
+    Defaults = ["USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'SEKE_EMAMI', 'SEKE_BAHAR', 'SEKE_GERAMI', ]
 
     def __init__(self, token, params=None) -> None:
         self.token = token
-        super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency", source="Sourcearena.ir", dict_persian_names=CURRENCIES_PERSIAN_NAMES)
+        super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency", source="Sourcearena.ir", dict_persian_names=CURRENCIES_PERSIAN_NAMES
+            , icons=FLAG_ICONS)
+
+
+    def get_desired_ones(self, desired_ones):
+        if not desired_ones:
+            desired_ones = SourceArena.Defaults
+        return desired_ones
+
 
     def extract_api_response(self, desired_ones=None):
         desired_ones = self.get_desired_ones(desired_ones)
 
-        res = ''
+        rows = {}
         for curr in self.latest_data:
             slug = curr['slug'].upper()
             price = float(curr['price']) / 10
@@ -72,8 +120,20 @@ class SourceArena(APIManager):
                 self.set_usd_price(price)
             if slug in desired_ones:
                 toman, _ = self.rounded_prices(price, False)
-                res += f'🔸 {self.dict_persian_names[slug]}: {toman:,} تومان\n\n'
-        return self.signed_message(res)
+                rows[slug] = f"{self.dict_persian_names[slug]}: {toman:,} تومان"
+
+        res_curr = ''
+        res_gold = ''
+        for slug in desired_ones:
+            if slug in self.icons:  # just currencies have flag
+                res_curr += f'{flag(self.icons[slug])} {rows[slug]}\n'
+            else:
+                res_gold +=  f'🔸 {rows[slug]}\n'
+        if res_curr:
+            res_curr = f'📌 قیمت لحظه ای بازار ارز:\n{res_curr}\n'
+        if res_gold:
+            res_gold = f'📌 قیمت لحظه ای بازار طلا:\n{res_gold}\n'
+        return res_curr + res_gold
 
     # --------- Currency -----------
     def send_request(self):

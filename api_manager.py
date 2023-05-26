@@ -5,13 +5,14 @@ import requests, json
 class APIManager:
 
     UsdInTomans = 52000  # not important, its just a defalt value that will be updated at first api get from sourcearena.ir
-    def __init__(self, url, source, dict_persian_names, max_desired_selection = 5, params=None) -> None:
+    def __init__(self, url, source, dict_persian_names, max_desired_selection = 5, icons=None, params=None) -> None:
         self.URL = url
         self.Source = source
         self.params = params
         self.latest_data = []
         self.dict_persian_names = dict_persian_names
         self.MAX_DESIRED_SELECTION = max_desired_selection
+        self.icons = icons
 
     def set_usd_price(self, value):
         APIManager.UsdInTomans = value
@@ -48,4 +49,4 @@ class APIManager:
 
     def crypto_description_row(self, name, symbol, price):
         rp_usd, rp_toman = self.rounded_prices(price)
-        return f'🔸 {name} ({symbol}): {rp_usd:,}$\n{self.dict_persian_names[symbol]}: {rp_toman:,} تومان\n\n'
+        return f'🔸 {name} ({symbol}): {rp_usd:,}$\n{self.dict_persian_names[symbol]}: {rp_toman:,} تومان\n'

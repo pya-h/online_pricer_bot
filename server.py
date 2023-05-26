@@ -8,7 +8,7 @@ import json
 
 
 # contants such as keyboard button texts
-COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_LEAVE) = ('دریافت قیمت ها', 'تنظیم بازار رمزارزها', "تنظیم بازار ارز، سکه و نفت", 'ترک بات')
+COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_LEAVE) = ('دریافت قیمت ها', 'تنظیم بازار کریپتو', "تنظیم بازار ارز و طلا", 'ترک بات')
 # environment values
 BOT_TOKEN = config('API_TOKEN')
 CHANNEL_ID = config('CHANNEL_ID')
@@ -18,9 +18,8 @@ CURRENCY_TOKEN = config('CURRENCY_TOKEN')
 SECOND_CHANNEL_ID = config('SECOND_CHANNEL_ID')
 # main keyboard (soft keyboard of course)
 menu_main = [
+    [KeyboardButton(CMD_SELECT_COINS), KeyboardButton(CMD_SELECT_CURRENCIES)],
     [KeyboardButton(CMD_GET)],
-    [KeyboardButton(CMD_SELECT_COINS)],
-    [KeyboardButton(CMD_SELECT_CURRENCIES)],
 ]
 
 
@@ -71,7 +70,7 @@ def construct_new_message(desired_coins=None, desired_currencies=None, extactly_
     except:
         print("Something went wrong while obtaining: Cryptos -> ", ex)
         cryptos = "متاسفانه دریافت اطلاعات بازار رمزارزها ناموفق بود!"
-    return cryptos + "\n\n\n" + currencies
+    return currencies + cryptos
 
 async def notify_changes(context):
     await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {cryptoManager.Source} تغییر یافت.")
@@ -216,24 +215,24 @@ async def handle_inline_keyboard_callbacks(update, context):
     await query.answer()
     data = json.loads(query.data)
     if data["type"] == "coins":
-        if data["value"] != "#OK" and len(account.desired_coins) < Account.MaxDesiredCoins:
+        if data["value"] != "#OK" and len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
             if not data["value"] in account.desired_coins:
                 account.desired_coins.append(data["value"])
             else:
                 account.desired_coins.remove(data["value"])
-            await query.edit_message_text(text=f"سکه های موردنظر شما (حداکثر {Account.MaxDesiredCoins} مورد): \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]), \
+            await query.edit_message_text(text=f"سکه های موردنظر شما (حداکثر {Account.MaxSelectionInDesiredOnes} مورد): \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]), \
                                           reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
         else:
             await query.edit_message_text(text="لیست نهایی سکه های موردنظر شما: \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]))
             account.save()
 
     elif data["type"] == "currencies":
-        if data["value"] != "#OK" and len(account.desired_currencies) < Account.MaxDesiredCurrencies:
+        if data["value"] != "#OK" and len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
             if not data["value"] in account.desired_currencies:
                 account.desired_currencies.append(data["value"])
             else:
                 account.desired_currencies.remove(data["value"])
-            await query.edit_message_text(text=f"انتخاب های شما در بازار ارز و سکه و ... (حداکثر {Account.MaxDesiredCurrencies} مورد): \n" + \
+            await query.edit_message_text(text=f"انتخاب های شما در بازار ارز و سکه و ... (حداکثر {Account.MaxSelectionInDesiredOnes} مورد): \n" + \
                                           '، '.join([CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]), \
                                               reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
         else:
