@@ -248,6 +248,7 @@ async def handle_inline_keyboard_callbacks(update, context):
             await query.edit_message_text(text="لیست نهایی بازار ارز و سکه ی موردنظر شما: \n" + '، '.join([CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]))
             account.save()
 
+    elif data["type"] == "leave":
         if data['value']:
             Account.Leave(update.effective_chat.id)
             await query.edit_message_text(text="به سلامت!")

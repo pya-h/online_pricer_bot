@@ -49,5 +49,5 @@ class APIManager:
 
     def crypto_description_row(self, name, symbol, price, short_text=True):
         rp_usd, rp_toman = self.rounded_prices(price)
-        return  f'🔸 {self.dict_persian_names[symbol]}: {rp_toman:,} تومان / ${rp_usd:,}\n' if short_text \
+        return  f'🔸 {self.dict_persian_names[symbol]}: {rp_toman:,} تومان / {rp_usd:,}$\n' if short_text \
             else f'🔸 {name} ({symbol}): {rp_usd:,}$\n{self.dict_persian_names[symbol]}: {rp_toman:,} تومان\n'
