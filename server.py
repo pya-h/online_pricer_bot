@@ -59,6 +59,9 @@ currencyManager = SourceArena(CURRENCY_TOKEN)
 is_channel_updates_started = False
 
 
+def signed_message(message, short_text=True) -> str:
+    return f"{message}\n📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot" if short_text else message
+
 def construct_new_message(desired_coins=None, desired_currencies=None, extactly_right_now=True, short_text=True) -> str:
     currencies = cryptos = ''
     try:
@@ -73,7 +76,7 @@ def construct_new_message(desired_coins=None, desired_currencies=None, extactly_
     except:
         print("Something went wrong while obtaining: Cryptos -> ", ex)
         cryptos = "متاسفانه دریافت اطلاعات بازار رمزارزها ناموفق بود!"
-    return currencies + cryptos
+    return signed_message(currencies + cryptos, short_text)
 
 async def notify_changes(context):
     await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {cryptoManager.Source} تغییر یافت.")

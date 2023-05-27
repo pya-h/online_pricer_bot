@@ -27,17 +27,12 @@ class APIManager:
 
     def extract_api_response(self, desired_ones=None, short_text=True) -> str: pass
 
-    def signed_message(self, message, short_text=True) -> str:
-        return f"{message}\n📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot" if short_text else message
-
     def get(self, desired_ones=None, short_text=True) -> str:
         self.latest_data = self.send_request() # update latest
-        return self.signed_message(
-            self.extract_api_response(desired_ones, short_text=short_text), short_text=short_text)  # then make message
+        return self.extract_api_response(desired_ones, short_text=short_text)
 
     def get_latest(self, desired_ones=None) -> str:
-        return self.signed_message(
-            self.extract_api_response(desired_ones, short_text=False), short_text=False)
+        return self.extract_api_response(desired_ones, short_text=False)
 
     def send_request(self):
         response = requests.get(self.URL, json=self.params)
@@ -47,6 +42,10 @@ class APIManager:
     def rounded_prices(self, price, convert=True):
         rounded_price = round(price, 2)
         converted_rounded_price = round(price * self.UsdInTomans, 2) if convert else None
+        if int(rounded_price) == rounded_price:
+            rounded_price = int(rounded_price)
+        if converted_rounded_price and (converted_rounded_price >= 1000 or int(converted_rounded_price) == converted_rounded_price):
+            converted_rounded_price = int(converted_rounded_price)
         return rounded_price, converted_rounded_price
 
     def crypto_description_row(self, name, symbol, price, short_text=True):
