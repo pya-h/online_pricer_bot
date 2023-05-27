@@ -109,7 +109,7 @@ class SourceArena(APIManager):
         return desired_ones
 
 
-    def extract_api_response(self, desired_ones=None):
+    def extract_api_response(self, desired_ones=None, short_text=True):
         desired_ones = self.get_desired_ones(desired_ones)
 
         rows = {}
