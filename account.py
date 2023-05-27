@@ -49,8 +49,8 @@ class Account:
     def __init__(self, chat_id, currencies=[], cryptos=[]) -> None:
         self.is_admin = False
         self.chat_id = chat_id
-        self.desired_coins = cryptos
-        self.desired_currencies = currencies
+        self.desired_coins = cryptos[:]
+        self.desired_currencies = currencies[:]
         self.last_interaction = datetime.now()
         Account.Instances[chat_id] = self  # this is for optimizing bot performance
         # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime

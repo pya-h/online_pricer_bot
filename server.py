@@ -59,14 +59,17 @@ currencyManager = SourceArena(CURRENCY_TOKEN)
 is_channel_updates_started = False
 
 
-def construct_new_message(desired_coins=None, desired_currencies=None, extactly_right_now=True) -> str:
+def construct_new_message(desired_coins=None, desired_currencies=None, extactly_right_now=True, short_text=True) -> str:
+    currencies = cryptos = ''
     try:
-        currencies = currencyManager.get(desired_currencies) if extactly_right_now else currencyManager.get_latest(desired_currencies)
+        if desired_currencies or (not desired_coins and not desired_currencies): # this condition is for preventing deafult values, when user has selected just cryptos
+            currencies = currencyManager.get(desired_currencies, short_text=short_text) if extactly_right_now else currencyManager.get_latest(desired_currencies)
     except Exception as ex:
         print("Something went wrong while obtaining: Currencies -> ", ex)
-        currencies = "متاسفانه دریافت اطلاعات بازار ارز، سکه و طلا و نفت ناموفق بود!"
+        currencies = "متاسفانه دریافت اطلاعات بازار ارز، سکه و طلا و نفت ناموفق بود!\n"
     try:
-        cryptos = cryptoManager.get(desired_coins) if extactly_right_now else cryptoManager.get_latest(desired_coins)
+        if desired_coins or (not desired_coins and not desired_currencies): # this condition is for preventing deafult values, when user has selected just currencies
+            cryptos = cryptoManager.get(desired_coins, short_text=short_text) if extactly_right_now else cryptoManager.get_latest(desired_coins)
     except:
         print("Something went wrong while obtaining: Cryptos -> ", ex)
         cryptos = "متاسفانه دریافت اطلاعات بازار رمزارزها ناموفق بود!"
@@ -105,7 +108,7 @@ async def cmd_get_prices(update, context):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
         is_latest_data_valid = currencyManager and currencyManager.latest_data and cryptoManager and cryptoManager.latest_data and is_channel_updates_started
-        message = construct_new_message(desired_coins=account.desired_coins, desired_currencies=account.desired_currencies, extactly_right_now=not is_latest_data_valid)
+        message = construct_new_message(desired_coins=account.desired_coins, desired_currencies=account.desired_currencies, extactly_right_now=not is_latest_data_valid, short_text=False)
 
         await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
     else:
@@ -114,14 +117,18 @@ async def cmd_get_prices(update, context):
 async def cmd_select_coins(update, context):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        await update.message.reply_text("رمزارز های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
+        await update.message.reply_text("رمزارز های مورد علاقه تان را انتخاب کنید:\n" + \
+            "⚠️ دقت کنید که بخاطر محدودیت های تلگرام و کند نشدن ربات تنها میتوانید تا حداکثر ۲۰ مورد را انتخاب کرده و آنهارا تغییر دهید.",\
+                reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
     else:
         await ask2join(update)
 
 async def cmd_select_currencies(update, context):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        await update.message.reply_text("گزینه های مورد علاقه تان را انتخاب کنید:", reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
+        await update.message.reply_text("رمزارز های مورد علاقه تان را انتخاب کنید:\n" + \
+            "⚠️ دقت کنید که بخاطر محدودیت های تلگرام و کند نشدن ربات تنها میتوانید تا حداکثر ۲۰ مورد را انتخاب کرده و آنهارا تغییر دهید.",\
+                reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
     else:
         await ask2join(update)
 
@@ -215,9 +222,10 @@ async def handle_inline_keyboard_callbacks(update, context):
     await query.answer()
     data = json.loads(query.data)
     if data["type"] == "coins":
-        if data["value"] != "#OK" and len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
+        if data["value"] != "#OK":
             if not data["value"] in account.desired_coins:
-                account.desired_coins.append(data["value"])
+                if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
+                    account.desired_coins.append(data["value"])
             else:
                 account.desired_coins.remove(data["value"])
             await query.edit_message_text(text=f"سکه های موردنظر شما (حداکثر {Account.MaxSelectionInDesiredOnes} مورد): \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]), \
@@ -227,19 +235,19 @@ async def handle_inline_keyboard_callbacks(update, context):
             account.save()
 
     elif data["type"] == "currencies":
-        if data["value"] != "#OK" and len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
+        if data["value"] != "#OK":
             if not data["value"] in account.desired_currencies:
-                account.desired_currencies.append(data["value"])
+                if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
+                    account.desired_currencies.append(data["value"])
             else:
                 account.desired_currencies.remove(data["value"])
-            await query.edit_message_text(text=f"انتخاب های شما در بازار ارز و سکه و ... (حداکثر {Account.MaxSelectionInDesiredOnes} مورد): \n" + \
+            await query.edit_message_text(text=f"انتخاب های شما در بازار ارز و سکه(حداکثر {Account.MaxSelectionInDesiredOnes} مورد): \n" + \
                                           '، '.join([CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]), \
                                               reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
         else:
-            await query.edit_message_text(text="لیست نهایی بازار ارز و سکه و ...  موردنظر شما: \n" + '، '.join([CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]))
+            await query.edit_message_text(text="لیست نهایی بازار ارز و سکه ی موردنظر شما: \n" + '، '.join([CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]))
             account.save()
 
-    elif data['type'] == 'leave':
         if data['value']:
             Account.Leave(update.effective_chat.id)
             await query.edit_message_text(text="به سلامت!")

@@ -143,7 +143,7 @@ class CoinGecko(APIManager):
         # }
         super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/', source="CoinGecko.com", dict_persian_names=COINS_PERSIAN_NAMES)
 
-    def extract_api_response(self, desired_coins):
+    def extract_api_response(self, desired_coins, short_text=True):
         desired_coins = self.get_desired_ones(desired_coins)
 
         res = ''
@@ -181,8 +181,7 @@ class CoinMarketCap(APIManager):
         latest_cap = cmc.cryptocurrency_quotes_latest(symbol=self.symbols_list, convert=self.price_unit)
         return latest_cap.data
 
-
-    def extract_api_response(self, desired_coins):
+    def extract_api_response(self, desired_coins, short_text=True):
         desired_coins = self.get_desired_ones(desired_coins)
 
         res = ''
@@ -190,7 +189,7 @@ class CoinMarketCap(APIManager):
             for coin in desired_coins:
                 price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
                 name = self.latest_data[coin][0]['name']
-                res += self.crypto_description_row(name, coin, price)
+                res += self.crypto_description_row(name, coin, price, short_text=short_text)
 
         if res:
             res = f'📌 قیمت لحظه ای بازار ارز دیجیتال:\n{res}'

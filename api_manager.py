@@ -25,12 +25,12 @@ class APIManager:
             desired_ones = list(self.dict_persian_names.keys())[:self.MAX_DESIRED_SELECTION]
         return desired_ones
 
-    def extract_api_response(self, desired_ones=None) -> str: pass
+    def extract_api_response(self, desired_ones=None, short_text=True) -> str: pass
 
     def signed_message(self, message) -> str:
         return f"{message}\n\nمنبع: {self.Source}"
 
-    def get(self, desired_ones=None) -> str:
+    def get(self, desired_ones=None, short_text=True) -> str:
         self.latest_data = self.send_request() # update latest
         return self.extract_api_response(desired_ones)  # then make message
 
@@ -47,6 +47,7 @@ class APIManager:
         converted_rounded_price = round(price * self.UsdInTomans, 2) if convert else None
         return rounded_price, converted_rounded_price
 
-    def crypto_description_row(self, name, symbol, price):
+    def crypto_description_row(self, name, symbol, price, short_text=True):
         rp_usd, rp_toman = self.rounded_prices(price)
-        return f'🔸 {name} ({symbol}): {rp_usd:,}$\n{self.dict_persian_names[symbol]}: {rp_toman:,} تومان\n'
+        return  f'🔸 {self.dict_persian_names[symbol]}: {rp_toman:,} تومان / ${rp_usd:,}\n' if short_text \
+            else f'🔸 {name} ({symbol}): {rp_usd:,}$\n{self.dict_persian_names[symbol]}: {rp_toman:,} تومان\n'
