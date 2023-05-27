@@ -27,15 +27,17 @@ class APIManager:
 
     def extract_api_response(self, desired_ones=None, short_text=True) -> str: pass
 
-    def signed_message(self, message) -> str:
-        return f"{message}\n\nمنبع: {self.Source}"
+    def signed_message(self, message, short_text=True) -> str:
+        return f"{message}\n📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot" if short_text else message
 
     def get(self, desired_ones=None, short_text=True) -> str:
         self.latest_data = self.send_request() # update latest
-        return self.extract_api_response(desired_ones)  # then make message
+        return self.signed_message(
+            self.extract_api_response(desired_ones, short_text=short_text), short_text=short_text)  # then make message
 
     def get_latest(self, desired_ones=None) -> str:
-        return self.extract_api_response(desired_ones)
+        return self.signed_message(
+            self.extract_api_response(desired_ones, short_text=False), short_text=False)
 
     def send_request(self):
         response = requests.get(self.URL, json=self.params)

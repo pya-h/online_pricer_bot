@@ -108,7 +108,7 @@ async def cmd_get_prices(update, context):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
         is_latest_data_valid = currencyManager and currencyManager.latest_data and cryptoManager and cryptoManager.latest_data and is_channel_updates_started
-        message = construct_new_message(desired_coins=account.desired_coins, desired_currencies=account.desired_currencies, extactly_right_now=not is_latest_data_valid, short_text=False)
+        message = construct_new_message(desired_coins=account.desired_coins, desired_currencies=account.desired_currencies, short_text=False, extactly_right_now=not is_latest_data_valid,)
 
         await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
     else:
