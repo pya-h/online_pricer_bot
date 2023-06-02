@@ -60,7 +60,7 @@ is_channel_updates_started = False
 
 
 def signed_message(message, short_text=True) -> str:
-    date = calculus.Todate()
+    date = calculus.timestamp()
     header = f'✅ قیمت ها بروزرسانی شد\n⏳ قیمت ها هر 2 دقیقه بروزرسانی میشوند\n{date}\n🆔 آدرس کانال: @Online_pricer\n🤖 آدرس ربات: @Online_pricer_Bot\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
     footer = '📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot' if short_text else ''
     return f"{header}\n{message}\n{footer}"

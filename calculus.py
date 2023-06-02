@@ -42,7 +42,7 @@ def cut_and_separate(num):
 
 WEEKDAYS = ('دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یکشنبه')
 
-def Todate() -> str:
+def timestamp() -> str:
     # today date and time as persian
     timezone = pytz.timezone('Asia/Tehran')
     try:
