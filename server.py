@@ -60,7 +60,10 @@ is_channel_updates_started = False
 
 
 def signed_message(message, short_text=True) -> str:
-    return f"{message}\n📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot" if short_text else message
+    date = calculus.Todate()
+    header = f'✅ قیمت ها بروزرسانی شد\n⏳ قیمت ها هر 2 دقیقه بروزرسانی میشوند\n{date}\n🆔 آدرس کانال: @Online_pricer\n🤖 آدرس ربات: @Online_pricer_Bot\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
+    footer = '📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot' if short_text else ''
+    return f"{header}\n{message}\n{footer}"
 
 def construct_new_message(desired_coins=None, desired_currencies=None, extactly_right_now=True, short_text=True) -> str:
     currencies = cryptos = ''
@@ -73,7 +76,7 @@ def construct_new_message(desired_coins=None, desired_currencies=None, extactly_
     try:
         if desired_coins or (not desired_coins and not desired_currencies): # this condition is for preventing deafult values, when user has selected just currencies
             cryptos = cryptoManager.get(desired_coins, short_text=short_text) if extactly_right_now else cryptoManager.get_latest(desired_coins)
-    except:
+    except Exception as ex:
         print("Something went wrong while obtaining: Cryptos -> ", ex)
         cryptos = "متاسفانه دریافت اطلاعات بازار رمزارزها ناموفق بود!"
     return signed_message(currencies + cryptos, short_text)
@@ -229,6 +232,8 @@ async def handle_inline_keyboard_callbacks(update, context):
             if not data["value"] in account.desired_coins:
                 if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
                     account.desired_coins.append(data["value"])
+                else:
+                    return
             else:
                 account.desired_coins.remove(data["value"])
             await query.edit_message_text(text=f"سکه های موردنظر شما (حداکثر {Account.MaxSelectionInDesiredOnes} مورد): \n" + '، '.join([COINS_PERSIAN_NAMES[x] for x in account.desired_coins]), \
@@ -242,6 +247,8 @@ async def handle_inline_keyboard_callbacks(update, context):
             if not data["value"] in account.desired_currencies:
                 if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
                     account.desired_currencies.append(data["value"])
+                else:
+                    return
             else:
                 account.desired_currencies.remove(data["value"])
             await query.edit_message_text(text=f"انتخاب های شما در بازار ارز و سکه(حداکثر {Account.MaxSelectionInDesiredOnes} مورد): \n" + \

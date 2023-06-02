@@ -1,5 +1,5 @@
 import requests, json
-
+import calculus
 # Base class for all api managers
 
 class APIManager:
@@ -40,15 +40,16 @@ class APIManager:
         return data
 
     def rounded_prices(self, price, convert=True):
-        rounded_price = round(price, 2)
-        converted_rounded_price = round(price * self.UsdInTomans, 2) if convert else None
-        if int(rounded_price) == rounded_price:
-            rounded_price = int(rounded_price)
-        if converted_rounded_price and (converted_rounded_price >= 1000 or int(converted_rounded_price) == converted_rounded_price):
-            converted_rounded_price = int(converted_rounded_price)
-        return rounded_price, converted_rounded_price
+        converted_price = None
+        if convert:
+            converted_price = price * self.UsdInTomans
+            if converted_price >= 1000: # when tomans is more than 4 digits, decimals are idiotic
+                converted_price = calculus.separate_by3(int(converted_price))
+            else:
+                converted_price = calculus.cut_and_separate(converted_price)
+        return calculus.cut_and_separate(price), converted_price
 
     def crypto_description_row(self, name, symbol, price, short_text=True):
         rp_usd, rp_toman = self.rounded_prices(price)
-        return  f'🔸 {self.dict_persian_names[symbol]}: {rp_toman:,} تومان / {rp_usd:,}$\n' if short_text \
-            else f'🔸 {name} ({symbol}): {rp_usd:,}$\n{self.dict_persian_names[symbol]}: {rp_toman:,} تومان\n'
+        return  f'🔸 {self.dict_persian_names[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
+            else f'🔸 {name} ({symbol}): {rp_usd}$\n{self.dict_persian_names[symbol]}: {rp_toman} تومان\n'

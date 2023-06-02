@@ -121,10 +121,10 @@ class SourceArena(APIManager):
             if slug in desired_ones:
                 if slug != 'ONS':
                     toman, _ = self.rounded_prices(price, False)
-                    rows[slug] = f"{self.dict_persian_names[slug]}: {toman:,} تومان"
+                    rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان"
                 else:
                     usd, toman = self.rounded_prices(price)
-                    rows[slug] = f"{self.dict_persian_names[slug]}: {toman:,} تومان / {usd:,}$"
+                    rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان / {usd}$"
 
         res_curr = ''
         res_gold = ''
