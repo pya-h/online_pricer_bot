@@ -1,4 +1,5 @@
 import sqlite3
+import tools
 
 TABLE_ACCOUNTS = "accounts"  # T_ as in TABLE
 
@@ -24,9 +25,9 @@ class DatabaseInterface:
                 # create table account
                 cursor.execute(query)
 
-                print(f"{TABLE_ACCOUNTS} table created successfuly.")
+                tools.log(f"{TABLE_ACCOUNTS} table created successfuly.")
 
-            print("Database setup completed.")
+            tools.log("Database setup completed.")
             cursor.close()
             connection.close()
         except Exception as ex:
@@ -44,12 +45,12 @@ class DatabaseInterface:
             connection = sqlite3.connect(self._name)
             cursor = connection.cursor()
             cursor.execute(query, (account.chat_id, account.str_desired_currencies(), account.str_desired_coins()))
-            print("added: ", account.chat_id)
+            tools.log(f"New account: {account} saved into database successfully.")
             cursor.close()
             connection.commit()
             connection.close()
         except Exception as ex:
-            print(ex)
+            tools.log(f"Cannot save this account:{account}", ex)
             if connection:
                 connection.close()
             raise ex  # custom ex needed here too
@@ -73,7 +74,7 @@ class DatabaseInterface:
         else:
             cursor.execute(f"INSERT INTO {TABLE_ACCOUNTS} (id, currencies, cryptos) VALUES (?, ?, ?)", \
                 (account.chat_id, account.str_desired_currencies(), account.str_desired_coins()))
-            print("New account started using this bot with chat_id=: ", account.chat_id)
+            tools.log("New account started using this bot with chat_id=: " + account)
         connection.commit()
         cursor.close()
         connection.close()

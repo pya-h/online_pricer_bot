@@ -60,10 +60,12 @@ is_channel_updates_started = False
 
 
 def signed_message(message, short_text=True) -> str:
-    date = calculus.timestamp()
-    header = f'✅ قیمت ها بروزرسانی شد\n⏳ قیمت ها هر 2 دقیقه بروزرسانی میشوند\n{date}\n🆔 آدرس کانال: @Online_pricer\n🤖 آدرس ربات: @Online_pricer_Bot\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
+    timestamp = tools.timestamp()
+    header = f'✅ قیمت ها بروزرسانی شد\n⏳ قیمت ها هر 2 دقیقه بروزرسانی میشوند\n' + \
+        timestamp + '\n🆔 آدرس کانال: @Online_pricer\n🤖 آدرس ربات: @Online_pricer_Bot\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n' \
+            if short_text else timestamp + "\n\n"
     footer = '📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot' if short_text else ''
-    return f"{header}\n{message}\n{footer}"
+    return header + message + footer
 
 def construct_new_message(desired_coins=None, desired_currencies=None, extactly_right_now=True, short_text=True) -> str:
     currencies = cryptos = ''
@@ -71,13 +73,13 @@ def construct_new_message(desired_coins=None, desired_currencies=None, extactly_
         if desired_currencies or (not desired_coins and not desired_currencies): # this condition is for preventing deafult values, when user has selected just cryptos
             currencies = currencyManager.get(desired_currencies, short_text=short_text) if extactly_right_now else currencyManager.get_latest(desired_currencies)
     except Exception as ex:
-        print("Something went wrong while obtaining: Currencies -> ", ex)
+        tools.log("Cannot obtain Currencies! ", ex)
         currencies = "متاسفانه دریافت اطلاعات بازار ارز، سکه و طلا و نفت ناموفق بود!\n"
     try:
         if desired_coins or (not desired_coins and not desired_currencies): # this condition is for preventing deafult values, when user has selected just currencies
             cryptos = cryptoManager.get(desired_coins, short_text=short_text) if extactly_right_now else cryptoManager.get_latest(desired_coins)
     except Exception as ex:
-        print("Something went wrong while obtaining: Cryptos -> ", ex)
+        tools.log("Cannot obtain Cryptos! ", ex)
         cryptos = "متاسفانه دریافت اطلاعات بازار رمزارزها ناموفق بود!"
     return signed_message(currencies + cryptos, short_text)
 
@@ -92,7 +94,7 @@ async def anounce_prices(context):
     try:
         res = construct_new_message()
     except Exception as ex:
-        print(f"Geting api failed: ", ex)
+        tools.log(f"Constructing new message failed!", ex)
         if cryptoManager.Source.lower() == 'coinmarketcap.com':
             cryptoManager = CoinGecko()
         else:

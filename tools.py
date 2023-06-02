@@ -41,10 +41,10 @@ def cut_and_separate(num):
     return res[:i + 1]
 
 WEEKDAYS = ('دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یکشنبه')
+timezone = pytz.timezone('Asia/Tehran')
 
 def timestamp() -> str:
     # today date and time as persian
-    timezone = pytz.timezone('Asia/Tehran')
     try:
         now = datetime.now(tz=timezone) # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
@@ -115,10 +115,21 @@ def jalali_to_gregorian(jy, jm, jd):
         gm += 1
     return (gy, gm, gd)
 
+def log(msg, exception=None):
+    ts = datetime.now(tz=timezone)
+    content = ts.strftime('%Y-%m-%d %H:%M:%S')
+    if exception:
+        content = f'{content}\t->\tSHIT: {msg}\n\t\tX: {exception}'
+    else:
+        content += f'\t->\t{msg}'
+    logfile = open('logs.fux', 'a')
+    logfile.write(content + "\n\n")
+    logfile.close()
+
 if __name__ == "__main__":
     d = datetime.today()
     j = gregorian_to_jalali(d.year, d.month, d.day)
-    print
+
     while True:
         x = float(input("> "))
         print("\t=> ", cut_and_separate(x))

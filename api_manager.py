@@ -1,5 +1,5 @@
 import requests, json
-import calculus
+import tools
 # Base class for all api managers
 
 class APIManager:
@@ -44,10 +44,10 @@ class APIManager:
         if convert:
             converted_price = price * self.UsdInTomans
             if converted_price >= 1000: # when tomans is more than 4 digits, decimals are idiotic
-                converted_price = calculus.separate_by3(int(converted_price))
+                converted_price = tools.separate_by3(int(converted_price))
             else:
-                converted_price = calculus.cut_and_separate(converted_price)
-        return calculus.cut_and_separate(price), converted_price
+                converted_price = tools.cut_and_separate(converted_price)
+        return tools.cut_and_separate(price), converted_price
 
     def crypto_description_row(self, name, symbol, price, short_text=True):
         rp_usd, rp_toman = self.rounded_prices(price)

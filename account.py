@@ -2,6 +2,7 @@ from decouple import config
 from db_interface import *
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
+import tools
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
@@ -26,7 +27,7 @@ class Account:
         # we first collect redundant chat_id s and then delete them from the memory
         for g in garbage:
             del Account.Instances[g]
-        print("Garbage collected at: ", now)
+        tools.log("Garbage's been collected successfully")
 
     @staticmethod
     def Get(chat_id):
@@ -61,6 +62,8 @@ class Account:
             Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=GARBAGE_COLLECT_INTERVAL*60)
             Account.Scheduler.start()
 
+    def __str__(self) -> str:
+        return f'{self.chat_id}'
 
     def authorization(self, args):
         if self.is_admin:
@@ -80,7 +83,7 @@ class Account:
             del Account.Instances[chat_id]
 
     def __del__(self):
-        print(f'Account #{self.chat_id} has been destroyed and freed...')
+        tools.log(f'Account #{self.chat_id} has been destroyed and freed...')
 
     def str_desired_coins(self):
         return ';'.join(self.desired_coins)
