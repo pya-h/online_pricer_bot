@@ -63,9 +63,9 @@ def signed_message(message, short_text=True) -> str:
     timestamp = tools.timestamp()
     header = f'✅ قیمت ها بروزرسانی شد\n⏳ قیمت ها هر 2 دقیقه بروزرسانی میشوند\n' + \
         timestamp + '\n🆔 آدرس کانال: @Online_pricer\n🤖 آدرس ربات: @Online_pricer_Bot\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n' \
-            if short_text else timestamp + "\n\n"
+            if short_text else timestamp + "\n"
     footer = '📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot' if short_text else ''
-    return header + message + footer
+    return f'{header}\n{message}\n{footer}'
 
 def construct_new_message(desired_coins=None, desired_currencies=None, extactly_right_now=True, short_text=True) -> str:
     currencies = cryptos = ''
@@ -74,13 +74,17 @@ def construct_new_message(desired_coins=None, desired_currencies=None, extactly_
             currencies = currencyManager.get(desired_currencies, short_text=short_text) if extactly_right_now else currencyManager.get_latest(desired_currencies)
     except Exception as ex:
         tools.log("Cannot obtain Currencies! ", ex)
-        currencies = "متاسفانه دریافت اطلاعات بازار ارز، سکه و طلا و نفت ناموفق بود!\n"
+        currencies = "❗️متاسفانه دریافت اطلاعات بازار ارز، سکه و طلا و نفت ناموفق بود!\n"
+        if not short_text:
+            currencies += 'لطفا دقایقی دیگر دوباره امتحان کنید...\n'
     try:
         if desired_coins or (not desired_coins and not desired_currencies): # this condition is for preventing deafult values, when user has selected just currencies
             cryptos = cryptoManager.get(desired_coins, short_text=short_text) if extactly_right_now else cryptoManager.get_latest(desired_coins)
     except Exception as ex:
         tools.log("Cannot obtain Cryptos! ", ex)
-        cryptos = "متاسفانه دریافت اطلاعات بازار رمزارزها ناموفق بود!"
+        cryptos = "❗️متاسفانه دریافت اطلاعات بازار رمزارزها ناموفق بود!\n"
+        if not short_text:
+            cryptos += 'لطفا دقایقی دیگر دوباره امتحان کنید...\n\n'
     return signed_message(currencies + cryptos, short_text)
 
 async def notify_changes(context):
@@ -235,6 +239,7 @@ async def handle_inline_keyboard_callbacks(update, context):
                 if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
                     account.desired_coins.append(data["value"])
                 else:
+                    await context.bot.send_message(chat_id=account.chat_id, text='مجموع تعداد کریپتوها و ارز و طلاهای انتخابی شما به مرز ۲۰ عدد رسیده است.')
                     return
             else:
                 account.desired_coins.remove(data["value"])
@@ -250,6 +255,7 @@ async def handle_inline_keyboard_callbacks(update, context):
                 if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
                     account.desired_currencies.append(data["value"])
                 else:
+                    await context.bot.send_message(chat_id=account.chat_id, text='مجموع تعداد کریپتوها و ارز و طلاهای انتخابی شما به مرز ۲۰ عدد رسیده است.')
                     return
             else:
                 account.desired_currencies.remove(data["value"])

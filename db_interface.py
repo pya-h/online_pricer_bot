@@ -74,7 +74,7 @@ class DatabaseInterface:
         else:
             cursor.execute(f"INSERT INTO {TABLE_ACCOUNTS} (id, currencies, cryptos) VALUES (?, ?, ?)", \
                 (account.chat_id, account.str_desired_currencies(), account.str_desired_coins()))
-            tools.log("New account started using this bot with chat_id=: " + account)
+            tools.log("New account started using this bot with chat_id=: " + account.__str__())
         connection.commit()
         cursor.close()
         connection.close()
