@@ -212,19 +212,19 @@ async def cmd_leave(update, context):
 
 
 async def handle_messages(update, context):
+    if update and update.message:
+        msg = update.message.text
 
-    msg = update.message.text
-
-    if msg == CMD_GET:
-        await cmd_get_prices(update, context)
-    elif msg == CMD_SELECT_COINS:
-        await cmd_select_coins(update, context)
-    elif msg == CMD_SELECT_CURRENCIES:
-        await cmd_select_currencies(update, context)
-    elif msg == CMD_LEAVE:
-        await cmd_leave(update, context)
-    else:
-        await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...")
+        if msg == CMD_GET:
+            await cmd_get_prices(update, context)
+        elif msg == CMD_SELECT_COINS:
+            await cmd_select_coins(update, context)
+        elif msg == CMD_SELECT_CURRENCIES:
+            await cmd_select_currencies(update, context)
+        elif msg == CMD_LEAVE:
+            await cmd_leave(update, context)
+        else:
+            await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...")
 
 
 
@@ -296,4 +296,5 @@ def main():
     app.run_polling()
 
 if __name__ == '__main__':
+# while True:
     main()
