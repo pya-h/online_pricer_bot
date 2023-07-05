@@ -1,11 +1,15 @@
 import requests, json
 import tools
+
+
 # Base class for all api managers
 
 class APIManager:
+    UsdInTomans = 52000  # not important, it is just a default value that will be updated at first api get from
+    TetherInTomans = 52000
+    # sourcearena.ir
 
-    UsdInTomans = 52000  # not important, its just a defalt value that will be updated at first api get from sourcearena.ir
-    def __init__(self, url, source, dict_persian_names, max_desired_selection = 5, icons=None, params=None) -> None:
+    def __init__(self, url, source, dict_persian_names, max_desired_selection=5, icons=None, params=None) -> None:
         self.URL = url
         self.Source = source
         self.params = params
@@ -14,8 +18,13 @@ class APIManager:
         self.MAX_DESIRED_SELECTION = max_desired_selection
         self.icons = icons
 
-    def set_usd_price(self, value):
+    @staticmethod
+    def set_usd_price(value):
         APIManager.UsdInTomans = value
+
+    @staticmethod
+    def set_tether_tomans(value):
+        APIManager.TetherInTomans = value
 
     def set_params(self, pms):
         self.params = pms
@@ -25,14 +34,15 @@ class APIManager:
             desired_ones = list(self.dict_persian_names.keys())[:self.MAX_DESIRED_SELECTION]
         return desired_ones
 
-    def extract_api_response(self, desired_ones=None, short_text=True) -> str: pass
+    def extract_api_response(self, desired_ones=None, short_text=True) -> str:
+        pass
 
     def get(self, desired_ones=None, short_text=True) -> str:
-        self.latest_data = self.send_request() # update latest
+        self.latest_data = self.send_request()  # update latest
         return self.extract_api_response(desired_ones, short_text=short_text)
 
-    def get_latest(self, desired_ones=None) -> str:
-        return self.extract_api_response(desired_ones, short_text=False)
+    def get_latest(self, desired_ones=None, short_text=False) -> str:
+        return self.extract_api_response(desired_ones, short_text=short_text)
 
     def send_request(self):
         response = requests.get(self.URL, json=self.params)
@@ -43,13 +53,16 @@ class APIManager:
         converted_price = None
         if convert:
             converted_price = price * self.UsdInTomans
-            if converted_price >= 1000: # when tomans is more than 4 digits, decimals are idiotic
+            if converted_price >= 1000:  # when tomans is more than 4 digits, decimals are idiotic
                 converted_price = tools.separate_by3(int(converted_price))
             else:
                 converted_price = tools.cut_and_separate(converted_price)
         return tools.cut_and_separate(price), converted_price
 
     def crypto_description_row(self, name, symbol, price, short_text=True):
-        rp_usd, rp_toman = self.rounded_prices(price)
-        return  f'🔸 {self.dict_persian_names[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
+        if symbol != 'USDT':
+            rp_usd, rp_toman = self.rounded_prices(price)
+        else:
+            rp_usd, rp_toman = tools.cut_and_separate(price), tools.cut_and_separate(self.TetherInTomans)
+        return f'🔸 {self.dict_persian_names[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
             else f'🔸 {name} ({symbol}): {rp_usd}$\n{self.dict_persian_names[symbol]}: {rp_toman} تومان\n'

@@ -55,7 +55,6 @@ CURRENCIES_PERSIAN_NAMES = {
 
 }
 
-
 FLAG_ICONS = {
     "USD": ":us:",
     "EUR": ":eu:",
@@ -94,20 +93,21 @@ FLAG_ICONS = {
     "TJS": ":tj:",
     "SYP": ":sy:",
 }
+
+
 class SourceArena(APIManager):
     Defaults = ["USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'SEKE_EMAMI', 'SEKE_BAHAR', 'SEKE_GERAMI', ]
 
     def __init__(self, token, params=None) -> None:
         self.token = token
-        super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency", source="Sourcearena.ir", dict_persian_names=CURRENCIES_PERSIAN_NAMES
-            , icons=FLAG_ICONS)
-
+        super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency",
+                                          source="Sourcearena.ir",
+                                          dict_persian_names=CURRENCIES_PERSIAN_NAMES, icons=FLAG_ICONS)
 
     def get_desired_ones(self, desired_ones):
         if not desired_ones:
             desired_ones = SourceArena.Defaults
         return desired_ones
-
 
     def extract_api_response(self, desired_ones=None, short_text=True):
         desired_ones = self.get_desired_ones(desired_ones)
@@ -118,6 +118,9 @@ class SourceArena(APIManager):
             price = float(curr['price']) / 10 if slug != 'ONS' else float(curr['price'])
             if slug == 'USD':
                 self.set_usd_price(price)
+            elif slug == 'TETHER':
+                self.set_tether_tomans(price)
+
             if slug in desired_ones:
                 if slug != 'ONS':
                     toman, _ = self.rounded_prices(price, False)
@@ -132,7 +135,7 @@ class SourceArena(APIManager):
             if slug in self.icons:  # just currencies have flag
                 res_curr += f'{flag(self.icons[slug])} {rows[slug]}\n'
             else:
-                res_gold +=  f'🔸 {rows[slug]}\n'
+                res_gold += f'🔸 {rows[slug]}\n'
         if res_curr:
             res_curr = f'📌 قیمت لحظه ای بازار ارز:\n{res_curr}\n'
         if res_gold:
@@ -143,4 +146,3 @@ class SourceArena(APIManager):
     def send_request(self):
         response = super(SourceArena, self).send_request()
         return response["data"] if 'data' in response else []
-
