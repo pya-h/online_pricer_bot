@@ -49,10 +49,10 @@ class APIManager:
         data = json.loads(response.text)
         return data
 
-    def rounded_prices(self, price, convert=True):
+    def rounded_prices(self, price, convert=True, tether_as_unit_price=False):
         converted_price = None
         if convert:
-            converted_price = price * self.TetherInTomans
+            converted_price = price * (self.TetherInTomans if tether_as_unit_price else self.UsdInTomans)
             if converted_price >= 1000:  # when tomans is more than 4 digits, decimals are idiotic
                 converted_price = tools.separate_by3(int(converted_price))
             else:
@@ -61,7 +61,7 @@ class APIManager:
 
     def crypto_description_row(self, name, symbol, price, short_text=True):
         if symbol != 'USDT':
-            rp_usd, rp_toman = self.rounded_prices(price)
+            rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
         else:
             rp_usd, rp_toman = tools.cut_and_separate(price), tools.cut_and_separate(self.TetherInTomans)
         return f'🔸 {self.dict_persian_names[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \

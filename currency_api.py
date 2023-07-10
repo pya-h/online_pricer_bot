@@ -96,8 +96,8 @@ FLAG_ICONS = {
 
 
 class SourceArena(APIManager):
-    Defaults = ["USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'SEKE_EMAMI', 'SEKE_BAHAR', 'SEKE_GERAMI', ]
-
+    Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'SEKE_EMAMI', 'SEKE_BAHAR', 'SEKE_GERAMI', )
+    ONSes = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", )
     def __init__(self, token, params=None) -> None:
         self.token = token
         super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency",
@@ -115,14 +115,14 @@ class SourceArena(APIManager):
         rows = {}
         for curr in self.latest_data:
             slug = curr['slug'].upper()
-            price = float(curr['price']) / 10 if slug != 'ONS' else float(curr['price'])
+            price = float(curr['price']) / 10 if not slug in SourceArena.ONSes else float(curr['price'])
             if slug == 'USD':
                 self.set_usd_price(price)
             elif slug == 'TETHER':
                 self.set_tether_tomans(price)
 
             if slug in desired_ones:
-                if slug != 'ONS':
+                if not slug in SourceArena.ONSes:
                     toman, _ = self.rounded_prices(price, False)
                     rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان"
                 else:
