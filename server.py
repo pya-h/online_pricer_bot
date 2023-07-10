@@ -150,8 +150,7 @@ async def cmd_get_prices(update, context):
 async def cmd_select_coins(update, context):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        await update.message.reply_text("قیمت های موردنظر را انتخاب کنید:\n" + \
-            "⚠️ دقت کنید که بخاطر محدودیت های تلگرام و کند نشدن ربات تنها میتوانید تا حداکثر ۲۰ مورد را انتخاب کرده و آنهارا تغییر دهید.",\
+        await update.message.reply_text("قیمت های موردنظر را انتخاب کنید:",
                 reply_markup=newInlineKeyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
     else:
         await ask2join(update)
@@ -160,8 +159,7 @@ async def cmd_select_coins(update, context):
 async def cmd_select_currencies(update, context):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        await update.message.reply_text("قیمت های موردنظر را انتخاب کنید:\n" + \
-            "⚠️ دقت کنید که بخاطر محدودیت های تلگرام و کند نشدن ربات تنها میتوانید تا حداکثر ۲۰ مورد را انتخاب کرده و آنهارا تغییر دهید.",\
+        await update.message.reply_text("قیمت های موردنظر را انتخاب کنید:" ,
                 reply_markup=newInlineKeyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies, True))
     else:
         await ask2join(update)
@@ -263,7 +261,7 @@ async def handle_inline_keyboard_callbacks(update, context):
                 if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
                     account.desired_coins.append(data["value"])
                 else:
-                    await context.bot.send_message(chat_id=account.chat_id, text='مجموع تعداد کریپتوها و ارز و طلاهای انتخابی شما به مرز ۲۰ عدد رسیده است.')
+                    await context.bot.send_message(chat_id=account.chat_id, text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.')
                     return
             else:
                 account.desired_coins.remove(data["value"])
@@ -279,7 +277,7 @@ async def handle_inline_keyboard_callbacks(update, context):
                 if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
                     account.desired_currencies.append(data["value"])
                 else:
-                    await context.bot.send_message(chat_id=account.chat_id, text='مجموع تعداد کریپتوها و ارز و طلاهای انتخابی شما به مرز ۲۰ عدد رسیده است.')
+                    await context.bot.send_message(chat_id=account.chat_id, text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.')
                     return
             else:
                 account.desired_currencies.remove(data["value"])

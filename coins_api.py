@@ -98,7 +98,7 @@ COINS_PERSIAN_NAMES = {
     "GMT": "استپن",
     "SUSHI": "سوشی سوآپ",
     "KDA": "کادنا",
-    "$BABYDOGE": "بیبی دوج کوین",
+    "BABYDOGE": "بیبی دوج کوین",
     "YFI": "یرن فایننس",
     "C98": "کوین 98",
     "CFX": "کانفلاکس",
@@ -155,6 +155,8 @@ class CoinGecko(APIManager):
                 price = coin['market_data']['current_price']['usd']
                 res += self.crypto_description_row(name, symbol, price)
 
+        if res:
+            res = f'📌 قیمت لحظه ای بازار ارز دیجیتال:\n{res}'
         return res
 
 

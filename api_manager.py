@@ -52,7 +52,7 @@ class APIManager:
     def rounded_prices(self, price, convert=True):
         converted_price = None
         if convert:
-            converted_price = price * self.UsdInTomans
+            converted_price = price * self.TetherInTomans
             if converted_price >= 1000:  # when tomans is more than 4 digits, decimals are idiotic
                 converted_price = tools.separate_by3(int(converted_price))
             else:

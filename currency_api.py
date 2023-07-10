@@ -50,7 +50,7 @@ CURRENCIES_PERSIAN_NAMES = {
     "SEKE_GERAMI": "سکه گرمی",
     "ONSNOGHRE": "انس نقره",
     "PALA": "انس پلاتین",
-    "ONSPALA": "انس پلادیوم",
+    "ONSPALA": "انس پالادیوم",
     "OIL": "نفت سبک",
 
 }
