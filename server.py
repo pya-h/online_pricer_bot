@@ -66,9 +66,8 @@ is_channel_updates_started = False
 
 def signed_message(message, short_text=True) -> str:
     timestamp = tools.timestamp()
-    header = f'✅ قیمت ها بروزرسانی شد\n⏳ قیمت ها هر {schedule_interval} دقیقه بروزرسانی میشوند\n' + \
-        timestamp + '\n🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n' \
-            if short_text else timestamp + "\n"
+    header = f'✅ قیمت ها بروزرسانی شد\n⏳ قیمت ها هر {schedule_interval} دقیقه بروزرسانی میشوند\n' if short_text else ''
+    header += timestamp + '\n🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
     footer = '📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot' if short_text else ''
     return f'{header}\n{message}\n{footer}'
 
