@@ -1,7 +1,6 @@
 import coinmarketcapapi as cmc_api
 from api_manager import *
 
-
 COINS_PERSIAN_NAMES = {
     'BTC': 'بیت کوین',
     "ETH": 'اتریوم',
@@ -105,28 +104,6 @@ COINS_PERSIAN_NAMES = {
     "LUNA": "ترا",
     "PEPE": "پپه",
     "SUI": "سویی",
-
-
-    # "BLOK": "بلاک توپیا",
-    # "FLUX": "فلاکس",
-    # "MBOX": "موباکس",
-    # "BRISE": "برایس",
-    # "LEO": "لئو",
-    # "OKB": "اوکی بی",
-    # "RPL": "راکت پول",
-    # "BIT": "بیت دائو",
-    # "IMX": "ایمیوتیبل ایکس",
-    # "GMX": "جی ام ایکس",
-    # "ELON": "دوج ایلان مارس",
-    # "ZEN": "هورایزن",
-    # "ONT": "آنتولوژی",
-    # "SC": "سیاکوین",
-    # "HOT": "هولو",
-    # "GLM": "گولم",
-    # "ZRX": "زیرو ایکس پروتکل",
-    # "KLV": "کلور",
-
-
 }
 
 
@@ -141,7 +118,7 @@ class CoinGecko(APIManager):
         #     'sparkline': False,
         #     'price_change_percentage': "24h",
         # }
-        super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/', source="CoinGecko.com", \
+        super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/', source="CoinGecko.com",
                                         dict_persian_names=COINS_PERSIAN_NAMES)
 
     def extract_api_response(self, desired_coins=None, short_text=True):
@@ -149,8 +126,8 @@ class CoinGecko(APIManager):
 
         res = ''
         for coin in self.latest_data:
-            name = coin['name']
             symbol = coin['symbol'].upper()
+            name = coin['name'] if symbol != 'USDT' else 'Tether'
             if symbol in desired_coins:
                 price = coin['market_data']['current_price']['usd']
                 res += self.crypto_description_row(name, symbol, price)
@@ -163,8 +140,9 @@ class CoinGecko(APIManager):
 # --------- COINMARKETCAP -----------
 class CoinMarketCap(APIManager):
     def __init__(self, api_key, price_unit='USD', params=None) -> None:
-        super(CoinMarketCap, self).__init__(url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',\
-                                            source="CoinMarketCap.com", dict_persian_names=COINS_PERSIAN_NAMES)
+        super(CoinMarketCap, self).__init__(
+            url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',
+            source="CoinMarketCap.com", dict_persian_names=COINS_PERSIAN_NAMES)
         self.api_key = api_key
         self.price_unit = price_unit
         self.symbols_list = None
@@ -191,7 +169,7 @@ class CoinMarketCap(APIManager):
         if self.latest_data:
             for coin in desired_coins:
                 price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
-                name = self.latest_data[coin][0]['name']
+                name = self.latest_data[coin][0]['name'] if coin != 'USDT' else 'Tether'
                 res += self.crypto_description_row(name, coin, price, short_text=short_text)
 
         if res:

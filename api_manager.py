@@ -45,19 +45,15 @@ class APIManager:
         return self.extract_api_response(desired_ones, short_text=short_text)
 
     def send_request(self):
-        response = requests.get(self.URL, json=self.params)
+        response = requests.get(self.URL, json=self.params, timeout=5)
         data = json.loads(response.text)
         return data
 
     def rounded_prices(self, price, convert=True, tether_as_unit_price=False):
-        converted_price = None
         if convert:
             converted_price = price * (self.TetherInTomans if tether_as_unit_price else self.UsdInTomans)
-            if converted_price >= 1000:  # when tomans is more than 4 digits, decimals are idiotic
-                converted_price = tools.separate_by3(int(converted_price))
-            else:
-                converted_price = tools.cut_and_separate(converted_price)
-        return tools.cut_and_separate(price), converted_price
+            return tools.cut_and_separate(price), tools.cut_and_separate(converted_price)
+        return tools.cut_and_separate(price), None
 
     def crypto_description_row(self, name, symbol, price, short_text=True):
         if symbol != 'USDT':

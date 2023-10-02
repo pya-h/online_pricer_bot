@@ -8,26 +8,28 @@ import tools
 ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
 
-GARBAGE_COLLECT_INTERVAL = 30
+GARBAGE_COLLECT_INTERVAL = 60
 
+#*******************************
+# TODO: PUT LAST INTERACTION IN DATABASE, FOR COLLECTING USER STATISTICS
+#*******************************
 class Account:
     Instances = {}
     MaxSelectionInDesiredOnes = 20
     Database = DatabaseInterface.Get()
     Scheduler = None
-
     @staticmethod
     def GarbageCollect():
         now = datetime.now()
         garbage = []
         for chat_id in Account.Instances:
-            if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= 15:
+            if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= GARBAGE_COLLECT_INTERVAL / 2:
                 garbage.append(chat_id)
         # because changing dict size in a loop on itself causes error,
         # we first collect redundant chat_id s and then delete them from the memory
         for g in garbage:
             del Account.Instances[g]
-        tools.log("Garbage's been collected successfully")
+        # tools.log("Garbage's been collected successfully")
 
     @staticmethod
     def Get(chat_id):

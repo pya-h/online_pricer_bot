@@ -5,48 +5,59 @@ import pytz
 def separate_by3(number):
     return f"{number:,}"
 
-def cut(number):
-    if int(number) == number:
-        return int(number), 0
+
+def cut(number, return_string=False):
+    intnum = int(number)
+    if intnum == number or intnum >= 1000:
+        return str(intnum) if return_string else intnum, 0
+
     strnum = str(number)
     if 'e' in strnum:
         strnum = f"{number:.16f}"
-
-    if not '.' in strnum:  # just to double check
-        return int(strnum), 0
+    if '.' not in strnum:  # just to double-check
+        return strnum if return_string else int(strnum), 0
 
     dot_index = strnum.index('.')
-    ei = dot_index + 1
     end = len(strnum)
+    if number >= 10:  # limit number to two digits after .
+        if dot_index + 3 <= end:
+            end = dot_index + 3
+    elif number >= 1:  # limit number to four digits after .
+        if dot_index + 5 <= end:
+            end = dot_index + 5
+
+    ei = dot_index + 1
     while ei < end and strnum[ei] == '0':
         ei += 1
+    if ei >= end:
+        return str(intnum) if return_string else intnum, 0
+    if number >= 1:
+        if ei >= end:  # no meaning zeros
+            return intnum, 0
+        return strnum[:end] if return_string else float(strnum[:end]), end - dot_index - 1
 
-    if ei + 2 <= end:
-        return float(strnum[:ei + 2]), ei + 1 - dot_index
-    elif ei + 1 <= end:
-        return float(strnum[:ei + 1]), ei - dot_index
-    return int(strnum[:dot_index + 1]), 0
+    # num < 1 => write till 4 digits after the first zero after .
+    end -= 1
+    if ei + 3 <= end:
+        end = ei + 3
+    while end > ei and strnum[end] == '0':
+        end -= 1
+    return strnum[:end + 1] if return_string else int(strnum[:end + 1]), end - dot_index
+
 
 def cut_and_separate(num):
-    num, precision = cut(num)
-    res = str(num)
-    # or CHECK IF PRECISION > 5
-    if not precision or not 'e' in res:
-        return separate_by3(num)
-    # if res is in scientific notion:
-    res = f"{num:,.16f}"
-    i = len(res) - 1
-    while i >= 0 and (res[i] == "0" or res[i] == ","):
-        i -= 1
-    return res[:i + 1]
+    num, precision = cut(num, True)
+    return num
+
 
 WEEKDAYS = ('دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یکشنبه')
 timezone = pytz.timezone('Asia/Tehran')
 
+
 def timestamp() -> str:
     # today date and time as persian
     try:
-        now = datetime.now(tz=timezone) # timezone.localize(datetime.now())
+        now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
         weekday = WEEKDAYS[now.weekday()]
 
@@ -55,14 +66,15 @@ def timestamp() -> str:
     except Exception as ex:
         print('Calculating jalili date and time encountered with error: ', ex)
         try:
-            now = datetime.now(tz=timezone) # timezone.localize(datetime.now())
+            now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
             return f'📆 تاریخ: {weekday}، {now.year}/{now.month}/{now.day}\n⏰ ساعت: {now.strftime("%H:%M")}'
         except:
             return 'تاریخ نامعلوم: دریافت تاریخ روز با مشکل مواجه شد!'
 
+
 def gregorian_to_jalali(gy, gm, gd):
     g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
-    if (gm > 2):
+    if gm > 2:
         gy2 = gy + 1
     else:
         gy2 = gy
@@ -71,49 +83,50 @@ def gregorian_to_jalali(gy, gm, gd):
     days %= 12053
     jy += 4 * (days // 1461)
     days %= 1461
-    if (days > 365):
+    if days > 365:
         jy += (days - 1) // 365
         days = (days - 1) % 365
-    if (days < 186):
+    if days < 186:
         jm = 1 + (days // 31)
         jd = 1 + (days % 31)
     else:
         jm = 7 + ((days - 186) // 30)
         jd = 1 + ((days - 186) % 30)
-    return (jy, jm, jd)
+    return jy, jm, jd
 
 
 def jalali_to_gregorian(jy, jm, jd):
     jy += 1595
     days = -355668 + (365 * jy) + ((jy // 33) * 8) + (((jy % 33) + 3) // 4) + jd
-    if (jm < 7):
+    if jm < 7:
         days += (jm - 1) * 31
     else:
         days += ((jm - 7) * 30) + 186
     gy = 400 * (days // 146097)
     days %= 146097
-    if (days > 36524):
+    if days > 36524:
         days -= 1
         gy += 100 * (days // 36524)
         days %= 36524
-        if (days >= 365):
+        if days >= 365:
             days += 1
     gy += 4 * (days // 1461)
     days %= 1461
-    if (days > 365):
+    if days > 365:
         gy += ((days - 1) // 365)
         days = (days - 1) % 365
     gd = days + 1
-    if ((gy % 4 == 0 and gy % 100 != 0) or (gy % 400 == 0)):
+    if (gy % 4 == 0 and gy % 100 != 0) or (gy % 400 == 0):
         kab = 29
     else:
         kab = 28
     sal_a = [0, 31, kab, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     gm = 0
-    while (gm < 13 and gd > sal_a[gm]):
+    while gm < 13 and gd > sal_a[gm]:
         gd -= sal_a[gm]
         gm += 1
-    return (gy, gm, gd)
+    return gy, gm, gd
+
 
 def log(msg, exception=None):
     ts = datetime.now(tz=timezone)
@@ -126,6 +139,7 @@ def log(msg, exception=None):
     logfile.write(content + "\n\n")
     logfile.close()
 
+
 if __name__ == "__main__":
     d = datetime.today()
     j = gregorian_to_jalali(d.year, d.month, d.day)
@@ -133,5 +147,3 @@ if __name__ == "__main__":
     while True:
         x = float(input("> "))
         print("\t=> ", cut_and_separate(x))
-
-

@@ -1,4 +1,5 @@
-import subprocess, time
+import subprocess
+import time
 
 while True:
     print("Restarting server ...")
