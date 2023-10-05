@@ -38,24 +38,25 @@ CURRENCIES_PERSIAN_NAMES = {
     "KGS": "سوم (قرقیزستان)",
     "TJS": "سامانی (تاجیکستان)",
     "SYP": "لیر (سوریه)",
+}
 
+GOLDS_PERSIAN_NAMES = {
     "ONS": "انس طلا",
-    "TALA_MESGHAL": "مثقال طلا",
+    "ONSNOGHRE": "انس نقره",
+    "PALA": "انس پلاتین",
+    "ONSPALA": "انس پالادیوم",
+    "OIL": "نفت سبک",
     "TALA_18": "طلا 18 عیار",
     "TALA_24": "طلا 24 عیار",
+    "TALA_MESGHAL": "مثقال طلا",
     "SEKE_EMAMI": "سکه امامی",
     "SEKE_BAHAR": "سکه بهار آزادی",
     "SEKE_NIM": "نیم سکه",
     "SEKE_ROB": "ربع سکه",
     "SEKE_GERAMI": "سکه گرمی",
-    "ONSNOGHRE": "انس نقره",
-    "PALA": "انس پلاتین",
-    "ONSPALA": "انس پالادیوم",
-    "OIL": "نفت سبک",
-
 }
 
-FLAG_ICONS = {
+CURRENCY_FLAG_ICONS = {
     "USD": ":us:",
     "EUR": ":eu:",
     "AED": ":aE:",
@@ -96,21 +97,22 @@ FLAG_ICONS = {
 
 
 class SourceArena(APIManager):
-    Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'SEKE_EMAMI', 'SEKE_BAHAR', 'SEKE_GERAMI',)
+    Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
     ONSes = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA",)
 
-    def __init__(self, token, params=None) -> None:
+    def __init__(self, token: str) -> None:
         self.token = token
         super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency",
                                           source="Sourcearena.ir",
-                                          dict_persian_names=CURRENCIES_PERSIAN_NAMES, icons=FLAG_ICONS)
-
-    def get_desired_ones(self, desired_ones):
+                                          dict_persian_names=dict(CURRENCIES_PERSIAN_NAMES, **GOLDS_PERSIAN_NAMES))
+        self.just_gold_names, self.just_currency_names = GOLDS_PERSIAN_NAMES, CURRENCIES_PERSIAN_NAMES
+        
+    def get_desired_ones(self, desired_ones: list) -> list:
         if not desired_ones:
             desired_ones = SourceArena.Defaults
         return desired_ones
 
-    def extract_api_response(self, desired_ones=None, short_text=True):
+    def extract_api_response(self, desired_ones: list=None, short_text: bool=True) -> str:
         desired_ones = self.get_desired_ones(desired_ones)
 
         rows = {}
@@ -133,14 +135,14 @@ class SourceArena(APIManager):
         res_curr = ''
         res_gold = ''
         for slug in desired_ones:
-            if slug in self.icons:  # just currencies have flag
-                res_curr += f'{flag(self.icons[slug])} {rows[slug]}\n'
+            if slug in self.just_currency_names:  # just currencies have flag
+                res_curr += f'{flag(CURRENCY_FLAG_ICONS[slug])} {rows[slug]}\n'
             else:
                 res_gold += f'🔸 {rows[slug]}\n'
         if res_curr:
-            res_curr = f'📌 قیمت لحظه ای بازار ارز:\n{res_curr}\n'
+            res_curr = f'📌 #قیمت_لحظه_ای #بازار_ارز 👇\n{res_curr}\n'
         if res_gold:
-            res_gold = f'📌 قیمت لحظه ای بازار طلا:\n{res_gold}\n'
+            res_gold = f'📌 #قیمت_لحظه_ای #بازار_طلا 👇\n{res_gold}\n'
         return res_curr + res_gold
 
     # --------- Currency -----------

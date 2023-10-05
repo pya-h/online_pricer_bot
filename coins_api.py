@@ -133,7 +133,7 @@ class CoinGecko(APIManager):
                 res += self.crypto_description_row(name, symbol, price)
 
         if res:
-            res = f'📌 قیمت لحظه ای بازار ارز دیجیتال:\n{res}'
+            res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال 👇\n{res}'
         return res
 
 
@@ -173,5 +173,5 @@ class CoinMarketCap(APIManager):
                 res += self.crypto_description_row(name, coin, price, short_text=short_text)
 
         if res:
-            res = f'📌 قیمت لحظه ای بازار ارز دیجیتال:\n{res}'
+            res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال 👇\n{res}'
         return res

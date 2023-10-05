@@ -1,23 +1,27 @@
 from decouple import config
 from db_interface import *
-from datetime import datetime
+from datetime import datetime, date
 from apscheduler.schedulers.background import BackgroundScheduler
 import tools
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
-
 GARBAGE_COLLECT_INTERVAL = 60
-
 #*******************************
 # TODO: PUT LAST INTERACTION IN DATABASE, FOR COLLECTING USER STATISTICS
 #*******************************
+
 class Account:
-    Instances = {}
+    # states:
+    STATE_SEND_POST = 1
+
     MaxSelectionInDesiredOnes = 20
     Database = DatabaseInterface.Get()
     Scheduler = None
+    
+    Instances = {}  # active accounts will cache into this; so there's no need to access database everytime
+    # causing a slight enhancement on performance
     @staticmethod
     def GarbageCollect():
         now = datetime.now()
@@ -42,19 +46,23 @@ class Account:
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
             return Account(row[0], currs.split(";") if currs else [], cryptos.split(';') if cryptos else [])
 
-        return Account(chat_id=chat_id)
+        return Account(chat_id=chat_id).save()
 
-
+    @staticmethod
+    def Everybody():
+        return Account.Database.get_all()
+    
     def save(self):
         Account.Database.update(self)
-
-
+        return self
+    
     def __init__(self, chat_id, currencies=[], cryptos=[]) -> None:
         self.is_admin = False
         self.chat_id = chat_id
         self.desired_coins = cryptos[:]
         self.desired_currencies = currencies[:]
         self.last_interaction = datetime.now()
+        self.state = None
         Account.Instances[chat_id] = self  # this is for optimizing bot performance
         # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
 
@@ -92,3 +100,23 @@ class Account:
 
     def str_desired_currencies(self):
         return ';'.join(self.desired_currencies)
+
+    @staticmethod
+    def Statistics():
+        # first save all last interactions:
+        for id in Account.Instances:
+            Account.Instances[id].save()
+        now = datetime.now().date()
+        today_actives, this_week_actives, this_month_actives = 0, 0, 0
+        
+        last_interactions = Account.Database.get_all(column=DatabaseInterface.ACCOUNT_LAST_INTERACTION)
+        for interaction_date in last_interactions:
+            if interaction_date and (isinstance(interaction_date, datetime) or isinstance(interaction_date, date)):
+                if now.year == interaction_date.year and now.month == interaction_date.month:
+                    this_month_actives += 1
+                    if now.isocalendar()[1] == interaction_date.isocalendar()[1]:
+                        this_week_actives += 1
+                        if now.day == interaction_date.day:
+                            today_actives += 1
+                            
+        return {'daily': today_actives, 'weekly': this_week_actives, 'monthly': this_month_actives, 'all': len(last_interactions)}

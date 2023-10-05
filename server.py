@@ -7,8 +7,11 @@ from account import Account
 import json
 
 # constants such as keyboard button texts
-COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES) = (
-    'دریافت قیمت ها', 'تنظیم بازار کریپتو', "تنظیم بازار ارز و طلا")
+COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_SELECT_GOLDS) = (
+    'مشاهده لیست قیمت من', 'ارز دیجیتال', "ارز", "طلا")
+ADMIN_COMMANDS = (CMD_ADMIN_POST, CMD_ADMIN_START_SCHEDULE, CMD_ADMIN_STOP_SCHEDULE, CMD_ADMIN_STATISTICS) \
+    = ('اطلاع رسانی', 'زمانبندی کانال', 'توقف زمانبندی', 'آمار')
+    
 # environment values
 BOT_TOKEN = config('API_TOKEN')
 CHANNEL_ID = config('CHANNEL_ID')
@@ -22,10 +25,16 @@ schedule_interval = 5
 
 # main keyboard (soft keyboard of course)
 menu_main = [
-    [KeyboardButton(CMD_SELECT_COINS), KeyboardButton(CMD_SELECT_CURRENCIES)],
     [KeyboardButton(CMD_GET)],
+    [KeyboardButton(CMD_SELECT_COINS), KeyboardButton(CMD_SELECT_CURRENCIES), KeyboardButton(CMD_SELECT_GOLDS)],
 ]
 
+admin_keyboard = [
+    *menu_main,
+    [KeyboardButton(CMD_ADMIN_POST), KeyboardButton(CMD_ADMIN_STATISTICS)],
+    [KeyboardButton(CMD_ADMIN_START_SCHEDULE), KeyboardButton(CMD_ADMIN_STOP_SCHEDULE)],
+    
+]
 
 async def is_a_member(account: Account, context: CallbackContext):
     chat1 = await context.bot.get_chat_member(CHANNEL_ID, account.chat_id)
@@ -49,7 +58,7 @@ async def ask2join(update):
 
 
 # this function creates inline keyboard for selecting coin/currency as desired ones
-def new_inline_keyboard(name, all_choices: dict, selected_ones: list, show_full_names=False):
+def new_inline_keyboard(name, all_choices: dict, selected_ones: list, show_full_names: bool=False):
     if not selected_ones:
         selected_ones = []
     buttons = []
@@ -65,7 +74,6 @@ def new_inline_keyboard(name, all_choices: dict, selected_ones: list, show_full_
             buttons.append(row)
             row = []
             i = 0
-
     # buttons.append([InlineKeyboardButton("ثبت!", callback_data=json.dumps({"type": name, "value": "#OK"}))])
     return InlineKeyboardMarkup(buttons)
 
@@ -76,11 +84,11 @@ currencyManager = SourceArena(CURRENCY_TOKEN)
 is_channel_updates_started = False
 
 
-def signed_message(message, short_text=True) -> str:
+def signed_message(message: str, short_text: bool=True) -> str:
     timestamp = tools.timestamp()
-    header = f'✅ قیمت ها بروزرسانی شد\n⏳ قیمت ها هر {schedule_interval} دقیقه بروزرسانی میشوند\n' if short_text else ''
-    header += timestamp + '\n🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
-    footer = '📌 دریافت قیمت های بیشتر 👇\n🤖 @Online_pricer_bot' if short_text else ''
+    header = f'✅ بروزرسانی قیمت ها (هر {schedule_interval} دقیقه)\n' if short_text else ''
+    header += timestamp + '\n' # + '🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
+    footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot' if short_text else ''
     return f'{header}\n{message}\n{footer}'
 
 
@@ -106,11 +114,11 @@ def construct_new_message(desired_coins=None, desired_currencies=None, exactly_r
     return signed_message(currencies + cryptos, short_text)
 
 
-async def notify_changes(context):
+async def notify_changes(context: CallbackContext):
     await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {cryptoManager.Source} تغییر یافت.")
 
 
-async def announce_prices(context):
+async def announce_prices(context: CallbackContext):
     global cryptoManager
     global currencyManager
     res = construct_new_message()
@@ -125,7 +133,7 @@ async def cmd_welcome(update: Update, context: CallbackContext):
 
                                         اگر برای اولین بار است که میخواهید از این ربات استفاده کنید توصیه میکنیم از طریق لینک زیر آموزش ویدیوئی ربات را مشاهده کنید:
                                         🎥 https://t.me/Online_pricer/3443''',
-                                        reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+                                        reply_markup=ReplyKeyboardMarkup(menu_main if not acc.is_admin else admin_keyboard, resize_keyboard=True))
     else:
         await ask2join(update)
 
@@ -139,7 +147,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
                                         desired_currencies=account.desired_currencies, short_text=False,
                                         exactly_right_now=not is_latest_data_valid, )
 
-        await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+        await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
     else:
         await ask2join(update)
 
@@ -152,7 +160,7 @@ async def cmd_select_coins(update: Update, context: CallbackContext):
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("coins", COINS_PERSIAN_NAMES,
+                                        reply_markup=new_inline_keyboard("coins", cryptoManager.dict_persian_names,
                                                                          account.desired_coins))
     else:
         await ask2join(update)
@@ -166,7 +174,7 @@ async def cmd_select_currencies(update: Update, context: CallbackContext):
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("currencies", CURRENCIES_PERSIAN_NAMES,
+                                        reply_markup=new_inline_keyboard("currencies", currencyManager.just_currency_names,
                                                                          account.desired_currencies, True))
     else:
         await ask2join(update)
@@ -174,12 +182,17 @@ async def cmd_select_currencies(update: Update, context: CallbackContext):
 
 # TODO: complete this
 async def cmd_select_golds(update: Update, context: CallbackContext):
-    '''📌 #لیست_بازار_طلا
+    account = Account.Get(update.effective_chat.id)
+    if await is_a_member(account, context):
+        await update.message.reply_text(    '''📌 #لیست_بازار_طلا
 
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.'''
-    pass
+👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+                                        reply_markup=new_inline_keyboard("golds", currencyManager.just_gold_names,
+                                                                         account.desired_currencies, True))
+    else:
+        await ask2join(update)
 
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
@@ -188,7 +201,11 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         schedule_interval = 5
         try:
             if context.args:
-                schedule_interval = float(context.args[-1])
+                try:
+                    schedule_interval = int(context.args[-1])
+                except ValueError:
+                    schedule_interval = float(context.args[-1])
+                    
         except Exception as e:
             tools.log("Something went wrong while scheduling: ", e)
             pass
@@ -198,12 +215,12 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
             context.job_queue.run_repeating(announce_prices, interval=schedule_interval * 60, first=1,
                                             name=SCHEDULE_JOB_NAME)
             await update.message.reply_text(f'زمان بندی {schedule_interval} دقیقه ای با موفقیت انجام شد.',
-                                            reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+                                            reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
         else:
             await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.",
-                                            reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+                                            reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
     else:
-        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!')
+        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
@@ -215,9 +232,9 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
         is_channel_updates_started = False
         cryptoManager.latest_prices = ''
         await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.',
-                                        reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+                                        reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
     else:
-        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!')
+        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
@@ -225,10 +242,10 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
         global cryptoManager
         cryptoManager = CoinGecko()
         await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
-                                        reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+                                        reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
         await notify_changes(context)
     else:
-        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!')
+        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
@@ -236,23 +253,42 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
         global cryptoManager
         cryptoManager = CoinMarketCap(CMC_API_KEY)
         await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
-                                        reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+                                        reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
         await notify_changes(context)
     else:
-        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!')
+        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 
 async def cmd_admin_login(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        await update.message.reply_text(
-            'اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.' if account.authorization(
-                context.args)
-            else 'اطلاعات وارد شده صحیح نیستند!')
+        if account.authorization(context.args):
+            await update.message.reply_text(
+                'اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+        else:
+            await update.message.reply_text('اطلاعات وارد شده صحیح نیستند!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
     else:
         await ask2join(update)
 
+async def cmd_send_post(update: Update, context: CallbackContext):
+    account = Account.Get(update.effective_chat.id)
+    if account.authorization(context.args):
+        account.state = Account.STATE_SEND_POST
+        await update.message.reply_text('پستی که میخواهید برای کاران ارسال شود را بفرستید:', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+    else:
+        await update.message.reply_text('شما اجازه چنین کاری را ندارید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
+async def cmd_report_statistics(update: Update, context: CallbackContext):
+    if Account.Get(update.effective_chat.id).authorization(context.args):
+        stats = Account.Statistics()
+        await update.message.reply_text(f'''تعداد کاربران فعال:
+    امروز: {stats['daily']}
+    هفته اخیر: {stats['weekly']}
+    ماه اخیر: {stats['monthly']}
+تعداد کل کاربران ربات: {stats['all']}''', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+    else:
+        await update.message.reply_text('شما اجازه چنین کاری را ندارید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+        
 async def handle_messages(update: Update, context: CallbackContext):
     if update and update.message:
         msg = update.message.text
@@ -263,64 +299,76 @@ async def handle_messages(update: Update, context: CallbackContext):
             await cmd_select_coins(update, context)
         elif msg == CMD_SELECT_CURRENCIES:
             await cmd_select_currencies(update, context)
+        elif msg == CMD_SELECT_GOLDS:
+            await cmd_select_golds(update, context)
+        elif msg == CMD_ADMIN_POST:
+            await cmd_send_post(update, context)
+        elif msg == CMD_ADMIN_START_SCHEDULE:
+            await cmd_schedule_channel_update(update, context)
+        elif msg == CMD_ADMIN_STOP_SCHEDULE:
+            await cmd_stop_schedule(update, context)
+        elif msg == CMD_ADMIN_STATISTICS:
+            await cmd_report_statistics(update, context)
         else:
-            await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...")
+            # check account state first, to see if he/she is in input state
+            account = Account.Get(update.effective_chat.id)
+            if account.state == Account.STATE_SEND_POST and account.authorization(context.args):
+                # admin is trying to send post
+                for chat_id in Account.Everybody():
+                    if chat_id != account.chat_id:
+                        await update.message.copy(chat_id)
+                await update.message.reply_text('پیام شما با موفقیت برای کاربران بات ارسال شد!', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+            else:
+                await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...")
 
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
     query = update.callback_query
     account = Account.Get(update.effective_chat.id)
-    await query.answer()
     data = json.loads(query.data)
-    if data["type"] == "coins":
-        if data["value"] != "#OK":
-            if not data["value"] in account.desired_coins:
+    if data['type'] == "coins":
+            if not data['value'] in account.desired_coins:
                 if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
-                    account.desired_coins.append(data["value"])
+                    account.desired_coins.append(data['value'])
                 else:
-                    await context.bot.send_message(chat_id=account.chat_id,
-                                                   text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.')
+                    await query.answer(text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.', show_alert=True)
                     return
             else:
-                account.desired_coins.remove(data["value"])
-            await query.edit_message_text(
-                text=query.message.text, reply_markup=new_inline_keyboard("coins", COINS_PERSIAN_NAMES, account.desired_coins))
-        else:  # show warning that the selection ended?
-            await query.edit_message_text(text="لیست نهایی سکه های موردنظر شما: \n" + '، '.join(
-                [COINS_PERSIAN_NAMES[x] for x in account.desired_coins]))
-            account.save()
+                account.desired_coins.remove(data['value'])
+            await query.message.edit_reply_markup(reply_markup=new_inline_keyboard("coins", cryptoManager.dict_persian_names, account.desired_coins))
 
-    elif data["type"] == "currencies":
-        if data["value"] != "#OK":
-            if not data["value"] in account.desired_currencies:
+    elif data['type'] == "currencies" or data['type'] == "golds":
+            if not data['value'] in account.desired_currencies:
                 if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
-                    account.desired_currencies.append(data["value"])
+                    account.desired_currencies.append(data['value'])
                 else:
-                    await context.bot.send_message(chat_id=account.chat_id,
-                                                   text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.')
+                    await query.answer(text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.', show_alert=True)
                     return
             else:
-                account.desired_currencies.remove(data["value"])
-            await query.edit_message_text(
-                text=query.message.text, reply_markup=new_inline_keyboard("currencies", CURRENCIES_PERSIAN_NAMES, account.desired_currencies,
-                                                 True))
-        else:  # show warning that the selection ended?
-            await query.edit_message_text(text="لیست قیمت های انتخاب شده ی شما: \n" + '، '.join(
-                [CURRENCIES_PERSIAN_NAMES[x] for x in account.desired_currencies]))
-            account.save()
+                account.desired_currencies.remove(data['value'])
+            
+            await query.message.edit_reply_markup(reply_markup=new_inline_keyboard(
+                    data['type'],
+                    currencyManager.just_currency_names if data['type'] == "currencies" else currencyManager.just_gold_names,
+                    account.desired_currencies, True)
+            )
+    account.save()
 
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", cmd_welcome))
     app.add_handler(CommandHandler("get", cmd_get_prices))
-    app.add_handler(CommandHandler("selectcoins", cmd_select_coins))
-    app.add_handler(CommandHandler("selectcurrencies", cmd_select_currencies))
+    app.add_handler(CommandHandler("crypto", cmd_select_coins))
+    app.add_handler(CommandHandler("currency", cmd_select_currencies))
+    app.add_handler(CommandHandler("gold", cmd_select_currencies))
 
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
+    app.add_handler(CommandHandler("post", cmd_send_post))
     app.add_handler(CommandHandler("schedule", cmd_schedule_channel_update))
     app.add_handler(CommandHandler("stop", cmd_stop_schedule))
+    app.add_handler(CommandHandler("stats", cmd_report_statistics))
     app.add_handler(CommandHandler("gecko", cmd_change_source_to_coingecko))
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
     app.add_handler(MessageHandler(filters.ALL, handle_messages))
@@ -328,7 +376,7 @@ def main():
 
     print("Server is up and running...")
     # print(WEBHOOK_URL, WEBHOOK_PORT)
-    app.run_polling(poll_interval=1.5, timeout=50)
+    app.run_polling(poll_interval=1, timeout=50)
     # app.run_webhook(listen="0.0.0.0", port=WEBHOOK_PORT, webhook_url=f"{WEBHOOK_URL}", stop_signals=None)
 
 

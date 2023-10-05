@@ -2,8 +2,8 @@ from datetime import datetime
 import pytz
 
 
-def separate_by3(number):
-    return f"{number:,}"
+def separate_by3(number, precision=None):
+    return f"{number:,.{precision}f}" if precision else f'{number:,}'
 
 
 def cut(number, return_string=False):
@@ -42,17 +42,18 @@ def cut(number, return_string=False):
         end = ei + 3
     while end > ei and strnum[end] == '0':
         end -= 1
-    return strnum[:end + 1] if return_string else int(strnum[:end + 1]), end - dot_index
+    
+    return strnum[:end + 1] if return_string else float(strnum[:end + 1]), end - dot_index
 
 
 def cut_and_separate(num):
-    num, precision = cut(num, True)
-    return num
+    num, precision = cut(num)
+    
+    return  separate_by3(num, precision)
 
 
 WEEKDAYS = ('دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یکشنبه')
 timezone = pytz.timezone('Asia/Tehran')
-
 
 def timestamp() -> str:
     # today date and time as persian
@@ -61,13 +62,13 @@ def timestamp() -> str:
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
         weekday = WEEKDAYS[now.weekday()]
 
-        return f'📆 تاریخ: {weekday}، {year}/{month}/{day}\n⏰ ساعت: {now.strftime("%H:%M")}'
+        return f'📆 {year}/{month}/{day} {weekday} {now.strftime("%H:%M")}'
 
     except Exception as ex:
         print('Calculating jalili date and time encountered with error: ', ex)
         try:
             now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
-            return f'📆 تاریخ: {weekday}، {now.year}/{now.month}/{now.day}\n⏰ ساعت: {now.strftime("%H:%M")}'
+            return f'📆 {now.year}/{now.month}/{now.day} {weekday} {now.strftime("%H:%M")}'
         except:
             return 'تاریخ نامعلوم: دریافت تاریخ روز با مشکل مواجه شد!'
 
