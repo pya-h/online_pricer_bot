@@ -83,7 +83,7 @@ class DatabaseInterface:
         if column == DatabaseInterface.ACCOUNT_LAST_INTERACTION:
             return [datetime.strptime(row[0], DatabaseInterface.DATE_FORMAT) if row[0] else None for row in rows]
         return [row[0] for row in rows] # just return a list of ids
-    
+
     def update(self, account):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()

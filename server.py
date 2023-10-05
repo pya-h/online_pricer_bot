@@ -11,7 +11,7 @@ COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_SELECT_GOLDS) 
     'مشاهده لیست قیمت من', 'ارز دیجیتال', "ارز", "طلا")
 ADMIN_COMMANDS = (CMD_ADMIN_POST, CMD_ADMIN_START_SCHEDULE, CMD_ADMIN_STOP_SCHEDULE, CMD_ADMIN_STATISTICS) \
     = ('اطلاع رسانی', 'زمانبندی کانال', 'توقف زمانبندی', 'آمار')
-    
+
 # environment values
 BOT_TOKEN = config('API_TOKEN')
 CHANNEL_ID = config('CHANNEL_ID')
@@ -33,7 +33,7 @@ admin_keyboard = [
     *menu_main,
     [KeyboardButton(CMD_ADMIN_POST), KeyboardButton(CMD_ADMIN_STATISTICS)],
     [KeyboardButton(CMD_ADMIN_START_SCHEDULE), KeyboardButton(CMD_ADMIN_STOP_SCHEDULE)],
-    
+
 ]
 
 async def is_a_member(account: Account, context: CallbackContext):
@@ -205,7 +205,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
                     schedule_interval = int(context.args[-1])
                 except ValueError:
                     schedule_interval = float(context.args[-1])
-                    
+
         except Exception as e:
             tools.log("Something went wrong while scheduling: ", e)
             pass
@@ -288,7 +288,7 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 تعداد کل کاربران ربات: {stats['all']}''', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
     else:
         await update.message.reply_text('شما اجازه چنین کاری را ندارید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
-        
+
 async def handle_messages(update: Update, context: CallbackContext):
     if update and update.message:
         msg = update.message.text
@@ -315,11 +315,15 @@ async def handle_messages(update: Update, context: CallbackContext):
             if account.state == Account.STATE_SEND_POST and account.authorization(context.args):
                 # admin is trying to send post
                 for chat_id in Account.Everybody():
-                    if chat_id != account.chat_id:
-                        await update.message.copy(chat_id)
+                    try:
+                        if chat_id != account.chat_id:
+                            await update.message.copy(chat_id)
+                    except:
+                        pass  # maybe remove the account from database>?
                 await update.message.reply_text('پیام شما با موفقیت برای کاربران بات ارسال شد!', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+                account.state = None
             else:
-                await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...")
+                await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...", reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
 
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
@@ -346,7 +350,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                     return
             else:
                 account.desired_currencies.remove(data['value'])
-            
+
             await query.message.edit_reply_markup(reply_markup=new_inline_keyboard(
                     data['type'],
                     currencyManager.just_currency_names if data['type'] == "currencies" else currencyManager.just_gold_names,
