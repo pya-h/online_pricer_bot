@@ -24,7 +24,7 @@ class Account:
     # causing a slight enhancement on performance
     @staticmethod
     def GarbageCollect():
-        now = datetime.now()
+        now = datetime.now(tz=tools.timezone)
         garbage = []
         for chat_id in Account.Instances:
             if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= GARBAGE_COLLECT_INTERVAL / 2:
@@ -38,7 +38,7 @@ class Account:
     @staticmethod
     def Get(chat_id):
         if chat_id in Account.Instances:
-            Account.Instances[chat_id].last_interaction = datetime.now()
+            Account.Instances[chat_id].last_interaction = datetime.now(tz=tools.timezone)
             return Account.Instances[chat_id]
         row = Account.Database.get(chat_id)
         if row:
@@ -61,7 +61,7 @@ class Account:
         self.chat_id = chat_id
         self.desired_coins = cryptos[:]
         self.desired_currencies = currencies[:]
-        self.last_interaction = datetime.now()
+        self.last_interaction = datetime.now(tz=tools.timezone)
         self.state = None
         Account.Instances[chat_id] = self  # this is for optimizing bot performance
         # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
@@ -106,7 +106,7 @@ class Account:
         # first save all last interactions:
         for id in Account.Instances:
             Account.Instances[id].save()
-        now = datetime.now().date()
+        now = datetime.now(tz=tools.timezone).date()
         today_actives, this_week_actives, this_month_actives = 0, 0, 0
         
         last_interactions = Account.Database.get_all(column=DatabaseInterface.ACCOUNT_LAST_INTERACTION)

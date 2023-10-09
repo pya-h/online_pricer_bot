@@ -1,7 +1,6 @@
 import requests, json
 import tools
 
-
 # Base class for all api managers
 
 class APIManager:
@@ -56,5 +55,6 @@ class APIManager:
             rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
         else:
             rp_usd, rp_toman = tools.cut_and_separate(price), tools.cut_and_separate(self.TetherInTomans)
+        rp_toman = tools.persianify(rp_toman)
         return f'🔸 {self.dict_persian_names[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
             else f'🔸 {name} ({symbol}): {rp_usd}$\n{self.dict_persian_names[symbol]}: {rp_toman} تومان\n'

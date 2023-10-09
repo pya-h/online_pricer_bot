@@ -84,15 +84,15 @@ currencyManager = SourceArena(CURRENCY_TOKEN)
 is_channel_updates_started = False
 
 
-def signed_message(message: str, short_text: bool=True) -> str:
+def signed_message(message: str, for_channel: bool=True) -> str:
     timestamp = tools.timestamp()
-    header = f'✅ بروزرسانی قیمت ها (هر {schedule_interval} دقیقه)\n' if short_text else ''
+    interval_fa = tools.persianify(schedule_interval.__str__())
+    header = f'✅ بروزرسانی قیمت ها (هر {interval_fa} دقیقه)\n' if for_channel else ''
     header += timestamp + '\n' # + '🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
-    footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot' if short_text else ''
+    footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
     return f'{header}\n{message}\n{footer}'
 
-
-def construct_new_message(desired_coins=None, desired_currencies=None, exactly_right_now=True, short_text=True) -> str:
+def construct_new_message(desired_coins=None, desired_currencies=None, exactly_right_now=True, short_text=True, for_channel=True) -> str:
     currencies = cryptos = ''
 
     try:
@@ -111,7 +111,7 @@ def construct_new_message(desired_coins=None, desired_currencies=None, exactly_r
     except Exception as ex:
         tools.log("Cannot obtain Cryptos! ", ex)
         cryptos = cryptoManager.get_latest(desired_coins, short_text=short_text)
-    return signed_message(currencies + cryptos, short_text)
+    return signed_message(currencies + cryptos, for_channel=for_channel)
 
 
 async def notify_changes(context: CallbackContext):
@@ -131,8 +131,8 @@ async def cmd_welcome(update: Update, context: CallbackContext):
     if await is_a_member(acc, context):
         await update.message.reply_text(f'''کاربر {update.message.chat.first_name}\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏
 
-                                        اگر برای اولین بار است که میخواهید از این ربات استفاده کنید توصیه میکنیم از طریق لینک زیر آموزش ویدیوئی ربات را مشاهده کنید:
-                                        🎥 https://t.me/Online_pricer/3443''',
+اگر برای اولین بار است که میخواهید از این ربات استفاده کنید توصیه میکنیم از طریق لینک زیر آموزش ویدیوئی ربات را مشاهده کنید:
+🎥 https://t.me/Online_pricer/3443''', disable_web_page_preview=True,
                                         reply_markup=ReplyKeyboardMarkup(menu_main if not acc.is_admin else admin_keyboard, resize_keyboard=True))
     else:
         await ask2join(update)
@@ -144,7 +144,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
         is_latest_data_valid = currencyManager and currencyManager.latest_data and cryptoManager \
                                and cryptoManager.latest_data and is_channel_updates_started
         message = construct_new_message(desired_coins=account.desired_coins,
-                                        desired_currencies=account.desired_currencies, short_text=False,
+                                        desired_currencies=account.desired_currencies, for_channel=False, short_text=False,
                                         exactly_right_now=not is_latest_data_valid, )
 
         await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))

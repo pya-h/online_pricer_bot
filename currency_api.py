@@ -98,7 +98,7 @@ CURRENCY_FLAG_ICONS = {
 
 class SourceArena(APIManager):
     Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
-    ONSes = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA",)
+    EntitiesInDollors = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
 
     def __init__(self, token: str) -> None:
         self.token = token
@@ -118,18 +118,21 @@ class SourceArena(APIManager):
         rows = {}
         for curr in self.latest_data:
             slug = curr['slug'].upper()
-            price = float(curr['price']) / 10 if slug not in SourceArena.ONSes else float(curr['price'])
+            price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesInDollors else float(curr['price'])
             if slug == 'USD':
                 self.set_usd_price(price)
             elif slug == 'TETHER':
                 self.set_tether_tomans(price)
 
             if slug in desired_ones:
-                if slug not in SourceArena.ONSes:
+                # repetitive code OR using multiple conditions (?)
+                if slug not in SourceArena.EntitiesInDollors:
                     toman, _ = self.rounded_prices(price, False)
+                    toman = tools.persianify(toman)
                     rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان"
                 else:
                     usd, toman = self.rounded_prices(price)
+                    toman = tools.persianify(toman)
                     rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان / {usd}$"
 
         res_curr = ''

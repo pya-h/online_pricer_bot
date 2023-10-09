@@ -1,8 +1,10 @@
 from datetime import datetime
 import pytz
+from persiantools import digits
 
+timezone = pytz.timezone('Asia/Tehran')
 
-def separate_by3(number, precision=None):
+def separate_by3(number: float, precision=None):
     return f"{number:,.{precision}f}" if precision else f'{number:,}'
 
 
@@ -10,15 +12,16 @@ def cut(number, return_string=False):
     intnum = int(number)
     if intnum == number or intnum >= 1000:
         return str(intnum) if return_string else intnum, 0
-
+    
     strnum = str(number)
     if 'e' in strnum:
         strnum = f"{number:.16f}"
     if '.' not in strnum:  # just to double-check
         return strnum if return_string else int(strnum), 0
-
+    
     dot_index = strnum.index('.')
     end = len(strnum)
+    
     if number >= 10:  # limit number to two digits after .
         if dot_index + 3 <= end:
             end = dot_index + 3
@@ -46,6 +49,9 @@ def cut(number, return_string=False):
     return strnum[:end + 1] if return_string else float(strnum[:end + 1]), end - dot_index
 
 
+def persianify(number: str):
+    return digits.en_to_fa(number).replace('.', '/').replace(',', '،')
+
 def cut_and_separate(num):
     num, precision = cut(num)
     
@@ -53,7 +59,6 @@ def cut_and_separate(num):
 
 
 WEEKDAYS = ('دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یکشنبه')
-timezone = pytz.timezone('Asia/Tehran')
 
 def timestamp() -> str:
     # today date and time as persian
@@ -61,19 +66,20 @@ def timestamp() -> str:
         now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
         weekday = WEEKDAYS[now.weekday()]
-
-        return f'📆 {year}/{month}/{day} {weekday} {now.strftime("%H:%M")}'
+        date = digits.en_to_fa(f'{year}/{month:02d}/{day:02d}')
+        time = digits.en_to_fa(now.strftime("%H:%M"))
+        return f'📆 {date} {weekday} {time}'
 
     except Exception as ex:
         print('Calculating jalili date and time encountered with error: ', ex)
         try:
             now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
-            return f'📆 {now.year}/{now.month}/{now.day} {weekday} {now.strftime("%H:%M")}'
+            return f'📆 {now.year}/{now.month:02d}/{now.day:02d} {weekday} {now.strftime("%H:%M")}'
         except:
             return 'تاریخ نامعلوم: دریافت تاریخ روز با مشکل مواجه شد!'
 
 
-def gregorian_to_jalali(gy, gm, gd):
+def gregorian_to_jalali(gy: int, gm: int, gd: int):
     g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
     if gm > 2:
         gy2 = gy + 1
@@ -96,7 +102,7 @@ def gregorian_to_jalali(gy, gm, gd):
     return jy, jm, jd
 
 
-def jalali_to_gregorian(jy, jm, jd):
+def jalali_to_gregorian(jy: int, jm: int, jd: int):
     jy += 1595
     days = -355668 + (365 * jy) + ((jy // 33) * 8) + (((jy % 33) + 3) // 4) + jd
     if jm < 7:
