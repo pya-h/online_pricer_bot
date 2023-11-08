@@ -6,3 +6,4 @@ ADMIN_USERNAME='username for the bot admin. after logging in with this user & pa
 ADMIN_PASSWORD='password for the admin, ...'
 CURRENCY_TOKEN='token accuired from the sourcearena.ir'
 SECOND_CHANNEL_ID='second channel that you want to check user subscription, in 9rder to allow the user to jse your boy; bot must be admin in this channel too.' 
+ABAN_TETHER_TOKEN: 'This api key is used just for obtaining Tether price in tomans. (Free: abantether.com)'
