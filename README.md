@@ -15,45 +15,45 @@ it also can work as an channel admin to post updates every five minutes.
 * pip install -r requirements.txt
 
 # Common Bot Commands:
-/start : Start the bot
-/get: get current prices as a response inside the bot
-/crypto : select your desired coins that you want to keep track of their prices.
-    once you selected your desired coins, any message you'll get by
-    /get command will just show the price of your desired coins.
-    Note that the channel message containing the price list
-    will not be affected by your desired list.
-/currency : select your desired currencies(Physical Money units, oil, gold, etc) that you want to keep track of their prices.
-    once you selected your desired currencies, any message you'll get by
-    /get command will just show the price of your desired currencies.
-    Note that the channel message containing the price list
-    will not be affected by your desired list.
-/currency : select your desired golds that you want to keep track of their prices.
-    once you selected your desired currencies, any message you'll get by
-    /get command will just show the price of your desired golds.
-    Note that the channel message containing the price list
-    will not be affected by your desired list.
-/god user password : tries to login you as admin by the username
-     and password you provied in the command arguments
+    /start : Start the bot
+    /get: get current prices as a response inside the bot
+    /crypto : select your desired coins that you want to keep track of their prices.
+        once you selected your desired coins, any message you'll get by
+        /get command will just show the price of your desired coins.
+        Note that the channel message containing the price list
+        will not be affected by your desired list.
+    /currency : select your desired currencies(Physical Money units, oil, gold, etc) that you want to keep track of their prices.
+        once you selected your desired currencies, any message you'll get by
+        /get command will just show the price of your desired currencies.
+        Note that the channel message containing the price list
+        will not be affected by your desired list.
+    /currency : select your desired golds that you want to keep track of their prices.
+        once you selected your desired currencies, any message you'll get by
+        /get command will just show the price of your desired golds.
+        Note that the channel message containing the price list
+        will not be affected by your desired list.
+    /god user password : tries to login you as admin by the username
+         and password you provied in the command arguments
 
 # Bot Commands needing admin privillages
-/schedule time_interval : start scheduling the channel update
+* /schedule time_interval : start scheduling the channel update
     by the interval you've sent in the argument.
     if interval isnt provided, the default interval will be used (5 minutes.)
-/gecko change the source of cryptocurrency prices to CoinGecko
-/marketcap change the source of cryptocurrency prices to CoinMarketCap
-/stop stop the channel update queue
-/post : enables to send a post to all active users; just click the command, write a text message(voice/audio/photo/etc are supported too)
+* /gecko change the source of cryptocurrency prices to CoinGecko
+* /marketcap change the source of cryptocurrency prices to CoinMarketCap
+* /stop stop the channel update queue
+* /post : enables to send a post to all active users; just click the command, write a text message(voice/audio/photo/etc are supported too)
     and send. Bot will start sending the post while showing you the progress as in percentage.
-/stats: Shows a brief report of bot users; report consists of the number of users that have been active within: today/yesterday/last week/last year
+* /stats: Shows a brief report of bot users; report consists of the number of users that have been active within: today/yesterday/last week/last year
     and number of all users in total.
-    
+
 # Admin Keyboard
 once you authenticated yourself as admin you will see 4 new options in keyboard below the bot.
 * Statistics: Shortcut for /stats command
 * Notify: Shortcut for /post command
 * Start Channel Scheduling: Shortcut for /schedule command
 * Stop Schedule: Shortcut for /stop command
-* 
+  
 # Note:
 * User who is authenticated as Admin, will be logged out after 30 minutes of inactivity; just for security purposes. and alongside that the admin keyboard will be hidden again.
 * For enhancing performance, active users data will be cached in memory; Also there is a GarbageCollector method running every hour to free memory from inactive users.
