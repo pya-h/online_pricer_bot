@@ -15,25 +15,25 @@ it also can work as an channel admin to post updates every five minutes.
 * pip install -r requirements.txt
 
 # Common Bot Commands:
-    /start : Start the bot
-    /get: get current prices as a response inside the bot
-    /crypto : select your desired coins that you want to keep track of their prices.
-        once you selected your desired coins, any message you'll get by
-        /get command will just show the price of your desired coins.
-        Note that the channel message containing the price list
-        will not be affected by your desired list.
-    /currency : select your desired currencies(Physical Money units, oil, gold, etc) that you want to keep track of their prices.
-        once you selected your desired currencies, any message you'll get by
-        /get command will just show the price of your desired currencies.
-        Note that the channel message containing the price list
-        will not be affected by your desired list.
-    /currency : select your desired golds that you want to keep track of their prices.
-        once you selected your desired currencies, any message you'll get by
-        /get command will just show the price of your desired golds.
-        Note that the channel message containing the price list
-        will not be affected by your desired list.
-    /god user password : tries to login you as admin by the username
-         and password you provied in the command arguments
+* /start : Start the bot
+* /get: get current prices as a response inside the bot
+* /crypto : select your desired coins that you want to keep track of their prices.
+    once you selected your desired coins, any message you'll get by
+    /get command will just show the price of your desired coins.
+    Note that the channel message containing the price list
+    will not be affected by your desired list.
+* /currency : select your desired currencies(Physical Money units, oil, gold, etc) that you want to keep track of their prices.
+    once you selected your desired currencies, any message you'll get by
+    /get command will just show the price of your desired currencies.
+    Note that the channel message containing the price list
+    will not be affected by your desired list.
+* /currency : select your desired golds that you want to keep track of their prices.
+    once you selected your desired currencies, any message you'll get by
+    /get command will just show the price of your desired golds.
+    Note that the channel message containing the price list
+    will not be affected by your desired list.
+* /god user password : tries to login you as admin by the username
+     and password you provied in the command arguments
 
 # Bot Commands needing admin privillages
 * /schedule time_interval : start scheduling the channel update
