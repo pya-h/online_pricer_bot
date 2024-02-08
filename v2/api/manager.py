@@ -4,8 +4,12 @@ from tools.exceptions import CacheFailureException
 
 
 CACHE_FOLDER_PATH = 'api.cache'
+CACHE_ARCHIVE_FOLDER_PATH = 'archives'
 
 class BaseAPIManager:
+    TETHER_SYMBOL = 'USDT'
+    DOLLAR_SYMBOL = 'USD'
+
     '''The very Base class for all api managers'''
     def __init__(self, url: str, source: str, timeout: int=10, params: dict=None, cache_file_name: str = None) -> None:
         self.URL: str = url
@@ -15,19 +19,22 @@ class BaseAPIManager:
         self.cache_file_name: str = cache_file_name
 
     def cache_data(self, data: str) -> None:
-        cache_folder_path = CACHE_FOLDER_PATH
+        can_be_archived = True
         try:
-            manuwriter.prepare_folder(cache_folder_path)
+            _, can_be_archived = manuwriter.prepare_folder(CACHE_FOLDER_PATH, CACHE_ARCHIVE_FOLDER_PATH)
         except OSError as e:
             manuwriter.log('api-cache folder creation failed!', e, 'cache')
             raise CacheFailureException('Cache Folder creation failed!')
         try:
-            json_cache_file = open(f'./{cache_folder_path}/{self.cache_file_name}', 'w')
-            json_cache_file.write(data)
-            json_cache_file.close()
+            manuwriter.fwrite_from_scratch(f'./{CACHE_FOLDER_PATH}/{self.cache_file_name}', data, self.Source)
+            if can_be_archived:  # as mentioned before, archiving is not crucial; so it will be ignored if its folder can not be created
+                # although u should be aware that these errors and failure circumstances are rare
+                # Its just for making sure app never crashes
+                manuwriter.fwrite_from_scratch('./%s/%s/%s_%s.json' % (CACHE_FOLDER_PATH, CACHE_ARCHIVE_FOLDER_PATH, self.cache_file_name, mathematix.short_timestamp()), data, self.Source)
+
         except Exception as ex: # caching is so imortant for the performance of second bot that :
             # as soon as something goes wrong in caching, the admin must be informed.
-            manuwriter.log('Caching failure!', ex, category_name='FATAL')
+            manuwriter.log('Caching failure!', ex, category_name='FATALITY')
             raise CacheFailureException(ex)
 
     def send_request(self, headers: dict = None):
@@ -47,15 +54,20 @@ class BaseAPIManager:
 
         return data
 
-    def read_cache(self):
-        pass
+    def load_cache(self) -> list|dict:
+        '''Read cache and convert it to python dict/list.'''
+        json_cache_file = open(f'./{CACHE_FOLDER_PATH}/{self.cache_file_name}', 'r')
+        str_json = json_cache_file.read()
+        json_cache_file.close()
+        return json.loads(str_json)
+
 
 class APIManager(BaseAPIManager):
     UsdInTomans = 52000  # not important, it is just a default value that will be updated at first api get from
     TetherInTomans = 52000
     # sourcearena.ir
 
-    def __init__(self, url: str, source: str, dict_persian_names: dict, max_desired_selection=5, params=None) -> None:
+    def __init__(self, url: str, source: str, dict_persian_names: dict, max_desired_selection=5, params=None, cache_file_name: str = None) -> None:
         super(APIManager, self).__init__(url, source, params=params)
         self.latest_data = []
         self.dict_persian_names = dict_persian_names

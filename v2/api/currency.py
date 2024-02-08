@@ -113,7 +113,7 @@ class AbanTether(BaseAPIManager):
 
 class SourceArena(APIManager):
     Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
-    EntitiesInDollors = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
+    EntitiesIndollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
 
     def __init__(self, token: str, aban_tether_token: str) -> None:
         self.token = token
@@ -137,7 +137,7 @@ class SourceArena(APIManager):
         rows = {}
         for curr in self.latest_data:
             slug = curr['slug'].upper()
-            price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesInDollors else float(curr['price'])
+            price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesIndollars else float(curr['price'])
             if slug == 'USD':
                 self.set_usd_price(price)
             elif not self.tether_manager_respond and slug == 'TETHER':
@@ -146,13 +146,13 @@ class SourceArena(APIManager):
 
             if slug in desired_ones:
                 # repetitive code OR using multiple conditions (?)
-                if slug not in SourceArena.EntitiesInDollors:
+                if slug not in SourceArena.EntitiesIndollars:
                     toman, _ = self.rounded_prices(price, False)
-                    toman = mathematix.tools.persianify(toman)
+                    toman = mathematix.persianify(toman)
                     rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان"
                 else:
                     usd, toman = self.rounded_prices(price)
-                    toman = mathematix.tools.persianify(toman)
+                    toman = mathematix.persianify(toman)
                     rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان / {usd}$"
 
         res_curr = ''
@@ -180,5 +180,5 @@ class SourceArena(APIManager):
         except:
             pass
 
-        response = super(SourceArena, self).send_request(cache_file_name=self.cache_file_name)
+        response = super(SourceArena, self).send_request()
         return response["data"] if 'data' in response else []

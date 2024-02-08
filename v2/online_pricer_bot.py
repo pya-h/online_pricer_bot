@@ -5,7 +5,7 @@ from api.crypto import *
 from decouple import config
 from db.account import Account
 import json
-from tools import manuwriter
+from tools import manuwriter, mathematix
 
 # constants such as keyboard button texts
 COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_SELECT_GOLDS, CMD_CANCEL) = (
@@ -92,8 +92,8 @@ is_channel_updates_started = False
 
 
 def signed_message(message: str, for_channel: bool=True) -> str:
-    timestamp = mathematix.tools.timestamp()
-    interval_fa = mathematix.tools.persianify(schedule_interval.__str__())
+    timestamp = mathematix.timestamp()
+    interval_fa = mathematix.persianify(schedule_interval.__str__())
     header = f'✅ بروزرسانی قیمت ها (هر {interval_fa} دقیقه)\n' if for_channel else ''
     header += timestamp + '\n' # + '🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
     footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
@@ -192,6 +192,20 @@ async def cmd_select_golds(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
         await update.message.reply_text(    '''📌 #لیست_بازار_طلا
+
+👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
+👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
+👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+                                        reply_markup=new_inline_keyboard("golds", currencyManager.just_gold_names,
+                                                                         account.desired_currencies, True))
+    else:
+        await ask2join(update)
+
+
+async def cmd_equalizer(update: Update, context: CallbackContext):
+    account = Account.Get(update.effective_chat.id)
+    if await is_a_member(account, context):
+        await update.message.reply_text('''📌 #لیست_بازار_طلا
 
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
@@ -397,6 +411,7 @@ def main():
     app.add_handler(CommandHandler("crypto", cmd_select_coins))
     app.add_handler(CommandHandler("currency", cmd_select_currencies))
     app.add_handler(CommandHandler("gold", cmd_select_golds))
+    app.add_handler(CommandHandler("equalizer", cmd_equalizer))
 
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
@@ -406,6 +421,7 @@ def main():
     app.add_handler(CommandHandler("stats", cmd_report_statistics))
     app.add_handler(CommandHandler("gecko", cmd_change_source_to_coingecko))
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
+
     app.add_handler(MessageHandler(filters.ALL, handle_messages))
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
 
@@ -420,4 +436,4 @@ if __name__ == '__main__':
         main()
     except Exception as ex:
         print(ex)
-        manuwriter.log("Server crashed because: ", ex, 'FATAL')
+        manuwriter.log("Server crashed because: ", ex, 'FATALITY')

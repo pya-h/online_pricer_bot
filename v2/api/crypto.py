@@ -1,6 +1,7 @@
 import coinmarketcapapi as cmc_api
 from api.manager import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
+from api.currency import CURRENCIES_PERSIAN_NAMES
 
 COINS_PERSIAN_NAMES = {
     'BTC': 'بیت کوین',
@@ -130,9 +131,9 @@ class CoinGecko(APIManager):
         res = ''
         for coin in self.latest_data:
             symbol = coin['symbol'].upper()
-            name = coin['name'] if symbol != 'USDT' else 'Tether'
+            name = coin['name'] if symbol != self.TETHER_SYMBOLTETHER_SYMBOL else 'Tether'
             if symbol in desired_coins:
-                price = coin['market_data']['current_price']['usd']
+                price = coin['market_data']['current_price'][self.DOLLAR_SYMBOL.lower()]
                 res += self.crypto_description_row(name, symbol, price)
 
         if res:
@@ -175,7 +176,7 @@ class CoinMarketCap(APIManager):
 
     def extract_api_response(self, desired_coins=None, short_text=True):
         '''This function constructs a text string that in each row has the latest price of a
-            cryptocurrency unit in two price units, Dollors and Tomans'''
+            cryptocurrency unit in two price units, dollars and Tomans'''
         desired_coins = self.get_desired_ones(desired_coins)
         if not self.latest_data:
             raise NoLatestDataException('Use for anouncing prices!')
@@ -183,7 +184,7 @@ class CoinMarketCap(APIManager):
         res = ''
         for coin in desired_coins:
             price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
-            name = self.latest_data[coin][0]['name'] if coin != 'USDT' else 'Tether'
+            name = self.latest_data[coin][0]['name'] if coin != BaseAPIManager.TETHER_SYMBOL else 'Tether'
             res += self.crypto_description_row(name, coin, price, short_text=short_text)
 
         if res:
@@ -195,7 +196,7 @@ class CoinMarketCap(APIManager):
         '''returns the row shape/format of the equalizing coin.'''
         value_cut = mathematix.cut_and_separate(value)
         value = mathematix.persianify(value_cut)
-        return f'🔸 {value} {self.dict_persian_names[unit_symbol]}'
+        return f'🔸 {value} {self.dict_persian_names[unit_symbol]}\n'
 
     def equalize(self, source_unit_symbol: str, amount: float|int, desired_coins: list = None) -> str:
         '''This function gets an amount param, alongside with a source_unit_symbol [and abviously with the users desired coins]
@@ -203,18 +204,21 @@ class CoinMarketCap(APIManager):
         # First check the required data is prepared
         if not self.latest_data:
             raise NoLatestDataException('Use for equalizing!')
-        if not source_unit_symbol in self.latest_data:
+        if source_unit_symbol not in self.latest_data or source_unit_symbol not in self.dict_persian_names:
             raise InvalidInputException('Coin symbol!')
 
         # text header
-        res = f'📌 #معادل سازی 👇\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
-            mathematix.persianify(amount) + ' معادل است با:\n\n'
+        res: str = f'📌 #معادل سازی 👇\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
+            ("%s %s" % (mathematix.persianify(amount), self.dict_persian_names[source_unit_symbol])) + ' معادل است با:\n\n'
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
-        absolute_amount = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price']))
-        res += self.equalizer_row(source_unit_symbol, absolute_amount)
+        absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
+        res += f'🔸 {mathematix.persianify(mathematix.cut_and_separate(absolute_amount))} {CURRENCIES_PERSIAN_NAMES[BaseAPIManager.DOLLAR_SYMBOL]}\n'
+
         desired_coins = self.get_desired_ones(desired_coins)
+        if BaseAPIManager.TETHER_SYMBOL not in desired_coins:
+            desired_coins.insert(0, BaseAPIManager.TETHER_SYMBOL)
         for coin in desired_coins:
-            amount_in_this_ccoin_unit = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
-            res += self.equalizer_row(amount_in_this_ccoin_unit)
+            amount_in_this_coin_unit = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
+            res += self.equalizer_row(coin, amount_in_this_coin_unit)
 
         return res
