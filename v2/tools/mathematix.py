@@ -5,11 +5,11 @@ from persiantools import digits
 
 timezone = pytz.timezone('Asia/Tehran')
 
-def separate_by3(number: float, precision=None):
+def separate_by3(number: float, precision: int=None):
     return f"{number:,.{precision}f}" if precision else f'{number:,}'
 
 
-def cut(number, return_string=False):
+def cut(number: float|int, return_string: bool=False):
     intnum = int(number)
     if intnum == number or intnum >= 1000:
         return str(intnum) if return_string else intnum, 0
@@ -50,10 +50,12 @@ def cut(number, return_string=False):
     return strnum[:end + 1] if return_string else float(strnum[:end + 1]), end - dot_index
 
 
-def persianify(number: str):
+def persianify(number: str|float|int):
+    if not isinstance(number, str):
+        number = str(number)
     return digits.en_to_fa(number)  #.replace('.', '/').replace(',', '،')
 
-def cut_and_separate(num):
+def cut_and_separate(num: float|int):
     num, precision = cut(num)
 
     return  separate_by3(num, precision)

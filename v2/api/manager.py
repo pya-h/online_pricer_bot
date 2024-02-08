@@ -1,7 +1,9 @@
 import requests, json
 from tools import mathematix, manuwriter
+from tools.exceptions import CacheFailureException
 
-CACHE_FOLDER = 'api.cache'
+
+CACHE_FOLDER_PATH = 'api.cache'
 
 class BaseAPIManager:
     '''The very Base class for all api managers'''
@@ -13,16 +15,20 @@ class BaseAPIManager:
         self.cache_file_name: str = cache_file_name
 
     def cache_data(self, data: str) -> None:
-        cache_folder_path = CACHE_FOLDER
+        cache_folder_path = CACHE_FOLDER_PATH
         try:
             manuwriter.prepare_folder(cache_folder_path)
         except OSError as e:
             manuwriter.log('api-cache folder creation failed!', e, 'cache')
-            cache_folder_path = ''  # if can not create the folder, well just save it in cwd
-
-        json_cache_file = open(f'./{cache_folder_path}/{self.cache_file_name}', 'w')
-        json_cache_file.write(data)
-        json_cache_file.close()
+            raise CacheFailureException('Cache Folder creation failed!')
+        try:
+            json_cache_file = open(f'./{cache_folder_path}/{self.cache_file_name}', 'w')
+            json_cache_file.write(data)
+            json_cache_file.close()
+        except Exception as ex: # caching is so imortant for the performance of second bot that :
+            # as soon as something goes wrong in caching, the admin must be informed.
+            manuwriter.log('Caching failure!', ex, category_name='FATAL')
+            raise CacheFailureException(ex)
 
     def send_request(self, headers: dict = None):
         data = None
@@ -41,6 +47,8 @@ class BaseAPIManager:
 
         return data
 
+    def read_cache(self):
+        pass
 
 class APIManager(BaseAPIManager):
     UsdInTomans = 52000  # not important, it is just a default value that will be updated at first api get from
@@ -81,13 +89,15 @@ class APIManager(BaseAPIManager):
         # this is for the schedular bot!
         # return self.extract_api_response(desired_ones, short_text=short_text)
 
-    def rounded_prices(self, price, convert=True, tether_as_unit_price=False):
+    def rounded_prices(self, price:float|int, convert: bool=True, tether_as_unit_price: bool=False):
         if convert:
             converted_price = price * (self.TetherInTomans if tether_as_unit_price else self.UsdInTomans)
             return mathematix.cut_and_separate(price), mathematix.cut_and_separate(converted_price)
         return mathematix.cut_and_separate(price), None
 
-    def crypto_description_row(self, name: str, symbol: str, price, short_text=True):
+    def crypto_description_row(self, name: str, symbol: str, price:float|int|str, short_text: bool=True):
+        if isinstance(price, str):
+            price = float(price)
         if symbol != 'USDT':
             rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
         else:

@@ -110,6 +110,7 @@ COINS_PERSIAN_NAMES = {
 
 # --------- COINGECKO -----------
 class CoinGecko(APIManager):
+    '''CoinGecko Class. The object of this class will get the cryptocurrency prices from coingecko.'''
     def __init__(self, params=None) -> None:
         # params = {
         #     'vs_currency': "usd",
@@ -123,6 +124,7 @@ class CoinGecko(APIManager):
                                         dict_persian_names=COINS_PERSIAN_NAMES, cache_file_name="coingecko.json")
 
     def extract_api_response(self, desired_coins=None, short_text=True):
+        'Construct a text string consisting of each desired coin prices of a special user.'
         desired_coins = self.get_desired_ones(desired_coins)
 
         res = ''
@@ -140,16 +142,19 @@ class CoinGecko(APIManager):
 
 # --------- COINMARKETCAP -----------
 class CoinMarketCap(APIManager):
+    '''CoinMarketCap Class. The object of this class will get the cryptocurrency prices from CoinMarketCap.'''
+
     def __init__(self, api_key, price_unit='USD', params=None) -> None:
         super(CoinMarketCap, self).__init__(
             url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',
             source="CoinMarketCap.com", dict_persian_names=COINS_PERSIAN_NAMES, cache_file_name='coinmarketcap.json')
-        self.api_key = api_key
-        self.price_unit = price_unit
-        self.symbols_list = None
+        self.api_key: str = api_key
+        self.price_unit: str = price_unit
+        self.symbols_list: str = None
         self.update_symbols_list()
 
     def update_symbols_list(self):
+        '''Construct the list of all cryptocurrency coin symbols'''
         self.symbols_list = ''
         for cn in COINS_PERSIAN_NAMES:
             self.symbols_list += cn + ","
@@ -159,6 +164,7 @@ class CoinMarketCap(APIManager):
         self.price_unit = pu
 
     def send_request(self):
+        '''Send request to coinmarketcap to receive the prices. This function differs from other .send_request methods from other BaseAPIManager childs'''
         cmc = cmc_api.CoinMarketCapAPI(self.api_key)
         latest_cap = cmc.cryptocurrency_quotes_latest(symbol=self.symbols_list, convert=self.price_unit)
         self.cache_data(
@@ -168,27 +174,47 @@ class CoinMarketCap(APIManager):
         return latest_cap.data
 
     def extract_api_response(self, desired_coins=None, short_text=True):
+        '''This function constructs a text string that in each row has the latest price of a
+            cryptocurrency unit in two price units, Dollors and Tomans'''
         desired_coins = self.get_desired_ones(desired_coins)
+        if not self.latest_data:
+            raise NoLatestDataException('Use for anouncing prices!')
 
         res = ''
-        if self.latest_data:
-            for coin in desired_coins:
-                price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
-                name = self.latest_data[coin][0]['name'] if coin != 'USDT' else 'Tether'
-                res += self.crypto_description_row(name, coin, price, short_text=short_text)
+        for coin in desired_coins:
+            price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
+            name = self.latest_data[coin][0]['name'] if coin != 'USDT' else 'Tether'
+            res += self.crypto_description_row(name, coin, price, short_text=short_text)
 
         if res:
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال 👇\n{res}'
         return res
 
 
-    def equalize(self, source_unit: str, amount: float):
+    def equalizer_row(self, unit_symbol: str, value: float|int):
+        '''returns the row shape/format of the equalizing coin.'''
+        value_cut = mathematix.cut_and_separate(value)
+        value = mathematix.persianify(value_cut)
+        return f'🔸 {value} {self.dict_persian_names[unit_symbol]}'
+
+    def equalize(self, source_unit_symbol: str, amount: float|int, desired_coins: list = None) -> str:
+        '''This function gets an amount param, alongside with a source_unit_symbol [and abviously with the users desired coins]
+            and it returns a text string, that in each row of that, shows that amount equivalent in another cryptocurrency unit.'''
+        # First check the required data is prepared
         if not self.latest_data:
-            raise NoLa('No latest data to use for equalizing!')
-        if not source_unit in self.latest_data:
-            raise Exception('Invalid coin symbol!')
+            raise NoLatestDataException('Use for equalizing!')
+        if not source_unit_symbol in self.latest_data:
+            raise InvalidInputException('Coin symbol!')
 
-    def convert(self, source_unit: str, amount: float, target_unit: str) -> float:
-        return self.latest_data[source_unit][0]['quote'][self.price_unit]['price'] \
-            * amount / self.latest_data[target_unit][0]['quote'][self.price_unit]['price']
+        # text header
+        res = f'📌 #معادل سازی 👇\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
+            mathematix.persianify(amount) + ' معادل است با:\n\n'
+        # first row is the equivalent price in USD(the price unit selected by the bot configs.)
+        absolute_amount = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price']))
+        res += self.equalizer_row(source_unit_symbol, absolute_amount)
+        desired_coins = self.get_desired_ones(desired_coins)
+        for coin in desired_coins:
+            amount_in_this_ccoin_unit = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
+            res += self.equalizer_row(amount_in_this_ccoin_unit)
 
+        return res
