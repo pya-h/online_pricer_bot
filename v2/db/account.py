@@ -14,6 +14,7 @@ GARBAGE_COLLECT_INTERVAL = 60
 #*******************************
 
 class UserStates(Enum):
+    NONE = 0
     SEND_POST = 1
     INPUT_EQUALIZER_AMOUNT = 2
     INPUT_EQUALIZER_UNIT = 3
@@ -60,13 +61,16 @@ class Account:
         Account.Database.update(self)
         return self
 
-    def __init__(self, chat_id, currencies=[], cryptos=[]) -> None:
+    def __init__(self, chat_id, currencies=[], cryptos=[], language: str='fa') -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
         self.desired_coins: list = cryptos[:]
         self.desired_currencies: list = currencies[:]
         self.last_interaction: datetime = datetime.now(tz=mathematix.timezone)
         self.state: UserStates = None
+        self.state_date: str = None
+        self.language: str = language
+        
         Account.Instances[chat_id] = self  # this is for optimizing bot performance
         # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
 
@@ -76,6 +80,10 @@ class Account:
             Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=GARBAGE_COLLECT_INTERVAL*60)
             Account.Scheduler.start()
 
+    def change_state(self, state: UserStates = UserStates.NONE, date: str = None):
+        self.state = state;
+        self.state_date = date
+        
     def __str__(self) -> str:
         return f'{self.chat_id}'
 

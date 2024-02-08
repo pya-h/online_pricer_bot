@@ -328,9 +328,11 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 
 async def start_equalizing(update: Update, account: Account, amounts: list, units: list):
     if isinstance(cryptoManager, CoinMarketCap):
-        response = cryptoManager.equalize(source_symbol, amount, account.desired_coins)
-        await update.message.reply_text(response,
-                        reply_markup=get_propper_keyboard(account.is_admin))
+        for amount in amounts:
+            for unit in units:
+                response = cryptoManager.equalize(unit, amount, account.desired_coins)
+                await update.message.reply_text(response,
+                                reply_markup=get_propper_keyboard(account.is_admin))
     else:
         await update.message.reply_text("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...",
             reply_markup=get_propper_keyboard(account.is_admin))
@@ -439,31 +441,34 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     account = Account.Get(update.effective_chat.id)
     data = json.loads(query.data)
     if data['type'] == "coins":
-            if not data['value'] in account.desired_coins:
-                if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
-                    account.desired_coins.append(data['value'])
-                else:
-                    await query.answer(text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.', show_alert=True)
-                    return
+        if account.state == UserStates.INPUT_EQUALIZER_UNIT:
+            
+            return
+        if not data['value'] in account.desired_coins:
+            if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
+                account.desired_coins.append(data['value'])
             else:
-                account.desired_coins.remove(data['value'])
-            await query.message.edit_reply_markup(reply_markup=new_inline_keyboard("coins", cryptoManager.dict_persian_names, account.desired_coins))
+                await query.answer(text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.', show_alert=True)
+                return
+        else:
+            account.desired_coins.remove(data['value'])
+        await query.message.edit_reply_markup(reply_markup=new_inline_keyboard("coins", cryptoManager.dict_persian_names, account.desired_coins))
 
     elif data['type'] == "currencies" or data['type'] == "golds":
-            if not data['value'] in account.desired_currencies:
-                if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
-                    account.desired_currencies.append(data['value'])
-                else:
-                    await query.answer(text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.', show_alert=True)
-                    return
+        if not data['value'] in account.desired_currencies:
+            if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
+                account.desired_currencies.append(data['value'])
             else:
-                account.desired_currencies.remove(data['value'])
+                await query.answer(text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.', show_alert=True)
+                return
+        else:
+            account.desired_currencies.remove(data['value'])
 
-            await query.message.edit_reply_markup(reply_markup=new_inline_keyboard(
-                    data['type'],
-                    currencyManager.just_currency_names if data['type'] == "currencies" else currencyManager.just_gold_names,
-                    account.desired_currencies, True)
-            )
+        await query.message.edit_reply_markup(reply_markup=new_inline_keyboard(
+                data['type'],
+                currencyManager.just_currency_names if data['type'] == "currencies" else currencyManager.just_gold_names,
+                account.desired_currencies, True)
+        )
     account.save()
 
 
