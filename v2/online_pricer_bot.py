@@ -23,8 +23,6 @@ CURRENCY_TOKEN = config('CURRENCY_TOKEN')
 SECOND_CHANNEL_ID = config('SECOND_CHANNEL_ID')
 ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
 
-# WEBHOOK_URL = config("WEBHOOK_URL")
-# WEBHOOK_PORT = int(config("WEBHOOK_PORT", 80))
 schedule_interval = 5
 
 # main keyboard (soft keyboard of course)
@@ -43,6 +41,10 @@ admin_keyboard = [
 cancel_menu = [
     [KeyboardButton(CMD_CANCEL)],
 ]
+
+
+def get_propper_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(menu_main if not is_admin else admin_keyboard, resize_keyboard=True)
 
 async def is_a_member(account: Account, context: CallbackContext):
     return True
@@ -156,7 +158,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
                                         desired_currencies=account.desired_currencies, for_channel=False,
                                         exactly_right_now=not is_latest_data_valid)
 
-        await update.message.reply_text(message, reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+        await update.message.reply_text(message, reply_markup=get_propper_keyboard(account.is_admin))
     else:
         await ask2join(update)
 
@@ -216,13 +218,13 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 # 1⃣ مبلغ را وارد کنید، سپس یک لیست طولانی ارز دیجیتال (همانند لیست قسمت تنظیم ارز دیجیتال) مشاهده می‌کنید، با انتخاب ارز دلخواه، ربات فرایند معادل‌سازی را انجام داده و بلافاصله پیام‌بعدی لیست معاد‌ل‌ها را دریافت خواهید کرد.
 
 # 2⃣ مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
-#                                         reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+#                                         reply_markup=get_propper_keyboard(account.is_admin))
         await update.message.reply_text('''♻️💱 معادل‌گر 💱☯
 در این بخش می‌توانید با مشخص کردن مبلغ مشخص تحت یک ارز مشخص، مبلغ معادل آن در ارزهای دیجیتال دیگر را مشاهده کنید. فرایند معادل‌سازی، بصورت پیش‌فرض، بر اساس لیست ارز دیجیتال تنظیم شده‌ی شما در ربات انجام می‌گردد.
 
 👁‍🗨 راهنما 👁‍🗨
 پس از انتخاب گزینه‌ی <معادل‌گر> مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
-                                        reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+                                        reply_markup=get_propper_keyboard(account.is_admin))
     else:
         await ask2join(update)
 
@@ -324,6 +326,16 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
     else:
         await update.message.reply_text('شما اجازه چنین کاری را ندارید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
+async def start_equalizing(update: Update, account: Account, amounts: list, units: list):
+    if isinstance(cryptoManager, CoinMarketCap):
+        response = cryptoManager.equalize(source_symbol, amount, account.desired_coins)
+        await update.message.reply_text(response,
+                        reply_markup=get_propper_keyboard(account.is_admin))
+    else:
+        await update.message.reply_text("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...",
+            reply_markup=get_propper_keyboard(account.is_admin))
+        
+        
 async def handle_messages(update: Update, context: CallbackContext):
     if update and update.message:
         msg = update.message.text
@@ -349,7 +361,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             if msg == CMD_CANCEL:
                 account.state = None
                 await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
-                                                reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+                                                reply_markup=get_propper_keyboard(account.is_admin))
 
             elif account.state == UserStates.SEND_POST and account.authorization(context.args):
                 # admin is trying to send post
@@ -378,27 +390,48 @@ async def handle_messages(update: Update, context: CallbackContext):
                                                 reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
                 account.state = None
             elif account.state == UserStates.INPUT_EQUALIZER_AMOUNT:
-                msg = msg.split()
-                if len(msg) == 2:
-                    try:
-                        amount = float(msg[0])
-                    except:
-                        await update.message.reply_text("مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
-                                reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
-                        amount = None
-                    if amount:
-                        source_symbol = msg[1]
-                        if isinstance(cryptoManager, CoinMarketCap):
-                            response = cryptoManager.equalize(source_symbol, amount, account.desired_coins)
-                            await update.message.reply_text(response,
-                                            reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
-                        else:
-                            await update.message.reply_text("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...",
-                                reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
-
+                params = msg.split()
+                count_of_params = len(params)
+                # extract parameters and categorize themn into units and amounts
+                amounts = []
+                units = []
+                invalid_units = []
+                index = 0
+                # extract amounts from params
+                try:
+                    while index < count_of_params:
+                        amount = float(params[index])
+                        amounts.append(amount)
+                        index += 1
+                except:
+                    pass
+                
+                if not amounts:
+                    await update.message.reply_text("مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
+                            reply_markup=get_propper_keyboard(account.is_admin))
+                    return
+                
+                # start extracting units
+                while index < count_of_params:
+                    source_symbol = params[index].upper()
+                    if source_symbol in cryptoManager.dict_persian_names:
+                        units.append(source_symbol)
+                    else: # invalud units
+                        invalid_units.append(source_symbol)
+                        
+                    index += 1
+                # if there was some units that are invalid are not supported
+                if invalid_units:
+                    await update.message.reply_text(f'هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند: \n {", ".join(invalid_units)}',
+                                                    reply_markup=get_propper_keyboard(account.is_admin), reply_to_message_id=update.message.message_id)    
+                if not units:
+                    # Open select unit reply_markup list
+                    account.state = UserStates.INPUT_EQUALIZER_UNIT
+                    await update.message.reply_text(f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
+                                                    reply_markup=new_inline_keyboard("coins", cryptoManager.dict_persian_names, account.desired_coins))
             else:
                 await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
-                                                reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+                                                reply_markup=get_propper_keyboard(account.is_admin))
 
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
@@ -456,9 +489,7 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
 
     print("Server is up and running...")
-    # print(WEBHOOK_URL, WEBHOOK_PORT)
     app.run_polling(poll_interval=1.5, timeout=50)
-    # app.run_webhook(listen="0.0.0.0", port=WEBHOOK_PORT, webhook_url=f"{WEBHOOK_URL}", stop_signals=None)
 
 
 if __name__ == '__main__':
