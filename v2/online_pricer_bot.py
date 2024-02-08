@@ -1,7 +1,8 @@
 from telegram.ext import *
 from telegram import *
-from api.currency import *
-from api.crypto import *
+from api.currency import SourceArena
+from db.account import UserStates, Account
+from api.crypto import CoinMarketCap, CoinGecko
 from decouple import config
 from db.account import Account
 import json
@@ -44,6 +45,7 @@ cancel_menu = [
 ]
 
 async def is_a_member(account: Account, context: CallbackContext):
+    return True
     chat1 = await context.bot.get_chat_member(CHANNEL_ID, account.chat_id)
     chat2 = await context.bot.get_chat_member(SECOND_CHANNEL_ID, account.chat_id)
     return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
@@ -205,13 +207,22 @@ async def cmd_select_golds(update: Update, context: CallbackContext):
 async def cmd_equalizer(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        await update.message.reply_text('''📌 #لیست_بازار_طلا
+        account.state = UserStates.INPUT_EQUALIZER_AMOUNT
+#         await update.message.reply_text('''♻️💱 معادل‌گر 💱☯
+# در این بخش می‌توانید با مشخص کردن مبلغ مشخص تحت یک ارز مشخص، مبلغ معادل آن در ارزهای دیجیتال دیگر را مشاهده کنید. فرایند معادل‌سازی، بصورت پیش‌فرض، بر اساس لیست ارز دیجیتال تنظیم شده‌ی شما در ربات انجام می‌گردد.
 
-👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("golds", currencyManager.just_gold_names,
-                                                                         account.desired_currencies, True))
+# 👁‍🗨 راهنما 👁‍🗨
+# پس از انتخاب گزینه‌ی <معادل‌گر> دو روش پیش‌ رو خواهید داشت:
+# 1⃣ مبلغ را وارد کنید، سپس یک لیست طولانی ارز دیجیتال (همانند لیست قسمت تنظیم ارز دیجیتال) مشاهده می‌کنید، با انتخاب ارز دلخواه، ربات فرایند معادل‌سازی را انجام داده و بلافاصله پیام‌بعدی لیست معاد‌ل‌ها را دریافت خواهید کرد.
+
+# 2⃣ مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
+#                                         reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+        await update.message.reply_text('''♻️💱 معادل‌گر 💱☯
+در این بخش می‌توانید با مشخص کردن مبلغ مشخص تحت یک ارز مشخص، مبلغ معادل آن در ارزهای دیجیتال دیگر را مشاهده کنید. فرایند معادل‌سازی، بصورت پیش‌فرض، بر اساس لیست ارز دیجیتال تنظیم شده‌ی شما در ربات انجام می‌گردد.
+
+👁‍🗨 راهنما 👁‍🗨
+پس از انتخاب گزینه‌ی <معادل‌گر> مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
+                                        reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
     else:
         await ask2join(update)
 
@@ -294,7 +305,7 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
 async def cmd_send_post(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if account.authorization(context.args):
-        account.state = Account.STATE_SEND_POST
+        account.state = UserStates.SEND_POST
         await update.message.reply_text('''🔹 پست خود را ارسال کنید:
 (این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''', reply_markup=ReplyKeyboardMarkup(cancel_menu, resize_keyboard=True))
     else:
@@ -340,7 +351,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
                                                 reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
 
-            elif account.state == Account.STATE_SEND_POST and account.authorization(context.args):
+            elif account.state == UserStates.SEND_POST and account.authorization(context.args):
                 # admin is trying to send post
                 all_accounts = Account.Everybody()
                 progress_text = "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: "
@@ -366,6 +377,25 @@ async def handle_messages(update: Update, context: CallbackContext):
                 await update.message.reply_text(f'✅ پیام شما با موفقیت برای تمامی کاربران ربات ({len(all_accounts)} نفر) ارسال شد.',
                                                 reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
                 account.state = None
+            elif account.state == UserStates.INPUT_EQUALIZER_AMOUNT:
+                msg = msg.split()
+                if len(msg) == 2:
+                    try:
+                        amount = float(msg[0])
+                    except:
+                        await update.message.reply_text("مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
+                                reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+                        amount = None
+                    if amount:
+                        source_symbol = msg[1]
+                        if isinstance(cryptoManager, CoinMarketCap):
+                            response = cryptoManager.equalize(source_symbol, amount, account.desired_coins)
+                            await update.message.reply_text(response,
+                                            reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+                        else:
+                            await update.message.reply_text("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...",
+                                reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
+
             else:
                 await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
                                                 reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))

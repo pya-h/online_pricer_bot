@@ -3,6 +3,7 @@ from db.interface import *
 from datetime import datetime, date
 from apscheduler.schedulers.background import BackgroundScheduler
 import tools.mathematix as mathematix
+from enum import Enum
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
@@ -12,9 +13,13 @@ GARBAGE_COLLECT_INTERVAL = 60
 # TODO: PUT LAST INTERACTION IN DATABASE, FOR COLLECTING USER STATISTICS
 #*******************************
 
+class UserStates(Enum):
+    SEND_POST = 1
+    INPUT_EQUALIZER_AMOUNT = 2
+    INPUT_EQUALIZER_UNIT = 3
+
 class Account:
     # states:
-    STATE_SEND_POST = 1
 
     MaxSelectionInDesiredOnes = 20
     Database = DatabaseInterface.Get()
@@ -56,12 +61,12 @@ class Account:
         return self
 
     def __init__(self, chat_id, currencies=[], cryptos=[]) -> None:
-        self.is_admin = False
-        self.chat_id = chat_id
-        self.desired_coins = cryptos[:]
-        self.desired_currencies = currencies[:]
-        self.last_interaction = datetime.now(tz=mathematix.timezone)
-        self.state = None
+        self.is_admin: bool = False
+        self.chat_id: int = chat_id
+        self.desired_coins: list = cryptos[:]
+        self.desired_currencies: list = currencies[:]
+        self.last_interaction: datetime = datetime.now(tz=mathematix.timezone)
+        self.state: UserStates = None
         Account.Instances[chat_id] = self  # this is for optimizing bot performance
         # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
 

@@ -68,7 +68,7 @@ class APIManager(BaseAPIManager):
     # sourcearena.ir
 
     def __init__(self, url: str, source: str, dict_persian_names: dict, max_desired_selection=5, params=None, cache_file_name: str = None) -> None:
-        super(APIManager, self).__init__(url, source, params=params)
+        super(APIManager, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
         self.latest_data = []
         self.dict_persian_names = dict_persian_names
         self.MAX_DESIRED_SELECTION = max_desired_selection

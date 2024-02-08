@@ -208,7 +208,7 @@ class CoinMarketCap(APIManager):
             raise InvalidInputException('Coin symbol!')
 
         # text header
-        res: str = f'📌 #معادل سازی 👇\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
+        res: str = f'💱☯ #معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
             ("%s %s" % (mathematix.persianify(amount), self.dict_persian_names[source_unit_symbol])) + ' معادل است با:\n\n'
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
