@@ -2,7 +2,7 @@ from decouple import config
 from db.interface import *
 from datetime import datetime, date
 from apscheduler.schedulers.background import BackgroundScheduler
-import tools
+import tools.mathematix as mathematix
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
@@ -19,12 +19,12 @@ class Account:
     MaxSelectionInDesiredOnes = 20
     Database = DatabaseInterface.Get()
     Scheduler = None
-    
+
     Instances = {}  # active accounts will cache into this; so there's no need to access database everytime
     # causing a slight enhancement on performance
     @staticmethod
     def GarbageCollect():
-        now = datetime.now(tz=tools.timezone)
+        now = datetime.now(tz=mathematix.tools.timezone)
         garbage = []
         for chat_id in Account.Instances:
             if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= GARBAGE_COLLECT_INTERVAL / 2:
@@ -33,12 +33,11 @@ class Account:
         # we first collect redundant chat_id s and then delete them from the memory
         for g in garbage:
             del Account.Instances[g]
-        # tools.log("Garbage's been collected successfully")
 
     @staticmethod
     def Get(chat_id):
         if chat_id in Account.Instances:
-            Account.Instances[chat_id].last_interaction = datetime.now(tz=tools.timezone)
+            Account.Instances[chat_id].last_interaction = datetime.now(tz=mathematix.tools.timezone)
             return Account.Instances[chat_id]
         row = Account.Database.get(chat_id)
         if row:
@@ -51,17 +50,17 @@ class Account:
     @staticmethod
     def Everybody():
         return Account.Database.get_all()
-    
+
     def save(self):
         Account.Database.update(self)
         return self
-    
+
     def __init__(self, chat_id, currencies=[], cryptos=[]) -> None:
         self.is_admin = False
         self.chat_id = chat_id
         self.desired_coins = cryptos[:]
         self.desired_currencies = currencies[:]
-        self.last_interaction = datetime.now(tz=tools.timezone)
+        self.last_interaction = datetime.now(tz=mathematix.tools.timezone)
         self.state = None
         Account.Instances[chat_id] = self  # this is for optimizing bot performance
         # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
@@ -92,9 +91,6 @@ class Account:
         if chat_id in Account.Instances:
             del Account.Instances[chat_id]
 
-    # def __del__(self):
-        # tools.log(f'Account #{self.chat_id} has been destroyed and freed...')
-
     def str_desired_coins(self):
         return ';'.join(self.desired_coins)
 
@@ -106,7 +102,7 @@ class Account:
         # first save all last interactions:
         for id in Account.Instances:
             Account.Instances[id].save()
-        now = datetime.now(tz=tools.timezone).date()
+        now = datetime.now(tz=mathematix.tools.timezone).date()
         today_actives, yesterday_actives, this_week_actives, this_month_actives = 0, 0, 0, 0
 
         last_interactions = Account.Database.get_all(column=DatabaseInterface.ACCOUNT_LAST_INTERACTION)
@@ -128,5 +124,5 @@ class Account:
                 elif now.year == interaction_date.year + 1 and now.month == 1 and interaction_date.month == 12:
                         delta = now - (interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
                         if delta and delta.days == 1:
-                            yesterday_actives += 1           
+                            yesterday_actives += 1
         return {'daily': today_actives, 'yesterday': yesterday_actives, 'weekly': this_week_actives, 'monthly': this_month_actives, 'all': len(last_interactions)}

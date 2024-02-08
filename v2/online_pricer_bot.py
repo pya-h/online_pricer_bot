@@ -1,10 +1,11 @@
 from telegram.ext import *
 from telegram import *
-from api.currency_api import *
-from api.crypto_api import *
+from api.currency import *
+from api.crypto import *
 from decouple import config
 from db.account import Account
 import json
+from tools import manuwriter
 
 # constants such as keyboard button texts
 COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_SELECT_GOLDS, CMD_CANCEL) = (
@@ -91,8 +92,8 @@ is_channel_updates_started = False
 
 
 def signed_message(message: str, for_channel: bool=True) -> str:
-    timestamp = tools.timestamp()
-    interval_fa = tools.persianify(schedule_interval.__str__())
+    timestamp = mathematix.tools.timestamp()
+    interval_fa = mathematix.tools.persianify(schedule_interval.__str__())
     header = f'✅ بروزرسانی قیمت ها (هر {interval_fa} دقیقه)\n' if for_channel else ''
     header += timestamp + '\n' # + '🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
     footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
@@ -107,7 +108,7 @@ def construct_new_message(desired_coins=None, desired_currencies=None, exactly_r
             currencies = currencyManager.get(desired_currencies, short_text=short_text) if exactly_right_now else \
                 currencyManager.get_latest(desired_currencies)
     except Exception as ex:
-        tools.log("Cannot obtain Currencies! ", ex)
+        manuwriter.log("Cannot obtain Currencies! ", ex, currencyManager.Source)
         currencies = currencyManager.get_latest(desired_currencies, short_text=short_text)
     try:
         if desired_coins or (not desired_coins and not desired_currencies):
@@ -115,7 +116,7 @@ def construct_new_message(desired_coins=None, desired_currencies=None, exactly_r
             cryptos = cryptoManager.get(desired_coins, short_text=short_text) if exactly_right_now else \
                 cryptoManager.get_latest(desired_coins, short_text)
     except Exception as ex:
-        tools.log("Cannot obtain Cryptos! ", ex)
+        manuwriter.log("Cannot obtain Cryptos! ", ex, cryptoManager.Source)
         cryptos = cryptoManager.get_latest(desired_coins, short_text=short_text)
     return signed_message(currencies + cryptos, for_channel=for_channel)
 
@@ -213,7 +214,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
                     schedule_interval = float(context.args[-1])
 
         except Exception as e:
-            tools.log("Something went wrong while scheduling: ", e)
+            manuwriter.log("Something went wrong while scheduling: ", e)
             pass
         global is_channel_updates_started
         if not is_channel_updates_started:
@@ -289,7 +290,7 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
     if Account.Get(update.effective_chat.id).authorization(context.args):
         stats = Account.Statistics()
         await update.message.reply_text(f'''🔷 تعداد کاربران فعال ربات:
-                                        
+
 🔹 امروز: {stats['daily']}
 🔹 دیروز: {stats['yesterday']}
 🔹 هفته اخیر: {stats['weekly']}
@@ -324,7 +325,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 account.state = None
                 await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
                                                 reply_markup=ReplyKeyboardMarkup(menu_main if not account.is_admin else admin_keyboard, resize_keyboard=True))
-            
+
             elif account.state == Account.STATE_SEND_POST and account.authorization(context.args):
                 # admin is trying to send post
                 all_accounts = Account.Everybody()
@@ -419,4 +420,4 @@ if __name__ == '__main__':
         main()
     except Exception as ex:
         print(ex)
-        tools.log("Server crashed because: ", ex)
+        manuwriter.log("Server crashed because: ", ex, 'FATAL')

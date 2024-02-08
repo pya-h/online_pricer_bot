@@ -2,6 +2,7 @@ from datetime import datetime
 import pytz
 from persiantools import digits
 
+
 timezone = pytz.timezone('Asia/Tehran')
 
 def separate_by3(number: float, precision=None):
@@ -12,16 +13,16 @@ def cut(number, return_string=False):
     intnum = int(number)
     if intnum == number or intnum >= 1000:
         return str(intnum) if return_string else intnum, 0
-    
+
     strnum = str(number)
     if 'e' in strnum:
         strnum = f"{number:.16f}"
     if '.' not in strnum:  # just to double-check
         return strnum if return_string else int(strnum), 0
-    
+
     dot_index = strnum.index('.')
     end = len(strnum)
-    
+
     if number >= 10:  # limit number to two digits after .
         if dot_index + 3 <= end:
             end = dot_index + 3
@@ -45,7 +46,7 @@ def cut(number, return_string=False):
         end = ei + 3
     while end > ei and strnum[end] == '0':
         end -= 1
-    
+
     return strnum[:end + 1] if return_string else float(strnum[:end + 1]), end - dot_index
 
 
@@ -54,7 +55,7 @@ def persianify(number: str):
 
 def cut_and_separate(num):
     num, precision = cut(num)
-    
+
     return  separate_by3(num, precision)
 
 
@@ -133,18 +134,6 @@ def jalali_to_gregorian(jy: int, jm: int, jd: int):
         gd -= sal_a[gm]
         gm += 1
     return gy, gm, gd
-
-
-def log(msg, exception=None):
-    ts = datetime.now(tz=timezone)
-    content = ts.strftime('%Y-%m-%d %H:%M:%S')
-    if exception:
-        content = f'{content}\t->\tSHIT: {msg}\n\t\tX: {exception}'
-    else:
-        content += f'\t->\t{msg}'
-    logfile = open('logs.fux', 'a')
-    logfile.write(content + "\n\n")
-    logfile.close()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import coinmarketcapapi as cmc_api
 from api.manager import *
+from tools.exceptions import NoLatestDataException, InvalidInputException
 
 COINS_PERSIAN_NAMES = {
     'BTC': 'بیت کوین',
@@ -118,8 +119,8 @@ class CoinGecko(APIManager):
         #     'sparkline': False,
         #     'price_change_percentage': "24h",
         # }
-        super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/', source="CoinGecko.com",
-                                        dict_persian_names=COINS_PERSIAN_NAMES)
+        super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/list', source="CoinGecko.com",
+                                        dict_persian_names=COINS_PERSIAN_NAMES, cache_file_name="coingecko.json")
 
     def extract_api_response(self, desired_coins=None, short_text=True):
         desired_coins = self.get_desired_ones(desired_coins)
@@ -142,7 +143,7 @@ class CoinMarketCap(APIManager):
     def __init__(self, api_key, price_unit='USD', params=None) -> None:
         super(CoinMarketCap, self).__init__(
             url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',
-            source="CoinMarketCap.com", dict_persian_names=COINS_PERSIAN_NAMES)
+            source="CoinMarketCap.com", dict_persian_names=COINS_PERSIAN_NAMES, cache_file_name='coinmarketcap.json')
         self.api_key = api_key
         self.price_unit = price_unit
         self.symbols_list = None
@@ -160,6 +161,10 @@ class CoinMarketCap(APIManager):
     def send_request(self):
         cmc = cmc_api.CoinMarketCapAPI(self.api_key)
         latest_cap = cmc.cryptocurrency_quotes_latest(symbol=self.symbols_list, convert=self.price_unit)
+        self.cache_data(
+            json.dumps(latest_cap.data)
+        )
+
         return latest_cap.data
 
     def extract_api_response(self, desired_coins=None, short_text=True):
@@ -176,6 +181,14 @@ class CoinMarketCap(APIManager):
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال 👇\n{res}'
         return res
 
+
+    def equalize(self, source_unit: str, amount: float):
+        if not self.latest_data:
+            raise NoLa('No latest data to use for equalizing!')
+        if not source_unit in self.latest_data:
+            raise Exception('Invalid coin symbol!')
+
     def convert(self, source_unit: str, amount: float, target_unit: str) -> float:
         return self.latest_data[source_unit][0]['quote'][self.price_unit]['price'] \
             * amount / self.latest_data[target_unit][0]['quote'][self.price_unit]['price']
+

@@ -1,13 +1,13 @@
-import subprocess
+from subprocess import call
 import time
-import tools
+from tools.manuwriter import log
 
 print("Starting server ...")
 
 while True:
     try:
-        subprocess.call(["python3", "online_pricer.py"])
+        call(["python3", "online_pricer.py"])
     except Exception as ex:
-        tools.log("online_pricer.py crash:", ex)
+        log("online_pricer.py crash:", ex, 'FATAL')
         print("Subprocess fucked; Restarting server ...")
     time.sleep(5)
