@@ -5,3 +5,4 @@ test.py
 api.cache
 logs
 *pycache*
+main.env

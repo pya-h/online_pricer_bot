@@ -1,99 +1,22 @@
 from api.manager import *
-from flag import flag
+from tools.exceptions import InvalidInputException
 
-CURRENCIES_PERSIAN_NAMES = {
-    "USD": "دلار (آمریکا)",
-    "EUR": "یورو (اروپا)",
-    "AED": "درهم (امارات)",
-    "GBP": "پوند (انگلیس)",
-    "TRY": "لیر (ترکیه)",
-    "CHF": "فرانک (سوئیس)",
-    "CNY": "یوان (چین)",
-    "JPY": "ین (ژاپن)",
-    "KRW": "وون (کره جنوبی)",
-    "CAD": "دلار (کانادا)",
-    "AUD": "دلار (استرالیا)",
-    "NZD": "دلار (نیوزیلند)",
-    "SGD": "دلار (سنگاپور)",
-    "HKD": "دلار (هنگ کنگ)",
-    "INR": "روپیه (هند)",
-    "PKR": "روپیه (پاکستان)",
-    "AFN": "افغانی (افغانستان)",
-    "DKK": "کرون (دانمارک)",
-    "SEK": "کرون (سوئد)",
-    "NOK": "کرون (نروژ)",
-    "SAR": "ریال (عربستان)",
-    "QAR": "ریال (قطر)",
-    "OMR": "ریال (عمان)",
-    "KWD": "دینار (کویت)",
-    "BHD": "دینار (بحرین)",
-    "IQD": "دینار (عراق)",
-    "MYR": "رینگیت (مالزی)",
-    "THB": "بات (تایلند)",
-    "RUB": "روبل (روسیه)",
-    "AZN": "منات (آذربایجان)",
-    "TMM": "منات (ترکمنستان)",
-    "AMD": "درام (ارمنستان)",
-    "GEL": "لاری (گرجستان)",
-    "KGS": "سوم (قرقیزستان)",
-    "TJS": "سامانی (تاجیکستان)",
-    "SYP": "لیر (سوریه)",
-}
+def get_persian_currency_names() -> tuple:
+    currency_names_fa = "{}"
+    gold_names_fa = "{}"
+    try:
+        json_file = open("./api/national-currencies.fa.json", "r")
+        currency_names_fa = json_file.read()
+        json_file.close()
+        json_file = open("./api/golds.fa.json", "r")
+        gold_names_fa = json_file.read()
+        json_file.close()
+    except Exception as e:
+        print(e)
+        pass
 
-GOLDS_PERSIAN_NAMES = {
-    "ONS": "انس طلا",
-    "ONSNOGHRE": "انس نقره",
-    "PALA": "انس پلاتین",
-    "ONSPALA": "انس پالادیوم",
-    "OIL": "نفت سبک",
-    "TALA_18": "طلا 18 عیار",
-    "TALA_24": "طلا 24 عیار",
-    "TALA_MESGHAL": "مثقال طلا",
-    "SEKE_EMAMI": "سکه امامی",
-    "SEKE_BAHAR": "سکه بهار آزادی",
-    "SEKE_NIM": "نیم سکه",
-    "SEKE_ROB": "ربع سکه",
-    "SEKE_GERAMI": "سکه گرمی",
-}
+    return json.loads(currency_names_fa), json.loads(gold_names_fa)
 
-# CURRENCY_FLAG_ICONS = {
-#     "USD": ":us:",
-#     "EUR": ":eu:",
-#     "AED": ":aE:",
-#     "GBP": ":gb:",
-#     "TRY": ':tr:',
-#     "CHF": ':ch:',
-#     "CNY": ":cn:",
-#     "JPY": ":jp:",
-#     "KRW": ":kr:",
-#     "CAD": ":ca:",
-#     "AUD": ":au:",
-#     "NZD": ":nz:",
-#     "SGD": ":sg:",
-#     "HKD": ":hk:",
-#     "INR": ":in:",
-#     "PKR": ":pk:",
-#     "AFN": ":af:",
-#     "DKK": ":dk:",
-#     "SEK": ":se:",
-#     "NOK": ":no:",
-#     "SAR": ":SA:",
-#     "QAR": ":qa:",
-#     "OMR": ":om:",
-#     "KWD": ":kw:",
-#     "BHD": ":bh:",
-#     "IQD": ":iq:",
-#     "MYR": ":my:",
-#     "THB": ":th:",
-#     "RUB": ":ru:",
-#     "AZN": ":az:",
-#     "TMM": ":tm:",
-#     "AMD": ":am:",
-#     "GEL": ":ge:",
-#     "KGS": ":kg:",
-#     "TJS": ":tj:",
-#     "SYP": ":sy:",
-# }
 
 class AbanTether(BaseAPIManager):
     TetherSymbol = 'USDT'
@@ -114,17 +37,35 @@ class AbanTether(BaseAPIManager):
 class SourceArena(APIManager):
     Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
     EntitiesIndollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
+    CurrenciesInPersian = None
+    NationalCurrenciesInPersian = None
+    GoldsInPersian = None
+
+    @staticmethod
+    def LoadPersianNames():
+        SourceArena.GoldsInPersian, SourceArena.NationalCurrenciesInPersian = get_persian_currency_names()
+        SourceArena.CurrenciesInPersian = dict(SourceArena.NationalCurrenciesInPersian, **SourceArena.GoldsInPersian)
+
+    @staticmethod
+    def GetPersianName(symbol: str) -> str:
+        if SourceArena.CurrenciesInPersian is None or not SourceArena.CurrenciesInPersian:
+            SourceArena.LoadPersianNames() 
+        if symbol not in SourceArena.CurrenciesInPersian:
+            raise InvalidInputException('Currency Symbol/Name!')
+        return SourceArena.CurrenciesInPersian[symbol]
+
 
     def __init__(self, token: str, aban_tether_token: str) -> None:
         self.token = token
+
+        if not SourceArena.NationalCurrenciesInPersian or not SourceArena.GoldsInPersian or not SourceArena.CurrenciesInPersian:
+            SourceArena.LoadPersianNames()
+            
         super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency",
-                                          source="Sourcearena.ir", cache_file_name='sourcearena.json',
-                                          dict_persian_names=dict(CURRENCIES_PERSIAN_NAMES, **GOLDS_PERSIAN_NAMES))
-        self.just_gold_names, self.just_currency_names = GOLDS_PERSIAN_NAMES, CURRENCIES_PERSIAN_NAMES
+                                          source="Sourcearena.ir", cache_file_name='sourcearena.json')
         self.aban_tether_token = 'Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Nzg2NzUiLCJpYXQiOjE2OTc2NDcyNTAsImV4cCI6MTcyOTE4MzI1MH0.QfVVufZo8VEtrkbRGoakINgWfyHLPVEcWWnx26nSZ6M'
         self.tetherManager = AbanTether(aban_tether_token)
         self.tether_manager_respond = False
-
 
     def get_desired_ones(self, desired_ones: list) -> list:
         if not desired_ones:
@@ -149,16 +90,16 @@ class SourceArena(APIManager):
                 if slug not in SourceArena.EntitiesIndollars:
                     toman, _ = self.rounded_prices(price, False)
                     toman = mathematix.persianify(toman)
-                    rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان"
+                    rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان"
                 else:
                     usd, toman = self.rounded_prices(price)
                     toman = mathematix.persianify(toman)
-                    rows[slug] = f"{self.dict_persian_names[slug]}: {toman} تومان / {usd}$"
+                    rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
 
         res_curr = ''
         res_gold = ''
         for slug in desired_ones:
-            if slug in self.just_currency_names:  # just currencies have flag
+            if slug in SourceArena.NationalCurrenciesInPersian:
                 res_curr += f'🔸 {rows[slug]}\n'
             else:
                 res_gold += f'🔸 {rows[slug]}\n'

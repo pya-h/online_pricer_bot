@@ -9,8 +9,8 @@ import json
 from tools import manuwriter, mathematix
 
 # constants such as keyboard button texts
-COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_SELECT_GOLDS, CMD_CANCEL) = (
-    'مشاهده لیست قیمت من', 'ارز دیجیتال', "ارز", "طلا", "لغو")
+COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_SELECT_GOLDS, CMD_EQUALIZER, CMD_CANCEL) = (
+    'مشاهده لیست قیمت من', 'ارز دیجیتال', "ارز", "طلا", "تبدیل گر", "لغو")
 ADMIN_COMMANDS = (CMD_ADMIN_POST, CMD_ADMIN_START_SCHEDULE, CMD_ADMIN_STOP_SCHEDULE, CMD_ADMIN_STATISTICS) \
     = ('اطلاع رسانی', 'زمانبندی کانال', 'توقف زمانبندی', 'آمار')
 
@@ -27,7 +27,7 @@ schedule_interval = 5
 
 # main keyboard (soft keyboard of course)
 menu_main = [
-    [KeyboardButton(CMD_GET)],
+    [KeyboardButton(CMD_EQUALIZER), KeyboardButton(CMD_GET)],
     [KeyboardButton(CMD_SELECT_COINS), KeyboardButton(CMD_SELECT_CURRENCIES), KeyboardButton(CMD_SELECT_GOLDS)],
 ]
 
@@ -47,7 +47,6 @@ def get_propper_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(menu_main if not is_admin else admin_keyboard, resize_keyboard=True)
 
 async def is_a_member(account: Account, context: CallbackContext):
-    return True
     chat1 = await context.bot.get_chat_member(CHANNEL_ID, account.chat_id)
     chat2 = await context.bot.get_chat_member(SECOND_CHANNEL_ID, account.chat_id)
     return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
@@ -73,7 +72,7 @@ def new_inline_keyboard(name, all_choices: dict, selected_ones: list, show_full_
     if not selected_ones:
         selected_ones = []
     buttons = []
-    row = []
+    row = [] 
     i = 0
     for choice in all_choices:
         btn_text = choice if not show_full_names else all_choices[choice]
@@ -171,7 +170,7 @@ async def cmd_select_coins(update: Update, context: CallbackContext):
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("coins", cryptoManager.dict_persian_names,
+                                        reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian,
                                                                          account.desired_coins))
     else:
         await ask2join(update)
@@ -185,7 +184,7 @@ async def cmd_select_currencies(update: Update, context: CallbackContext):
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("currencies", currencyManager.just_currency_names,
+                                        reply_markup=new_inline_keyboard("currencies", currencyManager.NationalCurrenciesInPersian,
                                                                          account.desired_currencies, True))
     else:
         await ask2join(update)
@@ -200,7 +199,7 @@ async def cmd_select_golds(update: Update, context: CallbackContext):
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("golds", currencyManager.just_gold_names,
+                                        reply_markup=new_inline_keyboard("golds", currencyManager.GoldsInPersian,
                                                                          account.desired_currencies, True))
     else:
         await ask2join(update)
@@ -209,21 +208,15 @@ async def cmd_select_golds(update: Update, context: CallbackContext):
 async def cmd_equalizer(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        account.state = UserStates.INPUT_EQUALIZER_AMOUNT
-#         await update.message.reply_text('''♻️💱 معادل‌گر 💱☯
-# در این بخش می‌توانید با مشخص کردن مبلغ مشخص تحت یک ارز مشخص، مبلغ معادل آن در ارزهای دیجیتال دیگر را مشاهده کنید. فرایند معادل‌سازی، بصورت پیش‌فرض، بر اساس لیست ارز دیجیتال تنظیم شده‌ی شما در ربات انجام می‌گردد.
-
-# 👁‍🗨 راهنما 👁‍🗨
-# پس از انتخاب گزینه‌ی <معادل‌گر> دو روش پیش‌ رو خواهید داشت:
-# 1⃣ مبلغ را وارد کنید، سپس یک لیست طولانی ارز دیجیتال (همانند لیست قسمت تنظیم ارز دیجیتال) مشاهده می‌کنید، با انتخاب ارز دلخواه، ربات فرایند معادل‌سازی را انجام داده و بلافاصله پیام‌بعدی لیست معاد‌ل‌ها را دریافت خواهید کرد.
-
-# 2⃣ مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
-#                                         reply_markup=get_propper_keyboard(account.is_admin))
-        await update.message.reply_text('''♻️💱 معادل‌گر 💱☯
+        account.change_state(UserStates.INPUT_EQUALIZER_AMOUNT)
+        await update.message.reply_text('''♻️💱 تبدیل‌گر، 💱☯
 در این بخش می‌توانید با مشخص کردن مبلغ مشخص تحت یک ارز مشخص، مبلغ معادل آن در ارزهای دیجیتال دیگر را مشاهده کنید. فرایند معادل‌سازی، بصورت پیش‌فرض، بر اساس لیست ارز دیجیتال تنظیم شده‌ی شما در ربات انجام می‌گردد.
 
 👁‍🗨 راهنما 👁‍🗨
-پس از انتخاب گزینه‌ی <معادل‌گر> مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
+پس از انتخاب گزینه‌ی <تبدیل‌گر> دو روش پیش‌ رو خواهید داشت:
+1⃣ مبلغ را وارد کنید، سپس یک لیست طولانی ارز دیجیتال (همانند لیست قسمت تنظیم ارز دیجیتال) مشاهده می‌کنید، با انتخاب ارز دلخواه، ربات فرایند معادل‌سازی را انجام داده و بلافاصله پیام‌بعدی لیست معاد‌ل‌ها را دریافت خواهید کرد.
+
+2⃣ مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
                                         reply_markup=get_propper_keyboard(account.is_admin))
     else:
         await ask2join(update)
@@ -307,7 +300,7 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
 async def cmd_send_post(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if account.authorization(context.args):
-        account.state = UserStates.SEND_POST
+        account.change_state(UserStates.SEND_POST)
         await update.message.reply_text('''🔹 پست خود را ارسال کنید:
 (این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''', reply_markup=ReplyKeyboardMarkup(cancel_menu, resize_keyboard=True))
     else:
@@ -326,21 +319,20 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
     else:
         await update.message.reply_text('شما اجازه چنین کاری را ندارید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
-async def start_equalizing(update: Update, account: Account, amounts: list, units: list):
+async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
     if isinstance(cryptoManager, CoinMarketCap):
         for amount in amounts:
             for unit in units:
                 response = cryptoManager.equalize(unit, amount, account.desired_coins)
-                await update.message.reply_text(response,
-                                reply_markup=get_propper_keyboard(account.is_admin))
+                await func_send_message(response)
     else:
-        await update.message.reply_text("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...",
-            reply_markup=get_propper_keyboard(account.is_admin))
+        await func_send_message("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...")
         
         
 async def handle_messages(update: Update, context: CallbackContext):
     if update and update.message:
         msg = update.message.text
+        # TODO: Use match-case here
         if msg == CMD_GET:
             await cmd_get_prices(update, context)
         elif msg == CMD_SELECT_COINS:
@@ -357,11 +349,13 @@ async def handle_messages(update: Update, context: CallbackContext):
             await cmd_stop_schedule(update, context)
         elif msg == CMD_ADMIN_STATISTICS:
             await cmd_report_statistics(update, context)
+        elif msg == CMD_EQUALIZER:
+            await cmd_equalizer(update, context)
         else:
             # check account state first, to see if he/she is in input state
             account = Account.Get(update.effective_chat.id)
             if msg == CMD_CANCEL:
-                account.state = None
+                account.change_state()  # reset .state and .state_data
                 await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
                                                 reply_markup=get_propper_keyboard(account.is_admin))
 
@@ -390,13 +384,13 @@ async def handle_messages(update: Update, context: CallbackContext):
                     await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
                 await update.message.reply_text(f'✅ پیام شما با موفقیت برای تمامی کاربران ربات ({len(all_accounts)} نفر) ارسال شد.',
                                                 reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-                account.state = None
+                account.change_state()  # reset .state and .state_data
             elif account.state == UserStates.INPUT_EQUALIZER_AMOUNT:
                 params = msg.split()
                 count_of_params = len(params)
                 # extract parameters and categorize themn into units and amounts
                 amounts = []
-                units = []
+                units = [] if not account.state_data else account.state_data
                 invalid_units = []
                 index = 0
                 # extract amounts from params
@@ -416,7 +410,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 # start extracting units
                 while index < count_of_params:
                     source_symbol = params[index].upper()
-                    if source_symbol in cryptoManager.dict_persian_names:
+                    if source_symbol in cryptoManager.CoinsInPersian:
                         units.append(source_symbol)
                     else: # invalud units
                         invalid_units.append(source_symbol)
@@ -429,8 +423,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                 if not units:
                     # Open select unit reply_markup list
                     account.state = UserStates.INPUT_EQUALIZER_UNIT
+                    account.change_state(UserStates.INPUT_EQUALIZER_UNIT, amounts)
                     await update.message.reply_text(f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
-                                                    reply_markup=new_inline_keyboard("coins", cryptoManager.dict_persian_names, account.desired_coins))
+                                                    reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian, account.desired_coins))
+                else:
+                    await start_equalizing(update.message.reply_text, account, amounts, units)
+                    account.change_state()  # reset state
             else:
                 await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
                                                 reply_markup=get_propper_keyboard(account.is_admin))
@@ -442,7 +440,13 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     data = json.loads(query.data)
     if data['type'] == "coins":
         if account.state == UserStates.INPUT_EQUALIZER_UNIT:
-            
+            if account.state_data:
+                await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text), 
+                                    account, account.state_data, [data['value'].upper()])
+                account.change_state()  # reset state
+            else:  # actually this segment occurance probability is near zero, but i wrote it down anyway to handle any condition possible(or not.!)
+                await query.message.edit_text('حالا مبلغ مربوط به این واحد ارزی را وارد کنید:', reply_markup=get_propper_keyboard(account.is_admin))
+                account.change_state(UserStates.INPUT_EQUALIZER_AMOUNT, data['value'].upper())
             return
         if not data['value'] in account.desired_coins:
             if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
@@ -452,8 +456,8 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 return
         else:
             account.desired_coins.remove(data['value'])
-        await query.message.edit_reply_markup(reply_markup=new_inline_keyboard("coins", cryptoManager.dict_persian_names, account.desired_coins))
-
+        await query.message.edit_reply_markup(reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian, account.desired_coins))
+    
     elif data['type'] == "currencies" or data['type'] == "golds":
         if not data['value'] in account.desired_currencies:
             if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
@@ -463,10 +467,10 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 return
         else:
             account.desired_currencies.remove(data['value'])
-
+        
         await query.message.edit_reply_markup(reply_markup=new_inline_keyboard(
                 data['type'],
-                currencyManager.just_currency_names if data['type'] == "currencies" else currencyManager.just_gold_names,
+                currencyManager.NationalCurrenciesInPersian if data['type'] == "currencies" else currencyManager.GoldsInPersian,
                 account.desired_currencies, True)
         )
     account.save()

@@ -68,7 +68,7 @@ class Account:
         self.desired_currencies: list = currencies[:]
         self.last_interaction: datetime = datetime.now(tz=mathematix.timezone)
         self.state: UserStates = None
-        self.state_date: str = None
+        self.state_data: any = None
         self.language: str = language
         
         Account.Instances[chat_id] = self  # this is for optimizing bot performance
@@ -80,9 +80,9 @@ class Account:
             Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=GARBAGE_COLLECT_INTERVAL*60)
             Account.Scheduler.start()
 
-    def change_state(self, state: UserStates = UserStates.NONE, date: str = None):
+    def change_state(self, state: UserStates = UserStates.NONE, data: any = None):
         self.state = state;
-        self.state_date = date
+        self.state_data = data
         
     def __str__(self) -> str:
         return f'{self.chat_id}'

@@ -67,10 +67,9 @@ class APIManager(BaseAPIManager):
     TetherInTomans = 52000
     # sourcearena.ir
 
-    def __init__(self, url: str, source: str, dict_persian_names: dict, max_desired_selection=5, params=None, cache_file_name: str = None) -> None:
+    def __init__(self, url: str, source: str, max_desired_selection: int=5, params=None, cache_file_name: str = None) -> None:
         super(APIManager, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
         self.latest_data = []
-        self.dict_persian_names = dict_persian_names
         self.MAX_DESIRED_SELECTION = max_desired_selection
 
     @staticmethod
@@ -82,9 +81,7 @@ class APIManager(BaseAPIManager):
         APIManager.TetherInTomans = value
 
     def get_desired_ones(self, desired_ones: list):
-        if not desired_ones:
-            desired_ones = list(self.dict_persian_names.keys())[:self.MAX_DESIRED_SELECTION]
-        return desired_ones
+        pass
 
     def extract_api_response(self, desired_ones: list=None, short_text: bool=True) -> str:
         pass
@@ -106,14 +103,3 @@ class APIManager(BaseAPIManager):
             converted_price = price * (self.TetherInTomans if tether_as_unit_price else self.UsdInTomans)
             return mathematix.cut_and_separate(price), mathematix.cut_and_separate(converted_price)
         return mathematix.cut_and_separate(price), None
-
-    def crypto_description_row(self, name: str, symbol: str, price:float|int|str, short_text: bool=True):
-        if isinstance(price, str):
-            price = float(price)
-        if symbol != 'USDT':
-            rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
-        else:
-            rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.TetherInTomans)
-        rp_toman = mathematix.persianify(rp_toman)
-        return f'🔸 {self.dict_persian_names[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
-            else f'🔸 {name} ({symbol}): {rp_usd}$\n{self.dict_persian_names[symbol]}: {rp_toman} تومان\n'

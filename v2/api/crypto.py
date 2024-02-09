@@ -1,128 +1,54 @@
 import coinmarketcapapi as cmc_api
 from api.manager import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from api.currency import CURRENCIES_PERSIAN_NAMES
+from api.currency import SourceArena
 
-COINS_PERSIAN_NAMES = {
-    'BTC': 'بیت کوین',
-    "ETH": 'اتریوم',
-    'USDT': 'تتر',
-    "BNB": 'بایننس کوین',
-    'DOGE': 'دوج کوین',
-    'XRP': 'ریپل',
-    "ADA": 'کاردانو',
-    'SOL': 'سولانا',
-    "MATIC": 'پالیگان',
-    'DOT': 'پولکادات',
-    "TRX": 'ترون',
-    'AVAX': 'آوالانچ',
-    "LTC": 'لایت کوین',
-    'BCH': 'بیت کوین کش',
-    "XMR": 'مونرو',
-    'SHIB': 'شیبا اینو',
-    "LINK": "چین لینک",
-    "ATOM": "کازماس",
-    "UNI": "یونی سوآپ",
-    "ICP": "اینترنت کامپیوتر",
-    "ETC": "اتریوم کلاسیک",
-    "TON": "تن کوین",
-    "XLM": "استلار",
-    "BCH": "بیت کوین کش",
-    "FIL": "فایل کوین",
-    "HBAR": "هدرا هشگراف",
-    "APT": "آپتوس",
-    "CRO": "کرونوس",
-    "LDO": "لیدو دائو",
-    "ARB": "آربیتروم",
-    "NEAR": "نیر پروتکل",
-    "VET": "وی چین",
-    "APT": "ایپ کوین",
-    "QNT": "کوانت",
-    "ALGO": "آلگوراند",
-    "GRT": "گراف",
-    "FTM": "فانتوم",
-    "EOS": "ایاس",
-    "SAND": "سند باکس",
-    "EGLD": "الروند",
-    "MANA": "دسنترالند",
-    "AAVE": "آوه",
-    "THETA": "تتا نتورک",
-    "STX": "استکس",
-    "XTZ": "تزوس",
-    "FLOW": "فلو",
-    "AXS": "اکسی اینفینیتی",
-    "CHZ": "چیلیز",
-    "RNDR": "رندر توکن",
-    "KCS": "کوکوین توکن",
-    "NEO": "نئو",
-    "CRV": "کرو دائو",
-    "CSPR": "کسپر",
-    "KLAY": "کلایتون",
-    "OP": "اپتیمیسم",
-    "MKR": "میکر",
-    "LUNC": "لونا کلاسیک",
-    "BSV": "ساتوشی ویژن",
-    "SNX": "سینتتیکس",
-    "INJ": "اینجکتیو",
-    "ZEC": "زی کش",
-    "BTT": "بیت تورنت",
-    "MINA": "مینا",
-    "XEC": "ای کش",
-    "HT": "هیوبی توکن",
-    "DASH": "دش",
-    "MIOTA": "آیوتا",
-    "PAXG": "پکس گلد",
-    "CAKE": "پنکیک سوآپ",
-    "GT": "گیت توکن",
-    "TWT": "تراست ولت توکن",
-    "FLR": "فلر",
-    "LRC": "لوپرینگ",
-    "ZIL": "زیلیکا",
-    "WOO": "وو",
-    "RUNE": "تورچین",
-    "DYDX": "دی وای دی ایکس",
-    "CVX": "کانوکس فایننس",
-    "NEXO": "نکسو",
-    "KAVA": "کاوا",
-    "INJ": "انجین کوین",
-    "1INCH": "وان اینچ",
-    "OSMO": "اسموسیس",
-    "BAT": "بت",
-    "ROSE": "رز",
-    "MASK": "ماسک نتورک",
-    "FLOKI": "فلوکی اینو",
-    "GALA": "گالا",
-    "KSM": "کوساما",
-    "ONE": "هارمونی",
-    "HNT": "هلیوم",
-    "AR": "آرویو",
-    "GMT": "استپن",
-    "SUSHI": "سوشی سوآپ",
-    "KDA": "کادنا",
-    "BABYDOGE": "بیبی دوج کوین",
-    "YFI": "یرن فایننس",
-    "C98": "کوین 98",
-    "CFX": "کانفلاکس",
-    "LUNA": "ترا",
-    "PEPE": "پپه",
-    "SUI": "سویی",
-}
+
+# Parent Class
+class CryptoCurrency(APIManager):
+    CoinsInPersian = None
+
+    @staticmethod
+    def get_persian_coin_names() -> dict:
+        coins_fa = "{}"
+        try:
+            persian_coin_names_file = open("./api/coins.fa.json", "r")
+            coins_fa = persian_coin_names_file.read()
+            persian_coin_names_file.close()
+        except:
+            pass
+        return json.loads(coins_fa)
+
+    def __init__(self, url: str, source: str, max_desired_selection: int = 5, params=None, cache_file_name: str = None) -> None:
+        super().__init__(url, source, max_desired_selection, params, cache_file_name)
+        if not CryptoCurrency.CoinsInPersian:
+            CryptoCurrency.CoinsInPersian = CryptoCurrency.get_persian_coin_names()
+
+    def get_desired_ones(self, desired_ones: list):
+        if not desired_ones:
+            desired_ones = list(CryptoCurrency.CoinsInPersian.keys())[:self.MAX_DESIRED_SELECTION]
+        return desired_ones
+    
+    def crypto_description_row(self, name: str, symbol: str, price:float|int|str, short_text: bool=True):
+        if isinstance(price, str):
+            price = float(price)
+        if symbol != 'USDT':
+            rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
+        else:
+            rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.TetherInTomans)
+        rp_toman = mathematix.persianify(rp_toman)
+        return f'🔸 {CryptoCurrency.CoinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
+            else f'🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrency.CoinsInPersian[symbol]}: {rp_toman} تومان\n'
+
 
 
 # --------- COINGECKO -----------
-class CoinGecko(APIManager):
+class CoinGecko(CryptoCurrency):
     '''CoinGecko Class. The object of this class will get the cryptocurrency prices from coingecko.'''
     def __init__(self, params=None) -> None:
-        # params = {
-        #     'vs_currency': "usd",
-        #     'order': "market_cap_desc",
-        #     'per_page': 100,
-        #     'page': 1,
-        #     'sparkline': False,
-        #     'price_change_percentage': "24h",
-        # }
+
         super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/list', source="CoinGecko.com",
-                                        dict_persian_names=COINS_PERSIAN_NAMES, cache_file_name="coingecko.json")
+                                cache_file_name="coingecko.json")
 
     def extract_api_response(self, desired_coins=None, short_text=True):
         'Construct a text string consisting of each desired coin prices of a special user.'
@@ -142,13 +68,13 @@ class CoinGecko(APIManager):
 
 
 # --------- COINMARKETCAP -----------
-class CoinMarketCap(APIManager):
+class CoinMarketCap(CryptoCurrency):
     '''CoinMarketCap Class. The object of this class will get the cryptocurrency prices from CoinMarketCap.'''
 
     def __init__(self, api_key, price_unit='USD', params=None) -> None:
         super(CoinMarketCap, self).__init__(
             url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',
-            source="CoinMarketCap.com", dict_persian_names=COINS_PERSIAN_NAMES, cache_file_name='coinmarketcap.json')
+            source="CoinMarketCap.com", cache_file_name='coinmarketcap.json')
         self.api_key: str = api_key
         self.price_unit: str = price_unit
         self.symbols_list: str = None
@@ -157,7 +83,7 @@ class CoinMarketCap(APIManager):
     def update_symbols_list(self):
         '''Construct the list of all cryptocurrency coin symbols'''
         self.symbols_list = ''
-        for cn in COINS_PERSIAN_NAMES:
+        for cn in CryptoCurrency.CoinsInPersian:
             self.symbols_list += cn + ","
         self.symbols_list = self.symbols_list[:-1]  # remove last ','
 
@@ -196,7 +122,7 @@ class CoinMarketCap(APIManager):
         '''returns the row shape/format of the equalizing coin.'''
         value_cut = mathematix.cut_and_separate(value)
         value = mathematix.persianify(value_cut)
-        return f'🔸 {value} {self.dict_persian_names[unit_symbol]}\n'
+        return f'🔸 {value} {CryptoCurrency.CoinsInPersian[unit_symbol]}\n'
 
     def equalize(self, source_unit_symbol: str, amount: float|int, desired_coins: list = None) -> str:
         '''This function gets an amount param, alongside with a source_unit_symbol [and abviously with the users desired coins]
@@ -204,15 +130,15 @@ class CoinMarketCap(APIManager):
         # First check the required data is prepared
         if not self.latest_data:
             raise NoLatestDataException('Use for equalizing!')
-        if source_unit_symbol not in self.latest_data or source_unit_symbol not in self.dict_persian_names:
+        if source_unit_symbol not in self.latest_data or source_unit_symbol not in CryptoCurrency.CoinsInPersian:
             raise InvalidInputException('Coin symbol!')
 
         # text header
-        res: str = f'💱☯ #معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
-            ("%s %s" % (mathematix.persianify(amount), self.dict_persian_names[source_unit_symbol])) + ' معادل است با:\n\n'
+        res: str = f'💱☯ معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
+            ("%s %s" % (mathematix.persianify(amount), CryptoCurrency.CoinsInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
-        res += f'🔸 {mathematix.persianify(mathematix.cut_and_separate(absolute_amount))} {CURRENCIES_PERSIAN_NAMES[BaseAPIManager.DOLLAR_SYMBOL]}\n'
+        res += f'🔸 {mathematix.persianify(mathematix.cut_and_separate(absolute_amount))} {SourceArena.GetPersianName(BaseAPIManager.DOLLAR_SYMBOL)}\n'
 
         desired_coins = self.get_desired_ones(desired_coins)
         if BaseAPIManager.TETHER_SYMBOL not in desired_coins:
