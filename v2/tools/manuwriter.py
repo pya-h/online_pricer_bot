@@ -42,7 +42,7 @@ def log(msg, exception=None, category_name=None):
     suffix = 'fux' if (not category_name) or ('info' not in category_name.lower()) else 'sux'
     log_file_name = f'total.{suffix}' if not category_name else f'{category_name}.{suffix}'
     logfile = open(f'./{log_folder_path}/{log_file_name}', 'a')
-    logfile.write('%s\t=>\t%s\n\n' % (short_timestamp(time_delimiter=':', datetime_delimiter='\t'), content))
+    logfile.write('%s\t=>\t%s\n\n' % (short_timestamp(time_delimiter=':', datetime_delimiter='\t', show_minutes=True), content))
     logfile.close()
 
 

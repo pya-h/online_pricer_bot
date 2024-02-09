@@ -82,7 +82,7 @@ def timestamp() -> str:
             return 'تاریخ نامعلوم: دریافت تاریخ روز با مشکل مواجه شد!'
 
 
-def short_timestamp(date_delimiter='-', time_delimiter='.', datetime_delimiter='_') -> str:
+def short_timestamp(date_delimiter='-', time_delimiter='.', datetime_delimiter='_', show_minutes: bool=False) -> str:
     # today date and time as persian
     try:
         now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
@@ -93,7 +93,7 @@ def short_timestamp(date_delimiter='-', time_delimiter='.', datetime_delimiter='
 
     except Exception as ex:
         now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
-        return f'{now.year}{date_delimiter}{now.month:02d}{date_delimiter}{now.day:02d}{datetime_delimiter}{now.strftime(f"%H{time_delimiter}%M")}'
+        return f'{now.year}{date_delimiter}{now.month:02d}{date_delimiter}{now.day:02d}{datetime_delimiter}{now.strftime("%H" if not show_minutes else f"%H{time_delimiter}%M")}'
     return None
 
 def gregorian_to_jalali(gy: int, gm: int, gd: int):

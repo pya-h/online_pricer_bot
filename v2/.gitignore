@@ -6,3 +6,4 @@ api.cache
 logs
 *pycache*
 main.env
+*.db
