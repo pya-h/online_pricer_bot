@@ -43,7 +43,7 @@ class SourceArena(APIManager):
 
     @staticmethod
     def LoadPersianNames():
-        SourceArena.GoldsInPersian, SourceArena.NationalCurrenciesInPersian = get_persian_currency_names()
+        SourceArena.NationalCurrenciesInPersian, SourceArena.GoldsInPersian = get_persian_currency_names()
         SourceArena.CurrenciesInPersian = dict(SourceArena.NationalCurrenciesInPersian, **SourceArena.GoldsInPersian)
 
     @staticmethod

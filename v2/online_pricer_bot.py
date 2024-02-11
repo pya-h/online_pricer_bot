@@ -23,7 +23,7 @@ CURRENCY_TOKEN = config('CURRENCY_TOKEN')
 SECOND_CHANNEL_ID = config('SECOND_CHANNEL_ID')
 ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
 
-schedule_interval = 5
+schedule_interval = 10
 
 # main keyboard (soft keyboard of course)
 menu_main = [
@@ -68,7 +68,7 @@ async def ask2join(update):
 
 
 # this function creates inline keyboard for selecting coin/currency as desired ones
-def new_inline_keyboard(name, all_choices: dict, selected_ones: list, show_full_names: bool=False):
+def new_inline_keyboard(name, all_choices: dict, selected_ones: list=None, show_full_names: bool=False):
     if not selected_ones:
         selected_ones = []
     buttons = []
@@ -425,7 +425,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.state = UserStates.INPUT_EQUALIZER_UNIT
                     account.change_state(UserStates.INPUT_EQUALIZER_UNIT, amounts)
                     await update.message.reply_text(f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
-                                                    reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian, account.desired_coins))
+                                                    reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian))
                 else:
                     await start_equalizing(update.message.reply_text, account, amounts, units)
                     account.change_state()  # reset state
@@ -441,11 +441,13 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     if data['type'] == "coins":
         if account.state == UserStates.INPUT_EQUALIZER_UNIT:
             if account.state_data:
+                unit_symbol = data['value'].upper()
+                await query.message.edit_text(' '.join([str(amount) for amount in account.state_data]) + f" {unit_symbol}")
                 await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text), 
-                                    account, account.state_data, [data['value'].upper()])
+                                    account, account.state_data, [unit_symbol])
                 account.change_state()  # reset state
             else:  # actually this segment occurance probability is near zero, but i wrote it down anyway to handle any condition possible(or not.!)
-                await query.message.edit_text('حالا مبلغ مربوط به این واحد ارزی را وارد کنید:', reply_markup=get_propper_keyboard(account.is_admin))
+                await query.message.edit_text('حالا مبلغ مربوط به این واحد ارزی را وارد کنید:')
                 account.change_state(UserStates.INPUT_EQUALIZER_AMOUNT, data['value'].upper())
             return
         if not data['value'] in account.desired_coins:
@@ -498,7 +500,7 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
 
     print("Server is up and running...")
-    app.run_polling(poll_interval=1.5, timeout=50)
+    app.run_polling(poll_interval=0.5, timeout=25)
 
 
 if __name__ == '__main__':
