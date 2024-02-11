@@ -11,6 +11,8 @@ class VIPDatabaseInterface(DatabaseInterface):
     CHANNEL_ID = "id"
     CHANNEL_INTERVAL = "interval"
     CHANNEL_OWNER_ID = "owner_id"  # ref to account
+    CHANNEL_ALL_FIELDS = f'({CHANNEL_ID}, {CHANNEL_OWNER_ID}, {CHANNEL_INTERVAL})'
+
     @staticmethod
     def Get():
         if not DatabaseInterface._instance:
@@ -68,18 +70,19 @@ class VIPDatabaseInterface(DatabaseInterface):
         cursor.close()
         connection.close()
 
-    def plan_channel(self, account, channel_id: int, interval: int):
+    def plan_channel(self, owner_chat_id: int, channel_id: int, interval: int):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM {DatabaseInterface.TABLE_ACCOUNTS} WHERE {DatabaseInterface.ACCOUNT_ID}=? LIMIT 1", (account.chat_id, ))
+        cursor.execute(f"SELECT * FROM {VIPDatabaseInterface.TABLE_CHANNELS} WHERE {DatabaseInterface.CHANNEL_ID}=? LIMIT 1", (channel_id, ))
         if cursor.fetchone(): # if account with his chat id has been saved before in the database
-            FIELDS_TO_SET = f'{DatabaseInterface.ACCOUNT_CURRENCIES}=?, {DatabaseInterface.ACCOUNT_CRYPTOS}=?, {DatabaseInterface.ACCOUNT_LAST_INTERACTION}=?'
-            cursor.execute(f'UPDATE {DatabaseInterface.TABLE_ACCOUNTS} SET {FIELDS_TO_SET} WHERE {DatabaseInterface.ACCOUNT_ID}=?', \
-                (account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT) , account.chat_id))
+            FIELDS_TO_SET = f'{VIPDatabaseInterface.CHANNEL_OWNER_ID}=?, {VIPDatabaseInterface.CHANNEL_INTERVAL}=?'
+            cursor.execute(f'UPDATE {VIPDatabaseInterface.TABLE_CHANNELS} SET {FIELDS_TO_SET} WHERE {VIPDatabaseInterface.CHANNEL_ID}=?', \
+                (owner_chat_id, interval, channel_id))
+            manuwriter.log(f"Channel with the id of [{channel_id}] has been RE-planned by owner_chat_id=: {owner_chat_id}", category_name='vip_info')
         else:
-            cursor.execute(f"INSERT INTO {DatabaseInterface.TABLE_ACCOUNTS} {DatabaseInterface.ACCOUNT_ALL_FIELDS} VALUES (?, ?, ?, ?)", \
-                (account.chat_id, account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT)))
-            manuwriter.log("New account started using this bot with chat_id=: " + account.__str__(), category_name=f'{log_category_prefix}info')
+            cursor.execute(f"INSERT INTO {VIPDatabaseInterface.TABLE_CHANNELS} {VIPDatabaseInterface.CHANNEL_ALL_FIELDS} VALUES (?, ?, ?)", \
+                (channel_id, owner_chat_id, interval))
+            manuwriter.log(f"New channel with the id of [{channel_id}] has benn planned by owner_chat_id=: {owner_chat_id}", category_name='vip_info')
         connection.commit()
         cursor.close()
         connection.close()
