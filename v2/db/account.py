@@ -2,7 +2,7 @@ from decouple import config
 from db.interface import *
 from datetime import datetime, date
 from apscheduler.schedulers.background import BackgroundScheduler
-import tools.mathematix as mathematix
+from tools.mathematix import tz_today
 from enum import Enum
 
 
@@ -30,7 +30,7 @@ class Account:
     # causing a slight enhancement on performance
     @staticmethod
     def GarbageCollect():
-        now = datetime.now(tz=mathematix.timezone)
+        now = tz_today()
         garbage = []
         for chat_id in Account.Instances:
             if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= GARBAGE_COLLECT_INTERVAL / 2:
@@ -43,7 +43,7 @@ class Account:
     @staticmethod
     def Get(chat_id):
         if chat_id in Account.Instances:
-            Account.Instances[chat_id].last_interaction = datetime.now(tz=mathematix.timezone)
+            Account.Instances[chat_id].last_interaction = tz_today()
             return Account.Instances[chat_id]
         row = Account.Database.get(chat_id)
         if row:
@@ -66,7 +66,7 @@ class Account:
         self.chat_id: int = chat_id
         self.desired_coins: list = cryptos if cryptos else []
         self.desired_currencies: list = currencies if currencies else []
-        self.last_interaction: datetime = datetime.now(tz=mathematix.timezone)
+        self.last_interaction: datetime = tz_today()
         self.state: UserStates = None
         self.state_data: any = None
         self.language: str = language
@@ -81,7 +81,7 @@ class Account:
             Account.Scheduler.start()
 
     def change_state(self, state: UserStates = UserStates.NONE, data: any = None):
-        self.state = state;
+        self.state = state
         self.state_data = data
 
     def __str__(self) -> str:
@@ -115,7 +115,7 @@ class Account:
         # first save all last interactions:
         for id in Account.Instances:
             Account.Instances[id].save()
-        now = datetime.now(tz=mathematix.timezone).date()
+        now = tz_today().date()
         today_actives, yesterday_actives, this_week_actives, this_month_actives = 0, 0, 0, 0
 
         last_interactions = Account.Database.get_all(column=DatabaseInterface.ACCOUNT_LAST_INTERACTION)

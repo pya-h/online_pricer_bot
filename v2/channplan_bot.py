@@ -4,6 +4,7 @@ import requests
 from webhook.p4ya_telegraph import TelegramBot, TelegramMessage
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
+from payment.order import Order
 
 
 # Set up logging
@@ -12,8 +13,6 @@ logger = logging.getLogger(__name__)
 
 # read .env configs
 VIP_BOT_TOKEN = config('VIP_BOT_TOKEN')
-VIP_COST = config('VIP_COST')
-VIP_COST_UNIT = config('VIP_COST_UNIT')
 HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
 
@@ -28,9 +27,8 @@ app = Flask(__name__)
 def webhook():
     message = TelegramMessage(request.json)  # read necessary message info from telegram object
     # Echo the message back to the user
-    print(bot.get_telegram_link())
-    gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, vip_cost=VIP_COST, cost_unit=VIP_COST_UNIT,
-                                description="VIP Account Payment", callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
+    cost = Order(buyer=message.by, month_counts=2)  # change this
+    gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, cost=cost, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
     response = TelegramMessage.Create(message.chat_id, text=gateway.get_payment_link())
     bot.send(message=response)
     return jsonify({'status': 'ok'})

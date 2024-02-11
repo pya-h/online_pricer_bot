@@ -1,6 +1,7 @@
 from datetime import datetime
 import pytz
 from persiantools import digits
+from dateutil.relativedelta import relativedelta
 
 
 timezone = pytz.timezone('Asia/Tehran')
@@ -61,12 +62,16 @@ def cut_and_separate(num: float|int):
     return  separate_by3(num, precision)
 
 
+
+def tz_today() -> datetime:  # today date in a specific timezone
+    return datetime.now(tz=timezone)
+
 WEEKDAYS = ('دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یکشنبه')
 
 def timestamp() -> str:
     # today date and time as persian
     try:
-        now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
+        now = tz_today()  # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
         weekday = WEEKDAYS[now.weekday()]
         date = digits.en_to_fa(f'{year}/{month:02d}/{day:02d}')
@@ -76,7 +81,7 @@ def timestamp() -> str:
     except Exception as ex:
         print('Calculating jalili date and time encountered with error: ', ex)
         try:
-            now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
+            now = tz_today()  # timezone.localize(datetime.now())
             return f'📆 {now.year}/{now.month:02d}/{now.day:02d} {weekday} {now.strftime("%H:%M")}'
         except:
             return 'تاریخ نامعلوم: دریافت تاریخ روز با مشکل مواجه شد!'
@@ -85,14 +90,14 @@ def timestamp() -> str:
 def short_timestamp(date_delimiter='-', time_delimiter='.', datetime_delimiter='_', show_minutes: bool=False) -> str:
     # today date and time as persian
     try:
-        now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
+        now = tz_today()  # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
 
         time = now.strftime(f"%H{time_delimiter}%M")
         return f'{year}{date_delimiter}{month:02d}{date_delimiter}{day:02d}{datetime_delimiter}{time}'
 
     except Exception as ex:
-        now = datetime.now(tz=timezone)  # timezone.localize(datetime.now())
+        now = tz_today()  # timezone.localize(datetime.now())
         return f'{now.year}{date_delimiter}{now.month:02d}{date_delimiter}{now.day:02d}{datetime_delimiter}{now.strftime("%H" if not show_minutes else f"%H{time_delimiter}%M")}'
     return None
 
@@ -150,6 +155,15 @@ def jalali_to_gregorian(jy: int, jm: int, jd: int):
         gd -= sal_a[gm]
         gm += 1
     return gy, gm, gd
+
+
+def extend_date(date:datetime, months_count: int) -> datetime:
+    return date + relativedelta(months=months_count)
+
+
+def after_n_months(n: int = 2) -> datetime:
+    # this is used for vip end date calculation
+    return extend_date(date=datetime.now(), months_count=n)
 
 
 if __name__ == "__main__":

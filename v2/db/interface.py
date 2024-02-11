@@ -1,5 +1,4 @@
 import sqlite3
-import tools.mathematix as mathematix
 from datetime import datetime
 from tools import manuwriter
 
@@ -44,7 +43,7 @@ class DatabaseInterface:
             raise ex  # create custom exception for this
 
 
-    def add(self, account):
+    def add(self, account, log_category_prefix=''):
         connection = None
         if not account:
             raise Exception("You must provide an Account to save")
@@ -53,12 +52,12 @@ class DatabaseInterface:
             connection = sqlite3.connect(self._name)
             cursor = connection.cursor()
             cursor.execute(query, (account.chat_id, account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT)))
-            manuwriter.log(f"New account: {account} saved into database successfully.", category_name='info')
+            manuwriter.log(f"New account: {account} saved into database successfully.", category_name=f'{log_category_prefix}info')
             cursor.close()
             connection.commit()
             connection.close()
         except Exception as ex:
-            manuwriter.log(f"Cannot save this account:{account}", ex, category_name='database')
+            manuwriter.log(f"Cannot save this account:{account}", ex, category_name=f'{log_category_prefix}database')
             if connection:
                 connection.close()
             raise ex  # custom ex needed here too
@@ -83,7 +82,7 @@ class DatabaseInterface:
             return [datetime.strptime(row[0], DatabaseInterface.DATE_FORMAT) if row[0] else None for row in rows]
         return [row[0] for row in rows] # just return a list of ids
 
-    def update(self, account):
+    def update(self, account, log_category_prefix=''):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
         cursor.execute(f"SELECT * FROM {DatabaseInterface.TABLE_ACCOUNTS} WHERE {DatabaseInterface.ACCOUNT_ID}=? LIMIT 1", (account.chat_id, ))
@@ -94,7 +93,7 @@ class DatabaseInterface:
         else:
             cursor.execute(f"INSERT INTO {DatabaseInterface.TABLE_ACCOUNTS} {DatabaseInterface.ACCOUNT_ALL_FIELDS} VALUES (?, ?, ?, ?)", \
                 (account.chat_id, account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT)))
-            manuwriter.log("New account started using this bot with chat_id=: " + account.__str__(), category_name='info')
+            manuwriter.log("New account started using this bot with chat_id=: " + account.__str__(), category_name=f'{log_category_prefix}info')
         connection.commit()
         cursor.close()
         connection.close()
