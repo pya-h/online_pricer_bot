@@ -15,9 +15,9 @@ ADMIN_COMMANDS = (CMD_ADMIN_POST, CMD_ADMIN_START_SCHEDULE, CMD_ADMIN_STOP_SCHED
     = ('اطلاع رسانی', 'زمانبندی کانال', 'توقف زمانبندی', 'آمار')
 
 # environment values
-BOT_TOKEN = config('API_TOKEN')
+BOT_TOKEN = config('MAIN_BOT_TOKEN')
 CHANNEL_ID = config('CHANNEL_ID')
-SCHEDULE_JOB_NAME = config('SCHEDULE_JOB_NAME')
+MAIN_SCHEDULER_IDENTIFIER = config('MAIN_SCHEDULER_IDENTIFIER')
 CMC_API_KEY = config('COINMARKETCAP_API_KEY')
 CURRENCY_TOKEN = config('CURRENCY_TOKEN')
 SECOND_CHANNEL_ID = config('SECOND_CHANNEL_ID')
@@ -72,7 +72,7 @@ def new_inline_keyboard(name, all_choices: dict, selected_ones: list=None, show_
     if not selected_ones:
         selected_ones = []
     buttons = []
-    row = [] 
+    row = []
     i = 0
     for choice in all_choices:
         btn_text = choice if not show_full_names else all_choices[choice]
@@ -240,7 +240,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         if not is_channel_updates_started:
             is_channel_updates_started = True
             context.job_queue.run_repeating(announce_prices, interval=schedule_interval * 60, first=1,
-                                            name=SCHEDULE_JOB_NAME)
+                                            name=MAIN_SCHEDULER_IDENTIFIER)
             await update.message.reply_text(f'زمان بندی {schedule_interval} دقیقه ای با موفقیت انجام شد.',
                                             reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
         else:
@@ -253,7 +253,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
     if Account.Get(update.effective_chat.id).authorization(context.args):
         global is_channel_updates_started
-        current_jobs = context.job_queue.get_jobs_by_name(SCHEDULE_JOB_NAME)
+        current_jobs = context.job_queue.get_jobs_by_name(MAIN_SCHEDULER_IDENTIFIER)
         for job in current_jobs:
             job.schedule_removal()
         is_channel_updates_started = False
@@ -327,8 +327,8 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
                 await func_send_message(response)
     else:
         await func_send_message("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...")
-        
-        
+
+
 async def handle_messages(update: Update, context: CallbackContext):
     if update and update.message:
         msg = update.message.text
@@ -401,12 +401,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                         index += 1
                 except:
                     pass
-                
+
                 if not amounts:
                     await update.message.reply_text("مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
                             reply_markup=get_propper_keyboard(account.is_admin))
                     return
-                
+
                 # start extracting units
                 while index < count_of_params:
                     source_symbol = params[index].upper()
@@ -414,12 +414,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                         units.append(source_symbol)
                     else: # invalud units
                         invalid_units.append(source_symbol)
-                        
+
                     index += 1
                 # if there was some units that are invalid are not supported
                 if invalid_units:
                     await update.message.reply_text(f'هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند: \n {", ".join(invalid_units)}',
-                                                    reply_markup=get_propper_keyboard(account.is_admin), reply_to_message_id=update.message.message_id)    
+                                                    reply_markup=get_propper_keyboard(account.is_admin), reply_to_message_id=update.message.message_id)
                 if not units:
                     # Open select unit reply_markup list
                     account.state = UserStates.INPUT_EQUALIZER_UNIT
@@ -443,7 +443,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             if account.state_data:
                 unit_symbol = data['value'].upper()
                 await query.message.edit_text(' '.join([str(amount) for amount in account.state_data]) + f" {unit_symbol}")
-                await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text), 
+                await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
                                     account, account.state_data, [unit_symbol])
                 account.change_state()  # reset state
             else:  # actually this segment occurance probability is near zero, but i wrote it down anyway to handle any condition possible(or not.!)
@@ -459,7 +459,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         else:
             account.desired_coins.remove(data['value'])
         await query.message.edit_reply_markup(reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian, account.desired_coins))
-    
+
     elif data['type'] == "currencies" or data['type'] == "golds":
         if not data['value'] in account.desired_currencies:
             if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
@@ -469,7 +469,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 return
         else:
             account.desired_currencies.remove(data['value'])
-        
+
         await query.message.edit_reply_markup(reply_markup=new_inline_keyboard(
                 data['type'],
                 currencyManager.NationalCurrenciesInPersian if data['type'] == "currencies" else currencyManager.GoldsInPersian,

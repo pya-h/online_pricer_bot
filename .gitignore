@@ -1,2 +1,12 @@
-.env
+venv
 env
+.env
+test.py
+api.cache
+logs
+*pycache*
+main.env
+*.db
+bot-backup
+test.env
+v2/test.env

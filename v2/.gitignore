@@ -1,9 +1,12 @@
 venv
 env
-.env
+*.env
 test.py
+test.env
 api.cache
 logs
 *pycache*
 main.env
 *.db
+bot-backup
+v2/*.env
