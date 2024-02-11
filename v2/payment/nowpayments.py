@@ -1,23 +1,27 @@
 import requests
+from decouple import config
 
-class NowpaymentInteface:
+class NowpaymentsGateway:
     # Define your NowPayments API key
-    API_KEY = 'your_NOWPAYMENT_api_key_here'
+    API_KEY = None
 
     # Define the base URL for the NowPayments API
     BASE_URL = 'https://api.nowpayments.io/v1'
 
     # Define the endpoint for creating payment links
-    CREATE_PAYMENT_LINK_ENDPOINT = '/payment-links'
+    PAYMENT_ENDPOINT = 'invoice'
 
-    def __init__(self, buyer_chat_id: int, vip_cost: int, cost_unit: str, callback_url: str, description: str, bot_url) -> None:
+    def __init__(self, buyer_chat_id: int, vip_cost: int, cost_unit: str, callback_url: str, description: str, on_success_url: str) -> None:
+        if not NowpaymentsGateway.API_KEY:
+            NowpaymentsGateway.API_KEY = config('NOWPAYMENT_API_KEY')
         self.payment_payload: dict = {
             "price_amount": vip_cost,
             "price_currency": cost_unit,  # Currency of the payment
+            # "pay_currency": "BTC",
             "order_id": str(buyer_chat_id),
             "order_description": description,
             "ipn_callback_url": callback_url,  # Callback URL for IPN notifications (to update datbase)
-            "success_redirect_url":  bot_url # Redirect URL after successful payment
+            # "success_redirect_url":  on_success_url # Redirect URL after successful payment
         }
         self.result = None
         self.payment_link: str = None
@@ -27,14 +31,14 @@ class NowpaymentInteface:
         self.payment_link = None
         # Define the headers for the API request
         headers = {
-            'x-api-key': NowpaymentInteface.API_KEY,
+            'x-api-key': NowpaymentsGateway.API_KEY,
             'Content-Type': 'application/json'
         }
         # Make the API request to create the payment link
-        self.result = requests.post(NowpaymentInteface.BASE_URL + NowpaymentInteface.CREATE_PAYMENT_LINK_ENDPOINT, json=self.payment_payload, headers=headers)
-
+        self.result = requests.post(f"{NowpaymentsGateway.BASE_URL}/{NowpaymentsGateway.PAYMENT_ENDPOINT}", json=self.payment_payload, headers=headers)
         # Check if the request was successful
+        # print(self.result.text)
         if self.result.status_code == 200:
             # Extract the payment link from the self.result
-            self.payment_link = self.result.json()['data']['payment_link']
+            self.payment_link = self.result.json()[f'{NowpaymentsGateway.PAYMENT_ENDPOINT}_url']
         return self.payment_link

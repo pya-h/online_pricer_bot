@@ -1,6 +1,5 @@
 from db.account import Account, UserStates
-from vipbot.db.vip_interface import VIPDatabaseInterface
-
+from db.vip_interface import VIPDatabaseInterface
 
 class VIPAccount(Account):
 
