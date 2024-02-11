@@ -225,7 +225,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     global schedule_interval
     if Account.Get(update.effective_chat.id).authorization(context.args):
-        schedule_interval = 5
+        schedule_interval = 10
         try:
             if context.args:
                 try:

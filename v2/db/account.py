@@ -61,16 +61,16 @@ class Account:
         Account.Database.update(self)
         return self
 
-    def __init__(self, chat_id, currencies=[], cryptos=[], language: str='fa') -> None:
+    def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa') -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
-        self.desired_coins: list = cryptos[:]
-        self.desired_currencies: list = currencies[:]
+        self.desired_coins: list = cryptos if cryptos else []
+        self.desired_currencies: list = currencies if currencies else []
         self.last_interaction: datetime = datetime.now(tz=mathematix.timezone)
         self.state: UserStates = None
         self.state_data: any = None
         self.language: str = language
-        
+
         Account.Instances[chat_id] = self  # this is for optimizing bot performance
         # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
 
@@ -83,7 +83,7 @@ class Account:
     def change_state(self, state: UserStates = UserStates.NONE, data: any = None):
         self.state = state;
         self.state_data = data
-        
+
     def __str__(self) -> str:
         return f'{self.chat_id}'
 

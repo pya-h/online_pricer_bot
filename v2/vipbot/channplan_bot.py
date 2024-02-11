@@ -1,5 +1,17 @@
 from flask import Flask, request, jsonify
+import logging
 import requests
+from telegrambot import TelegramBot, TelegramMessage
+from decouple import config
+
+
+# Set up logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# read .env configs
+VIP_BOT_TOKEN = config('VIP_BOT_TOKEN')
+bot = TelegramBot(VIP_BOT_TOKEN)
 
 # Initialize Flask app
 app = Flask(__name__)
