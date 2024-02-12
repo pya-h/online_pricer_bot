@@ -11,7 +11,8 @@ class VIPDatabaseInterface(DatabaseInterface):
     CHANNEL_ID = "id"
     CHANNEL_INTERVAL = "interval"
     CHANNEL_OWNER_ID = "owner_id"  # ref to account
-    CHANNEL_ALL_FIELDS = f'({CHANNEL_ID}, {CHANNEL_OWNER_ID}, {CHANNEL_INTERVAL})'
+    CHANNEL_NAME = "name"
+    CHANNEL_ALL_FIELDS = f'({CHANNEL_ID}, {CHANNEL_NAME}, {CHANNEL_OWNER_ID}, {CHANNEL_INTERVAL})'
 
     @staticmethod
     def Get():
@@ -34,8 +35,8 @@ class VIPDatabaseInterface(DatabaseInterface):
                 manuwriter.log(f"VIP Database {VIPDatabaseInterface.TABLE_ACCOUNTS} table created successfuly.", category_name='vip_info')
 
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{VIPDatabaseInterface.TABLE_CHANNELS}'").fetchone():
-                query = f"CREATE TABLE {VIPDatabaseInterface.TABLE_ACCOUNTS} ({VIPDatabaseInterface.CHANNEL_ID} INTEGER PRIMARY KEY," +\
-                    f"{VIPDatabaseInterface.CHANNEL_INTERVAL} INTEGER, {VIPDatabaseInterface.CHANNEL_OWNER_ID} INTEGER,  FOREIGN KEY({VIPDatabaseInterface.CHANNEL_OWNER_ID}) REFERENCES {VIPDatabaseInterface.TABLE_ACCOUNTS}({VIPDatabaseInterface.ACCOUNT_ID}))"
+                query = f"CREATE TABLE {VIPDatabaseInterface.TABLE_ACCOUNTS} ({VIPDatabaseInterface.CHANNEL_ID} INTEGER PRIMARY KEY, {VIPDatabaseInterface.CHANNEL_NAME} TEXT, " +\
+                    f"{VIPDatabaseInterface.CHANNEL_INTERVAL} INTEGER, {VIPDatabaseInterface.CHANNEL_OWNER_ID} INTEGER, FOREIGN KEY({VIPDatabaseInterface.CHANNEL_OWNER_ID}) REFERENCES {VIPDatabaseInterface.TABLE_ACCOUNTS}({VIPDatabaseInterface.ACCOUNT_ID}))"
                 # create table account
                 cursor.execute(query)
                 manuwriter.log(f"VIP Database {VIPDatabaseInterface.TABLE_CHANNELS} table created successfuly.", category_name='vip_info')
@@ -70,19 +71,19 @@ class VIPDatabaseInterface(DatabaseInterface):
         cursor.close()
         connection.close()
 
-    def plan_channel(self, owner_chat_id: int, channel_id: int, interval: int):
+    def plan_channel(self, owner_chat_id: int, channel_id: int, channel_name: str, interval: int):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
         cursor.execute(f"SELECT * FROM {VIPDatabaseInterface.TABLE_CHANNELS} WHERE {DatabaseInterface.CHANNEL_ID}=? LIMIT 1", (channel_id, ))
         if cursor.fetchone(): # if account with his chat id has been saved before in the database
-            FIELDS_TO_SET = f'{VIPDatabaseInterface.CHANNEL_OWNER_ID}=?, {VIPDatabaseInterface.CHANNEL_INTERVAL}=?'
+            FIELDS_TO_SET = f'{VIPDatabaseInterface.CHANNEL_OWNER_ID}=?, {VIPDatabaseInterface.CHANNEL_INTERVAL}=?, {VIPDatabaseInterface.CHANNEL_NAME}=?'
             cursor.execute(f'UPDATE {VIPDatabaseInterface.TABLE_CHANNELS} SET {FIELDS_TO_SET} WHERE {VIPDatabaseInterface.CHANNEL_ID}=?', \
-                (owner_chat_id, interval, channel_id))
-            manuwriter.log(f"Channel with the id of [{channel_id}] has been RE-planned by owner_chat_id=: {owner_chat_id}", category_name='vip_info')
+                (owner_chat_id, interval, channel_name, channel_id))
+            manuwriter.log(f"Channel with the id of [{channel_id}, {channel_name}] has been RE-planned by owner_chat_id=: {owner_chat_id}", category_name='vip_info')
         else:
-            cursor.execute(f"INSERT INTO {VIPDatabaseInterface.TABLE_CHANNELS} {VIPDatabaseInterface.CHANNEL_ALL_FIELDS} VALUES (?, ?, ?)", \
-                (channel_id, owner_chat_id, interval))
-            manuwriter.log(f"New channel with the id of [{channel_id}] has benn planned by owner_chat_id=: {owner_chat_id}", category_name='vip_info')
+            cursor.execute(f"INSERT INTO {VIPDatabaseInterface.TABLE_CHANNELS} {VIPDatabaseInterface.CHANNEL_ALL_FIELDS} VALUES (?, ?, ?, ?)", \
+                (channel_id, channel_name, owner_chat_id, interval))
+            manuwriter.log(f"New channel with the id of [{channel_id}, {channel_name}] has benn planned by owner_chat_id=: {owner_chat_id}", category_name='vip_info')
         connection.commit()
         cursor.close()
         connection.close()

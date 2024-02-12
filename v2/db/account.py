@@ -8,10 +8,6 @@ from enum import Enum
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
-GARBAGE_COLLECT_INTERVAL = 60
-#*******************************
-# TODO: PUT LAST INTERACTION IN DATABASE, FOR COLLECTING USER STATISTICS
-#*******************************
 
 class UserStates(Enum):
     NONE = 0
@@ -25,7 +21,7 @@ class Account:
     MaxSelectionInDesiredOnes = 20
     Database = DatabaseInterface.Get()
     Scheduler = None
-
+    GarbageCollectionInterval = 60
     Instances = {}  # active accounts will cache into this; so there's no need to access database everytime
     # causing a slight enhancement on performance
     @staticmethod
@@ -33,7 +29,7 @@ class Account:
         now = tz_today()
         garbage = []
         for chat_id in Account.Instances:
-            if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= GARBAGE_COLLECT_INTERVAL / 2:
+            if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= Account.GarbageCollectionInterval / 2:
                 garbage.append(chat_id)
         # because changing dict size in a loop on itself causes error,
         # we first collect redundant chat_id s and then delete them from the memory
@@ -49,7 +45,7 @@ class Account:
         if row:
             currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
-            return Account(row[0], currs.split(";") if currs else [], cryptos.split(';') if cryptos else [])
+            return Account(int(row[0]), currs.split(";") if currs else None, cryptos.split(';') if cryptos else None)
 
         return Account(chat_id=chat_id).save()
 
@@ -77,7 +73,7 @@ class Account:
         if not Account.Scheduler:
             # start garbage collector to optimize memory use
             Account.Scheduler = BackgroundScheduler()
-            Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=GARBAGE_COLLECT_INTERVAL*60)
+            Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=Account.GarbageCollectionInterval*60)
             Account.Scheduler.start()
 
     def change_state(self, state: UserStates = UserStates.NONE, data: any = None):
