@@ -5,6 +5,8 @@ from webhook.p4ya_telegraph import TelegramBot, TelegramMessage
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
 from payment.order import Order
+from db.vip_models import UserStatesPlus
+from tools import manuwriter
 
 
 # Set up logging
@@ -17,6 +19,7 @@ HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
 
 bot = TelegramBot(VIP_BOT_TOKEN, BOT_USERNAME, HOST_URL)
+text_resources = manuwriter.load_json('vip_texts', 'resources')
 
 
 ### Flask App configs ###
@@ -24,15 +27,27 @@ app = Flask(__name__)
 
 # ** Routes **
 @app.route('/', methods=['POST'])
-def webhook():
+def main():
     message = TelegramMessage(request.json)  # read necessary message info from telegram object
+    user = message.by
     # Echo the message back to the user
-    cost = Order(buyer=message.by, month_counts=2)  # change this
-    gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, cost=cost, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
-    response = TelegramMessage.Create(message.chat_id, text=gateway.get_payment_link())
-    bot.send(message=response)
-    return jsonify({'status': 'ok'})
+    if not message.by.has_vip_privileges:
+        cost = Order(buyer=message.by, month_counts=2)  # change this
+        gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, cost=cost, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
+        response = TelegramMessage.Create(message.chat_id, text=gateway.get_payment_link())
+        bot.send(message=response)
 
+        ### TEMP
+        hint = TelegramMessage.Create(target_chat_id=user.chat_id, text=text_resources['select_channel'][user.language])
+        print(hint.text)
+        bot.send(hint)
+        user.change_state(UserStatesPlus.SELECT_CHANNEL)
+
+        return jsonify({'status': 'ok'})
+
+    # if account is current;y a vip:
+    if user.state == UserStatesPlus.SELECT_CHANNEL:
+        pass
 
 @app.route('/verify', methods=['POST'])
 def verify_payment():

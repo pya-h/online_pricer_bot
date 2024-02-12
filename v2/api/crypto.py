@@ -28,7 +28,7 @@ class CryptoCurrency(APIManager):
         if not desired_ones:
             desired_ones = list(CryptoCurrency.CoinsInPersian.keys())[:self.MAX_DESIRED_SELECTION]
         return desired_ones
-    
+
     def crypto_description_row(self, name: str, symbol: str, price:float|int|str, short_text: bool=True):
         if isinstance(price, str):
             price = float(price)
@@ -50,12 +50,12 @@ class CoinGecko(CryptoCurrency):
         super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/list', source="CoinGecko.com",
                                 cache_file_name="coingecko.json")
 
-    def extract_api_response(self, desired_coins=None, short_text=True):
+    def extract_api_response(self, desired_coins=None, short_text=True,  optional_api_data:list = None):
         'Construct a text string consisting of each desired coin prices of a special user.'
         desired_coins = self.get_desired_ones(desired_coins)
-
+        api_data = optional_api_data or self.latest_data
         res = ''
-        for coin in self.latest_data:
+        for coin in api_data:
             symbol = coin['symbol'].upper()
             name = coin['name'] if symbol != self.TETHER_SYMBOLTETHER_SYMBOL else 'Tether'
             if symbol in desired_coins:
@@ -100,17 +100,19 @@ class CoinMarketCap(CryptoCurrency):
 
         return latest_cap.data
 
-    def extract_api_response(self, desired_coins=None, short_text=True):
+    def extract_api_response(self, desired_coins:list = None, short_text:bool = True, optional_api_data:list = None):
         '''This function constructs a text string that in each row has the latest price of a
             cryptocurrency unit in two price units, dollars and Tomans'''
         desired_coins = self.get_desired_ones(desired_coins)
-        if not self.latest_data:
+        api_data = optional_api_data or self.latest_data
+
+        if not api_data:
             raise NoLatestDataException('Use for anouncing prices!')
 
         res = ''
         for coin in desired_coins:
-            price = self.latest_data[coin][0]['quote'][self.price_unit]['price']
-            name = self.latest_data[coin][0]['name'] if coin != BaseAPIManager.TETHER_SYMBOL else 'Tether'
+            price = api_data[coin][0]['quote'][self.price_unit]['price']
+            name = api_data[coin][0]['name'] if coin != BaseAPIManager.TETHER_SYMBOL else 'Tether'
             res += self.crypto_description_row(name, coin, price, short_text=short_text)
 
         if res:

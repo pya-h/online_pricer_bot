@@ -49,7 +49,7 @@ class SourceArena(APIManager):
     @staticmethod
     def GetPersianName(symbol: str) -> str:
         if SourceArena.CurrenciesInPersian is None or not SourceArena.CurrenciesInPersian:
-            SourceArena.LoadPersianNames() 
+            SourceArena.LoadPersianNames()
         if symbol not in SourceArena.CurrenciesInPersian:
             raise InvalidInputException('Currency Symbol/Name!')
         return SourceArena.CurrenciesInPersian[symbol]
@@ -60,7 +60,7 @@ class SourceArena(APIManager):
 
         if not SourceArena.NationalCurrenciesInPersian or not SourceArena.GoldsInPersian or not SourceArena.CurrenciesInPersian:
             SourceArena.LoadPersianNames()
-            
+
         super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency",
                                           source="Sourcearena.ir", cache_file_name='sourcearena.json')
         self.aban_tether_token = 'Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Nzg2NzUiLCJpYXQiOjE2OTc2NDcyNTAsImV4cCI6MTcyOTE4MzI1MH0.QfVVufZo8VEtrkbRGoakINgWfyHLPVEcWWnx26nSZ6M'
@@ -72,11 +72,11 @@ class SourceArena(APIManager):
             desired_ones = SourceArena.Defaults
         return desired_ones
 
-    def extract_api_response(self, desired_ones: list=None, short_text: bool=True) -> str:
+    def extract_api_response(self, desired_ones: list=None, short_text: bool=True, optional_api_data:list = None) -> str:
         desired_ones = self.get_desired_ones(desired_ones)
-
+        api_data = optional_api_data or self.latest_data
         rows = {}
-        for curr in self.latest_data:
+        for curr in api_data:
             slug = curr['slug'].upper()
             price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesIndollars else float(curr['price'])
             if slug == 'USD':

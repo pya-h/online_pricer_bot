@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 from tools.mathematix import timezone, short_timestamp
+import json
 
 
 LOG_FOLDER_PATH = 'logs'
@@ -56,3 +57,15 @@ def fwrite_from_scratch(fpath: str, fdata: str, source: str=None) -> bool:
         log(f'File write failure; filename: {fpath}, data: {data_trunc}', ex, source)
         return False
     return True
+
+
+def load_json(json_filename: str, parent_folder: str = '.'):
+    if json_filename[-5:] != '.json':
+        json_filename = f"{json_filename}.json"
+    try:
+        json_file = open(f'./{parent_folder}/{json_filename}', 'r')
+        str_json = json_file.read()
+        json_file.close()
+    except:
+        return None
+    return json.loads(str_json)

@@ -83,7 +83,7 @@ class APIManager(BaseAPIManager):
     def get_desired_ones(self, desired_ones: list):
         pass
 
-    def extract_api_response(self, desired_ones: list=None, short_text: bool=True) -> str:
+    def extract_api_response(self, desired_ones: list=None, short_text: bool=True, optional_api_data:list = None) -> str:
         pass
 
     def get(self, desired_ones: list=None, short_text: bool=True) -> str:
@@ -93,10 +93,16 @@ class APIManager(BaseAPIManager):
     def get_latest(self, desired_ones: list=None, short_text: bool=True) -> str:
         return self.extract_api_response(desired_ones, short_text=short_text)
 
-    def get_cache(self, desired_ones: list=None, short_text: bool=True) -> str:
-        pass
-        # this is for the schedular bot!
-        # return self.extract_api_response(desired_ones, short_text=short_text)
+    def get_cached_data(self, desired_ones: list=None, short_text: bool=True) -> str:
+        ''' This is for the channel planner bot'''
+        cached_api_data = None
+        try:
+            cached_api_data = self.load_cache()
+        except:
+            if not self.latest_data: # if there is no cache, and the no latest data eigher, to prevent craching, call the api for once
+                return self.get(desired_ones, short_text)
+        return self.extract_api_response(desired_ones, short_text=short_text, optional_api_data=cached_api_data)
+
 
     def rounded_prices(self, price:float|int, convert: bool=True, tether_as_unit_price: bool=False):
         if convert:

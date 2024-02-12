@@ -5,6 +5,8 @@ from datetime import datetime
 from tools.exceptions import NotVIPException
 
 
+class UserStatesPlus(UserStates):
+    SELECT_CHANNEL = 4
 class VIPAccount(Account):
 
     MaxSelectionInDesiredOnes = 100
@@ -12,6 +14,7 @@ class VIPAccount(Account):
 
     def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', vip_end_date: datetime = None) -> None:
         super().__init__(chat_id, currencies, cryptos, language)
+        self.state: UserStatesPlus = UserStatesPlus.NONE
         self.vip_end_date = vip_end_date
 
     @staticmethod
@@ -28,7 +31,8 @@ class VIPAccount(Account):
 
         return VIPAccount(chat_id=chat_id).save()
 
-
+    def has_vip_privileges(self):
+        return self.vip_end_date and tz_today().date() <= self.vip_end_date.date()
 
 class Channel:
     Instances = {}
@@ -45,7 +49,7 @@ class Channel:
 
     def plan(self, interval: int):
         account  = VIPAccount.Get(self.owner_id)
-        if not account.vip_end_date or tz_today().date() > account.vip_end_date.date():
+        if not account.has_vip_privileges():
             raise NotVIPException(account.chat_id)
 
         if interval <= 0:
