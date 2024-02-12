@@ -9,7 +9,7 @@ class TelegramMessage:
         self.msg = data['message']
         self.text =  self.msg['text']
 
-        # self.by = VIPAccount.Get(self.msg['chat']['id'])
+        self.by = VIPAccount.Get(self.msg['chat']['id'])
         self.chat_id = self.msg['chat']['id']
 
     @staticmethod

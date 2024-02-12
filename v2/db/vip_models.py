@@ -2,6 +2,7 @@ from db.account import Account, UserStates
 from tools.mathematix import tz_today
 from db.vip_interface import VIPDatabaseInterface
 from datetime import datetime
+from tools.exceptions import NotVIPException
 
 
 class VIPAccount(Account):
@@ -38,18 +39,24 @@ class Channel:
         self.id = channel_id
         self.name = channel_name
         self.interval = interval
+        self.last_post_time: int = None
         if interval > 0:
             self.plan(interval)
 
     def plan(self, interval: int):
+        account  = VIPAccount.Get(self.owner_id)
+        if not account.vip_end_date or tz_today().date() > account.vip_end_date.date():
+            raise NotVIPException(account.chat_id)
+
         if interval <= 0:
             if self.id in Channel.Instances:
+                # unplan and delete in database
                 del Channel.Instances[self.id]
-                # unplan in database
             return
 
-        if interval < 60:
-            Channel.Instances[self.id] = self
+        # if interval < 60:
+        #     Channel.Instances[self.id] = self
+        Channel.Instances[self.id] = self
         Channel.Database.plan_channel(self.owner_id, self.id, self.name, interval)
 
     @staticmethod

@@ -19,3 +19,10 @@ class CacheFailureException(Exception):
         self.message = f'ذخیره نتایج API برای استفاده کاربران VIP با خطا مواجه شد. لطفا هر جه سریع تر موضوع را به دولوپر اطلاع دهید.'
         self.message += f'\nعلت خطا: {cause.__str__()}'
         super().__init__(f'Invalid {self.message}')
+
+class NotVIPException(Exception):
+
+    def __init__(self, chat_id: int) -> None:
+        self.message = f"Account with chat_id={chat_id} is not VIP now!"
+        super().__init__(self.message)
+

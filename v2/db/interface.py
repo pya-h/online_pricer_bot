@@ -71,7 +71,7 @@ class DatabaseInterface:
         connection.close()
         return row
 
-    def get_all(self, column: str=ACCOUNT_ID):
+    def get_all(self, column: str=ACCOUNT_ID) -> list:
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
         cursor.execute(f"SELECT ({column}) FROM {DatabaseInterface.TABLE_ACCOUNTS}")
