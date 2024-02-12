@@ -1,4 +1,4 @@
-from db.vip_account import VIPAccount
+from db.vip_models import VIPAccount
 
 class Order:
     DiscountPercent = 0.2

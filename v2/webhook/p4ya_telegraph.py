@@ -1,4 +1,4 @@
-from db.vip_account import VIPAccount
+from db.vip_models import VIPAccount
 import requests
 from tools.manuwriter import log
 

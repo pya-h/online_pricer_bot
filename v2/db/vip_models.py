@@ -3,6 +3,7 @@ from tools.mathematix import tz_today
 from db.vip_interface import VIPDatabaseInterface
 from datetime import datetime
 
+
 class VIPAccount(Account):
 
     MaxSelectionInDesiredOnes = 100
@@ -28,8 +29,35 @@ class VIPAccount(Account):
 
 
 
-
 class Channel:
+    Instances = {}
+    Database: VIPDatabaseInterface = VIPDatabaseInterface.Get()
 
-    def __init__(self, owner_id: int, channel_id) -> None:
-        pass
+    def __init__(self, owner_id: int, channel_id: int, channel_name: str, interval: int = 0) -> None:
+        self.owner_id = owner_id
+        self.id = channel_id
+        self.name = channel_name
+        self.interval = interval
+        if interval > 0:
+            self.plan(interval)
+
+    def plan(self, interval: int):
+        if interval <= 0:
+            if self.id in Channel.Instances:
+                del Channel.Instances[self.id]
+                # unplan in database
+            return
+
+        if interval < 60:
+            Channel.Instances[self.id] = self
+        Channel.Database.plan_channel(self.owner_id, self.id, self.name, interval)
+
+    @staticmethod
+    def Get(channel_id):
+        if channel_id in Channel.Instances:
+            return Channel.Instances[channel_id]
+        row = Channel.Database.get_channel(channel_id)
+        if row:
+            return Channel(channel_id=int(row[0]), owner_id=int(row[3]), channel_name=row[1], interval=int(row[2]))
+
+        return None
