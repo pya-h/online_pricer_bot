@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import logging
 import requests
-from webhook.p4ya_telegraph import TelegramBot, TelegramMessage
+from webhook.p4ya_telegraph import *
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
 from payment.order import Order
@@ -18,8 +18,8 @@ VIP_BOT_TOKEN = config('VIP_BOT_TOKEN')
 HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
 
-bot = TelegramBot(VIP_BOT_TOKEN, BOT_USERNAME, HOST_URL)
 text_resources = manuwriter.load_json('vip_texts', 'resources')
+bot = TelegramBot(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources)
 
 
 ### Flask App configs ###
@@ -39,21 +39,28 @@ def main():
         bot.send(message=response)
 
         ### TEMP
-        hint = TelegramMessage.Create(target_chat_id=user.chat_id, text=text_resources['select_channel'][user.language])
-        print(hint.text)
+        hint = TelegramMessage.Create(target_chat_id=user.chat_id, text=bot.getext("select_channel", user.language))
         bot.send(hint)
         user.change_state(UserStates.SELECT_CHANNEL)
 
         return jsonify({'status': 'ok'})'''
     # if account is current;y a vip:
     user.change_state(UserStates.SELECT_CHANNEL)
-    if user.state == UserStates.SELECT_CHANNEL:
-        response = TelegramMessage.Create(user.chat_id, message.forward_origin.__str__())
-        bot.send(response)
-        return jsonify({'status': 'ok'})
+    response = TelegramMessage.Create(user.chat_id)
 
-    print("None")
-    return jsonify({'status': 'unknown'})
+    match user.state:
+        case UserStates.SELECT_CHANNEL:
+            if not message.forward_origin or message.forward_origin.type != ChatTypes.CHANNEL:
+                response.text = bot.getext("just_forward_channel_message", user.language)
+            else:
+                user.change_state(UserStates.SELECT_INTERVAL, message.forward_origin)
+        case _:
+            print("None")
+            response.text = bot.getext("wrong_command", user.language)
+    Keyboard(["test"], ["test 2"]).attach_to(response)
+
+    bot.send(message=response)
+    return jsonify({'status': 'ok'})
 
 @app.route('/verify', methods=['POST'])
 def verify_payment():

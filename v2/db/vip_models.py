@@ -9,7 +9,7 @@ from enum import Enum
 class UserStates(Enum):
     NONE = 0
     SELECT_CHANNEL = 4
-
+    SELECT_INTERVAL = 5
 class VIPAccount(Account):
 
     MaxSelectionInDesiredOnes = 100

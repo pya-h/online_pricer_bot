@@ -2,5 +2,13 @@
     "select_channel": {
         "fa": "حال نوبت به انتخاب کانال موردنظرتان رسیده است. ابتدا ربات را در کانال مربوطه ادمین کنید. سپس جهت شناساندن کانالتان به ربات یک پیام از آن به اینجا فوروارد کنید...",
         "en": "Ok. Now it's time to choose the channel you want to plan. First add this bot to your desired channel as admin, Then forward one of its messages here, to identify channel id."
+    },
+    "just_forward_channel_message": {
+        "fa": "لطفا یک پیام از کانال موردنظر ارسال کنید تا ربات آن را شناسایی کند.",
+        "en": "Please forward a message from your desired channel to identidy it."
+    },
+    "wrong_command": {
+        "fa": "متوجه درخواست شما نشدم! لطفا دوباره تلاش کنید ...",
+        "en": "I didn't understand your request. Please try again..."
     }
 }
