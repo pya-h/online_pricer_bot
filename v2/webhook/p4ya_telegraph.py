@@ -3,14 +3,37 @@ import requests
 from tools.manuwriter import log
 
 
+class ForwardOrigin:
+    def __init__(self, forward_data: dict) -> None:
+        self.type = forward_data['type']
+        self.id = None
+        self.message_id = None
+        self.title = None
+        self.username = None
+        if self.type == 'channel':
+            self.id = forward_data['chat']['id']
+            self.message_id = forward_data['message_id']
+            self.title = forward_data['chat']['title']
+            if 'username' in forward_data['chat']:
+                self.username = forward_data['chat']['username']
+        elif self.type == 'user':
+            self.id = forward_data['sender_user']['id']
+            self.title = forward_data['sender_user']['first_name']
+            if 'username' in forward_data['sender_user']:
+                self.username = forward_data['sender_user']['username']
+
+    def __str__(self) -> str:
+        return f"type: {self.type}\ntitle:{self.title}\nid:{self.id}\nusername:{self.username}"
 class TelegramMessage:
 
     def __init__(self, data: dict) -> None:
-        self.msg = data['message']
-        self.text =  self.msg['text']
+        self.msg: dict = data['message']
+        self.id: int = self.msg['message_id'] if 'message_id' in self.msg else None
+        self.text: str =  self.msg['text']
 
-        self.by = VIPAccount.Get(self.msg['chat']['id'])
-        self.chat_id = self.msg['chat']['id']
+        self.by: VIPAccount = VIPAccount.Get(self.msg['chat']['id'])
+        self.chat_id: int = self.msg['chat']['id']
+        self.forward_origin: ForwardOrigin = ForwardOrigin(self.msg['forward_origin']) if 'forward_origin' in self.msg else None
 
     @staticmethod
     def Create(target_chat_id: str, text: str):

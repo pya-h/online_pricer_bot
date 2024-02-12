@@ -19,11 +19,17 @@ class Account:
     # states:
 
     MaxSelectionInDesiredOnes = 20
-    Database = DatabaseInterface.Get()
+    _database = None
     Scheduler = None
     GarbageCollectionInterval = 60
     Instances = {}  # active accounts will cache into this; so there's no need to access database everytime
     # causing a slight enhancement on performance
+    @staticmethod
+    def Database():
+        if Account._database == None:
+            Account._database = DatabaseInterface.Get()
+        return Account._database
+
     @staticmethod
     def GarbageCollect():
         now = tz_today()
@@ -41,7 +47,7 @@ class Account:
         if chat_id in Account.Instances:
             Account.Instances[chat_id].last_interaction = tz_today()
             return Account.Instances[chat_id]
-        row = Account.Database.get(chat_id)
+        row = Account.Database().get(chat_id)
         if row:
             currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
@@ -51,10 +57,10 @@ class Account:
 
     @staticmethod
     def Everybody():
-        return Account.Database.get_all()
+        return Account.Database().get_all()
 
     def save(self):
-        Account.Database.update(self)
+        self.Database().update(self)
         return self
 
     def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa') -> None:
@@ -95,11 +101,6 @@ class Account:
 
         return False
 
-    @staticmethod
-    def Leave(chat_id):
-        if chat_id in Account.Instances:
-            del Account.Instances[chat_id]
-
     def str_desired_coins(self):
         return ';'.join(self.desired_coins)
 
@@ -114,7 +115,7 @@ class Account:
         now = tz_today().date()
         today_actives, yesterday_actives, this_week_actives, this_month_actives = 0, 0, 0, 0
 
-        last_interactions = Account.Database.get_all(column=DatabaseInterface.ACCOUNT_LAST_INTERACTION)
+        last_interactions = Account.Database().get_all(column=DatabaseInterface.ACCOUNT_LAST_INTERACTION)
         for interaction_date in last_interactions:
             if interaction_date and (isinstance(interaction_date, datetime) or isinstance(interaction_date, date)):
                 if now.year == interaction_date.year:

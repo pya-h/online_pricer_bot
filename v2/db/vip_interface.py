@@ -5,6 +5,8 @@ from tools.mathematix import after_n_months
 from time import time
 
 class VIPDatabaseInterface(DatabaseInterface):
+    _instance = None
+
     ACCOUNT_VIP_END_DATE= 'vip_end_date'  # verified as vip
     ACCOUNT_ALL_FIELDS = f'({DatabaseInterface.ACCOUNT_ID}, {DatabaseInterface.ACCOUNT_CURRENCIES}, {DatabaseInterface.ACCOUNT_CRYPTOS}, {DatabaseInterface.ACCOUNT_LAST_INTERACTION}, {ACCOUNT_VIP_END_DATE})'
 
@@ -18,9 +20,9 @@ class VIPDatabaseInterface(DatabaseInterface):
 
     @staticmethod
     def Get():
-        if not DatabaseInterface._instance:
-            DatabaseInterface._instance = DatabaseInterface()
-        return DatabaseInterface._instance
+        if not VIPDatabaseInterface._instance:
+            VIPDatabaseInterface._instance = VIPDatabaseInterface()
+        return VIPDatabaseInterface._instance
 
     def setup(self):
         connection = None
@@ -37,9 +39,9 @@ class VIPDatabaseInterface(DatabaseInterface):
                 manuwriter.log(f"VIP Database {VIPDatabaseInterface.TABLE_ACCOUNTS} table created successfuly.", category_name='vip_info')
 
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{VIPDatabaseInterface.TABLE_CHANNELS}'").fetchone():
-                query = f"CREATE TABLE {VIPDatabaseInterface.TABLE_ACCOUNTS} ({VIPDatabaseInterface.CHANNEL_ID} INTEGER PRIMARY KEY, {VIPDatabaseInterface.CHANNEL_NAME} TEXT, " +\
-                    f"{VIPDatabaseInterface.CHANNEL_INTERVAL} INTEGER, {VIPDatabaseInterface.CHANNEL_OWNER_ID} INTEGER, FOREIGN KEY({VIPDatabaseInterface.CHANNEL_OWNER_ID}) REFERENCES {VIPDatabaseInterface.TABLE_ACCOUNTS}({VIPDatabaseInterface.ACCOUNT_ID}), " + \
-                    f"{VIPDatabaseInterface.CHANNEL_LAST_POST_TIME} INTEGER)"
+                query = f"CREATE TABLE {VIPDatabaseInterface.TABLE_CHANNELS} ({VIPDatabaseInterface.CHANNEL_ID} INTEGER PRIMARY KEY, {VIPDatabaseInterface.CHANNEL_NAME} TEXT, {VIPDatabaseInterface.CHANNEL_LAST_POST_TIME} INTEGER, " +\
+                    f"{VIPDatabaseInterface.CHANNEL_INTERVAL} INTEGER, {VIPDatabaseInterface.CHANNEL_OWNER_ID} INTEGER, FOREIGN KEY({VIPDatabaseInterface.CHANNEL_OWNER_ID}) REFERENCES {VIPDatabaseInterface.TABLE_ACCOUNTS}({VIPDatabaseInterface.ACCOUNT_ID}))"
+                print(query)
                 # create table account
                 cursor.execute(query)
                 manuwriter.log(f"VIP Database {VIPDatabaseInterface.TABLE_CHANNELS} table created successfuly.", category_name='vip_info')
@@ -112,5 +114,6 @@ class VIPDatabaseInterface(DatabaseInterface):
 
 
     def __init__(self, name="vip_data.db"):
-        super().__init__(name)
+        self._name = name
+        self.setup()
 

@@ -5,7 +5,7 @@ from webhook.p4ya_telegraph import TelegramBot, TelegramMessage
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
 from payment.order import Order
-from db.vip_models import UserStatesPlus
+from db.vip_models import UserStates
 from tools import manuwriter
 
 
@@ -30,10 +30,11 @@ app = Flask(__name__)
 def main():
     message = TelegramMessage(request.json)  # read necessary message info from telegram object
     user = message.by
+
     # Echo the message back to the user
-    if not message.by.has_vip_privileges:
-        cost = Order(buyer=message.by, month_counts=2)  # change this
-        gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, cost=cost, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
+    '''if not user.has_vip_privileges():
+        order = Order(buyer=user, months_counts=2)  # change this
+        gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
         response = TelegramMessage.Create(message.chat_id, text=gateway.get_payment_link())
         bot.send(message=response)
 
@@ -41,13 +42,18 @@ def main():
         hint = TelegramMessage.Create(target_chat_id=user.chat_id, text=text_resources['select_channel'][user.language])
         print(hint.text)
         bot.send(hint)
-        user.change_state(UserStatesPlus.SELECT_CHANNEL)
+        user.change_state(UserStates.SELECT_CHANNEL)
 
+        return jsonify({'status': 'ok'})'''
+    # if account is current;y a vip:
+    user.change_state(UserStates.SELECT_CHANNEL)
+    if user.state == UserStates.SELECT_CHANNEL:
+        response = TelegramMessage.Create(user.chat_id, message.forward_origin.__str__())
+        bot.send(response)
         return jsonify({'status': 'ok'})
 
-    # if account is current;y a vip:
-    if user.state == UserStatesPlus.SELECT_CHANNEL:
-        pass
+    print("None")
+    return jsonify({'status': 'unknown'})
 
 @app.route('/verify', methods=['POST'])
 def verify_payment():

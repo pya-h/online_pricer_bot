@@ -1,20 +1,29 @@
-from db.account import Account, UserStates
+from db.account import Account
 from tools.mathematix import tz_today
 from db.vip_interface import VIPDatabaseInterface
 from datetime import datetime
 from tools.exceptions import NotVIPException
+from enum import Enum
 
 
-class UserStatesPlus(UserStates):
+class UserStates(Enum):
+    NONE = 0
     SELECT_CHANNEL = 4
+
 class VIPAccount(Account):
 
     MaxSelectionInDesiredOnes = 100
-    Database = VIPDatabaseInterface.Get()
+    _database = None
+
+    @staticmethod
+    def Database():
+        if VIPAccount._database == None:
+            VIPAccount._database = VIPDatabaseInterface.Get()
+        return VIPAccount._database
 
     def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', vip_end_date: datetime = None) -> None:
         super().__init__(chat_id, currencies, cryptos, language)
-        self.state: UserStatesPlus = UserStatesPlus.NONE
+        self.state: UserStates = UserStates.NONE
         self.vip_end_date = vip_end_date
 
     @staticmethod
@@ -22,7 +31,7 @@ class VIPAccount(Account):
         if chat_id in VIPAccount.Instances:
             VIPAccount.Instances[chat_id].last_interaction = tz_today()
             return VIPAccount.Instances[chat_id]
-        row = VIPAccount.Database.get(chat_id)
+        row = VIPAccount.Database().get(chat_id)
         if row:
             currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
@@ -32,7 +41,23 @@ class VIPAccount(Account):
         return VIPAccount(chat_id=chat_id).save()
 
     def has_vip_privileges(self):
-        return self.vip_end_date and tz_today().date() <= self.vip_end_date.date()
+        return self.vip_end_date is not None and tz_today().date() <= self.vip_end_date.date()
+
+    @staticmethod
+    def Everybody():
+        return VIPAccount.Database().get_all()
+
+    @staticmethod
+    def GarbageCollect():
+        now = tz_today()
+        garbage = []
+        for chat_id in VIPAccount.Instances:
+            if (now - VIPAccount.Instances[chat_id].last_interaction).total_seconds() / 60 >= VIPAccount.GarbageCollectionInterval / 2:
+                garbage.append(chat_id)
+        # because changing dict size in a loop on itself causes error,
+        # we first collect redundant chat_id s and then delete them from the memory
+        for g in garbage:
+            del VIPAccount.Instances[g]
 
 class Channel:
     Instances = {}
