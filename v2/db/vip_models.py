@@ -63,7 +63,7 @@ class VIPAccount(Account):
 
 class PlanInterval(CanBeKeyboardItemInterface):
     def __init__(self, title: str, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
-        self.title = title
+        self._title = title
         self.days = days
         self.hours = hours + self.days * 24  # total in hours
         self.mins = minutes + self.hours * 60  # total interval in minutes
@@ -72,7 +72,7 @@ class PlanInterval(CanBeKeyboardItemInterface):
         return self.mins  # this is for InlineKeyboared.Arrange
 
     def title(self) -> str:
-        return self.title
+        return self._title
 
     def as_json(self):
         return json.dumps({"d": self.days, "h": self.hours, "m": self.mins})
@@ -82,7 +82,7 @@ class Channel:
     Instances = {}
     Database: VIPDatabaseInterface = VIPDatabaseInterface.Get()
 
-    SupportedIntervals: list[dict] = [
+    SupportedIntervals: list[PlanInterval] = [
         PlanInterval("1 MIN", minutes=1), *[PlanInterval(f"{m} MINS", minutes=m) for m in [2, 5, 10, 30, 45]],
         PlanInterval("1 HOUR", hours=1), *[PlanInterval(f"{h} HOURS", hours=h) for h in [2, 3, 4, 6, 12]],
         PlanInterval("1 DAY", days=1), *[PlanInterval(f"{d} DAYS", days=d) for d in [2, 3, 4, 5, 6, 7, 10, 14, 30, 60]]

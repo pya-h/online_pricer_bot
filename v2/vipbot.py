@@ -28,7 +28,7 @@ app = Flask(__name__)
 # ** Routes **
 @app.route('/', methods=['POST'])
 def main():
-    message = TelegramMessage(request.json)  # read necessary message info from telegram object
+    message: TelegramMessage | TelegramCallbackQuery = TelegramMessage(request.json) if 'callback_query' not in request.json else TelegramCallbackQuery(request.json)  # read necessary message info from telegram object
     user = message.by
 
     # Echo the message back to the user
@@ -52,14 +52,16 @@ def main():
     match user.state:
         case UserStates.SELECT_CHANNEL:
             if not message.forward_origin or message.forward_origin.type != ChatTypes.CHANNEL:
+                print(message.forward_origin)
                 response.text = bot.getext("just_forward_channel_message", user.language)
-                print(response.text)
                 bot.send(response)
             else:
+                print(message.forward_origin)
                 user.change_state(UserStates.SELECT_INTERVAL, message.forward_origin)
                 response.text = bot.getext("select_interval", user.language)
-                bot.send(message=response,)
-        # case UserStates.SELECT_INTERVAL
+                bot.send(message=response, keyboard=InlineKeyboard.Arrange(Channel.SupportedIntervals, "int"))
+        case UserStates.SELECT_INTERVAL:
+            pass
         case _:
             print("None")
             response.text = bot.getext("wrong_command", user.language)

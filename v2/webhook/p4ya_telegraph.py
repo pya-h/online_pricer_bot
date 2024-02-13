@@ -4,17 +4,28 @@ from tools.manuwriter import log
 from enum import Enum
 from math import ceil
 from webhook.p4ya_telegraph_basics import CanBeKeyboardItemInterface
-
+from db.vip_models import UserStates
+from typing import Callable
 
 class ChatTypes(Enum):
     USER = "user"
     CHANNEL = "channel"
     GROUP = "group"
+    NONE = "none"
+
+    @staticmethod
+    def corresponding_member(value: str):
+        value = value.lower()
+        for member in ChatTypes:
+            if member.value == value:
+                return member
+
+        return ChatTypes.NONE
 
 
 class ForwardOrigin:
     def __init__(self, forward_data: dict) -> None:
-        self.type: ChatTypes = forward_data['type']
+        self.type: ChatTypes = ChatTypes.corresponding_member(forward_data['type'])
         self.id: int = None
         self.message_id: int = None
         self.title: str = None
@@ -61,8 +72,6 @@ class Keyboard:
     def attach_to(self, response_payload: dict) -> None:
         '''Attach the keyboard to the response payload, to make it easy for adding keyboard to messages'''
         response_payload['reply_markup'] = self.as_json()  # dicts are passed by reference, so there is no need to return this
-
-
 
 
 
@@ -133,11 +142,13 @@ class InlineKeyboard(Keyboard):
         }
 
     @staticmethod
-    def Arrange(list_of_keys: list[CanBeKeyboardItemInterface]):
+    def Arrange(list_of_keys: list[CanBeKeyboardItemInterface], callback_action: str):
         keys_count = len(list_of_keys)
-        keys = [[ InlineKey(list_of_keys[i][j].title(), list_of_keys[i][j].value()) for j in range(i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count)] \
-            for i in range(ceil(keys_count // 5))]
-        return InlineKeyboard(keys)
+        keys = [[ InlineKey(list_of_keys[j].title(), {"a": callback_action, "v": list_of_keys[j].value()}) \
+                 for j in range(i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count)] \
+                    for i in range(ceil(keys_count // 5))]
+
+        return InlineKeyboard(*keys)
 
 
 class TelegramMessage:
@@ -161,14 +172,26 @@ class TelegramMessage:
         }})
 
 
-class TelegramBot:
+class TelegramCallbackQuery(TelegramMessage):
+
+    def __init__(self, data: dict) -> None:
+        super().__init__(data['callback_query'])
+        self.data = data['data']
+        self.action: str = self.data['a'] if 'a' in self.data else None
+        self.value: str = self.data['v'] if 'v' in self.data else None
+
+
+class TelegramBotCore:
+    ''' Main and static part of the class '''
     def __init__(self, token: str, username: str, host_url: str, text_resources: dict) -> None:
         self.token = token
         self.bot_api_url = f"https://api.telegram.org/bot{self.token}"
         self.host_url = host_url
         self.username = username
         self.text_resources: dict = text_resources  # this is for making add multi-language support to the bot
-        self.handlers: list[dict] = []  # bot handlers, fills with add_handler
+        self.state_handlers: list[dict] = []
+        self.message_handlers: list[dict] = []  # bot handlers, fills with add_handler
+        self.callback_query_hanndlers: list[dict] = []
         # these handler will be checked when running bot.handle
 
     def send(self, message: TelegramMessage, keyboard: Keyboard|InlineKeyboard = None):
@@ -192,12 +215,29 @@ class TelegramBot:
             pass
         return "پاسخ نامعلوم" if language == 'fa' else "Unknown response"
 
-
-    # Main Sections:
-    def add_handler(command_text: str, handler: any):
-        # TODO: Complete this
-        pass
-
     def handle(user: VIPAccount, message: TelegramMessage):
         # TODO: Complete this
         pass
+
+
+
+class TelegramBot(TelegramBotCore):
+    '''Customizabvle part of bot'''
+    def __init__(self, token: str, username: str, host_url: str, text_resources: dict) -> None:
+        super().__init__(token, username, host_url, text_resources)
+
+
+    # Main Sections:
+    def add_state_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], TelegramMessage], state: UserStates|int):
+        # TODO: Complete this
+        self.state_handlers[state] = handler
+
+
+    # Main Sections:
+    def add_message_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], TelegramMessage], msg_text: str = None):
+        # TODO: Complete this
+        self.message_handlers[msg_text] = handler
+
+    def add_message_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], TelegramMessage], msg_text: str = None):
+        # TODO: Complete this
+        self.message_handlers[msg_text] = handler
