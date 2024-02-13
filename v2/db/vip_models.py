@@ -5,7 +5,7 @@ from datetime import datetime
 from tools.exceptions import NotVIPException
 from enum import Enum
 import json
-from webhook.p4ya_telegraph_basics import CanBeKeyboardItemInterface
+from payagraph.raw_materials import CanBeKeyboardItemInterface
 
 
 class PlanInterval(CanBeKeyboardItemInterface):
