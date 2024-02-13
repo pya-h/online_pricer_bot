@@ -14,5 +14,11 @@
     "select_interval": {
         "fa": "دوره زمان بندی کانال هر چند وقت یکبار باشد؟",
         "en": "Now select the interval of channel update:"
+    },
+    "keywords": {
+        "plan_channel": {
+            "fa": "زمان بندی کانال",
+            "en": "Channel Planning"
+        }
     }
 }

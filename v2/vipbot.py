@@ -7,6 +7,7 @@ from payment.nowpayments import NowpaymentsGateway
 from payment.order import Order
 from db.vip_models import UserStates, Channel
 from tools import manuwriter
+from typing import Union
 
 
 # Set up logging
@@ -19,8 +20,34 @@ HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
 
 text_resources = manuwriter.load_json('vip_texts', 'resources')
-bot = TelegramBot(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources)
 
+def plan_channel(bot: TelegramBot, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    user = message.by
+    user.change_state(UserStates.SELECT_CHANNEL)
+    return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("just_forward_channel_message", user.language)), None
+
+
+def select_channel_handler(bot: TelegramBot, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    user = message.by
+    response: TelegramMessage = TelegramMessage.Text(target_chat_id=user.chat_id)
+
+    if message.forward_origin and message.forward_origin.type == ChatTypes.CHANNEL:
+        user.change_state(UserStates.SELECT_INTERVAL, message.forward_origin)
+        response.text = bot.text("select_interval", user.language)
+        return response, InlineKeyboard.Arrange(Channel.SupportedIntervals, "int")
+
+    response.text = bot.text("just_forward_channel_message", user.language)
+    return response, None
+
+
+main_keyboard = {
+    'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
+    'fa': Keyboard(text_resources["keywords"]["plan_channel"]["fa"])
+}
+bot = TelegramBot(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, _main_keyboard=main_keyboard)
+
+bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
+bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channel)
 
 ### Flask App configs ###
 app = Flask(__name__)
@@ -35,11 +62,11 @@ def main():
     '''if not user.has_vip_privileges():
         order = Order(buyer=user, months_counts=2)  # change this
         gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
-        response = TelegramMessage.Create(message.chat_id, text=gateway.get_payment_link())
+        response = TelegramMessage.Text(message.chat_id, text=gateway.get_payment_link())
         bot.send(message=response)
 
         ### TEMP
-        hint = TelegramMessage.Create(target_chat_id=user.chat_id, text=bot.getext("select_channel", user.language))
+        hint = TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("select_channel", user.language))
         bot.send(hint)
         user.change_state(UserStates.SELECT_CHANNEL)
 
@@ -47,24 +74,24 @@ def main():
     # if account is current;y a vip:
     if user.state == UserStates.NONE:
         user.change_state(UserStates.SELECT_CHANNEL)
-    response = TelegramMessage.Create(user.chat_id)
-    print(user.state)
-    match user.state:
-        case UserStates.SELECT_CHANNEL:
-            if not message.forward_origin or message.forward_origin.type != ChatTypes.CHANNEL:
-                print(message.forward_origin)
-                response.text = bot.getext("just_forward_channel_message", user.language)
-                bot.send(response)
-            else:
-                print(message.forward_origin)
-                user.change_state(UserStates.SELECT_INTERVAL, message.forward_origin)
-                response.text = bot.getext("select_interval", user.language)
-                bot.send(message=response, keyboard=InlineKeyboard.Arrange(Channel.SupportedIntervals, "int"))
-        case UserStates.SELECT_INTERVAL:
-            pass
-        case _:
-            print("None")
-            response.text = bot.getext("wrong_command", user.language)
+    bot.handle(request.json)
+    # response = TelegramMessage.Text(user.chat_id)
+    # print(user.state)
+    # match user.state:
+    #     case UserStates.SELECT_CHANNEL:
+    #         if not message.forward_origin or message.forward_origin.type != ChatTypes.CHANNEL:
+    #             response.text = bot.text("just_forward_channel_message", user.language)
+    #             bot.send(response)
+    #         else:
+    #             print(message.forward_origin)
+    #             user.change_state(UserStates.SELECT_INTERVAL, message.forward_origin)
+    #             response.text = bot.text("select_interval", user.language)
+    #             bot.send(message=response, keyboard=InlineKeyboard.Arrange(Channel.SupportedIntervals, "int"))
+    #     case UserStates.SELECT_INTERVAL:
+    #         pass
+    #     case _:
+    #         print("None")
+    #         response.text = bot.text("wrong_command", user.language)
 
     return jsonify({'status': 'ok'})
 
