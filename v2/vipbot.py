@@ -5,7 +5,7 @@ from webhook.p4ya_telegraph import *
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
 from payment.order import Order
-from db.vip_models import UserStates
+from db.vip_models import UserStates, Channel
 from tools import manuwriter
 
 
@@ -54,12 +54,12 @@ def main():
                 response.text = bot.getext("just_forward_channel_message", user.language)
             else:
                 user.change_state(UserStates.SELECT_INTERVAL, message.forward_origin)
+                bot.send(message=response, keyboard=InlineKeyboard.Arrange(Channel.SupportedIntervals))
+        # case UserStates.SELECT_INTERVAL
         case _:
             print("None")
             response.text = bot.getext("wrong_command", user.language)
-    Keyboard(["test"], ["test 2"]).attach_to(response)
 
-    bot.send(message=response)
     return jsonify({'status': 'ok'})
 
 @app.route('/verify', methods=['POST'])

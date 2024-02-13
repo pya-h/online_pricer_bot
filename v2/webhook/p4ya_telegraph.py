@@ -2,6 +2,9 @@ from db.vip_models import VIPAccount
 import requests, json
 from tools.manuwriter import log
 from enum import Enum
+from math import ceil
+from webhook.p4ya_telegraph_basics import CanBeKeyboardItemInterface
+
 
 class ChatTypes(Enum):
     USER = "user"
@@ -58,6 +61,9 @@ class Keyboard:
     def attach_to(self, response_payload: dict) -> None:
         '''Attach the keyboard to the response payload, to make it easy for adding keyboard to messages'''
         response_payload['reply_markup'] = self.as_json()  # dicts are passed by reference, so there is no need to return this
+
+
+
 
 
 class InlineKey:
@@ -126,6 +132,13 @@ class InlineKeyboard(Keyboard):
             "inline_keyboard": arranged_keys
         }
 
+    @staticmethod
+    def Arrange(list_of_keys: list[CanBeKeyboardItemInterface]):
+        keys_count = len(list_of_keys)
+        keys = [[ InlineKey(list_of_keys[i][j].title(), list_of_keys[i][j].value()) for j in range(i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count)] \
+            for i in range(ceil(keys_count // 5))]
+        return InlineKeyboard(keys)
+
 
 class TelegramMessage:
 
@@ -158,10 +171,11 @@ class TelegramBot:
         self.handlers: list[dict] = []  # bot handlers, fills with add_handler
         # these handler will be checked when running bot.handle
 
-    def send(self, message: TelegramMessage):
+    def send(self, message: TelegramMessage, keyboard: Keyboard|InlineKeyboard = None):
         url = f"{self.bot_api_url}/sendMessage"
         chat_id = message.chat_id # message.by.chat_id
         payload = {'chat_id': chat_id, 'text': message.text}
+        keyboard.attach_to(payload)
         response = requests.post(url, json=payload)
         if response.status_code != 200:
             log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{message.by.chat_id}\nResponse text: {response.text}", category_name="VIP_FATAL")
@@ -179,7 +193,7 @@ class TelegramBot:
 
 
     # Main Sections:
-    def add_handler(command_text: str, handler: function):
+    def add_handler(command_text: str, handler: any):
         # TODO: Complete this
         pass
 
