@@ -175,7 +175,8 @@ class TelegramBot:
         url = f"{self.bot_api_url}/sendMessage"
         chat_id = message.chat_id # message.by.chat_id
         payload = {'chat_id': chat_id, 'text': message.text}
-        keyboard.attach_to(payload)
+        if keyboard:
+            keyboard.attach_to(payload)
         response = requests.post(url, json=payload)
         if response.status_code != 200:
             log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{message.by.chat_id}\nResponse text: {response.text}", category_name="VIP_FATAL")

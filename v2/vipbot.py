@@ -45,16 +45,20 @@ def main():
 
         return jsonify({'status': 'ok'})'''
     # if account is current;y a vip:
-    user.change_state(UserStates.SELECT_CHANNEL)
+    if user.state == UserStates.NONE:
+        user.change_state(UserStates.SELECT_CHANNEL)
     response = TelegramMessage.Create(user.chat_id)
-
+    print(user.state)
     match user.state:
         case UserStates.SELECT_CHANNEL:
             if not message.forward_origin or message.forward_origin.type != ChatTypes.CHANNEL:
                 response.text = bot.getext("just_forward_channel_message", user.language)
+                print(response.text)
+                bot.send(response)
             else:
                 user.change_state(UserStates.SELECT_INTERVAL, message.forward_origin)
-                bot.send(message=response, keyboard=InlineKeyboard.Arrange(Channel.SupportedIntervals))
+                response.text = bot.getext("select_interval", user.language)
+                bot.send(message=response,)
         # case UserStates.SELECT_INTERVAL
         case _:
             print("None")
