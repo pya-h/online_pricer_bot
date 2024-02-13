@@ -166,6 +166,18 @@ def after_n_months(n: int = 2) -> datetime:
     return extend_date(date=datetime.now(), months_count=n)
 
 
+def force_cast(value: str) -> int|float|str:
+    '''Convert a numric string to a number type variable, or return the string itself if its not numeric'''
+    try:
+        value = int(value)
+    except:
+        try:
+            value = float(value)
+        except:
+            pass
+    return value
+
+
 if __name__ == "__main__":
     d = datetime.today()
     j = gregorian_to_jalali(d.year, d.month, d.day)

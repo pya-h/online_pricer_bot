@@ -8,6 +8,7 @@ from payment.order import Order
 from db.vip_models import UserStates, Channel
 from tools import manuwriter
 from typing import Union
+from tools.exceptions import *
 
 
 # Set up logging
@@ -40,14 +41,31 @@ def select_channel_handler(bot: TelegramBot, message: TelegramMessage) -> Union[
     return response, None
 
 
+def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    user = callback_query.by
+    if not isinstance(user.state_data, ForwardOrigin):
+        return TelegramMessage.Text(user.chat_id, bot.text("channel_data_lost", user.language)), None
+    channel_data: ForwardOrigin = user.state_data
+    response = TelegramMessage.Text(user.chat_id, text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes")
+    try:
+        channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username or channel_data.title, interval=callback_query.value)
+        response.text += "\nChannel and its plan data saved"
+    except NotVIPException:
+        response.text = bot.text("not_vip", user.language)
+    except Exception as ex:
+        response.text = ex.__str__()
+    return response, None
+
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
     'fa': Keyboard(text_resources["keywords"]["plan_channel"]["fa"])
 }
+
 bot = TelegramBot(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, _main_keyboard=main_keyboard)
 
 bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
 bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channel)
+bot.add_callback_query_handler(action="int", handler=save_channel_plan)
 
 ### Flask App configs ###
 app = Flask(__name__)
@@ -55,8 +73,6 @@ app = Flask(__name__)
 # ** Routes **
 @app.route('/', methods=['POST'])
 def main():
-    message: TelegramMessage | TelegramCallbackQuery = TelegramMessage(request.json) if 'callback_query' not in request.json else TelegramCallbackQuery(request.json)  # read necessary message info from telegram object
-    user = message.by
 
     # Echo the message back to the user
     '''if not user.has_vip_privileges():
@@ -71,9 +87,7 @@ def main():
         user.change_state(UserStates.SELECT_CHANNEL)
 
         return jsonify({'status': 'ok'})'''
-    # if account is current;y a vip:
-    if user.state == UserStates.NONE:
-        user.change_state(UserStates.SELECT_CHANNEL)
+
     bot.handle(request.json)
     # response = TelegramMessage.Text(user.chat_id)
     # print(user.state)

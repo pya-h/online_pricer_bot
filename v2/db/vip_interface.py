@@ -79,7 +79,7 @@ class VIPDatabaseInterface(DatabaseInterface):
     def plan_channel(self, owner_chat_id: int, channel_id: int, channel_name: str, interval: int):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM {VIPDatabaseInterface.TABLE_CHANNELS} WHERE {DatabaseInterface.CHANNEL_ID}=? LIMIT 1", (channel_id, ))
+        cursor.execute(f"SELECT * FROM {VIPDatabaseInterface.TABLE_CHANNELS} WHERE {VIPDatabaseInterface.CHANNEL_ID}=? LIMIT 1", (channel_id, ))
         now_in_minutes = time() // 60
         if cursor.fetchone(): # if account with his chat id has been saved before in the database
             FIELDS_TO_SET = f'{VIPDatabaseInterface.CHANNEL_OWNER_ID}=?, {VIPDatabaseInterface.CHANNEL_INTERVAL}=?, {VIPDatabaseInterface.CHANNEL_NAME}=?, {VIPDatabaseInterface.CHANNEL_LAST_POST_TIME}=?'

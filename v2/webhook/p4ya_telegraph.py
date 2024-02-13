@@ -6,6 +6,8 @@ from math import ceil
 from webhook.p4ya_telegraph_basics import CanBeKeyboardItemInterface
 from db.vip_models import UserStates
 from typing import Callable, Dict, List, Union
+from tools.mathematix import force_cast
+
 
 class ChatTypes(Enum):
     USER = "user"
@@ -48,7 +50,7 @@ class ForwardOrigin:
 
 class Keyboard:
     def __init__(self, *rows: list) -> None:
-        self.keys = list(rows)
+        self.keys = list([row if isinstance(row, list) else [row] for row in rows])
         self.one_time_keyboard = False
         self.resize_keyboard = True
 
@@ -176,9 +178,20 @@ class TelegramCallbackQuery(TelegramMessage):
 
     def __init__(self, data: dict) -> None:
         super().__init__(data['callback_query'])
-        self.data = data['data']
-        self.action: str = self.data['a'] if 'a' in self.data else None
-        self.value: str = self.data['v'] if 'v' in self.data else None
+        self.data: str|dict = data['callback_query']['data']
+        self.action: str = None
+        self.value : str = self.data
+        try:
+            self.data = json.loads(self.data)
+            self.action: str|int|float = force_cast(  # if can be convert to numeric, do it
+                self.data['a'] if 'a' in self.data else None
+            )
+
+            self.value: str|int|float =  force_cast(# if can be convert to numeric, do it
+                self.data['v'] if 'v' in self.data else None
+            )
+        except:
+            pass
 
 
 class TelegramBotCore:
@@ -201,7 +214,7 @@ class TelegramBotCore:
     def main_keyboard(self, user_language: str = None) -> Keyboard:
         if isinstance(self._main_keyboard, Keyboard):
             return self._main_keyboard
-        if isinstance(self, dict):
+        if isinstance(self._main_keyboard, dict):
             if not user_language or user_language not in self._main_keyboard:
                 return self._main_keyboard.values()[0]
             return self._main_keyboard[user_language]
@@ -245,7 +258,7 @@ class TelegramBotCore:
         keyboard: Keyboard | InlineKeyboard = None
         dont_use_main_keyboard: bool = False
         if 'callback_query' in telegram_data:
-            callback_query = TelegramCallbackQuery(telegram_data['callback_query'])
+            callback_query = TelegramCallbackQuery(telegram_data)
             user = callback_query.by
             if callback_query.action in self.callback_query_hanndlers:
                 handler: Callable[[TelegramBotCore, TelegramCallbackQuery], Union[TelegramMessage, Keyboard|InlineKeyboard]]  = self.callback_query_hanndlers[callback_query.action]
@@ -267,6 +280,7 @@ class TelegramBotCore:
 
         if not keyboard and not dont_use_main_keyboard:
             keyboard = self.main_keyboard(user.language)
+        print(keyboard)
         self.send(message=response, keyboard=keyboard)
 
 
@@ -283,7 +297,7 @@ class TelegramBot(TelegramBotCore):
 
 
     # Main Sections:
-    def add_message_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], TelegramMessage], message: dict|list|str = None):
+    def add_message_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]], message: dict|list|str = None):
         '''Add message handlers; Provide specific messages in your desired languages (as dict) to call their provided handlers when that message is sent by user;'''
         # if your bot has multiple languages then notice that your language keys must match with these keys in message
         if message:
@@ -300,5 +314,5 @@ class TelegramBot(TelegramBotCore):
         self.command_handlers[f"/{command} " if command[0] != '/' else command] = handler
 
 
-    def add_callback_query_handler(self, handler: Callable[[TelegramBotCore, TelegramCallbackQuery], TelegramMessage], action: str = None):
+    def add_callback_query_handler(self, handler: Callable[[TelegramBotCore, TelegramCallbackQuery], Union[TelegramMessage, Keyboard|InlineKeyboard]], action: str = None):
         self.callback_query_hanndlers[action] = handler

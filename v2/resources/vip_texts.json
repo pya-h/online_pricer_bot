@@ -15,6 +15,14 @@
         "fa": "دوره زمان بندی کانال هر چند وقت یکبار باشد؟",
         "en": "Now select the interval of channel update:"
     },
+    "channel_data_lost": {
+        "fa": "متاسفانه اطلاعات کانال موردنظر شما به درستی دریافت یا ذخیره نشده است. لطفا مجددا یک پیام دیگر از آن برای ربات ارسال کن.",
+        "en": "Sorry! It seems that your desired channel data has not been received or saved correctly. Please forward another message from the channel to proceed."
+    },
+    "not_vip": {
+        "fa": "متاسفانه شما در حال حاضر با تعرفه عادی از این کانال استفاده می کنید. برای استفاده از امکانات ابن ربات لطفا از طریق همین ربات یک اشتراک VIP تهیه کنید.",
+        "en": "Unfortunately your using this bot as a normal user. To use this robot you need to upgrade to vip level using this very bot."
+    },
     "keywords": {
         "plan_channel": {
             "fa": "زمان بندی کانال",
