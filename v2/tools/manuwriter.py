@@ -69,3 +69,24 @@ def load_json(json_filename: str, parent_folder: str = '.'):
     except:
         return None
     return json.loads(str_json)
+
+
+def random_string(length: int, capital_case: bool=True, lower_case: bool = False, *signs_or_special_chars) -> str:
+    '''Generate a random meaningless string. by default its just upper and lowercase characters. if there's any sign needed, they can be added as extra params to function call.
+    for increasing the posibility of occuring a sign/character in string multiply it by a int like: random_text(15, True, False, ':' * 5, 's' * 4, ' ' * 10)'''
+    from random import randint
+    characters = 'abcdefghijklmnopqrstuvwxyz'
+    if signs_or_special_chars:
+        characters += ''.join(signs_or_special_chars)
+    while len(characters) < length:
+        characters *= 2
+    chars_count = len(characters)
+    res = ''
+    for _ in range(length if length < chars_count else chars_count):
+        rnd = randint(0, chars_count - 1)
+        lwr = lower_case or randint(0, 10) >= 5
+        res += characters[rnd] if lwr else characters[rnd].upper()
+
+    if not lower_case and capital_case and (res[0] >= 'a' or res[0] <= 'z'):
+        return f"{res[0].upper()}{res[1:]}"
+    return res.capitalize() if capital_case else res

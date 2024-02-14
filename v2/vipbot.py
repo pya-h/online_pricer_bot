@@ -20,19 +20,24 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # read .env configs
+# You bot data
 VIP_BOT_TOKEN = config('VIP_BOT_TOKEN')
 HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
 
+# Read the text resource containing the multilanguage data for the bot texts, messages, commands and etc.
+# Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
 text_resources = manuwriter.load_json('vip_texts', 'resources')
 
 def plan_channel(bot: TelegramBot, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    '''Handles the user request on adding a new channel and plan.'''
     user = message.by
     user.change_state(UserStates.SELECT_CHANNEL)
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("just_forward_channel_message", user.language)), None
 
 
 def select_channel_handler(bot: TelegramBot, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    '''When bot asks for channel message forward, and user performs an action, this function will handle the action and proceed to next step if data provided is correct.'''
     user = message.by
     response: TelegramMessage = TelegramMessage.Text(target_chat_id=user.chat_id)
 
@@ -46,6 +51,7 @@ def select_channel_handler(bot: TelegramBot, message: TelegramMessage) -> Union[
 
 
 def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
     user = callback_query.by
     if not isinstance(user.state_data, ForwardOrigin):
         return TelegramMessage.Text(user.chat_id, bot.text("channel_data_lost", user.language)), None
@@ -63,6 +69,9 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
 
     return callback_query, None
 
+# Parallel Jovbs:
+def check_channel_plans(bot: TelegramBot)-> Union[TelegramMessage, Keyboard|InlineKeyboard]
+    pass
 
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
@@ -76,26 +85,6 @@ bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channe
 bot.add_callback_query_handler(action="int", handler=save_channel_plan)
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.by.chat_id, bot.get_uptime()), None))
 
-def test(t, s, l:list, idx):
-    i = l[idx]
-    print("test", idx, ":", i, s * t())
-    l[idx]+=1
-    
-from random import randint
-def say_sth():
-    s = 'abcdefg hijklm nopqrstuvwxyz'
-    res = ''
-    for i in range(20):
-        rnd = randint(0, len(s) - 1)
-        lwr = randint(0, 10) >= 5
-        res += s[rnd] if lwr else s[rnd].upper()
-    print(res)
-
-
-l = [0, -100]    
-job = bot.prepare_new_parallel_job(1, test, time, 1, l, 0)
-job2 = bot.prepare_new_parallel_job(3, test, time, -2.5, l, 1)
-job3 = bot.prepare_new_parallel_job(2, say_sth)
 bot.start_clock()
 bot.config_webhook()
 

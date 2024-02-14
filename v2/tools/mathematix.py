@@ -194,6 +194,7 @@ def minutes_to_timestamp(minutes: int) -> str:
         # else:
     return timestamp
 
+
 if __name__ == "__main__":
     d = datetime.today()
     j = gregorian_to_jalali(d.year, d.month, d.day)
