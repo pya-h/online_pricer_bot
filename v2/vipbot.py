@@ -4,6 +4,7 @@ import requests
 from payagraph.bot import *
 from payagraph.containers import *
 from payagraph.keyboards import *
+from payagraph.tools import *
 
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
@@ -75,34 +76,28 @@ bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channe
 bot.add_callback_query_handler(action="int", handler=save_channel_plan)
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.by.chat_id, bot.get_uptime()), None))
 
+def test(t, s, l:list, idx):
+    i = l[idx]
+    print("test", idx, ":", i, s * t())
+    l[idx]+=1
+    
+from random import randint
+def say_sth():
+    s = 'abcdefg hijklm nopqrstuvwxyz'
+    res = ''
+    for i in range(20):
+        rnd = randint(0, len(s) - 1)
+        lwr = randint(0, 10) >= 5
+        res += s[rnd] if lwr else s[rnd].upper()
+    print(res)
 
+
+l = [0, -100]    
+job = bot.prepare_new_parallel_job(1, test, time, 1, l, 0)
+job2 = bot.prepare_new_parallel_job(3, test, time, -2.5, l, 1)
+job3 = bot.prepare_new_parallel_job(2, say_sth)
 bot.start_clock()
 bot.config_webhook()
-'''
-### Flask App configs ###
-app = Flask(__name__)
-# ** Routes **
-@app.route('/', methods=['POST'])
-def main():
-
-    # code below must be add to middlewares
-    if not user.has_vip_privileges():
-        order = Order(buyer=user, months_counts=2)  # change this
-        gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
-        response = TelegramMessage.Text(message.chat_id, text=gateway.get_payment_link())
-        bot.send(message=response)
-
-        ### TEMP
-        hint = TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("select_channel", user.language))
-        bot.send(hint)
-        user.change_state(UserStates.SELECT_CHANNEL)
-
-        return jsonify({'status': 'ok'})
-
-    bot.handle(request.json)
-
-    return jsonify({'status': 'ok'})
-'''
 
 @bot.app.route('/verify', methods=['POST'])
 def verify_payment():
@@ -146,4 +141,4 @@ def send_telegram_notification(user_id, message):
 
 
 if __name__ == '__main__':
-    bot.go()  # Run the Flask app
+    bot.go(False)  # Run the Flask app

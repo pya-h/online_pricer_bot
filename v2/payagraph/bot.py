@@ -10,31 +10,7 @@ from time import time
 from tools.planner import Planner
 from tools.exceptions import *
 from flask import Flask, request, jsonify
-
-
-class ParallelJob:
-    '''Define objects from this and use it in TelegramBot, it will does some parallel jobs in the bot by a specific interval [in minutes]'''
-    def __init__(self, interval: int, function: Callable[..., any], *params) -> None:
-        self.interval: int = interval
-        self.function: Callable[..., any] = function
-        self.last_run_result: any = None
-        self.last_call_minutes: int = None
-        self.params: list[any] = params
-        self.running: bool = False
-
-
-    def go(self):
-        '''Start running...'''
-        self.last_call_minutes = time() // 60
-        self.running = True
-        return self
-
-    def do(self):
-        self.last_run_result = self.function(*self.params)
-        self.last_call_minutes = time() // 60
-
-    def stop(self):
-        self.running = False
+from payagraph.tools import ParallelJob
 
 
 class TelegramBotCore:
@@ -154,7 +130,7 @@ class TelegramBot(TelegramBotCore):
             return jsonify({'status': 'ok'})
         
     def go(self, debug=True):
-        self.app.run(debug)
+        self.app.run(debug=debug)
 
     def start_clock(self):
         '''Start the clock and handle(/run if needed) parallel jobs. As parallel jobs are optional, the clock is not running from start of the bot. it starts by direct demand of developer or user.'''
@@ -169,12 +145,10 @@ class TelegramBot(TelegramBotCore):
         '''Runs every 1 minutes, and checks if there's any parallel jobs and is it time to perform them by interval or not'''
         now = time() // 60
         print('tick tocked')
-        ready_jobs = list(filter(
-            lambda job: (job.running) and (now - job.last_call_minutes >= job.interval) , self.parallels
-        ))
 
-        for job in ready_jobs:
-            job.do()
+        for job in self.parallels:
+            if (job.running) and (now - job.last_call_minutes >= job.interval):
+                job.do()
 
     def get_uptime(self) -> str:
         '''Bot being awake time, if the clock has not been stopped ofcourse'''
@@ -216,9 +190,11 @@ class TelegramBot(TelegramBotCore):
         return False
     
 
-    def create_and_add_parallel_job(self, interval: int, functionality: Callable[..., any], *params) -> bool:
-        '''Create a new ParallelJob object and then add it to bot parallel job list.'''
-        self.add_parallel_job(ParallelJob(interval, functionality, *params))
+    def prepare_new_parallel_job(self, interval: int, functionality: Callable[..., any], *params) -> ParallelJob:
+        '''Create a new ParallelJob object and then add it to bot parallel job list and start it.'''
+        job = ParallelJob(interval, functionality, *params)
+        self.add_parallel_job(job)
+        return job.go()
 
     def handle(self, telegram_data: dict):
         '''determine what course of action to take based on the message sent to the bot by user. First command/message/state handler and middlewares and then call the handle with telegram request data.'''
