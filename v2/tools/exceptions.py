@@ -26,3 +26,9 @@ class NotVIPException(Exception):
         self.message = f"Account with chat_id={chat_id} is not VIP now!"
         super().__init__(self.message)
 
+
+class InvalidKeyboardException(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(f'Invalid keyboard used: {self.message}')
+

@@ -54,6 +54,7 @@ class TelegramMessage:
         self.by: VIPAccount = VIPAccount.Get(self.msg['chat']['id'])
         self.chat_id: int = self.msg['chat']['id']
         self.forward_origin: ForwardOrigin = ForwardOrigin(self.msg['forward_origin']) if 'forward_origin' in self.msg else None
+        self.replace_on_previous = False
 
     @staticmethod
     def Text(target_chat_id: str, text: str = ''):

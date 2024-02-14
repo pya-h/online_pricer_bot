@@ -177,6 +177,22 @@ def force_cast(value: str) -> int|float|str:
             pass
     return value
 
+def minutes_to_timestamp(minutes: int) -> str:
+    hours = minutes // 60
+    minutes -= hours * 60
+    timestamp: str = f"{minutes} Minute{'s' if minutes > 1 else ''}"
+    if hours > 0:
+        days = hours // 24
+        hours -= days * 24
+        timestamp = f"{hours} Hour{'s' if hours > 1 else ''} And {timestamp}"
+        if days > 0:
+            timestamp = f"{days} Day{'s' if days > 1 else ''}, {timestamp}"
+            # months = days // 30
+            # days -= months * 30
+            # # how about 31 days month and 29?
+            # if
+        # else:
+    return timestamp
 
 if __name__ == "__main__":
     d = datetime.today()

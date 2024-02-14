@@ -49,16 +49,28 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
     if not isinstance(user.state_data, ForwardOrigin):
         return TelegramMessage.Text(user.chat_id, bot.text("channel_data_lost", user.language)), None
     channel_data: ForwardOrigin = user.state_data
-    response = TelegramMessage.Text(user.chat_id, text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes")
+    callback_query.text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes"
     try:
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username or channel_data.title, interval=callback_query.value)
-        response.text += "\nChannel and its plan data saved"
+        callback_query.text += "\nChannel and its plan data saved"
     except NotVIPException:
-        response.text = bot.text("not_vip", user.language)
+        callback_query.text = bot.text("not_vip", user.language)
     except Exception as ex:
-        response.text = ex.__str__()
-    return response, None
+        callback_query.text = ex.__str__()
+    callback_query.replace_on_previous = True
+    user.change_state()  # reset user state
 
+    return callback_query, None
+
+# def show_uptime_handler(bot: TelegramBot, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]::
+def job_test(bot: TelegramBot, message: TelegramMessage)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    from time import time
+    def test(user: VIPAccount):
+        bot.send(TelegramMessage.Text(user.chat_id, str(time()//60)))
+    bot.parallels.append(
+        ParallelJob(1, test, message.by).go()
+    )
+    return TelegramMessage.Text(message.by.chat_id, f"Job planned starting from now: {time()} sec(s)"), None
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
     'fa': Keyboard(text_resources["keywords"]["plan_channel"]["fa"])
@@ -69,7 +81,10 @@ bot = TelegramBot(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL,
 bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
 bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channel)
 bot.add_callback_query_handler(action="int", handler=save_channel_plan)
+bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.by.chat_id, bot.get_uptime()), None))
+bot.add_command_handler(command='job', handler=job_test)
 
+bot.start_clock()
 ### Flask App configs ###
 app = Flask(__name__)
 
@@ -77,7 +92,7 @@ app = Flask(__name__)
 @app.route('/', methods=['POST'])
 def main():
 
-    # Echo the message back to the user
+    # code below must be add to middlewares
     '''if not user.has_vip_privileges():
         order = Order(buyer=user, months_counts=2)  # change this
         gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
@@ -92,23 +107,6 @@ def main():
         return jsonify({'status': 'ok'})'''
 
     bot.handle(request.json)
-    # response = TelegramMessage.Text(user.chat_id)
-    # print(user.state)
-    # match user.state:
-    #     case UserStates.SELECT_CHANNEL:
-    #         if not message.forward_origin or message.forward_origin.type != ChatTypes.CHANNEL:
-    #             response.text = bot.text("just_forward_channel_message", user.language)
-    #             bot.send(response)
-    #         else:
-    #             print(message.forward_origin)
-    #             user.change_state(UserStates.SELECT_INTERVAL, message.forward_origin)
-    #             response.text = bot.text("select_interval", user.language)
-    #             bot.send(message=response, keyboard=InlineKeyboard.Arrange(Channel.SupportedIntervals, "int"))
-    #     case UserStates.SELECT_INTERVAL:
-    #         pass
-    #     case _:
-    #         print("None")
-    #         response.text = bot.text("wrong_command", user.language)
 
     return jsonify({'status': 'ok'})
 
