@@ -28,5 +28,8 @@
             "fa": "زمان بندی کانال",
             "en": "Channel Planning"
         }
+    },
+    "commands": {
+        "plan_channel": "/plan"
     }
 }

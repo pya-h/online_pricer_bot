@@ -62,15 +62,7 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
 
     return callback_query, None
 
-# def show_uptime_handler(bot: TelegramBot, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]::
-def job_test(bot: TelegramBot, message: TelegramMessage)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
-    from time import time
-    def test(user: VIPAccount):
-        bot.send(TelegramMessage.Text(user.chat_id, str(time()//60)))
-    bot.parallels.append(
-        ParallelJob(1, test, message.by).go()
-    )
-    return TelegramMessage.Text(message.by.chat_id, f"Job planned starting from now: {time()} sec(s)"), None
+
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
     'fa': Keyboard(text_resources["keywords"]["plan_channel"]["fa"])
@@ -82,7 +74,6 @@ bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_ha
 bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channel)
 bot.add_callback_query_handler(action="int", handler=save_channel_plan)
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.by.chat_id, bot.get_uptime()), None))
-bot.add_command_handler(command='job', handler=job_test)
 
 bot.start_clock()
 ### Flask App configs ###
