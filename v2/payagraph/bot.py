@@ -9,6 +9,7 @@ from payagraph.keyboards import *
 from time import time
 from tools.planner import Planner
 from tools.exceptions import *
+from flask import Flask, request, jsonify
 
 
 class ParallelJob:
@@ -128,7 +129,32 @@ class TelegramBot(TelegramBotCore):
         # these handler will be checked when running bot.handle
         self.parallels: list[ParallelJob] = []
         self.clock = None
+        ### Flask App configs ###
+        self.app: Flask = Flask(__name__)
 
+
+    def config_webhook(self, webhook_path = '/'):
+        # **Telegram hook route**
+        @self.app.route(webhook_path, methods=['POST'])
+        def main():
+            # code below must be add to middlewares
+            '''if not user.has_vip_privileges():
+                order = Order(buyer=user, months_counts=2)  # change this
+                gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
+                response = TelegramMessage.Text(message.chat_id, text=gateway.get_payment_link())
+                bot.send(message=response)
+
+                ### TEMP
+                hint = TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("select_channel", user.language))
+                bot.send(hint)
+                user.change_state(UserStates.SELECT_CHANNEL)
+
+                 return jsonify({'status': 'ok'})'''
+            self.handle(request.json)
+            return jsonify({'status': 'ok'})
+        
+    def go(self, debug=True):
+        self.app.run(debug)
 
     def start_clock(self):
         '''Start the clock and handle(/run if needed) parallel jobs. As parallel jobs are optional, the clock is not running from start of the bot. it starts by direct demand of developer or user.'''

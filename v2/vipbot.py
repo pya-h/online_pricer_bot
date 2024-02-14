@@ -75,16 +75,18 @@ bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channe
 bot.add_callback_query_handler(action="int", handler=save_channel_plan)
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.by.chat_id, bot.get_uptime()), None))
 
+
 bot.start_clock()
+bot.config_webhook()
+'''
 ### Flask App configs ###
 app = Flask(__name__)
-
 # ** Routes **
 @app.route('/', methods=['POST'])
 def main():
 
     # code below must be add to middlewares
-    '''if not user.has_vip_privileges():
+    if not user.has_vip_privileges():
         order = Order(buyer=user, months_counts=2)  # change this
         gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
         response = TelegramMessage.Text(message.chat_id, text=gateway.get_payment_link())
@@ -95,13 +97,14 @@ def main():
         bot.send(hint)
         user.change_state(UserStates.SELECT_CHANNEL)
 
-        return jsonify({'status': 'ok'})'''
+        return jsonify({'status': 'ok'})
 
     bot.handle(request.json)
 
     return jsonify({'status': 'ok'})
+'''
 
-@app.route('/verify', methods=['POST'])
+@bot.app.route('/verify', methods=['POST'])
 def verify_payment():
     print(request.json)
 # @app.route('/payment-notification', methods=['POST'])
@@ -143,4 +146,4 @@ def send_telegram_notification(user_id, message):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)  # Run the Flask app
+    bot.go()  # Run the Flask app
