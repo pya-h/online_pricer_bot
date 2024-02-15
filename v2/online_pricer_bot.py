@@ -94,7 +94,7 @@ currencyManager = SourceArena(CURRENCY_TOKEN, ABAN_TETHER_TOKEN)
 is_channel_updates_started = False
 
 
-def signed_message(message: str, for_channel: bool=True) -> str:
+def sign_post(message: str, for_channel: bool=True) -> str:
     timestamp = mathematix.timestamp()
     interval_fa = mathematix.persianify(schedule_interval.__str__())
     header = f'✅ بروزرسانی قیمت ها (هر {interval_fa} دقیقه)\n' if for_channel else ''
@@ -102,7 +102,7 @@ def signed_message(message: str, for_channel: bool=True) -> str:
     footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
     return f'{header}\n{message}\n{footer}'
 
-def construct_new_message(desired_coins=None, desired_currencies=None, exactly_right_now=True, short_text=True, for_channel=True) -> str:
+def construct_new_post(desired_coins=None, desired_currencies=None, exactly_right_now=True, short_text=True, for_channel=True) -> str:
     currencies = cryptos = ''
 
     try:
@@ -121,7 +121,7 @@ def construct_new_message(desired_coins=None, desired_currencies=None, exactly_r
     except Exception as ex:
         manuwriter.log("Cannot obtain Cryptos! ", ex, cryptoManager.Source)
         cryptos = cryptoManager.get_latest(desired_coins, short_text=short_text)
-    return signed_message(currencies + cryptos, for_channel=for_channel)
+    return sign_post(currencies + cryptos, for_channel=for_channel)
 
 
 async def notify_changes(context: CallbackContext):
@@ -131,7 +131,7 @@ async def notify_changes(context: CallbackContext):
 async def announce_prices(context: CallbackContext):
     global cryptoManager
     global currencyManager
-    res = construct_new_message()
+    res = construct_new_post()
     await context.bot.send_message(chat_id=CHANNEL_ID, text=res)
 
 
@@ -153,7 +153,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
     if await is_a_member(account, context):
         is_latest_data_valid = currencyManager and currencyManager.latest_data and cryptoManager \
                                and cryptoManager.latest_data and is_channel_updates_started
-        message = construct_new_message(desired_coins=account.desired_coins,
+        message = construct_new_post(desired_coins=account.desired_coins,
                                         desired_currencies=account.desired_currencies, for_channel=False,
                                         exactly_right_now=not is_latest_data_valid)
 

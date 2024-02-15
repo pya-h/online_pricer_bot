@@ -10,7 +10,7 @@ from time import time
 from tools.planner import Planner
 from tools.exceptions import *
 from flask import Flask, request, jsonify
-from payagraph.tools import ParallelJob
+from v2.payagraph.job import ParallelJob
 
 
 class TelegramBotCore:
@@ -147,7 +147,7 @@ class TelegramBot(TelegramBotCore):
         print('tick tocked')
 
         for job in self.parallels:
-            if (job.running) and (now - job.last_call_minutes >= job.interval):
+            if (job.running) and (now - job.last_call_time >= job.interval):
                 job.do()
 
     def get_uptime(self) -> str:

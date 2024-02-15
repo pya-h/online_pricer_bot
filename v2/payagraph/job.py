@@ -8,20 +8,20 @@ class ParallelJob:
         self.interval: int = interval
         self.function: Callable[..., any] = function
         self.last_run_result: any = None
-        self.last_call_minutes: int = None
+        self.last_call_time: int = None
         self.params: list[any] = params
         self.running: bool = False
 
 
     def go(self):
         '''Start running...'''
-        self.last_call_minutes = time() // 60
+        self.last_call_time = time() // 60
         self.running = True
         return self
 
     def do(self):
         self.last_run_result = self.function(*self.params)
-        self.last_call_minutes = time() // 60
+        self.last_call_time = time() // 60
 
     def stop(self):
         self.running = False

@@ -30,6 +30,12 @@ class Channel:
     Instances = {}
     Database: VIPDatabaseInterface = VIPDatabaseInterface.Get()
 
+    @staticmethod
+    def GetHasPlanChannels():
+        '''return all channel table rows that has interval > 0'''
+        # TODO: load from databbase
+        return Channel.Instances
+    
     SupportedIntervals: list[PlanInterval] = [
         PlanInterval("1 MIN", minutes=1), *[PlanInterval(f"{m} MINS", minutes=m) for m in [2, 5, 10, 30, 45]],
         PlanInterval("1 HOUR", hours=1), *[PlanInterval(f"{h} HOURS", hours=h) for h in [2, 3, 4, 6, 12]],
@@ -41,21 +47,18 @@ class Channel:
         self.id = channel_id
         self.name = channel_name
         self.interval = interval
-        self.last_post_time: int = None
-        if interval > 0:
-            self.plan(interval)
-
-    def plan(self, interval: int) -> bool:
-        if interval <= 0:
+        
+    def plan(self) -> bool:
+        if self.interval <= 0:
             if self.id in Channel.Instances:
                 # unplan and delete in database
                 del Channel.Instances[self.id]
             return False  # Plan removed
 
-        # if interval < 60:
+        # if self.interval < 60:
         #     Channel.Instances[self.id] = self
         Channel.Instances[self.id] = self
-        Channel.Database.plan_channel(self.owner_id, self.id, self.name, interval)
+        Channel.Database.plan_channel(self.owner_id, self.id, self.name, self.interval)
         return True
 
 
@@ -104,7 +107,7 @@ class VIPAccount(Account):
 
         return VIPAccount(chat_id=chat_id).save()
 
-    def has_vip_privileges(self):
+    def has_vip_privileges(self) -> bool:
         '''Check if the account has still vip subscription.'''
         return True   # TODO: DELETE THIS *****
         return self.vip_end_date is not None and tz_today().date() <= self.vip_end_date.date()
@@ -112,9 +115,10 @@ class VIPAccount(Account):
     def plan_new_channel(self, channel_id: int, channel_name: str, interval: int) -> Channel:
         if not self.has_vip_privileges():
             raise NotVIPException(self.chat_id)
-        channel = Channel(self.chat_id, channel_id, channel_name, interval)  # providing a channel object with a positive interval will automatically call .plan method
-
-        return channel
+        channel = Channel(self.chat_id, channel_id, channel_name, interval)  
+        if channel.plan():
+            return channel
+        return None
 
     @staticmethod
     def Everybody():

@@ -4,7 +4,7 @@ import requests
 from payagraph.bot import *
 from payagraph.containers import *
 from payagraph.keyboards import *
-from payagraph.tools import *
+from v2.payagraph.job import *
 
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
@@ -70,8 +70,12 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
     return callback_query, None
 
 # Parallel Jovbs:
-def check_channel_plans(bot: TelegramBot)-> Union[TelegramMessage, Keyboard|InlineKeyboard]
-    pass
+def load_channel_plans(bot: TelegramBot)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    for channel in Channel.Instances:
+       if channel.id is not None and channel.interval > 0:
+           
+       
+
 
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
