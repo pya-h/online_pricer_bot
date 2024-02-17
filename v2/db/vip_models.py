@@ -6,6 +6,7 @@ from tools.exceptions import NotVIPException
 from enum import Enum
 import json
 from payagraph.raw_materials import CanBeKeyboardItemInterface
+from typing import Dict
 
 
 class PlanInterval(CanBeKeyboardItemInterface):
@@ -35,7 +36,7 @@ class Channel:
         '''return all channel table rows that has interval > 0'''
         # TODO: load from databbase
         return Channel.Instances
-    
+
     SupportedIntervals: list[PlanInterval] = [
         PlanInterval("1 MIN", minutes=1), *[PlanInterval(f"{m} MINS", minutes=m) for m in [2, 5, 10, 30, 45]],
         PlanInterval("1 HOUR", hours=1), *[PlanInterval(f"{h} HOURS", hours=h) for h in [2, 3, 4, 6, 12]],
@@ -47,7 +48,7 @@ class Channel:
         self.id = channel_id
         self.name = channel_name
         self.interval = interval
-        
+
     def plan(self) -> bool:
         if self.interval <= 0:
             if self.id in Channel.Instances:
@@ -89,9 +90,10 @@ class VIPAccount(Account):
         return VIPAccount._database
 
     def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', vip_end_date: datetime = None) -> None:
-        super().__init__(chat_id, currencies, cryptos, "en")#language)
+        super().__init__(chat_id, currencies, cryptos, language)
         self.state: UserStates = UserStates.NONE
         self.vip_end_date = vip_end_date
+        # self.channels: Dict[Channel] = dict()  # TODO: Load this from DATABASE
 
     @staticmethod
     def Get(chat_id):
@@ -115,8 +117,9 @@ class VIPAccount(Account):
     def plan_new_channel(self, channel_id: int, channel_name: str, interval: int) -> Channel:
         if not self.has_vip_privileges():
             raise NotVIPException(self.chat_id)
-        channel = Channel(self.chat_id, channel_id, channel_name, interval)  
+        channel = Channel(self.chat_id, channel_id, channel_name, interval)
         if channel.plan():
+            # self.channels[channel_id] = channel
             return channel
         return None
 

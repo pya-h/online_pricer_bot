@@ -4,7 +4,7 @@ import requests
 from payagraph.bot import *
 from payagraph.containers import *
 from payagraph.keyboards import *
-from v2.payagraph.job import *
+from payagraph.job import *
 
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
@@ -13,6 +13,7 @@ from db.vip_models import UserStates, Channel
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
+from db.post import ChannelPostManager
 
 
 # Set up logging
@@ -20,10 +21,15 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # read .env configs
+COINMARKETCAP_API_KEY = config('COINMARKETCAP_API_KEY')
+CURRENCY_SOURCEARENA_TOKEN = config('CURRENCY_TOKEN')
+ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
 # You bot data
 VIP_BOT_TOKEN = config('VIP_BOT_TOKEN')
 HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
+
+channel_manager = ChannelPostManager(source_arena_api_key=CURRENCY_SOURCEARENA_TOKEN, coinmarketcap_api_key=COINMARKETCAP_API_KEY, aban_tether_api_key=ABAN_TETHER_TOKEN, bot_username=BOT_USERNAME)
 
 # Read the text resource containing the multilanguage data for the bot texts, messages, commands and etc.
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
@@ -72,9 +78,10 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
 # Parallel Jovbs:
 def load_channel_plans(bot: TelegramBot)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     for channel in Channel.Instances:
-       if channel.id is not None and channel.interval > 0:
-           
-       
+        if channel.id is not None and channel.interval > 0:
+            '''
+                TODO
+            '''
 
 
 main_keyboard = {
