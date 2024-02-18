@@ -17,6 +17,8 @@ class BaseAPIManager:
         self.timeout: int = timeout
         self.params: dict = params
         self.cache_file_name: str = cache_file_name
+        self.latest_data = []  # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
+        # Causing: App enhancement, less APi Calls(For best managemnt of non-free API uses), Less cache file read for improving bot performance and speed and prevention of lags
 
     def cache_data(self, data: str) -> None:
         can_be_archived = True
@@ -59,7 +61,8 @@ class BaseAPIManager:
         json_cache_file = open(f'./{CACHE_FOLDER_PATH}/{self.cache_file_name}', 'r')
         str_json = json_cache_file.read()
         json_cache_file.close()
-        return json.loads(str_json)
+        self.latest_data = json.loads(str_json)
+        return self.latest_data
 
 
 class APIManager(BaseAPIManager):
@@ -69,7 +72,6 @@ class APIManager(BaseAPIManager):
 
     def __init__(self, url: str, source: str, max_desired_selection: int=5, params=None, cache_file_name: str = None) -> None:
         super(APIManager, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
-        self.latest_data = []
         self.MAX_DESIRED_SELECTION = max_desired_selection
 
     @staticmethod
@@ -93,15 +95,23 @@ class APIManager(BaseAPIManager):
     def get_latest(self, desired_ones: list=None, short_text: bool=True) -> str:
         return self.extract_api_response(desired_ones, short_text=short_text)
 
-    def get_cached_data(self, desired_ones: list=None, short_text: bool=True) -> str:
+    def get_desired_cache(self, desired_ones: list=None, short_text: bool=True, force_reload: bool=False) -> str:
         ''' This is for the channel planner bot'''
-        cached_api_data = None
         try:
-            cached_api_data = self.load_cache()
-        except:
+            if force_reload or not self.latest_data:
+                self.load_cache()
+        except Exception as ex:
             if not self.latest_data: # if there is no cache, and the no latest data eigher, to prevent craching, call the api for once
-                return self.get(desired_ones, short_text)
-        return self.extract_api_response(desired_ones, short_text=short_text, optional_api_data=cached_api_data)
+                try:
+                    manuwriter.log("Couldnt read cache; Using Direct api call to obtain data.", ex, category_name='CACHE')
+                    self.latest_data = self.send_request()  # the condition that is happende, may be due to lack of cache file,
+                    # This may be cause when this app is run before oneline_pricer_bot for the first time.
+                    # sending a request will make new cache and solve this issue.
+                except Exception as fex:
+                    manuwriter.log("Couldnt get cache and API both. There\'s something seriously wrong!!", ex, category_name='VIP_FATALITY')
+                    # TODO: send an email or notification or whatever to the admin?
+
+        return self.extract_api_response(desired_ones, short_text=short_text, optional_api_data=self.latest_data)
 
 
     def rounded_prices(self, price:float|int, convert: bool=True, tether_as_unit_price: bool=False):

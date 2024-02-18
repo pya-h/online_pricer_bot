@@ -23,7 +23,7 @@ CMC_API_KEY = config('COINMARKETCAP_API_KEY')
 CURRENCY_TOKEN = config('CURRENCY_TOKEN')
 ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
 
-schedule_interval = 10
+schedule_interval = float(config('MAIN_SCHEDULER_DEFAULT_INTERVAL', 10))
 
 # main keyboard (soft keyboard of course)
 menu_main = [

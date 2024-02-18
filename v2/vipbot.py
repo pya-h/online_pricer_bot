@@ -13,7 +13,7 @@ from db.vip_models import UserStates, Channel
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
-from db.post import ChannelPostManager, PostJob
+from db.post import VIPPostManager, PostJob
 
 
 # Set up logging
@@ -28,8 +28,9 @@ ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
 VIP_BOT_TOKEN = config('VIP_BOT_TOKEN')
 HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
+ONLINE_PRICE_DEFAULT_INTERVAL = float(config('MAIN_SCHEDULER_DEFAULT_INTERVAL', 10))
 
-channel_manager = ChannelPostManager(source_arena_api_key=CURRENCY_SOURCEARENA_TOKEN, coinmarketcap_api_key=COINMARKETCAP_API_KEY, aban_tether_api_key=ABAN_TETHER_TOKEN, bot_username=BOT_USERNAME)
+channel_post_manager = VIPPostManager(source_arena_api_key=CURRENCY_SOURCEARENA_TOKEN, coinmarketcap_api_key=COINMARKETCAP_API_KEY, aban_tether_api_key=ABAN_TETHER_TOKEN, bot_username=BOT_USERNAME)
 
 # Read the text resource containing the multilanguage data for the bot texts, messages, commands and etc.
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
@@ -66,6 +67,7 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
     try:
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username or channel_data.title, interval=callback_query.value)
         callback_query.text += "\nChannel and its plan data saved"
+        # TODO: **** CREATE PostJob TO UPDATE CHANNEL ON ASKED INTERVAL***
     except NotVIPException:
         callback_query.text = bot.text("not_vip", user.language)
     except Exception as ex:
@@ -76,12 +78,17 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
     return callback_query, None
 
 
+# add a latest_crypto_data and latest_currency_data to ChannelPostManager
+# create a bot job for channel that updates it every minute(or 5 minute or whatever)
+# create postjobs for each channel with its intewrval and pass a re to ChannelPostManager to it
 
 # Parallel Jovbs:
 def load_channel_plans(bot: TelegramBot)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     for channel in Channel.Instances:
         if channel.id is not None and channel.interval > 0:
             post_job = PostJob(channel=channel, ) # COMPLETE UWQKKE]
+            #TODO:
+
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
     'fa': Keyboard(text_resources["keywords"]["plan_channel"]["fa"])
@@ -94,6 +101,10 @@ bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channe
 bot.add_callback_query_handler(action="int", handler=save_channel_plan)
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.by.chat_id, bot.get_uptime()), None))
 
+bot.prepare_new_parallel_job(ONLINE_PRICE_DEFAULT_INTERVAL / 2, channel_post_manager.update_latest_data)  # This will reload cached data for currency/crypto manager
+# Reading cache files everytime by everychannel is a performance risk, and also may fail (Assume two channels try reading cache in the same time.)
+# So I designed a Job that will read cache file one time on a specific interval and other channels use the loaded data from memory
+# Since the online_pricer_bot itself updates on 10(or whatever) minutes interval, cache files are updated on that interval too, and re-reading the same cache everytime is really a DUMB move,
 bot.start_clock()
 bot.config_webhook()
 

@@ -10,7 +10,7 @@ from time import time
 from tools.planner import Planner
 from tools.exceptions import *
 from flask import Flask, request, jsonify
-from v2.payagraph.job import ParallelJob
+from payagraph.job import ParallelJob
 
 
 class TelegramBotCore:
@@ -22,7 +22,7 @@ class TelegramBotCore:
         self.username = username
         self.text_resources: dict = text_resources  # this is for making add multi-language support to the bot
         self._main_keyboard: Dict[str, Keyboard]|Keyboard = _main_keyboard
-        
+
 
     def main_keyboard(self, user_language: str = None) -> Keyboard:
         '''Get the keyboard that must be shown in most cases and on Start screen.'''
@@ -43,7 +43,7 @@ class TelegramBotCore:
             keyboard.attach_to(payload)
         response = requests.post(url, json=payload)
         if response.status_code != 200:
-            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{message.by.chat_id}\nResponse text: {response.text}", category_name="VIP_FATAL")
+            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{message.by.chat_id}\nResponse text: {response.text}", category_name="VIP_FATALITY")
         return response  # as dict
 
     def edit(self, modified_message: TelegramMessage, keyboard: InlineKeyboard):
@@ -58,7 +58,7 @@ class TelegramBotCore:
 
         response = requests.post(url, json=payload)
         if response.status_code != 200:
-            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{modified_message.by.chat_id}\nResponse text: {response.text}", category_name="VIP_FATAL")
+            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{modified_message.by.chat_id}\nResponse text: {response.text}", category_name="VIP_FATALITY")
         return response  # as dict
 
 
@@ -85,7 +85,7 @@ class TelegramBotCore:
     def cmd(self, command: str) -> str :
         '''resource function: get an specific command(english keywords starting with '/' that will run a special function) from the texts_resources json loaded into bot object'''
         try:
-            return self.text_resources['commands'][command]    
+            return self.text_resources['commands'][command]
         except:
             pass
         return None
@@ -93,7 +93,7 @@ class TelegramBotCore:
 
 
 class TelegramBot(TelegramBotCore):
-    '''More Customizable and smart part of the TelegramBot; This object will allow to add handlers that are used by TelegramBotCore.handle function and 
+    '''More Customizable and smart part of the TelegramBot; This object will allow to add handlers that are used by TelegramBotCore.handle function and
         by calling .handle function make the bot to handle user messages automatically, of sorts.'''
     def __init__(self, token: str, username: str, host_url: str, text_resources: dict, _main_keyboard: Dict[str, Keyboard]|Keyboard = None) -> None:
         super().__init__(token, username, host_url, text_resources, _main_keyboard)
@@ -128,7 +128,7 @@ class TelegramBot(TelegramBotCore):
                  return jsonify({'status': 'ok'})'''
             self.handle(request.json)
             return jsonify({'status': 'ok'})
-        
+
     def go(self, debug=True):
         self.app.run(debug=debug)
 
@@ -188,7 +188,7 @@ class TelegramBot(TelegramBotCore):
             self.parallels.append(job)
             return True
         return False
-    
+
 
     def prepare_new_parallel_job(self, interval: int, functionality: Callable[..., any], *params) -> ParallelJob:
         '''Create a new ParallelJob object and then add it to bot parallel job list and start it.'''
@@ -236,4 +236,3 @@ class TelegramBot(TelegramBotCore):
             self.send(message=response, keyboard=keyboard)
         else:
             self.edit(message, keyboard)
-            

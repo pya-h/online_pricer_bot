@@ -10,13 +10,16 @@ from db.vip_models import VIPAccount
 
 class PostJob(ParallelJob):
 
+    @staticmethod
+    def post_in_channel():
+        pass
     def __init__(self, channel: Channel, interval: int, send_post_message_function: Callable[..., any], *params) -> None:
         super().__init__(interval, send_post_message_function, *params)
         self.channel: Channel = channel
         self.account: Account = Account.Get(channel.owner_id)
 
     def post(self):
-        post_body = s
+        '''post_body = s'''
 
 
 
@@ -61,19 +64,11 @@ class PostManager:
 
 
 
-class ChannelPostManager(PostManager):
+class VIPPostManager(PostManager):
     '''Extended version of PostManager, this class contains all the post jobs, constructs posts and manages channel post and updates'''
     def __init__(self, source_arena_api_key: str, aban_tether_api_key:str, coinmarketcap_api_key: str, bot_username: str = None) -> None:
-        self.source_arena_api_key: str = source_arena_api_key
-        self.aban_tether_api_key: str = aban_tether_api_key
-        self.coinmarketcap_api_key: str = coinmarketcap_api_key
+        super().__init__(source_arena_api_key, aban_tether_api_key, coinmarketcap_api_key)
         self.bot_username = bot_username
-
-        # api managers:
-        self.cryptoManager: CoinGecko|CoinMarketCap = CoinMarketCap(self.coinmarketcap_api_key)  # api manager object: instance of CoinGecko or CoinMarketCap
-        self.currencyManager: SourceArena = SourceArena(self.source_arena_api_key, self.aban_tether_api_key)
-        self.post_jobs: Dict[PostJob] = dict()
-
 
     def create_new_post(self, account: VIPAccount, channel_username: str = None, short_text: bool=True) -> str:
         currencies = cryptos = ''
@@ -81,14 +76,14 @@ class ChannelPostManager(PostManager):
         try:
             if account.desired_currencies or (not account.desired_coins and not account.desired_currencies):
                 # this condition is for preventing default values, when user has selected just cryptos
-                currencies = self.currencyManager.get_cached_data(account.desired_currencies)
+                currencies = self.currencyManager.get_desired_cache(account.desired_currencies)
         except Exception as ex:
             manuwriter.log("Cannot obtain Currencies! ", ex, self.currencyManager.Source)
             # TODO: What to do here?
         try:
             if account.desired_coins or (not account.desired_coins and not account.desired_currencies):
                 # this condition is for preventing default values, when user has selected just currencies
-                cryptos = self.cryptoManager.get_cached_data(account.desired_coins, short_text)
+                cryptos = self.cryptoManager.get_desired_cache(account.desired_coins, short_text)
         except Exception as ex:
             manuwriter.log("Cannot obtain Cryptos! ", ex, self.cryptoManager.Source)
             # TODO: What to do here?
@@ -105,5 +100,27 @@ class ChannelPostManager(PostManager):
         return post_text
 
 
-    def  post(channel):
+    def  get_latest(self, channel):
         '''todo:'''
+
+    def update_latest_data(self):
+        '''This will be called by vip robot as a job on a propper interval, so that channels use the most recent data gradually, alongside considering performance handling issues.'''
+        try:
+            self.currencyManager.load_cache()
+        except:
+            # force reload
+            try:
+                manuwriter.log('Currency cache load failed. Trying force reload (API call) to update channels currency latest_data!', ex, 'VIP_CACHE')
+                self.currencyManager.latest_data = self.currencyManager.send_request()
+            except Exception as ex:
+                manuwriter.log('Can not update currency data for other channels use!', ex, 'VIP_FATALITY')
+
+        try:
+            self.cryptoManager.load_cache()
+        except:
+            # force reload
+            try:
+                manuwriter.log('Crypto cache load failed. Using force reload (API call) to update channels crypto latest_data!', ex, 'VIP_CACHE')
+                self.cryptoManager.latest_data = self.cryptoManager.send_request()
+            except:
+                manuwriter.log('Can not update crypto data for other channels use!', ex, 'VIP_FATALITY')
