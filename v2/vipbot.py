@@ -13,7 +13,7 @@ from db.vip_models import UserStates, Channel
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
-from db.post import ChannelPostManager
+from db.post import ChannelPostManager, PostJob
 
 
 # Set up logging
@@ -75,15 +75,13 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
 
     return callback_query, None
 
+
+
 # Parallel Jovbs:
 def load_channel_plans(bot: TelegramBot)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     for channel in Channel.Instances:
         if channel.id is not None and channel.interval > 0:
-            '''
-                TODO
-            '''
-
-
+            post_job = PostJob(channel=channel, ) # COMPLETE UWQKKE]
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
     'fa': Keyboard(text_resources["keywords"]["plan_channel"]["fa"])

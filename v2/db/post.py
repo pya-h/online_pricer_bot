@@ -10,13 +10,13 @@ from db.vip_models import VIPAccount
 
 class PostJob(ParallelJob):
 
-    def __init__(self, channel: Channel, interval: int, function: Callable[..., any], *params) -> None:
-        super().__init__(interval, function, *params)
+    def __init__(self, channel: Channel, interval: int, send_post_message_function: Callable[..., any], *params) -> None:
+        super().__init__(interval, send_post_message_function, *params)
         self.channel: Channel = channel
         self.account: Account = Account.Get(channel.owner_id)
 
     def post(self):
-        pass
+        post_body = s
 
 
 
@@ -38,7 +38,7 @@ class PostManager:
         footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
         return f'{header}\n{post_body}\n{footer}'
 
-    def construct_new_post(self, desired_coins:list = None, desired_currencies:list = None, exactly_right_now: bool=True, short_text: bool=True, for_channel: bool=True) -> str:
+    def create_new_post(self, desired_coins:list = None, desired_currencies:list = None, exactly_right_now: bool=True, short_text: bool=True, for_channel: bool=True) -> str:
         currencies = cryptos = ''
 
         try:
@@ -75,7 +75,7 @@ class ChannelPostManager(PostManager):
         self.post_jobs: Dict[PostJob] = dict()
 
 
-    def construct_new_post(self, account: VIPAccount, channel_username: str = None, short_text: bool=True) -> str:
+    def create_new_post(self, account: VIPAccount, channel_username: str = None, short_text: bool=True) -> str:
         currencies = cryptos = ''
 
         try:
@@ -103,3 +103,7 @@ class ChannelPostManager(PostManager):
         if channel_username:
             post_text += f'\n🆔 @{channel_username}'
         return post_text
+
+
+    def  post(channel):
+        '''todo:'''
