@@ -37,19 +37,19 @@ class TelegramBotCore:
     def send(self, message: TelegramMessage, keyboard: Keyboard|InlineKeyboard = None):
         '''Calls the Telegram send message api.'''
         url = f"{self.bot_api_url}/sendMessage"
-        chat_id = message.chat_id # message.by.chat_id
+        chat_id = message.chat_id
         payload = {'chat_id': chat_id, 'text': message.text}
         if keyboard:
             keyboard.attach_to(payload)
         response = requests.post(url, json=payload)
         if response.status_code != 200:
-            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{message.by.chat_id}\nResponse text: {response.text}", category_name="VIP_FATALITY")
+            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{chat_id}\nResponse text: {response.text}", category_name="VIP_FATALITY")
         return response  # as dict
 
     def edit(self, modified_message: TelegramMessage, keyboard: InlineKeyboard):
         '''Edits a message on telegram. it will be called by .handle function when TelegramMessage.replace_on_previous is True [text, photo, whatever]'''
         url = f"{self.bot_api_url}/editMessageText"
-        chat_id = modified_message.chat_id # message.by.chat_id
+        chat_id = modified_message.chat_id
         payload = {'chat_id': chat_id, 'text': modified_message.text, 'message_id': modified_message.id}
         if (keyboard):
             if not isinstance(keyboard, InlineKeyboard):
@@ -58,7 +58,7 @@ class TelegramBotCore:
 
         response = requests.post(url, json=payload)
         if response.status_code != 200:
-            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{modified_message.by.chat_id}\nResponse text: {response.text}", category_name="VIP_FATALITY")
+            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{chat_id}\nResponse text: {response.text}", category_name="VIP_FATALITY")
         return response  # as dict
 
 
@@ -112,7 +112,7 @@ class TelegramBot(TelegramBotCore):
     def config_webhook(self, webhook_path = '/'):
         # **Telegram hook route**
         @self.app.route(webhook_path, methods=['POST'])
-        def main():
+        def main_route():
             # code below must be add to middlewares
             '''if not user.has_vip_privileges():
                 order = Order(buyer=user, months_counts=2)  # change this
@@ -141,7 +141,7 @@ class TelegramBot(TelegramBotCore):
         '''Stop bot clock and all parallel jobs.'''
         self.clock.stop()
 
-    def ticktock(self):
+    def ticktock(self) -> int:
         '''Runs every 1 minutes, and checks if there's any parallel jobs and is it time to perform them by interval or not'''
         now = time() // 60
         print('tick tocked')
@@ -149,7 +149,8 @@ class TelegramBot(TelegramBotCore):
         for job in self.parallels:
             if (job.running) and (now - job.last_call_time >= job.interval):
                 job.do()
-
+        return now  # return current time
+    
     def get_uptime(self) -> str:
         '''Bot being awake time, if the clock has not been stopped ofcourse'''
         return f'The bot\'s uptime is: {minutes_to_timestamp(self.clock.minutes_running())}'

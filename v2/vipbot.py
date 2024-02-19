@@ -4,7 +4,7 @@ import requests
 from payagraph.bot import *
 from payagraph.containers import *
 from payagraph.keyboards import *
-from payagraph.job import *
+from botplus import *
 
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
@@ -13,7 +13,7 @@ from db.vip_models import UserStates, Channel
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
-from db.post import VIPPostManager, PostJob
+from api.post import VIPPostManager
 
 
 # Set up logging
@@ -36,14 +36,14 @@ channel_post_manager = VIPPostManager(source_arena_api_key=CURRENCY_SOURCEARENA_
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
 text_resources = manuwriter.load_json('vip_texts', 'resources')
 
-def plan_channel(bot: TelegramBot, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+def plan_channel(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Handles the user request on adding a new channel and plan.'''
     user = message.by
     user.change_state(UserStates.SELECT_CHANNEL)
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("just_forward_channel_message", user.language)), None
 
 
-def select_channel_handler(bot: TelegramBot, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+def select_channel_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''When bot asks for channel message forward, and user performs an action, this function will handle the action and proceed to next step if data provided is correct.'''
     user = message.by
     response: TelegramMessage = TelegramMessage.Text(target_chat_id=user.chat_id)
@@ -57,7 +57,7 @@ def select_channel_handler(bot: TelegramBot, message: TelegramMessage) -> Union[
     return response, None
 
 
-def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
     user = callback_query.by
     if not isinstance(user.state_data, ForwardOrigin):
@@ -67,7 +67,10 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
     try:
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username or channel_data.title, interval=callback_query.value)
         callback_query.text += "\nChannel and its plan data saved"
-        # TODO: **** CREATE PostJob TO UPDATE CHANNEL ON ASKED INTERVAL***
+        # TODO: NOTIFY USER
+        # TODO: NOTIFICATION IN CHANNEL
+        # TODO: INFORM USERS THAT THEY MUST ADD BOT AD ADMIN TO THE CHANNEL
+        bot.prepare_new_post_job(channel, short_text=True) # creates post job and starts it # Check short_text
     except NotVIPException:
         callback_query.text = bot.text("not_vip", user.language)
     except Exception as ex:
@@ -83,10 +86,10 @@ def save_channel_plan(bot: TelegramBot, callback_query: TelegramCallbackQuery)->
 # create postjobs for each channel with its intewrval and pass a re to ChannelPostManager to it
 
 # Parallel Jovbs:
-def load_channel_plans(bot: TelegramBot)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+def load_channel_plans(bot: TelegramBotPlus)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     for channel in Channel.Instances:
         if channel.id is not None and channel.interval > 0:
-            post_job = PostJob(channel=channel, ) # COMPLETE UWQKKE]
+            bot.prepare_new_post_job(channel, short_text=True) # Check short text
             #TODO:
 
 main_keyboard = {
@@ -94,12 +97,12 @@ main_keyboard = {
     'fa': Keyboard(text_resources["keywords"]["plan_channel"]["fa"])
 }
 
-bot = TelegramBot(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, _main_keyboard=main_keyboard)
+bot = TelegramBotPlus(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, _main_keyboard=main_keyboard, post_manager=channel_post_manager)
 
 bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
 bot.add_message_handler(message=bot.keyword('plan_channel'), handler=plan_channel)
 bot.add_callback_query_handler(action="int", handler=save_channel_plan)
-bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.by.chat_id, bot.get_uptime()), None))
+bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.chat_id, bot.get_uptime()), None))
 
 bot.prepare_new_parallel_job(ONLINE_PRICE_DEFAULT_INTERVAL / 2, channel_post_manager.update_latest_data)  # This will reload cached data for currency/crypto manager
 # Reading cache files everytime by everychannel is a performance risk, and also may fail (Assume two channels try reading cache in the same time.)

@@ -1,26 +1,7 @@
-from typing import Callable
-from payagraph.job import ParallelJob
-from typing import Callable, Dict
-from db.vip_models import Channel, Account
 from tools import manuwriter, mathematix
 from api.crypto import CoinGecko, CoinMarketCap
 from api.currency import SourceArena
 from db.vip_models import VIPAccount
-
-
-class PostJob(ParallelJob):
-
-    @staticmethod
-    def post_in_channel():
-        pass
-    def __init__(self, channel: Channel, interval: int, send_post_message_function: Callable[..., any], *params) -> None:
-        super().__init__(interval, send_post_message_function, *params)
-        self.channel: Channel = channel
-        self.account: Account = Account.Get(channel.owner_id)
-
-    def post(self):
-        '''post_body = s'''
-
 
 
 class PostManager:
@@ -41,7 +22,7 @@ class PostManager:
         footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
         return f'{header}\n{post_body}\n{footer}'
 
-    def create_new_post(self, desired_coins:list = None, desired_currencies:list = None, exactly_right_now: bool=True, short_text: bool=True, for_channel: bool=True) -> str:
+    def create_post(self, desired_coins:list = None, desired_currencies:list = None, exactly_right_now: bool=True, short_text: bool=True, for_channel: bool=True) -> str:
         currencies = cryptos = ''
 
         try:
@@ -70,7 +51,7 @@ class VIPPostManager(PostManager):
         super().__init__(source_arena_api_key, aban_tether_api_key, coinmarketcap_api_key)
         self.bot_username = bot_username
 
-    def create_new_post(self, account: VIPAccount, channel_username: str = None, short_text: bool=True) -> str:
+    def create_post(self, account: VIPAccount, channel_link: str = None, short_text: bool=True) -> str:
         currencies = cryptos = ''
 
         try:
@@ -87,21 +68,17 @@ class VIPPostManager(PostManager):
         except Exception as ex:
             manuwriter.log("Cannot obtain Cryptos! ", ex, self.cryptoManager.Source)
             # TODO: What to do here?
-        return self.sign_post(currencies + cryptos, channel_username=channel_username)
+        return self.sign_post(currencies + cryptos, channel_link=channel_link)
 
 
-    def sign_post(self, message: str, interval: float, channel_username: str) -> str:
+    def sign_post(self, message: str, interval: float, channel_link: str) -> str:
         post_text = super().sign_post(message, interval, for_channel=True)
 
         if self.bot_username:
             post_text += f'\n🤖 @{self.bot_username}'
-        if channel_username:
-            post_text += f'\n🆔 @{channel_username}'
+        if channel_link:
+            post_text += f'\n🆔 @{channel_link}'
         return post_text
-
-
-    def  get_latest(self, channel):
-        '''todo:'''
 
     def update_latest_data(self):
         '''This will be called by vip robot as a job on a propper interval, so that channels use the most recent data gradually, alongside considering performance handling issues.'''
