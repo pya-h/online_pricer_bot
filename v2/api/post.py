@@ -1,7 +1,7 @@
 from tools import manuwriter, mathematix
 from api.crypto import CoinGecko, CoinMarketCap
 from api.currency import SourceArena
-from db.vip_models import VIPAccount
+from db.vip_models import VIPAccount, Channel
 
 
 class PostManager:
@@ -51,7 +51,7 @@ class VIPPostManager(PostManager):
         super().__init__(source_arena_api_key, aban_tether_api_key, coinmarketcap_api_key)
         self.bot_username = bot_username
 
-    def create_post(self, account: VIPAccount, channel_link: str = None, short_text: bool=True) -> str:
+    def create_post(self, account: VIPAccount, channel: Channel = None, short_text: bool=True) -> str:
         currencies = cryptos = ''
 
         try:
@@ -68,16 +68,16 @@ class VIPPostManager(PostManager):
         except Exception as ex:
             manuwriter.log("Cannot obtain Cryptos! ", ex, self.cryptoManager.Source)
             # TODO: What to do here?
-        return self.sign_post(currencies + cryptos, channel_link=channel_link)
+        return self.sign_post(currencies + cryptos, channel=channel)
 
 
-    def sign_post(self, message: str, interval: float, channel_link: str) -> str:
-        post_text = super().sign_post(message, interval, for_channel=True)
+    def sign_post(self, message: str, channel: Channel) -> str:
+        post_text = super().sign_post(message, channel.interval, for_channel=True)
 
         if self.bot_username:
             post_text += f'\n🤖 @{self.bot_username}'
-        if channel_link:
-            post_text += f'\n🆔 @{channel_link}'
+        if channel and channel.name:
+            post_text += f'\n🆔 @{channel.name}'
         return post_text
 
     def update_latest_data(self):

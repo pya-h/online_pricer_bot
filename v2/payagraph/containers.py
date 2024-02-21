@@ -47,7 +47,12 @@ class ForwardOrigin:
 class TelegramMessage:
 
     def __init__(self, data: dict) -> None:
-        self.msg: dict = data['message']
+        try:
+            if isinstance(data, str):
+                data = json.loads(data)
+            self.msg: dict = data['message']
+        except:
+            print("TelegramMessage: DATA CAUSING ERROR:", data)
         self.id: int = self.msg['message_id'] if 'message_id' in self.msg else None
         self.text: str =  self.msg['text']
 
@@ -55,7 +60,7 @@ class TelegramMessage:
         self.chat_id: int = self.msg['chat']['id']  # this is target chat_id, it may differ from self.by.chat_id
         self.by: VIPAccount = VIPAccount.Get(self.msg['chat']['id']) if self.chat_id >= 0 else None  # negative chat_id means its a channel
         # TODO: *** define two separate users: One is SENDER_USER and another is TARGET_USER
-        
+
         # cause bot may get a message from a user (with chat_id A) and send it to another user with another chat_id(B); so dont mistake them
         self.forward_origin: ForwardOrigin = ForwardOrigin(self.msg['forward_origin']) if 'forward_origin' in self.msg else None
         self.replace_on_previous = False
@@ -70,7 +75,7 @@ class TelegramMessage:
         }})
 
     #TODO: WRITE METHODS FOR CREATING DIFFERENT KINDS OF MESSSAGES (PHOTO, VIDEO, ETC.)
-    
+
 
 class TelegramCallbackQuery(TelegramMessage):
 
