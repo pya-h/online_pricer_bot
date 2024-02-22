@@ -229,7 +229,7 @@ class TelegramBot(TelegramBotCore):
             handler: Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]] = None
             if message.text in self.cancel_keys:
                 # Cancel out everything
-                user.state = UserStates.NONE
+                user.change_state()
                 response = TelegramMessage.Text(user.chat_id, self.text('what_todo', user.language))
             elif message.text in self.command_handlers:
                 handler = self.command_handlers[message.text]

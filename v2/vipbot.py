@@ -36,6 +36,12 @@ channel_post_manager = VIPPostManager(source_arena_api_key=CURRENCY_SOURCEARENA_
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
 text_resources = manuwriter.load_json('vip_texts', 'resources')
 
+def start_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    # DO smething such as showing tutorial
+    message.text = bot.text("what_todo", message.by.language)
+    message.by.change_state()
+    return message, None
+
 def planning_section_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Handles the user request showing user planning panel'''
     user = message.by
@@ -54,32 +60,49 @@ def config_selections_handler(bot: TelegramBotPlus, message: TelegramMessage) ->
 def select_channel_for_new_planning_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Handles the user request on adding a new channel and plan.'''
     user = message.by
-    user.change_state(UserStates.SELECT_CHANNEL)
-    return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("just_forward_channel_message", user.language)), None
+
+    if len(user.my_channel_plans()) < user.max_channel_plans():
+        user.change_state(UserStates.SELECT_CHANNEL)
+        return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("just_forward_channel_message", user.language)), None
+    return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("max_channel_plans_reached", user.language) % (user.max_channel_plans(), )), None
+
+def list_channels_for_stop_plan_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    '''Handles the user request on adding a new channel and plan.'''
+    user = message.by
+    user_channels: list[Channel] = list(filter(lambda channel: channel.owner_id == user.chat_id, Channel.Instances.values()))
+    keyboard = None
+    if user_channels:
+        call_data = lambda value: {"a": "dlpl", "v": value}
+        keyboard_rows = [InlineKey(f"{channel.title} - @{channel.name if channel.name else ''}", callback_data=call_data(channel.id)) for channel in user_channels]
+        keyboard = InlineKeyboard(*keyboard_rows)
+        response = TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("click_channel_to_delete", user.language))
+    else:
+        response = TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("no_channels_to_disable", user.language))
+    return response, keyboard
 
 
 
 def config_gold_list_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Handles the user request selecting desired golds'''
     user = message.by
-    caption = bot.text("list_types")["gold"][user.language] + "\n\n" + bot.text("selection_hint")[user.language]
+    caption = bot.text("list_types")["gold"][user.language] + "\n\n" + bot.text("selection_hint", user.language)
     keyboard = InlineKeyboard.CreateDynamicList("cg-gold", bot.post_manager.currencyManager.GoldsInPersian,
-                                                                   user.desired_currencies, True)
+                                                                   user.desired_currencies, user.language=='fa')
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=caption), keyboard
 
 def config_currency_list_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Handles the user request selecting desired currencies'''
     user = message.by
-    caption = bot.text("list_types")["currency"][user.language] + "\n\n" + bot.text("selection_hint")[user.language]
+    caption = bot.text("list_types")["currency"][user.language] + "\n\n" + bot.text("selection_hint", user.language)
     keyboard = InlineKeyboard.CreateDynamicList("cg-curr", bot.post_manager.currencyManager.CurrenciesInPersian,
-                                                                         user.desired_currencies, True)
+                                                                         user.desired_currencies, user.language=='fa')
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=caption), keyboard
 
 
 def config_crypto_list_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Handles the user request selecting desired cryptocurrencies'''
     user = message.by
-    caption = bot.text("list_types")["crypto"][user.language] + "\n\n" + bot.text("selection_hint")[user.language]
+    caption = bot.text("list_types")["crypto"][user.language] + "\n\n" + bot.text("selection_hint", user.language)
     keyboard = InlineKeyboard.CreateDynamicList("cg-cryp", bot.post_manager.cryptoManager.CoinsInPersian,
                                                                          user.desired_coins)
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=caption), keyboard
@@ -99,19 +122,29 @@ def select_channel_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Un
     return response, None
 
 
+def chnage_language_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    user = message.by
+    lang = message.text[1:3].lower()
+    if lang != 'en' and lang != 'fa':  # its rare but its good to make sure
+        return TelegramMessage.Text(user.chat_id, "Unknown languege!"), None
+    try:
+        user.language = lang
+        user.save()
+    except:
+        return TelegramMessage.Text(user.chat_id, bot.text('cant_change_language', user.language)), None
+    return TelegramMessage.Text(user.chat_id, bot.text("what_todo", user.language)), None
+
 def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
     user = callback_query.by
     if not isinstance(user.state_data, ForwardOrigin):
         return TelegramMessage.Text(user.chat_id, bot.text("channel_data_lost", user.language)), None
     channel_data: ForwardOrigin = user.state_data
-    callback_query.text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes"
+    # callback_query.text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes"
     try:
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username, channel_title=channel_data.title, interval=callback_query.value)
-        callback_query.text += "\nChannel and its plan data saved"
-        # TODO: NOTIFY USER
-        # TODO: NOTIFICATION IN CHANNEL
-        # TODO: INFORM USERS THAT THEY MUST ADD BOT AD ADMIN TO THE CHANNEL
+        callback_query.text = bot.text('channel_planned_succesfully', user.language) % (channel.title, channel.interval, )
+        bot.send(TelegramMessage.Text(user.chat_id, bot.text("add_bot_to_channel_as_admin", user.language)))
         bot.prepare_new_post_job(channel, short_text=True) # creates post job and starts it # Check short_text
     except NotVIPException:
         callback_query.text = bot.text("not_vip", user.language)
@@ -124,7 +157,7 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
 
 
 def update_desired_crypto_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
-    '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
+    '''Add/Remove a this coin item into user's desired list. So that the user see this item's price on next posts'''
     user = callback_query.by
     coin_symbol = callback_query.value
     if coin_symbol in user.desired_coins:
@@ -136,7 +169,7 @@ def update_desired_crypto_list(bot: TelegramBotPlus, callback_query: TelegramCal
     return callback_query, InlineKeyboard.CreateDynamicList("cg-cryp", bot.post_manager.cryptoManager.CoinsInPersian, user.desired_coins)
 
 def update_desired_currency_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
-    '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
+    '''Add/Remove a currency item into user's desired list. So that the user see this item's price on next posts'''
     user = callback_query.by
     currency_symbol = callback_query.value
     if currency_symbol in user.desired_currencies:
@@ -145,10 +178,10 @@ def update_desired_currency_list(bot: TelegramBotPlus, callback_query: TelegramC
         user.desired_currencies.append(currency_symbol)
     callback_query.replace_on_previous = True
     user.save()
-    return callback_query, InlineKeyboard.CreateDynamicList("cg-curr", bot.post_manager.currencyManager.CurrenciesInPersian, user.desired_currencies, True)
+    return callback_query, InlineKeyboard.CreateDynamicList("cg-curr", bot.post_manager.currencyManager.CurrenciesInPersian, user.desired_currencies, user.language=='fa')
 
 def update_desired_gold_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
-    '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
+    '''Add/Remove a gold item into user's desired list. So that the user see this item's price on next posts'''
     user = callback_query.by
     gold_symbol = callback_query.value
     if gold_symbol in user.desired_currencies:
@@ -157,8 +190,31 @@ def update_desired_gold_list(bot: TelegramBotPlus, callback_query: TelegramCallb
         user.desired_currencies.append(gold_symbol)
     callback_query.replace_on_previous = True
     user.save()
-    return callback_query, InlineKeyboard.CreateDynamicList("cg-gold", bot.post_manager.currencyManager.GoldsInPersian, user.desired_currencies, True)
+    return callback_query, InlineKeyboard.CreateDynamicList("cg-gold", bot.post_manager.currencyManager.GoldsInPersian, user.desired_currencies, user.language=='fa')
 
+
+def stop_channel_plan_handler(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    '''Stop the planning of the selected channel'''
+    user = callback_query.by
+    channel = None
+    try:
+        channel_id = int(callback_query.value)
+        channel: Channel = Channel.Instances[channel_id]
+    except:
+        pass
+
+    if channel:
+        if channel.stop_plan():
+            callback_query.text = bot.text("channel_plan_disabled")[user.language] % (channel.title, )
+            bot.cancel_postjob(channel.id)
+        else:
+            callback_query.text = bot.text("channel_plan_cant_stop")[user.language]
+
+    else:
+        callback_query.text = bot.text("channel_not_found")[user.language]
+
+    callback_query.replace_on_previous = True
+    return callback_query, None
 
 # add a latest_crypto_data and latest_currency_data to ChannelPostManager
 # create a bot job for channel that updates it every minute(or 5 minute or whatever)
@@ -173,11 +229,14 @@ main_keyboard = {
 bot = TelegramBotPlus(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, _main_keyboard=main_keyboard, post_manager=channel_post_manager)
 
 bot.add_cancel_key(bot.keyword('main_menu'))
+bot.add_cancel_key(bot.cmd('cancel'))
+
 bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
 bot.add_message_handler(message=bot.keyword('planning_section'), handler=planning_section_handler)
 bot.add_message_handler(message=bot.keyword('config_selections'), handler=config_selections_handler)
 
 bot.add_message_handler(message=bot.keyword('new_planning'), handler=select_channel_for_new_planning_handler)
+bot.add_message_handler(message=bot.keyword('stop_planning'), handler=list_channels_for_stop_plan_handler)
 
 bot.add_message_handler(message=bot.keyword('moneys')['gold'], handler=config_gold_list_handler)
 bot.add_message_handler(message=bot.keyword('moneys')['currency'], handler=config_currency_list_handler)
@@ -189,7 +248,13 @@ bot.add_callback_query_handler(action="cg-cryp", handler=update_desired_crypto_l
 bot.add_callback_query_handler(action="cg-gold", handler=update_desired_gold_list)
 bot.add_callback_query_handler(action="cg-curr", handler=update_desired_currency_list)
 
+bot.add_callback_query_handler(action="dlpl", handler=stop_channel_plan_handler)
+
+
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.chat_id, bot.get_uptime()), None))
+bot.add_command_handler(command=bot.cmd('lang_en'), handler=chnage_language_handler)
+bot.add_command_handler(command=bot.cmd('lang_fa'), handler=chnage_language_handler)
+bot.add_command_handler(command=bot.cmd('start'), handler=start_handler)
 
 bot.prepare_new_parallel_job(ONLINE_PRICE_DEFAULT_INTERVAL / 2, channel_post_manager.update_latest_data)  # This will reload cached data for currency/crypto manager
 # Reading cache files everytime by everychannel is a performance risk, and also may fail (Assume two channels try reading cache in the same time.)

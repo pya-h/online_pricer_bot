@@ -3,10 +3,9 @@ from payagraph.keyboards import Keyboard
 from api.post import VIPPostManager
 from typing import Dict
 from payagraph.job import ParallelJob
-from db.vip_models import Channel, Account
+from db.vip_models import Channel, VIPAccount
 from payagraph.containers import TelegramMessage
 from payagraph.keyboards import InlineKey, InlineKeyboard
-import json
 
 
 class PostJob(ParallelJob):
@@ -14,7 +13,7 @@ class PostJob(ParallelJob):
     def __init__(self, channel: Channel, short_text: bool=True) -> None:
         super().__init__(channel.interval, None)
         self.channel: Channel = channel
-        self.account: Account = Account.Get(channel.owner_id)
+        self.account: VIPAccount = VIPAccount.Get(channel.owner_id)
         self.short_text = short_text
 
     def do(self, bot: TelegramBot, call_time: int):
@@ -31,21 +30,25 @@ class TelegramBotPlus(TelegramBot):
                  _main_keyboard: Dict[str, Keyboard] | Keyboard = None, post_manager=None) -> None:
         super().__init__(token, username, host_url, text_resources, _main_keyboard)
         self.set_post_managers(post_manager)
-        self.post_jobs: list[PostJob] = []
+        self.post_jobs: Dict[int, PostJob] = dict()
 
     def set_post_managers(self, post_manager: VIPPostManager):
         self.post_manager = post_manager
 
     def prepare_new_post_job(self, channel: Channel, short_text: bool=True):
         post_job = PostJob(channel=channel, short_text=short_text)
-        self.post_jobs.append(post_job.go())
+        self.post_jobs[channel.id] = post_job.go()
 
     def ticktock(self):
         now = super().ticktock()
 
-        for post_job in self.post_jobs:
-            if (post_job.running) and (now - post_job.last_call_time >= post_job.interval):
-                post_job.do(self, now)
+        for id in self.post_jobs:
+            if (self.post_jobs[id].running) and (now - self.post_jobs[id].last_call_time >= self.post_jobs[id].interval):
+                self.post_jobs[id].do(self, now)
+
+    def cancel_postjob(self, channel_id: int):
+        self.post_jobs[channel_id].stop()
+        del self.post_jobs[channel_id]
 
     # Parallel Jovbs:
     def load_channels_and_plans(self):

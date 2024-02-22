@@ -40,6 +40,42 @@
         "fa": "👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.\n 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.",
         "en": "Click on the desired option, to enable its tick(✅), indicating that its on your desired list.\nClicking a selected item again, will disable its tick() and removes it from your list."
     },
+    "channel_plan_disabled": {
+        "fa": "زمان بندی کانال %s با موفقیت غیرفعال شد.",
+        "en": "Channel %s planning disabled successfully."
+    },
+    "channel_not_found": {
+        "fa": "کانال مورد نظر یافت نشد. لطفا لحظاتی دیگر دوباره تلاش کنید و اگر دوباره با این خطا مواجه شدید با واحد پشتیبانی تماس بگیرید تا مشکل ریشه یابی شود. پیشانپیش از صبوری شما کمال تشکر را داریم.",
+        "en": "Channel cannot be found. Please try again later and if this happens again, contact with channel support team to check the issue. Thank you for your patience."
+    },
+    "channel_plan_cant_stop": {
+        "fa": "متاسفانه غیرفعال سازی زمانبندی کانال با مشکل مواجه شد. لطفا لحظاتی دیگر دوباره تلاش کنید و اگر دوباره با این خطا مواجه شدید با پشیبانی تماس حاصل فرمایید تا مشکل شناسایی شود. پیشاپیش از صبوری شما کمال تشکر را داریم.",
+        "en": "Couldn't stop the channel plan. Please try again later; And if you encounter with this message again, Please contact the support team to identify the issue. Thank you for your patience."
+    },
+    "click_channel_to_delete": {
+        "fa": "با کلیک بر روی نام کانال موردنظرتان می توانید زمان بندی آن را متوقف کنید.",
+        "en": "Click your desired channel name in order to disable its planning."
+    },
+    "no_channels_to_disable": {
+        "fa": "شما هنوز کانالی را زمان بندی نکرده اید. می توانید با استفاده از گزینه 'زمان بندی کانال جدید' این کار را انجام دهید.",
+        "en": "You haven't plan any channel yet. You can use 'Plan New Channel' option to do that."
+    },
+    "cant_change_language": {
+        "fa": "تغییر زبان با مشکل مواجه شد. لطفا لحظاتی دیگر دوباره تلاش کنید و اگر دوباره با این خطا مواجه شدید با پشیبانی تماس حاصل فرمایید تا مشکل شناسایی شود. پیشاپیش از صبوری شما کمال تشکر را داریم.",
+        "en": "Can not change the language. Please try again later; And if you encounter with this message again, Please contact the support team to identify the issue. Thank you for your patience."
+    },
+    "channel_planned_succesfully": {
+        "en": "Channel called '%s' planned successfully to post prices every %s minutes, according your desired list set in the 'Set Desired Ones' section.",
+        "fa": "کانال با نام '%s' با موفقیت برنامه ریزی شد تا هر %d دقیقه قیمت های ارزها و رمزارزهای انتخاب شده ی شما را پست کند."
+    },
+    "add_bot_to_channel_as_admin": {
+        "fa": "*هشدار: برای اینکه ربات بتواند روی کانال شما پست کند باید آن را در کانال خود اضافه کرده و دسترسی ادمین دهید. این خواسته ما نیست و از شرایط تلگرام برای فعالیت ربات ها داخل کانال است.",
+        "en": "*Warning: For the bot to be able to post on your channel, it must be added to your channel with admin rights. This is not our desure, It's telegram condition for bot activities in a channel."
+    },
+    "max_channel_plans_reached": {
+        "en": "You are allowed to have maximum number of %d channels planned. For increase this limit wait for our VIP plus plans.",
+        "fa": "متاسفانه شما نمی توانید بیش از %d برنامه ریزی کانال انجام دهید. برای افزایش این محدودیت منتظر بسته های VIP+ ما باشید."
+    },
     "list_types": {
         "gold": {
             "fa": "📌 #لیست_بازار_طلا",
@@ -96,6 +132,10 @@
         }
     },
     "commands": {
-        "planning_section": "/plan"
+        "lang_en": "/en",
+        "lang_fa": "/fa",
+        "planning_section": "/plan",
+        "cancel": "/cancel",
+        "start": "/start"
     }
 }

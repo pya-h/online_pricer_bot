@@ -73,7 +73,7 @@ class InlineKey:
 class InlineKeyboard(Keyboard):
     '''Telegram Inline keyboard implementation, to make it easy for adding inline keyboards to your messages'''
     def __init__(self, *rows):
-        self.keys = list(rows)
+        self.keys = list([row if isinstance(row, list) else [row] for row in rows])
 
     def make_standard_key(self, key: any) -> InlineKey:
         v = None

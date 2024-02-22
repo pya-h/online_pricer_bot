@@ -6,8 +6,7 @@ from tools.exceptions import NotVIPException
 from enum import Enum
 import json
 from payagraph.raw_materials import CanBeKeyboardItemInterface
-from typing import Dict
-
+from tools import manuwriter
 
 class PlanInterval(CanBeKeyboardItemInterface):
     def __init__(self, title: str, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
@@ -39,7 +38,6 @@ class Channel:
         for row in channels_as_row:
             channel = Channel(channel_id=int(row[0]), interval=int(row[1]), last_post_time=int(row[2]), channel_name=row[3], channel_title=row[4], owner_id=int(row[-1]))
             Channel.Instances[channel.id] = channel
-            print(channel)
         return Channel.Instances
 
     SupportedIntervals: list[PlanInterval] = [
@@ -69,6 +67,14 @@ class Channel:
         Channel.Database.plan_channel(self.owner_id, self.id, self.name, self.interval, self.title)
         return True
 
+    def stop_plan(self) -> bool:
+        try:
+            Channel.Database.delete_channel(self.id)
+            del Channel.Instances[self.id]
+        except Exception as ex:
+            manuwriter.log(f'Cannot remove chnnel:{self.id}', ex, category_name="VIP_FATALITY")
+            return False
+        return True
 
     @staticmethod
     def Get(channel_id):
@@ -98,11 +104,19 @@ class VIPAccount(Account):
             VIPAccount._database = VIPDatabaseInterface.Get()
         return VIPAccount._database
 
-    def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', vip_end_date: datetime = None) -> None:
+    def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', vip_end_date: datetime = None, vip_mode: int = 0) -> None:
         super().__init__(chat_id, currencies, cryptos, language)
         self.state: UserStates = UserStates.NONE
         self.vip_end_date = vip_end_date
+        self.vip_mode = vip_mode
         # self.channels: Dict[Channel] = dict()  # TODO: Load this from DATABASE
+
+    def max_channel_plans(self):
+        # decide with vip_mode
+        return 3
+
+    def my_channel_plans(self) -> list[Channel]:
+        return list(filter(lambda channel: channel.owner_id == self.chat_id, Channel.Instances.values()))
 
     @staticmethod
     def Get(chat_id):
@@ -114,7 +128,12 @@ class VIPAccount(Account):
             currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
             vip_end_date = datetime.strptime(row[4], VIPDatabaseInterface.DATE_FORMAT) if row[4] else None
-            return VIPAccount(chat_id=int(row[0]), currencies=currs.split(";") if currs else None, cryptos=cryptos.split(';') if cryptos else None, vip_end_date=vip_end_date)
+            try:
+                vip_mode = int(row[5])
+            except:
+                vip_mode = 0
+            language = row[-1]
+            return VIPAccount(chat_id=int(row[0]), currencies=currs.split(";") if currs else None, cryptos=cryptos.split(';') if cryptos else None, vip_end_date=vip_end_date, vip_mode=vip_mode, language=language)
 
         return VIPAccount(chat_id=chat_id).save()
 
@@ -135,6 +154,10 @@ class VIPAccount(Account):
     @staticmethod
     def Everybody():
         return VIPAccount.Database().get_all()
+
+
+    def __del__(self):
+        self.save()
 
     @staticmethod
     def GarbageCollect():
