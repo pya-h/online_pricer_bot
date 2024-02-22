@@ -23,13 +23,79 @@
         "fa": "متاسفانه شما در حال حاضر با تعرفه عادی از این کانال استفاده می کنید. برای استفاده از امکانات ابن ربات لطفا از طریق همین ربات یک اشتراک VIP تهیه کنید.",
         "en": "Unfortunately your using this bot as a normal user. To use this robot you need to upgrade to vip level using this very bot."
     },
+    "what_todo": {
+        "fa": "خب! چه کاری میتونم برات انجام بدم؟",
+        "en": "Well, What can I do for you?"
+    },
+    "planning_section": {
+        "fa": "اینجا قسمت مدیریت زمان بندی هاست. چه کاری میخواهید انجام دهید؟",
+        "en": "Here's the planning management section. What do you want to do?"
+    },
+
+    "what_to_config": {
+        "fa": "کدام یک را میخواهید تنظیم کنید؟",
+        "en": "Which one do you want to choose?"
+    },
+    "selection_hint": {
+        "fa": "👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.\n 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.",
+        "en": "Click on the desired option, to enable its tick(✅), indicating that its on your desired list.\nClicking a selected item again, will disable its tick() and removes it from your list."
+    },
+    "list_types": {
+        "gold": {
+            "fa": "📌 #لیست_بازار_طلا",
+            "en": "# Gold Price List 📌"
+        },
+        "currency": {
+            "fa": "📌 #لیست_بازار_ارز",
+            "en": "# Currency Price List 📌"
+        },
+        "crypto": {
+            "fa": "📌 #لیست_بازار_ارزدیجیتال",
+            "en": "# Cryptocurrency Price List 📌"
+        }
+    },
     "keywords": {
-        "plan_channel": {
+        "planning_section": {
             "fa": "زمان بندی کانال",
             "en": "Channel Planning"
+        },
+        "your_channels": {
+            "fa": "کانال های شما",
+            "en": "Your channels"
+        },
+        "new_planning": {
+            "fa": "زمان بندی کانال جدید",
+            "en": "Plan New Channel"
+        },
+        "stop_planning": {
+            "fa": "توقف زمان بندی",
+            "en": "Stop Planning"
+        },
+
+        "main_menu": {
+            "fa": "منوی اصلی",
+            "en": "Main Menu"
+        },
+        "moneys": {
+            "gold": {
+                "fa": "طلا",
+                "en": "Gold"
+            },
+            "currency": {
+                "fa": "ارز",
+                "en": "Currency"
+            },
+            "crypto": {
+                "fa": "ارز دیجیتال",
+                "en": "Cryptocurrency"
+            }
+        },
+        "config_selections": {
+            "fa": "تنظیم لیست قیمت",
+            "en": "Set Desired Ones"
         }
     },
     "commands": {
-        "plan_channel": "/plan"
+        "planning_section": "/plan"
     }
 }

@@ -65,10 +65,10 @@ class TelegramBotCore:
     def get_telegram_link(self) -> str:
         return f'https://t.me/{self.username}'
 
-    def text(self, text_key: str, language: str = 'fa') -> str:  # short for gettext
+    def text(self, text_key: str, language: str = None) -> str|dict:  # short for gettext
         '''resource function: get an specific text from the texts_resources json loaded into bot object'''
         try:
-            return self.text_resources[text_key][language]
+            return self.text_resources[text_key][language] if language else self.text_resources[text_key]
         except:
             pass
         return "پاسخ نامعلوم" if language == 'fa' else "Unknown response"
@@ -103,6 +103,7 @@ class TelegramBot(TelegramBotCore):
         self.message_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()  # bot handlers, fills with add_handler
         self.callback_query_hanndlers: Dict[str, Callable[[TelegramBotCore, TelegramCallbackQuery], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
         # these handler will be checked when running bot.handle
+        self.cancel_keys: list = []  # Keywords that if the user sends them, in every state and condition, everything cancels out and user returns back to main menu
         self.parallels: list[ParallelJob] = []
         self.clock = None
         ### Flask App configs ###
@@ -155,6 +156,9 @@ class TelegramBot(TelegramBotCore):
         '''Bot being awake time, if the clock has not been stopped ofcourse'''
         return f'The bot\'s uptime is: {minutes_to_timestamp(self.clock.minutes_running())}'
 
+
+    def add_cancel_key(self, key: str|dict):
+        self.cancel_keys.extend(key.values() if isinstance(key, dict) else [key])
 
     # Main Sections:
     def add_state_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]], state: UserStates|int):
@@ -223,7 +227,11 @@ class TelegramBot(TelegramBotCore):
             message = TelegramMessage(telegram_data)
             user = message.by
             handler: Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]] = None
-            if message.text in self.command_handlers:
+            if message.text in self.cancel_keys:
+                # Cancel out everything
+                user.state = UserStates.NONE
+                response = TelegramMessage.Text(user.chat_id, self.text('what_todo', user.language))
+            elif message.text in self.command_handlers:
                 handler = self.command_handlers[message.text]
                 response, keyboard = handler(self, message)
             else:

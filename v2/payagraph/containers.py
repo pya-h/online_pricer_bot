@@ -47,10 +47,7 @@ class ForwardOrigin:
 class TelegramMessage:
 
     def __init__(self, data: dict) -> None:
-        try:
-            self.msg: dict = data['message']
-        except:
-            print("TelegramMessage: DATA CAUSING ERROR:", data)
+        self.msg: dict = data['message']
         self.id: int = self.msg['message_id'] if 'message_id' in self.msg else None
         self.text: str =  self.msg['text']
 

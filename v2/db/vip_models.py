@@ -37,9 +37,9 @@ class Channel:
         Channel.Instances.clear()
         channels_as_row = Channel.Database.get_channels_by_interval()  # fetch all positive interval channels
         for row in channels_as_row:
-            channel = Channel(channel_id=int(row[0]), owner_id=int(row[3]), channel_name=row[1], interval=int(row[2]))
-            print(channel.name)
+            channel = Channel(channel_id=int(row[0]), interval=int(row[1]), last_post_time=int(row[2]), channel_name=row[3], channel_title=row[4], owner_id=int(row[-1]))
             Channel.Instances[channel.id] = channel
+            print(channel)
         return Channel.Instances
 
     SupportedIntervals: list[PlanInterval] = [
@@ -48,11 +48,13 @@ class Channel:
         PlanInterval("1 DAY", days=1), *[PlanInterval(f"{d} DAYS", days=d) for d in [2, 3, 4, 5, 6, 7, 10, 14, 30, 60]]
     ]
 
-    def __init__(self, owner_id: int, channel_id: int, channel_name: str, interval: int = 0) -> None:
+    def __init__(self, owner_id: int, channel_id: int, interval: int = 0, channel_name: str = None, channel_title:str = None, last_post_time: int=None) -> None:
         self.owner_id = owner_id
         self.id = channel_id
-        self.name = channel_name
+        self.name = channel_name  # username
+        self.title = channel_title
         self.interval = interval
+        self.last_post_time = last_post_time  # dont forget database has this
 
     def plan(self) -> bool:
         if self.interval <= 0:
@@ -64,7 +66,7 @@ class Channel:
         # if self.interval < 60:
         #     Channel.Instances[self.id] = self
         Channel.Instances[self.id] = self
-        Channel.Database.plan_channel(self.owner_id, self.id, self.name, self.interval)
+        Channel.Database.plan_channel(self.owner_id, self.id, self.name, self.interval, self.title)
         return True
 
 
@@ -74,10 +76,12 @@ class Channel:
             return Channel.Instances[channel_id]
         row = Channel.Database.get_channel(channel_id)
         if row:
-            return Channel(channel_id=int(row[0]), owner_id=int(row[3]), channel_name=row[1], interval=int(row[2]))
+            return Channel(channel_id=int(row[0]), interval=int(row[1]), last_post_time=int(row[2]), channel_name=row[3], channel_title=row[4], owner_id=int(row[-1]))
 
         return None
 
+    def __str__(self) -> str:
+        return f"Username:{self.name}\nTitle: {self.title}\nId: {self.id}\nInterval: {self.interval}\nOwner Id: {self.owner_id}"
 
 class UserStates(Enum):
     NONE = 0
@@ -109,7 +113,7 @@ class VIPAccount(Account):
         if row:
             currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
-            vip_end_date = datetime.strptime(row[-1], VIPDatabaseInterface.DATE_FORMAT) if row[-1] else None
+            vip_end_date = datetime.strptime(row[4], VIPDatabaseInterface.DATE_FORMAT) if row[4] else None
             return VIPAccount(chat_id=int(row[0]), currencies=currs.split(";") if currs else None, cryptos=cryptos.split(';') if cryptos else None, vip_end_date=vip_end_date)
 
         return VIPAccount(chat_id=chat_id).save()
@@ -119,10 +123,10 @@ class VIPAccount(Account):
         return True   # TODO: DELETE THIS *****
         return self.vip_end_date is not None and tz_today().date() <= self.vip_end_date.date()
 
-    def plan_new_channel(self, channel_id: int, channel_name: str, interval: int) -> Channel:
+    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str, channel_title: str = None) -> Channel:
         if not self.has_vip_privileges():
             raise NotVIPException(self.chat_id)
-        channel = Channel(self.chat_id, channel_id, channel_name, interval)
+        channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
         if channel.plan():
             # self.channels[channel_id] = channel
             return channel

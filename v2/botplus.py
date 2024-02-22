@@ -5,6 +5,8 @@ from typing import Dict
 from payagraph.job import ParallelJob
 from db.vip_models import Channel, Account
 from payagraph.containers import TelegramMessage
+from payagraph.keyboards import InlineKey, InlineKeyboard
+import json
 
 
 class PostJob(ParallelJob):
@@ -51,3 +53,7 @@ class TelegramBotPlus(TelegramBot):
         for channel_id in Channel.GetHasPlanChannels():
             if channel_id: # and channel.interval > 0:
                 self.prepare_new_post_job(Channel.Instances[channel_id], short_text=True) # Check short text
+
+    def keyboard_with_back_key(self, language, *rows) -> Keyboard:
+        return Keyboard(*rows, [self.keyword("main_menu", language)])
+

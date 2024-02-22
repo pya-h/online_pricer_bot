@@ -107,3 +107,26 @@ class InlineKeyboard(Keyboard):
 
         return InlineKeyboard(*keys)
 
+
+    @staticmethod
+    # this function creates inline keyboard for selecting coin/currency as desired ones
+    def CreateDynamicList(callback_action: str, all_choices: dict, selected_ones: list=None, show_full_names: bool=False):
+        '''Creates a dynamic list, for welection; just provide a Dict containg short_form(symbol) of a word linking to its full form;
+            Provide a list of selected symbols and determine that you want to show symbols or the full word, and the func will do the rest for you
+        '''
+        if not selected_ones:
+            selected_ones = []
+        buttons = []
+        row = []
+        i = 0
+        for choice in all_choices:
+            btn_text = choice if not show_full_names else all_choices[choice]
+            i += 1 + int(len(btn_text) / 5)
+            if choice in selected_ones:
+                btn_text += "✅"
+            row.append(InlineKey(btn_text, callback_data=json.dumps({"a": callback_action, "v": choice})))
+            if i >= 5:
+                buttons.append(row)
+                row = []
+                i = 0
+        return InlineKeyboard(*buttons)
