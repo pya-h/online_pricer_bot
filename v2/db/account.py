@@ -63,6 +63,9 @@ class Account:
         self.Database().update(self)
         return self
 
+    def __del__(self):
+        self.save()
+
     def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa') -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id

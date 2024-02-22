@@ -39,7 +39,7 @@ text_resources = manuwriter.load_json('vip_texts', 'resources')
 def planning_section_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Handles the user request showing user planning panel'''
     user = message.by
-    keyboard = bot.keyboard_with_back_key(user.language, [bot.keyword("your_channels", user.language)], [bot.keyword("stop_planning", user.language), bot.keyword("new_planning", user.language)])
+    keyboard = bot.keyboard_with_back_key(user.language, [bot.keyword("stop_planning", user.language), bot.keyword("new_planning", user.language)])
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("planning_section", user.language)), keyboard
 
 
@@ -64,7 +64,7 @@ def config_gold_list_handler(bot: TelegramBotPlus, message: TelegramMessage) -> 
     user = message.by
     caption = bot.text("list_types")["gold"][user.language] + "\n\n" + bot.text("selection_hint")[user.language]
     keyboard = InlineKeyboard.CreateDynamicList("cg-gold", bot.post_manager.currencyManager.GoldsInPersian,
-                                                                         user.desired_currencies, True)
+                                                                   user.desired_currencies, True)
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=caption), keyboard
 
 def config_currency_list_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
@@ -126,25 +126,38 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
 def update_desired_crypto_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
     user = callback_query.by
-    if not isinstance(user.state_data, ForwardOrigin):
-        return TelegramMessage.Text(user.chat_id, bot.text("channel_data_lost", user.language)), None
-    channel_data: ForwardOrigin = user.state_data
-    callback_query.text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes"
-    try:
-        channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username, channel_title=channel_data.title, interval=callback_query.value)
-        callback_query.text += "\nChannel and its plan data saved"
-        # TODO: NOTIFY USER
-        # TODO: NOTIFICATION IN CHANNEL
-        # TODO: INFORM USERS THAT THEY MUST ADD BOT AD ADMIN TO THE CHANNEL
-        bot.prepare_new_post_job(channel, short_text=True) # creates post job and starts it # Check short_text
-    except NotVIPException:
-        callback_query.text = bot.text("not_vip", user.language)
-    except Exception as ex:
-        callback_query.text = ex.__str__()
+    coin_symbol = callback_query.value
+    if coin_symbol in user.desired_coins:
+        user.desired_coins.remove(coin_symbol)
+    else:
+        user.desired_coins.append(coin_symbol)
     callback_query.replace_on_previous = True
-    user.change_state()  # reset user state
+    user.save()
+    return callback_query, InlineKeyboard.CreateDynamicList("cg-cryp", bot.post_manager.cryptoManager.CoinsInPersian, user.desired_coins)
 
-    return callback_query, None
+def update_desired_currency_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
+    user = callback_query.by
+    currency_symbol = callback_query.value
+    if currency_symbol in user.desired_currencies:
+        user.desired_currencies.remove(currency_symbol)
+    else:
+        user.desired_currencies.append(currency_symbol)
+    callback_query.replace_on_previous = True
+    user.save()
+    return callback_query, InlineKeyboard.CreateDynamicList("cg-curr", bot.post_manager.currencyManager.CurrenciesInPersian, user.desired_currencies, True)
+
+def update_desired_gold_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
+    user = callback_query.by
+    gold_symbol = callback_query.value
+    if gold_symbol in user.desired_currencies:
+        user.desired_currencies.remove(gold_symbol)
+    else:
+        user.desired_currencies.append(gold_symbol)
+    callback_query.replace_on_previous = True
+    user.save()
+    return callback_query, InlineKeyboard.CreateDynamicList("cg-gold", bot.post_manager.currencyManager.GoldsInPersian, user.desired_currencies, True)
 
 
 # add a latest_crypto_data and latest_currency_data to ChannelPostManager
