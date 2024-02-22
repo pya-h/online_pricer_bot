@@ -34,7 +34,12 @@ class Channel:
     @staticmethod
     def GetHasPlanChannels():
         '''return all channel table rows that has interval > 0'''
-        # TODO: load from databbase
+        Channel.Instances.clear()
+        channels_as_row = Channel.Database.get_channels_by_interval()  # fetch all positive interval channels
+        for row in channels_as_row:
+            channel = Channel(channel_id=int(row[0]), owner_id=int(row[3]), channel_name=row[1], interval=int(row[2]))
+            print(channel.name)
+            Channel.Instances[channel.id] = channel
         return Channel.Instances
 
     SupportedIntervals: list[PlanInterval] = [

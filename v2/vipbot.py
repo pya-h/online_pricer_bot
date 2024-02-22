@@ -85,12 +85,6 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
 # create a bot job for channel that updates it every minute(or 5 minute or whatever)
 # create postjobs for each channel with its intewrval and pass a re to ChannelPostManager to it
 
-# Parallel Jovbs:
-def load_channel_plans(bot: TelegramBotPlus)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
-    for channel in Channel.Instances:
-        if channel.id is not None and channel.interval > 0:
-            bot.prepare_new_post_job(channel, short_text=True) # Check short text
-            #TODO:
 
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["plan_channel"]["en"]),
@@ -108,7 +102,10 @@ bot.prepare_new_parallel_job(ONLINE_PRICE_DEFAULT_INTERVAL / 2, channel_post_man
 # Reading cache files everytime by everychannel is a performance risk, and also may fail (Assume two channels try reading cache in the same time.)
 # So I designed a Job that will read cache file one time on a specific interval and other channels use the loaded data from memory
 # Since the online_pricer_bot itself updates on 10(or whatever) minutes interval, cache files are updated on that interval too, and re-reading the same cache everytime is really a DUMB move,
+bot.load_channels_and_plans()
+
 bot.start_clock()
+
 bot.config_webhook()
 
 @bot.app.route('/verify', methods=['POST'])

@@ -101,3 +101,4 @@ class VIPPostManager(PostManager):
                 self.cryptoManager.latest_data = self.cryptoManager.send_request()
             except:
                 manuwriter.log('Can not update crypto data for other channels use!', ex, 'VIP_FATALITY')
+        print('Updated POST_MANAGER')

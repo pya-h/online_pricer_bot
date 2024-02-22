@@ -44,3 +44,10 @@ class TelegramBotPlus(TelegramBot):
         for post_job in self.post_jobs:
             if (post_job.running) and (now - post_job.last_call_time >= post_job.interval):
                 post_job.do(self, now)
+
+    # Parallel Jovbs:
+    def load_channels_and_plans(self):
+        '''Load all channels saved in the database (with plans[interval > 0]) and prepare their postjobs'''
+        for channel_id in Channel.GetHasPlanChannels():
+            if channel_id: # and channel.interval > 0:
+                self.prepare_new_post_job(Channel.Instances[channel_id], short_text=True) # Check short text

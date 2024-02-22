@@ -150,7 +150,7 @@ class TelegramBot(TelegramBotCore):
             if (job.running) and (now - job.last_call_time >= job.interval):
                 job.do()
         return now  # return current time
-    
+
     def get_uptime(self) -> str:
         '''Bot being awake time, if the clock has not been stopped ofcourse'''
         return f'The bot\'s uptime is: {minutes_to_timestamp(self.clock.minutes_running())}'
@@ -205,6 +205,14 @@ class TelegramBot(TelegramBotCore):
         keyboard: Keyboard | InlineKeyboard = None
         dont_use_main_keyboard: bool = False
         # TODO: run middlewares first
+        if isinstance(telegram_data, str):
+            telegram_data = json.loads(telegram_data)
+
+        if 'callback_query' not in telegram_data and 'message' not in telegram_data:
+            # TODO: Check out what are these messages and handle them
+            print('UNKNOWN FROM NOWHERE MESSAGE')
+            return
+
         if 'callback_query' in telegram_data:
             message = TelegramCallbackQuery(telegram_data)
             user = message.by
@@ -227,6 +235,7 @@ class TelegramBot(TelegramBotCore):
                     if message.text in self.message_handlers:
                         handler = self.message_handlers[message.text]
                         response, keyboard = handler(self, message)
+
         if not response:
             response = TelegramMessage.Text(target_chat_id=user.chat_id, text=self.text("wrong_command", user.language))
 

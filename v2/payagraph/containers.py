@@ -48,8 +48,6 @@ class TelegramMessage:
 
     def __init__(self, data: dict) -> None:
         try:
-            if isinstance(data, str):
-                data = json.loads(data)
             self.msg: dict = data['message']
         except:
             print("TelegramMessage: DATA CAUSING ERROR:", data)

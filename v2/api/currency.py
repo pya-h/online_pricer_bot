@@ -104,9 +104,9 @@ class SourceArena(APIManager):
             else:
                 res_gold += f'🔸 {rows[slug]}\n'
         if res_curr:
-            res_curr = f'📌 #قیمت_لحظه_ای #بازار_ارز 👇\n{res_curr}\n'
+            res_curr = f'📌 #قیمت_لحظه_ای #بازار_ارز \n{res_curr}\n'
         if res_gold:
-            res_gold = f'📌 #قیمت_لحظه_ای #بازار_طلا 👇\n{res_gold}\n'
+            res_gold = f'📌 #قیمت_لحظه_ای #بازار_طلا \n{res_gold}\n'
         return res_curr + res_gold
 
     # --------- Currency -----------
@@ -123,3 +123,11 @@ class SourceArena(APIManager):
 
         response = super(SourceArena, self).send_request()
         return response["data"] if 'data' in response else []
+
+
+    def load_cache(self) -> list|dict:
+        try:
+            self.latest_data = super(SourceArena, self).load_cache()['data']
+        except:
+            self.latest_data = []
+        return self.latest_data

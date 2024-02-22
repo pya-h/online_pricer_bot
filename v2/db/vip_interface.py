@@ -112,6 +112,15 @@ class VIPDatabaseInterface(DatabaseInterface):
         connection.close()
         return rows
 
+    def get_channels_by_interval(self, min_interval: int = 0) -> list:
+        '''Finds all the channels with plan interval > min_interval'''
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {VIPDatabaseInterface.TABLE_CHANNELS} WHERE {VIPDatabaseInterface.CHANNEL_INTERVAL} > ?", (min_interval, ))
+        rows = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return rows
 
     def __init__(self, name="vip_data.db"):
         self._name = name
