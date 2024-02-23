@@ -71,6 +71,22 @@ class TelegramMessage:
 
     #TODO: WRITE METHODS FOR CREATING DIFFERENT KINDS OF MESSSAGES (PHOTO, VIDEO, ETC.)
 
+    @staticmethod
+    def GetChatId(update_data: dict) -> int:
+        try:
+            return int(update_data['message']['chat']['id'] if 'message' in update_data else update_data["callback_query"]['chat']['id'])
+        except:
+            pass
+        return None
+    
+    @staticmethod
+    def GetChatId(update_data: dict) -> int:
+        try:
+            return int(update_data['message']['from']['id'] if 'message' in update_data else update_data["callback_query"]['from']['id'])
+        except:
+            pass
+        return None
+    
 
 class TelegramCallbackQuery(TelegramMessage):
 

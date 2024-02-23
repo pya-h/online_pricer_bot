@@ -104,15 +104,15 @@ class VIPAccount(Account):
             VIPAccount._database = VIPDatabaseInterface.Get()
         return VIPAccount._database
 
-    def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', vip_end_date: datetime = None, vip_mode: int = 0) -> None:
+    def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', vip_end_date: datetime = None, vip_plan_id: int = 0) -> None:
         super().__init__(chat_id, currencies, cryptos, language)
         self.state: UserStates = UserStates.NONE
         self.vip_end_date = vip_end_date
-        self.vip_mode = vip_mode
+        self.vip_plan_id= vip_plan_id
         # self.channels: Dict[Channel] = dict()  # TODO: Load this from DATABASE
 
     def max_channel_plans(self):
-        # decide with vip_mode
+        # decide with vip_plan_id
         return 3
 
     def my_channel_plans(self) -> list[Channel]:
@@ -129,11 +129,11 @@ class VIPAccount(Account):
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
             vip_end_date = datetime.strptime(row[4], VIPDatabaseInterface.DATE_FORMAT) if row[4] else None
             try:
-                vip_mode = int(row[5])
+                vip_plan_id= int(row[5])
             except:
-                vip_mode = 0
+                vip_plan_id= 0
             language = row[-1]
-            return VIPAccount(chat_id=int(row[0]), currencies=currs.split(";") if currs else None, cryptos=cryptos.split(';') if cryptos else None, vip_end_date=vip_end_date, vip_mode=vip_mode, language=language)
+            return VIPAccount(chat_id=int(row[0]), currencies=currs.split(";") if currs else None, cryptos=cryptos.split(';') if cryptos else None, vip_end_date=vip_end_date, vip_plan_id=vip_plan_id, language=language)
 
         return VIPAccount(chat_id=chat_id).save()
 

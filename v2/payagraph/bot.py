@@ -97,7 +97,10 @@ class TelegramBot(TelegramBotCore):
         by calling .handle function make the bot to handle user messages automatically, of sorts.'''
     def __init__(self, token: str, username: str, host_url: str, text_resources: dict, _main_keyboard: Dict[str, Keyboard]|Keyboard = None) -> None:
         super().__init__(token, username, host_url, text_resources, _main_keyboard)
-        self.middleware_handlers: list[dict] = []
+        self.middlewares: list[Callable[[TelegramBotCore, dict], bool]] = [] # middlewares run before everything when a message is sent
+        # if all middlewares returned True, bot is allowed to continue handling a message
+        # This is useful for implement channel memberships and vip checks
+        
         self.state_handlers: Dict[UserStates, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
         self.command_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
         self.message_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()  # bot handlers, fills with add_handler
@@ -115,19 +118,12 @@ class TelegramBot(TelegramBotCore):
         @self.app.route(webhook_path, methods=['POST'])
         def main_route():
             # code below must be add to middlewares
-            '''if not user.has_vip_privileges():
-                order = Order(buyer=user, months_counts=2)  # change this
-                gateway = NowpaymentsGateway(buyer_chat_id=message.chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
-                response = TelegramMessage.Text(message.chat_id, text=gateway.get_payment_link())
-                bot.send(message=response)
-
-                ### TEMP
-                hint = TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("select_channel", user.language))
-                bot.send(hint)
-                user.change_state(UserStates.SELECT_CHANNEL)
-
-                 return jsonify({'status': 'ok'})'''
-            self.handle(request.json)
+            allowed_to_continue = True
+            for middleware in self.middlewares:
+                allowed_to_continue = allowed_to_continue and middleware(self, request.json)
+            
+            if allowed_to_continue:
+                self.handle(request.json)
             return jsonify({'status': 'ok'})
 
     def go(self, debug=True):
@@ -194,7 +190,9 @@ class TelegramBot(TelegramBotCore):
             return True
         return False
 
-
+    def add_middleware(self, middleware: Callable[[TelegramBotCore, dict], bool]):
+        self.middlewares.append(middleware)
+        
     def prepare_new_parallel_job(self, interval: int, functionality: Callable[..., any], *params) -> ParallelJob:
         '''Create a new ParallelJob object and then add it to bot parallel job list and start it.'''
         job = ParallelJob(interval, functionality, *params)

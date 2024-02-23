@@ -216,9 +216,61 @@ def stop_channel_plan_handler(bot: TelegramBotPlus, callback_query: TelegramCall
     callback_query.replace_on_previous = True
     return callback_query, None
 
-# add a latest_crypto_data and latest_currency_data to ChannelPostManager
-# create a bot job for channel that updates it every minute(or 5 minute or whatever)
-# create postjobs for each channel with its intewrval and pass a re to ChannelPostManager to it
+# Middlewares
+def check_channels_membership(bot: TelegramBotPlus, update: dict) -> bool:
+    '''channels = array(FIRST_2_JOIN_CHANNEL_ID => array('name' => "Persian College", 'url' => FIRST_2_JOIN_CHANNEL_URL),
+        PERSIAN_PROJECT_CHANNEL_ID => array('name' => "Persian Project", 'url' => PERSIAN_PROJECT_CHANNEL_URL));
+        
+    all_joined = true;
+    user_id = isset(update[CALLBACK_QUERY]) ? update[CALLBACK_QUERY]['from']['id'] : update['message']['from']['id'];
+    channel_list_menu = array(array());
+    current_row = 0;
+    foreach(channels as channel_id => params) {
+        res = callMethod(
+            METH_GET_CHAT_MEMBER,
+            CHAT_ID, channel_id,
+            'user_id', user_id
+        );
+        res = json_decode(res, true);
+        all_joined = all_joined && (strtolower(res['result']['status'] ?? USER_NOT_A_MEMBER) != USER_NOT_A_MEMBER);
+        channel_list_menu[current_row][] = array(TEXT_TAG => params['name'], INLINE_URL_TAG => params['url']);
+        if(count(channel_list_menu[current_row]) >= 2) {
+            channel_list_menu[] = array();
+            current_row++;
+        }
+    }
+    channel_list_menu[] = array(array(TEXT_TAG => 'بررسی عضویت', CALLBACK_DATA => wrapInlineButtonData(INLINE_ACTION_VERIFY_ACCOUNT)));
+    if(all_joined) {
+        if (isset(update['message']))
+            handleCasualMessage(update);
+        else if (isset(update[CALLBACK_QUERY]))
+            handleCallbackQuery(update);
+    } else {
+        callMethod(METH_SEND_MESSAGE,
+            CHAT_ID, user_id,
+            TEXT_TAG, 'قبل از هر چیزی لازمه که در کانال های ما جوین شی',
+            KEYBOARD, array('remove_keyboard' => true)
+        );
+        callMethod(METH_SEND_MESSAGE,
+            CHAT_ID, user_id,
+            TEXT_TAG, 'بعد از اینکه عضو کانال های زیر شدی، بررسی عضویت رو بزن:',
+            KEYBOARD, array(INLINE_KEYBOARD => channel_list_menu)
+        );
+    }'''
+    return True
+
+def check_account_is_vip(bot: TelegramBotPlus, update: dict) -> bool:
+    chat_id = TelegramMessage.GetChatId(update)
+    user = VIPAccount.Get(chat_id)
+    
+    if not user.has_vip_privileges():
+        order = Order(buyer=user, months_counts=2)  # change this
+        gateway = NowpaymentsGateway(buyer_chat_id=chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
+        response = TelegramMessage.Text(chat_id, text=gateway.get_payment_link())
+        bot.send(message=response)
+
+        return False
+    return True
 
 
 main_keyboard = {
@@ -230,6 +282,9 @@ bot = TelegramBotPlus(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_
 
 bot.add_cancel_key(bot.keyword('main_menu'))
 bot.add_cancel_key(bot.cmd('cancel'))
+
+bot.add_middleware(check_channels_membership)
+bot.add_middleware(check_account_is_vip)
 
 bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
 bot.add_message_handler(message=bot.keyword('planning_section'), handler=planning_section_handler)
