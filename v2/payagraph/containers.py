@@ -1,4 +1,4 @@
-from db.vip_models import VIPAccount
+from db.models_plus import AccountPlus
 import json
 from enum import Enum
 from tools.mathematix import force_cast
@@ -53,7 +53,7 @@ class TelegramMessage:
 
         # TODO: *** define two separate users: One is SENDER_USER and another is TARGET_USER
         self.chat_id: int = self.msg['chat']['id']  # this is target chat_id, it may differ from self.by.chat_id
-        self.by: VIPAccount = VIPAccount.Get(self.msg['chat']['id']) if self.chat_id >= 0 else None  # negative chat_id means its a channel
+        self.by: AccountPlus = AccountPlus.Get(self.msg['chat']['id']) if self.chat_id >= 0 else None  # negative chat_id means its a channel
         # TODO: *** define two separate users: One is SENDER_USER and another is TARGET_USER
 
         # cause bot may get a message from a user (with chat_id A) and send it to another user with another chat_id(B); so dont mistake them

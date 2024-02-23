@@ -1,7 +1,7 @@
 from tools import manuwriter, mathematix
 from api.crypto import CoinGecko, CoinMarketCap
 from api.currency import SourceArena
-from db.vip_models import VIPAccount, Channel
+from db.models_plus import AccountPlus, Channel
 
 
 class PostManager:
@@ -45,13 +45,13 @@ class PostManager:
 
 
 
-class VIPPostManager(PostManager):
+class PlusPostManager(PostManager):
     '''Extended version of PostManager, this class contains all the post jobs, constructs posts and manages channel post and updates'''
     def __init__(self, source_arena_api_key: str, aban_tether_api_key:str, coinmarketcap_api_key: str, bot_username: str = None) -> None:
         super().__init__(source_arena_api_key, aban_tether_api_key, coinmarketcap_api_key)
         self.bot_username = bot_username
 
-    def create_post(self, account: VIPAccount, channel: Channel = None, short_text: bool=True) -> str:
+    def create_post(self, account: AccountPlus, channel: Channel = None, short_text: bool=True) -> str:
         currencies = cryptos = ''
 
         try:
@@ -81,24 +81,24 @@ class VIPPostManager(PostManager):
         return post_text
 
     def update_latest_data(self):
-        '''This will be called by vip robot as a job on a propper interval, so that channels use the most recent data gradually, alongside considering performance handling issues.'''
+        '''This will be called by plus robot as a job on a propper interval, so that channels use the most recent data gradually, alongside considering performance handling issues.'''
         try:
             self.currencyManager.load_cache()
         except:
             # force reload
             try:
-                manuwriter.log('Currency cache load failed. Trying force reload (API call) to update channels currency latest_data!', ex, 'VIP_CACHE')
+                manuwriter.log('Currency cache load failed. Trying force reload (API call) to update channels currency latest_data!', ex, 'PLUS_CACHE')
                 self.currencyManager.latest_data = self.currencyManager.send_request()
             except Exception as ex:
-                manuwriter.log('Can not update currency data for other channels use!', ex, 'VIP_FATALITY')
+                manuwriter.log('Can not update currency data for other channels use!', ex, 'PLUS_FATALITY')
 
         try:
             self.cryptoManager.load_cache()
         except:
             # force reload
             try:
-                manuwriter.log('Crypto cache load failed. Using force reload (API call) to update channels crypto latest_data!', ex, 'VIP_CACHE')
+                manuwriter.log('Crypto cache load failed. Using force reload (API call) to update channels crypto latest_data!', ex, 'PLUS_CACHE')
                 self.cryptoManager.latest_data = self.cryptoManager.send_request()
             except:
-                manuwriter.log('Can not update crypto data for other channels use!', ex, 'VIP_FATALITY')
+                manuwriter.log('Can not update crypto data for other channels use!', ex, 'PLUS_FATALITY')
         print('Updated POST_MANAGER')

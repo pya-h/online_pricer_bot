@@ -1,7 +1,7 @@
-from db.vip_models import VIPAccount
+from db.models_plus import AccountPlus
 import requests
 from tools.manuwriter import log
-from db.vip_models import UserStates
+from db.models_plus import UserStates
 from typing import Callable, Dict, Union
 from tools.mathematix import minutes_to_timestamp
 from payagraph.containers import *
@@ -43,7 +43,7 @@ class TelegramBotCore:
             keyboard.attach_to(payload)
         response = requests.post(url, json=payload)
         if response.status_code != 200:
-            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{chat_id}\nResponse text: {response.text}", category_name="VIP_FATALITY")
+            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{chat_id}\nResponse text: {response.text}", category_name="PLUS_FATALITY")
         return response  # as dict
 
     def edit(self, modified_message: TelegramMessage, keyboard: InlineKeyboard):
@@ -58,7 +58,7 @@ class TelegramBotCore:
 
         response = requests.post(url, json=payload)
         if response.status_code != 200:
-            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{chat_id}\nResponse text: {response.text}", category_name="VIP_FATALITY")
+            log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{chat_id}\nResponse text: {response.text}", category_name="PLUS_FATALITY")
         return response  # as dict
 
 
@@ -99,7 +99,7 @@ class TelegramBot(TelegramBotCore):
         super().__init__(token, username, host_url, text_resources, _main_keyboard)
         self.middlewares: list[Callable[[TelegramBotCore, dict], bool]] = [] # middlewares run before everything when a message is sent
         # if all middlewares returned True, bot is allowed to continue handling a message
-        # This is useful for implement channel memberships and vip checks
+        # This is useful for implement channel memberships and plus checks
         
         self.state_handlers: Dict[UserStates, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
         self.command_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
@@ -202,7 +202,7 @@ class TelegramBot(TelegramBotCore):
     def handle(self, telegram_data: dict):
         '''determine what course of action to take based on the message sent to the bot by user. First command/message/state handler and middlewares and then call the handle with telegram request data.'''
         message: TelegramMessage | TelegramCallbackQuery = None
-        user: VIPAccount = None
+        user: AccountPlus = None
         response: TelegramMessage| TelegramCallbackQuery = None
         keyboard: Keyboard | InlineKeyboard = None
         dont_use_main_keyboard: bool = False

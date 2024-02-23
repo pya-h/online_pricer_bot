@@ -162,7 +162,7 @@ def extend_date(date:datetime, months_count: int) -> datetime:
 
 
 def after_n_months(n: int = 2) -> datetime:
-    # this is used for vip end date calculation
+    # this is used for plus end date calculation
     return extend_date(date=datetime.now(), months_count=n)
 
 

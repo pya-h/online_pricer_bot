@@ -9,11 +9,11 @@ from botplus import *
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
 from payment.order import Order
-from db.vip_models import UserStates, Channel
+from db.models_plus import UserStates, Channel
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
-from api.post import VIPPostManager
+from api.post import PlusPostManager
 
 
 # Set up logging
@@ -30,11 +30,11 @@ HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
 ONLINE_PRICE_DEFAULT_INTERVAL = float(config('MAIN_SCHEDULER_DEFAULT_INTERVAL', 10))
 
-channel_post_manager = VIPPostManager(source_arena_api_key=CURRENCY_SOURCEARENA_TOKEN, coinmarketcap_api_key=COINMARKETCAP_API_KEY, aban_tether_api_key=ABAN_TETHER_TOKEN, bot_username=BOT_USERNAME)
+channel_post_manager = PlusPostManager(source_arena_api_key=CURRENCY_SOURCEARENA_TOKEN, coinmarketcap_api_key=COINMARKETCAP_API_KEY, aban_tether_api_key=ABAN_TETHER_TOKEN, bot_username=BOT_USERNAME)
 
 # Read the text resource containing the multilanguage data for the bot texts, messages, commands and etc.
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
-text_resources = manuwriter.load_json('vip_texts', 'resources')
+text_resources = manuwriter.load_json('plus_texts', 'resources')
 
 def start_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     # DO smething such as showing tutorial
@@ -146,8 +146,8 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
         callback_query.text = bot.text('channel_planned_succesfully', user.language) % (channel.title, channel.interval, )
         bot.send(TelegramMessage.Text(user.chat_id, bot.text("add_bot_to_channel_as_admin", user.language)))
         bot.prepare_new_post_job(channel, short_text=True) # creates post job and starts it # Check short_text
-    except NotVIPException:
-        callback_query.text = bot.text("not_vip", user.language)
+    except NotPlusException:
+        callback_query.text = bot.text("not_plus", user.language)
     except Exception as ex:
         callback_query.text = ex.__str__()
     callback_query.replace_on_previous = True
@@ -259,11 +259,11 @@ def check_channels_membership(bot: TelegramBotPlus, update: dict) -> bool:
     }'''
     return True
 
-def check_account_is_vip(bot: TelegramBotPlus, update: dict) -> bool:
+def check_account_is_plus_member(bot: TelegramBotPlus, update: dict) -> bool:
     chat_id = TelegramMessage.GetChatId(update)
-    user = VIPAccount.Get(chat_id)
+    user = AccountPlus.Get(chat_id)
     
-    if not user.has_vip_privileges():
+    if not user.has_plus_privileges():
         order = Order(buyer=user, months_counts=2)  # change this
         gateway = NowpaymentsGateway(buyer_chat_id=chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
         response = TelegramMessage.Text(chat_id, text=gateway.get_payment_link())
@@ -284,7 +284,7 @@ bot.add_cancel_key(bot.keyword('main_menu'))
 bot.add_cancel_key(bot.cmd('cancel'))
 
 bot.add_middleware(check_channels_membership)
-bot.add_middleware(check_account_is_vip)
+bot.add_middleware(check_account_is_plus_member)
 
 bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
 bot.add_message_handler(message=bot.keyword('planning_section'), handler=planning_section_handler)
@@ -340,7 +340,7 @@ def verify_payment():
 #         user_id = get_user_id_from_order_id(order_id)
 
 #         # Update the user's VIP status to True in your database
-#         update_user_vip_status(user_id)
+#         update_user_plus_status(user_id)
 
 #         # Notify the user via Telegram bot about the status update
 #         send_telegram_notification(user_id, f"Your payment of {amount_paid} {currency} was successful. You are now a VIP!")

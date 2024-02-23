@@ -108,7 +108,7 @@ class APIManager(BaseAPIManager):
                     # This may be cause when this app is run before oneline_pricer_bot for the first time.
                     # sending a request will make new cache and solve this issue.
                 except Exception as fex:
-                    manuwriter.log("Couldnt get cache and API both. There\'s something seriously wrong!!", ex, category_name='VIP_FATALITY')
+                    manuwriter.log("Couldnt get cache and API both. There\'s something seriously wrong!!", ex, category_name='PLUS_FATALITY')
                     # TODO: send an email or notification or whatever to the admin?
 
         return self.extract_api_response(desired_ones, short_text=short_text, optional_api_data=self.latest_data)

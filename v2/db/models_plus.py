@@ -1,8 +1,8 @@
 from db.account import Account
 from tools.mathematix import tz_today
-from db.vip_interface import VIPDatabaseInterface
+from db.interface_plus import DatabasePlusInterface
 from datetime import datetime
-from tools.exceptions import NotVIPException
+from tools.exceptions import NotPlusException
 from enum import Enum
 import json
 from payagraph.raw_materials import CanBeKeyboardItemInterface
@@ -28,7 +28,7 @@ class PlanInterval(CanBeKeyboardItemInterface):
 class Channel:
 
     Instances = {}
-    Database: VIPDatabaseInterface = VIPDatabaseInterface.Get()
+    Database: DatabasePlusInterface = DatabasePlusInterface.Get()
 
     @staticmethod
     def GetHasPlanChannels():
@@ -72,7 +72,7 @@ class Channel:
             Channel.Database.delete_channel(self.id)
             del Channel.Instances[self.id]
         except Exception as ex:
-            manuwriter.log(f'Cannot remove chnnel:{self.id}', ex, category_name="VIP_FATALITY")
+            manuwriter.log(f'Cannot remove chnnel:{self.id}', ex, category_name="PLUS_FATALITY")
             return False
         return True
 
@@ -93,26 +93,26 @@ class UserStates(Enum):
     NONE = 0
     SELECT_CHANNEL = 4
     SELECT_INTERVAL = 5
-class VIPAccount(Account):
+class AccountPlus(Account):
 
     MaxSelectionInDesiredOnes = 100
     _database = None
 
     @staticmethod
     def Database():
-        if VIPAccount._database == None:
-            VIPAccount._database = VIPDatabaseInterface.Get()
-        return VIPAccount._database
+        if AccountPlus._database == None:
+            AccountPlus._database = DatabasePlusInterface.Get()
+        return AccountPlus._database
 
-    def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', vip_end_date: datetime = None, vip_plan_id: int = 0) -> None:
+    def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', plus_end_date: datetime = None, plus_plan_id: int = 0) -> None:
         super().__init__(chat_id, currencies, cryptos, language)
         self.state: UserStates = UserStates.NONE
-        self.vip_end_date = vip_end_date
-        self.vip_plan_id= vip_plan_id
+        self.plus_end_date = plus_end_date
+        self.plus_plan_id= plus_plan_id
         # self.channels: Dict[Channel] = dict()  # TODO: Load this from DATABASE
 
     def max_channel_plans(self):
-        # decide with vip_plan_id
+        # decide with plus_plan_id
         return 3
 
     def my_channel_plans(self) -> list[Channel]:
@@ -120,31 +120,31 @@ class VIPAccount(Account):
 
     @staticmethod
     def Get(chat_id):
-        if chat_id in VIPAccount.Instances:
-            VIPAccount.Instances[chat_id].last_interaction = tz_today()
-            return VIPAccount.Instances[chat_id]
-        row = VIPAccount.Database().get(chat_id)
+        if chat_id in AccountPlus.Instances:
+            AccountPlus.Instances[chat_id].last_interaction = tz_today()
+            return AccountPlus.Instances[chat_id]
+        row = AccountPlus.Database().get(chat_id)
         if row:
             currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
-            vip_end_date = datetime.strptime(row[4], VIPDatabaseInterface.DATE_FORMAT) if row[4] else None
+            plus_end_date = datetime.strptime(row[4], DatabasePlusInterface.DATE_FORMAT) if row[4] else None
             try:
-                vip_plan_id= int(row[5])
+                plus_plan_id= int(row[5])
             except:
-                vip_plan_id= 0
+                plus_plan_id= 0
             language = row[-1]
-            return VIPAccount(chat_id=int(row[0]), currencies=currs.split(";") if currs else None, cryptos=cryptos.split(';') if cryptos else None, vip_end_date=vip_end_date, vip_plan_id=vip_plan_id, language=language)
+            return AccountPlus(chat_id=int(row[0]), currencies=currs.split(";") if currs else None, cryptos=cryptos.split(';') if cryptos else None, plus_end_date=plus_end_date, plus_plan_id=plus_plan_id, language=language)
 
-        return VIPAccount(chat_id=chat_id).save()
+        return AccountPlus(chat_id=chat_id).save()
 
-    def has_vip_privileges(self) -> bool:
-        '''Check if the account has still vip subscription.'''
+    def has_plus_privileges(self) -> bool:
+        '''Check if the account has still plus subscription.'''
         return True   # TODO: DELETE THIS *****
-        return self.vip_end_date is not None and tz_today().date() <= self.vip_end_date.date()
+        return self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date()
 
     def plan_new_channel(self, channel_id: int, interval: int, channel_name: str, channel_title: str = None) -> Channel:
-        if not self.has_vip_privileges():
-            raise NotVIPException(self.chat_id)
+        if not self.has_plus_privileges():
+            raise NotPlusException(self.chat_id)
         channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
         if channel.plan():
             # self.channels[channel_id] = channel
@@ -153,7 +153,7 @@ class VIPAccount(Account):
 
     @staticmethod
     def Everybody():
-        return VIPAccount.Database().get_all()
+        return AccountPlus.Database().get_all()
 
 
     def __del__(self):
@@ -163,10 +163,10 @@ class VIPAccount(Account):
     def GarbageCollect():
         now = tz_today()
         garbage = []
-        for chat_id in VIPAccount.Instances:
-            if (now - VIPAccount.Instances[chat_id].last_interaction).total_seconds() / 60 >= VIPAccount.GarbageCollectionInterval / 2:
+        for chat_id in AccountPlus.Instances:
+            if (now - AccountPlus.Instances[chat_id].last_interaction).total_seconds() / 60 >= AccountPlus.GarbageCollectionInterval / 2:
                 garbage.append(chat_id)
         # because changing dict size in a loop on itself causes error,
         # we first collect redundant chat_id s and then delete them from the memory
         for g in garbage:
-            del VIPAccount.Instances[g]
+            del AccountPlus.Instances[g]

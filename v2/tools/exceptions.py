@@ -20,7 +20,7 @@ class CacheFailureException(Exception):
         self.message += f'\nعلت خطا: {cause.__str__()}'
         super().__init__(f'Invalid {self.message}')
 
-class NotVIPException(Exception):
+class NotPlusException(Exception):
 
     def __init__(self, chat_id: int) -> None:
         self.message = f"Account with chat_id={chat_id} is not VIP now!"
