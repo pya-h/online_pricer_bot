@@ -18,12 +18,12 @@ class VIPDatabaseInterface:
         ("id", "name", "title", "owner_id", "interval", "last_post_time")
 
     TABLE_PAYMENTS = "payments"
-    PAYMENT_COLUMNS = (PAYMENT_ID, PAYMENT_CHATID, PAYMENT_ORDER_ID, PAYMENT_STATUS, PAYMENT_AMOUNT, PAYMENT_CURRENCY, PAYMENT_PAID_AMOUNT, PAYMENT_PAID_CURRENCY, PAYMENT_VIP_PLAN_ID, PAYMENT_MODIFIED_ON) =\
+    PAYMENT_COLUMNS = (PAYMENT_ID, PAYMENT_CHATID, PAYMENT_ORDER_ID, PAYMENT_STATUS, PAYMENT_AMOUNT, PAYMENT_CURRENCY, PAYMENT_PAID_AMOUNT, PAYMENT_PAID_CURRENCY, PAYMENT_VIP_PLAN_ID, PAYMENT_NETWORK, PAYMENT_MODIFIED_ON) =\
         ("order_id", "chat_id", "id", "status", "amount", "currency", "paid_amount", "paid_CURRENCY", "vip_plan_id", "network", "modified")
         
     TABLE_VIP_PLANS = "vip_plans"
-    VIP_PLANS_COLUMNS = (VIP_PLAN_ID, VIP_PLAN_DESCRIPTION, VIP_PLAN_TITLE, VIP_PLAN_DURATION, VIP_PLAN_LEVEL) =\
-        ("id", "description", "title", "duration", "level")
+    VIP_PLANS_COLUMNS = (VIP_PLAN_ID, VIP_PLAN_DESCRIPTION, VIP_PLAN_TITLE, VIP_PLAN_DURATION, VIP_PLAN_LEVEL, VIP_PLAN_PRICE, VIP_PLAN_PRICE_CURRENCY) =\
+        ("id", "description", "title", "duration", "level", "price", "price_currency")
 
 
     @staticmethod
@@ -42,8 +42,9 @@ class VIPDatabaseInterface:
             # check if the table accounts was created
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{VIPDatabaseInterface.TABLE_VIP_PLANS}'").fetchone():
                 query = f"CREATE TABLE {VIPDatabaseInterface.TABLE_VIP_PLANS} ({VIPDatabaseInterface.VIP_PLAN_ID} INTEGER PRIMARY KEY," +\
-                    f"{VIPDatabaseInterface.VIP_PLAN_TITLE} TEXT, {VIPDatabaseInterface.VIP_PLAN_DESCRIPTION} TEXT, " +\
-                    f"{VIPDatabaseInterface.VIP_PLAN_DURATION} INTEGER, {VIPDatabaseInterface.VIP_PLAN_LEVEL} INTEGER)"
+                    f"{VIPDatabaseInterface.VIP_PLAN_TITLE} TEXT NOT NULL, {VIPDatabaseInterface.VIP_PLAN_DESCRIPTION} TEXT, " +\
+                    f"{VIPDatabaseInterface.VIP_PLAN_DURATION} INTEGER NOT NULL, {VIPDatabaseInterface.VIP_PLAN_LEVEL} INTEGER, {VIPDatabaseInterface.VIP_PLAN_PRICE} REAL NOT NULL, " +\
+                        f"{VIPDatabaseInterface.VIP_PLAN_PRICE_CURRENCY} TEXT)"
                 # create table account
                 cursor.execute(query)
                 manuwriter.log(f"VIP Database {VIPDatabaseInterface.TABLE_VIP_PLANS} table created successfuly.", category_name='vip_info')
@@ -61,21 +62,21 @@ class VIPDatabaseInterface:
             # Table channels existence
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{VIPDatabaseInterface.TABLE_CHANNELS}'").fetchone():
                 query = f"CREATE TABLE {VIPDatabaseInterface.TABLE_CHANNELS} ({VIPDatabaseInterface.CHANNEL_ID} INTEGER PRIMARY KEY, " +\
-                    f"{VIPDatabaseInterface.CHANNEL_INTERVAL} INTEGER, {VIPDatabaseInterface.CHANNEL_LAST_POST_TIME} INTEGER, " +\
-                    f"{VIPDatabaseInterface.CHANNEL_NAME} TEXT, {VIPDatabaseInterface.CHANNEL_TITLE} TEXT," +\
-                    f"{VIPDatabaseInterface.CHANNEL_OWNER_ID} INTEGER, FOREIGN KEY({VIPDatabaseInterface.CHANNEL_OWNER_ID}) REFERENCES {VIPDatabaseInterface.TABLE_ACCOUNTS}({VIPDatabaseInterface.ACCOUNT_ID}))"
+                    f"{VIPDatabaseInterface.CHANNEL_INTERVAL} INTEGER NOT_NULL, {VIPDatabaseInterface.CHANNEL_LAST_POST_TIME} INTEGER, " +\
+                    f"{VIPDatabaseInterface.CHANNEL_NAME} TEXT, {VIPDatabaseInterface.CHANNEL_TITLE} TEXT NOT_NULL," +\
+                    f"{VIPDatabaseInterface.CHANNEL_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({VIPDatabaseInterface.CHANNEL_OWNER_ID}) REFERENCES {VIPDatabaseInterface.TABLE_ACCOUNTS}({VIPDatabaseInterface.ACCOUNT_ID}))"
                 # create table account
                 cursor.execute(query)
                 manuwriter.log(f"VIP Database {VIPDatabaseInterface.TABLE_CHANNELS} table created successfuly.", category_name='vip_info')
 
             # Table payments existence check
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{VIPDatabaseInterface.TABLE_PAYMENTS}'").fetchone():
-                query = f"CREATE TABLE {VIPDatabaseInterface.TABLE_PAYMENTS} ({VIPDatabaseInterface.PAYMENT_ID} INTEGER, " +\
-                    f"{VIPDatabaseInterface.PAYMENT_ORDER_ID} INTEGER, {VIPDatabaseInterface.PAYMENT_CHATID} INTEGER, " +\
-                    f"{VIPDatabaseInterface.PAYMENT_AMOUNT} REAL, {VIPDatabaseInterface.PAYMENT_CURRENCY} TEXT, " +\
+                query = f"CREATE TABLE {VIPDatabaseInterface.TABLE_PAYMENTS} ({VIPDatabaseInterface.PAYMENT_ID} INTEGER NOT_NULL, " +\
+                    f"{VIPDatabaseInterface.PAYMENT_ORDER_ID} INTEGER NOT_NULL, {VIPDatabaseInterface.PAYMENT_CHATID} INTEGER NOT_NULL, " +\
+                    f"{VIPDatabaseInterface.PAYMENT_AMOUNT} REAL NOT_NULL, {VIPDatabaseInterface.PAYMENT_CURRENCY} TEXT NOT_NULL, " +\
                     f"{VIPDatabaseInterface.PAYMENT_PAID_AMOUNT} REAL, {VIPDatabaseInterface.PAYMENT_PAID_CURRENCY} TEXT, " +\
-                    f"{VIPDatabaseInterface.PAYMENT_STATUS} TEXT, {VIPDatabaseInterface.PAYMENT_NETWORK} TEXT," +\
-                    f"{VIPDatabaseInterface.PAYMENT_VIP_PLAN_ID} INTEGER, " +\
+                    f"{VIPDatabaseInterface.PAYMENT_STATUS} TEXT NOT NULL, {VIPDatabaseInterface.PAYMENT_NETWORK} TEXT," +\
+                    f"{VIPDatabaseInterface.PAYMENT_VIP_PLAN_ID} INTEGER NOT NULL, {VIPDatabaseInterface.PAYMENT_MODIFIED_ON} DATE" +\
                     f"FOREIGN KEY({VIPDatabaseInterface.PAYMENT_CHATID}) REFERENCES {VIPDatabaseInterface.TABLE_ACCOUNTS}({VIPDatabaseInterface.ACCOUNT_ID})," +\
                     f"FOREIGN KEY({VIPDatabaseInterface.PAYMENT_VIP_PLAN_ID}) REFERENCES {VIPDatabaseInterface.TABLE_VIP_PLANS}({VIPDatabaseInterface.VIP_PLAN_ID}))"
                 # create table account
@@ -195,9 +196,10 @@ class VIPDatabaseInterface:
         '''Delete channel and its planning'''
         self.execute(False, f"DELETE FROM {VIPDatabaseInterface.TABLE_CHANNELS} WHERE {VIPDatabaseInterface.CHANNEL_ID} = ?", channel_id)
 
-    def define_vip_plan(self, title: str, description: str, duration_in_months: int, vip_level: int = 1):
+    def define_vip_plan(self, title: str, description: str, duration_in_months: int, price: float, price_currency: str = "USDT", vip_level: int = 1):
         fields = ', '.join(VIPDatabaseInterface.VIP_PLANS_COLUMNS[1:])
-        self.execute(f"INSERT INTO {VIPDatabaseInterface.TABLE_VIP_PLANS} ({fields}) VALUES (?, ?, ?, ?)", description, title, duration_in_months, vip_level)
+        self.execute(f"INSERT INTO {VIPDatabaseInterface.TABLE_VIP_PLANS} ({fields}) VALUES (?, ?, ?, ?, ?, ?)", \
+            description, title, duration_in_months, vip_level, price, price_currency)
 
     def get_vip_plan(self, vip_plan_id: int):
         vplans = self.execute(True, f"SELECT * FROM {VIPDatabaseInterface.TABLE_VIP_PLANS} WHERE {VIPDatabaseInterface.VIP_PLAN_ID}=? LIMIT 1", vip_plan_id)
