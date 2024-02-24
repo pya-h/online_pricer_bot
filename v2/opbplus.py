@@ -1,15 +1,18 @@
-from flask import Flask, request, jsonify
+from flask import request, jsonify
 import logging
-import requests
 from payagraph.bot import *
 from payagraph.containers import *
 from payagraph.keyboards import *
-from botplus import *
+from plus.botplus import *
 
 from decouple import config
-from payment.nowpayments import NowpaymentsGateway
-from payment.order import Order
-from db.models_plus import UserStates, Channel, Payment
+from plus.gateway.order import Order
+from plus.gateway.nowpayments import NowpaymentsGateway
+
+from plus.models.account import AccountPlus, UserStates
+from plus.models.channel import Channel
+from plus.models.payment import Payment
+
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
@@ -263,7 +266,7 @@ def check_account_is_plus_member(bot: TelegramBotPlus, update: dict) -> bool:
     chat_id = TelegramMessage.GetChatId(update)
     user = AccountPlus.Get(chat_id)
     
-    if not user.has_plus_privileges():
+    if not user.is_member_plus():
         order = Order(buyer=user, months_counts=2)  # change this
         gateway = NowpaymentsGateway(buyer_chat_id=chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
         response = TelegramMessage.Text(chat_id, text=gateway.get_payment_link())

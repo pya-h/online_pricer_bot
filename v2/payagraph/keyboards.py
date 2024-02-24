@@ -1,6 +1,6 @@
 import json
 from math import ceil
-from payagraph.raw_materials import CanBeKeyboardItemInterface
+from payagraph.raw import CanBeKeyboardItemInterface
 
 
 class Keyboard:

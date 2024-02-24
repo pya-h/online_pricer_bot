@@ -1,4 +1,4 @@
-from db.models_plus import AccountPlus
+from plus.models.account import AccountPlus
 import json
 from enum import Enum
 from tools.mathematix import force_cast

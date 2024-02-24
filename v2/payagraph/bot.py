@@ -1,7 +1,6 @@
-from db.models_plus import AccountPlus
 import requests
 from tools.manuwriter import log
-from db.models_plus import UserStates
+from plus.models.account import UserStates, AccountPlus
 from typing import Callable, Dict, Union
 from tools.mathematix import minutes_to_timestamp
 from payagraph.containers import *
@@ -11,6 +10,7 @@ from tools.planner import Planner
 from tools.exceptions import *
 from flask import Flask, request, jsonify
 from payagraph.job import ParallelJob
+from payagraph.keyboards import InlineKeyboard
 
 
 class TelegramBotCore:

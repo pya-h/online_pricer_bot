@@ -1,7 +1,7 @@
 from tools import manuwriter, mathematix
 from api.crypto import CoinGecko, CoinMarketCap
 from api.currency import SourceArena
-from db.models_plus import AccountPlus, Channel
+from plus.models.models_plus import AccountPlus, Channel
 
 
 class PostManager:

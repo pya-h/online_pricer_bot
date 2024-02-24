@@ -1,7 +1,7 @@
 from decouple import config
 from db.interface import *
 from datetime import datetime, date
-from apscheduler.schedulers.background import BackgroundScheduler
+# from apscheduler.schedulers.background import BackgroundScheduler
 from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from enum import Enum
 
