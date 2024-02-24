@@ -27,6 +27,13 @@ class NotPlusException(Exception):
         super().__init__(self.message)
 
 
+class NoSuchPlusPlanException(Exception):
+
+    def __init__(self, plan_id: int) -> None:
+        self.message = f"PlusPlan with id={plan_id} does not exist!"
+        super().__init__(self.message)
+
+
 class InvalidKeyboardException(Exception):
     def __init__(self, message: str) -> None:
         self.message = message

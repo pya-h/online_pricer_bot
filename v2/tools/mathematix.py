@@ -2,6 +2,7 @@ from datetime import datetime
 import pytz
 from persiantools import digits
 from dateutil.relativedelta import relativedelta
+from time import time
 
 
 timezone = pytz.timezone('Asia/Tehran')
@@ -194,7 +195,13 @@ def minutes_to_timestamp(minutes: int) -> str:
         # else:
     return timestamp
 
+def now_in_minute() -> int:
+    return time() // 60
 
+def from_now_time_diff(t):
+    '''time passed from time:t in minutes'''
+    return (tz_today() - t).total_seconds() // 60
+    
 if __name__ == "__main__":
     d = datetime.today()
     j = gregorian_to_jalali(d.year, d.month, d.day)

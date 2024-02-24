@@ -3,6 +3,7 @@ from tools import manuwriter
 from tools.mathematix import after_n_months, tz_today
 from time import time
 from datetime import datetime
+from tools.exceptions import NoSuchPlusPlanException
 
 
 class DatabasePlusInterface:
@@ -18,8 +19,9 @@ class DatabasePlusInterface:
         ("id", "name", "title", "owner_id", "interval", "last_post_time")
 
     TABLE_PAYMENTS = "payments"
-    PAYMENT_COLUMNS = (PAYMENT_ID, PAYMENT_CHATID, PAYMENT_ORDER_ID, PAYMENT_STATUS, PAYMENT_AMOUNT, PAYMENT_CURRENCY, PAYMENT_PAID_AMOUNT, PAYMENT_PAID_CURRENCY, PAYMENT_PLUS_PLAN_ID, PAYMENT_NETWORK, PAYMENT_MODIFIED_ON) =\
-        ("order_id", "chat_id", "id", "status", "amount", "currency", "paid_amount", "paid_CURRENCY", "plus_plan_id", "network", "modified")
+    PAYMENT_COLUMNS = (PAYMENT_ID, PAYMENT_CHATID, PAYMENT_ORDER_ID, PAYMENT_STATUS, PAYMENT_AMOUNT, PAYMENT_CURRENCY,\
+        PAYMENT_PAID_AMOUNT, PAYMENT_PAID_CURRENCY, PAYMENT_PLUS_PLAN_ID, PAYMENT_CREATED_ON, PAYMENT_MODIFIED_AT) =\
+        ("order_id", "chat_id", "id", "status", "amount", "currency", "paid_amount", "paid_currency", "plus_plan_id", "created", "modified")
         
     TABLE_PLUS_PLANS = "plus_plans"
     PLUS_PLANS_COLUMNS = (PLUS_PLAN_ID, PLUS_PLAN_DESCRIPTION, PLUS_PLAN_TITLE, PLUS_PLAN_DURATION, PLUS_PLAN_LEVEL, PLUS_PLAN_PRICE, PLUS_PLAN_PRICE_CURRENCY) =\
@@ -75,8 +77,8 @@ class DatabasePlusInterface:
                     f"{DatabasePlusInterface.PAYMENT_ORDER_ID} INTEGER NOT_NULL, {DatabasePlusInterface.PAYMENT_CHATID} INTEGER NOT_NULL, " +\
                     f"{DatabasePlusInterface.PAYMENT_AMOUNT} REAL NOT_NULL, {DatabasePlusInterface.PAYMENT_CURRENCY} TEXT NOT_NULL, " +\
                     f"{DatabasePlusInterface.PAYMENT_PAID_AMOUNT} REAL, {DatabasePlusInterface.PAYMENT_PAID_CURRENCY} TEXT, " +\
-                    f"{DatabasePlusInterface.PAYMENT_STATUS} TEXT NOT NULL, {DatabasePlusInterface.PAYMENT_NETWORK} TEXT," +\
-                    f"{DatabasePlusInterface.PAYMENT_PLUS_PLAN_ID} INTEGER NOT NULL, {DatabasePlusInterface.PAYMENT_MODIFIED_ON} DATE" +\
+                    f"{DatabasePlusInterface.PAYMENT_STATUS} TEXT NOT NULL, {DatabasePlusInterface.PAYMENT_CREATED_ON} TEXT, {DatabasePlusInterface.PAYMENT_MODIFIED_AT} TEXT," +\
+                    f"{DatabasePlusInterface.PAYMENT_PLUS_PLAN_ID} INTEGER NOT NULL, " +\
                     f"FOREIGN KEY({DatabasePlusInterface.PAYMENT_CHATID}) REFERENCES {DatabasePlusInterface.TABLE_ACCOUNTS}({DatabasePlusInterface.ACCOUNT_ID})," +\
                     f"FOREIGN KEY({DatabasePlusInterface.PAYMENT_PLUS_PLAN_ID}) REFERENCES {DatabasePlusInterface.TABLE_PLUS_PLANS}({DatabasePlusInterface.PLUS_PLAN_ID}))"
                 # create table account
@@ -205,28 +207,45 @@ class DatabasePlusInterface:
         vplans = self.execute(True, f"SELECT * FROM {DatabasePlusInterface.TABLE_PLUS_PLANS} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=? LIMIT 1", plus_plan_id)
         return vplans[0] if vplans else None
     
+    def update_plus_plan(self, plus_plan):
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {DatabasePlusInterface.PLUS_PLANS_COLUMNS} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=? LIMIT 1", (plus_plan.id, ))
+        if cursor.fetchone(): # if account with his chat id has been saved before in the database
+            columns_to_set = ', '.join([f'{field}=?' for field in DatabasePlusInterface.PLUS_PLANS_COLUMNS[1:]])
+            
+            cursor.execute(f'UPDATE {DatabasePlusInterface.PLUS_PLANS_COLUMNS} SET {columns_to_set} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=?', \
+                (plus_plan.description, plus_plan.title, plus_plan.duration_in_months, plus_plan.plus_level, plus_plan.price, plus_plan.price_currency))
+        else:
+            raise NoSuchPlusPlanException(plus_plan.id)
+        connection.commit()
+        cursor.close()
+        connection.close()
+        
     def update_payment(self, payment):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
         cursor.execute(f"SELECT * FROM {DatabasePlusInterface.TABLE_PAYMENTS} WHERE {DatabasePlusInterface.PAYMENT_ORDER_ID}=? LIMIT 1", (payment.order_id, ))
-        now = tz_today()
+
         if cursor.fetchone(): # if account with his chat id has been saved before in the database
             columns = ', '.join(f"{field}=?" for field in DatabasePlusInterface.PAYMENT_COLUMNS[2:])
             cursor.execute(f'UPDATE {DatabasePlusInterface.TABLE_PAYMENTS} SET {columns} WHERE {DatabasePlusInterface.PAYMENT_ORDER_ID}=?', \
-                (payment.id, payment.status, payment.amount, payment.currency, payment.paid_amount, payment.paid_currency, payment.payer_chat_id, payment.plus_plan.id, \
-                    payment.network, now.strftime(DatabasePlusInterface.DATE_FORMAT + " %H:%M"), payment.order_id))
+                (payment.id, payment.status, payment.amount, payment.currency, payment.paid_amount, payment.paid_currency, payment.plus_plan.id, \
+                    payment.created_at, payment.modified_at, payment.order_id))
             manuwriter.log(f"Payment with order_id of {payment.order_id}, and payment id of {payment.id} status changed to {payment.status}", category_name='payments')
         else:
             columns = ', '.join(DatabasePlusInterface.PAYMENT_COLUMNS)
             cursor.execute(f"INSERT INTO {DatabasePlusInterface.TABLE_PAYMENTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", \
-                (payment.order_id, payment.payer_chat_id, payment.id, payment.status, payment.amount, payment.currency, payment.paid_amount, payment.paid_currency, payment.plus_plan.id, payment.network, now.strftime(DatabasePlusInterface.DATE_FORMAT + " %H:%M")))
+                (payment.order_id, payment.payer_chat_id, payment.id, payment.status, payment.amount, payment.currency.upper(), \
+                payment.paid_amount, payment.paid_currency.upper(), payment.plus_plan.id, payment.created_at, payment.modified_at))
             manuwriter.log(f"New payment with the id of {payment.id} and order_id of {payment.order_id}, and status of {payment.status} added for user with chatid =: {payment.payer_chat_id}", category_name='payments')
         connection.commit()
         cursor.close()
         connection.close()
     
     def get_payment(self, order_id):
-        return self.execute(True, f"SELECT * from {DatabasePlusInterface.TABLE_PAYMENTS} WHERE {DatabasePlusInterface.PAYMENT_ORDER_ID}=? ", order_id)
+        columns = ', '.join(DatabasePlusInterface.PAYMENT_COLUMNS)
+        return self.execute(True, f"SELECT {columns} from {DatabasePlusInterface.TABLE_PAYMENTS} WHERE {DatabasePlusInterface.PAYMENT_ORDER_ID}=? ", order_id)
             
     def __init__(self, name="plus_data.db"):
         self._name = name

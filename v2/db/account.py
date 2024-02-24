@@ -2,7 +2,7 @@ from decouple import config
 from db.interface import *
 from datetime import datetime, date
 from apscheduler.schedulers.background import BackgroundScheduler
-from tools.mathematix import tz_today
+from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from enum import Enum
 
 
@@ -21,7 +21,8 @@ class Account:
     MaxSelectionInDesiredOnes = 20
     _database = None
     Scheduler = None
-    GarbageCollectionInterval = 60
+    GarbageCollectionInterval = 30
+    PreviousGarbageCollectionTime: int = now_in_minute() # in minutes
     Instances = {}  # active accounts will cache into this; so there's no need to access database everytime
     # causing a slight enhancement on performance
     @staticmethod
@@ -30,20 +31,33 @@ class Account:
             Account._database = DatabaseInterface.Get()
         return Account._database
 
+    def no_interaction_duration(self):
+        return from_now_time_diff(self.last_interaction)
+
     @staticmethod
     def GarbageCollect():
-        now = tz_today()
+        now = now_in_minute()
+        if now - Account.PreviousGarbageCollectionTime <= Account.GarbageCollectionInterval:
+            return
+
         garbage = []
+        Account.PreviousGarbageCollectionTime = now
         for chat_id in Account.Instances:
-            if (now - Account.Instances[chat_id].last_interaction).total_seconds() / 60 >= Account.GarbageCollectionInterval / 2:
+            if Account.Instances[chat_id].no_interaction_duration() >= Account.GarbageCollectionInterval / 2:
                 garbage.append(chat_id)
         # because changing dict size in a loop on itself causes error,
         # we first collect redundant chat_id s and then delete them from the memory
+        cleaned_counts = len(garbage)
         for g in garbage:
             del Account.Instances[g]
 
+        manuwriter.log(f"Cleaned {cleaned_counts} accounts from my simple cache store.", category_name="account_gc")
+
     @staticmethod
     def Get(chat_id):
+        Account.GarbageCollect()
+        
+        
         if chat_id in Account.Instances:
             Account.Instances[chat_id].last_interaction = tz_today()
             return Account.Instances[chat_id]
@@ -66,6 +80,10 @@ class Account:
     def __del__(self):
         self.save()
 
+    def arrange_instances(self):
+        Account.GarbageCollect()
+        Account.Instances[self.order_id] = self
+    
     def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa') -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
@@ -75,15 +93,18 @@ class Account:
         self.state: UserStates = None
         self.state_data: any = None
         self.language: str = language
+        # Better Way Garbage Collection
+        self.arrange_instances()
 
-        Account.Instances[chat_id] = self  # this is for optimizing bot performance
-        # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
+        # Garbage collection using schedular
+        # Account.Instances[chat_id] = self  # this is for optimizing bot performance
+        # # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
 
-        if not Account.Scheduler:
-            # start garbage collector to optimize memory use
-            Account.Scheduler = BackgroundScheduler()
-            Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=Account.GarbageCollectionInterval*60)
-            Account.Scheduler.start()
+        # if not Account.Scheduler:
+        #     # start garbage collector to optimize memory use
+        #     Account.Scheduler = BackgroundScheduler()
+        #     Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=Account.GarbageCollectionInterval*60)
+        #     Account.Scheduler.start()
 
     def change_state(self, state: UserStates = UserStates.NONE, data: any = None):
         self.state = state
