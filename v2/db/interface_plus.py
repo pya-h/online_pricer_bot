@@ -141,11 +141,11 @@ class DatabasePlusInterface:
         cursor.close()
         connection.close()
 
-    def upgrade_account(self, account, months_count: int, plus_plan_id: int = 0):  # use plus mode
-        account.plus_end_date = after_n_months(months_count)
+    def upgrade_account(self, account, plus_plan):  # use plus mode
+        account.plus_end_date = after_n_months(plus_plan.duration_in_months)
         str_plus_end_date = account.plus_end_date.strftime(DatabasePlusInterface.DATE_FORMAT)
-        self.execute(False, f'UPDATE {DatabasePlusInterface.TABLE_ACCOUNTS} SET {DatabasePlusInterface.ACCOUNT_PLUS_END_DATE}=?, {DatabasePlusInterface.ACCOUNT_PLUS_END_DATE}=? WHERE {DatabasePlusInterface.ACCOUNT_ID}=?', \
-            str_plus_end_date, plus_plan_id, account.chat_id)
+        self.execute(False, f'UPDATE {DatabasePlusInterface.TABLE_ACCOUNTS} SET {DatabasePlusInterface.ACCOUNT_PLUS_END_DATE}=?, {DatabasePlusInterface.ACCOUNT_PLUS_PLAN_ID}=? WHERE {DatabasePlusInterface.ACCOUNT_ID}=?', \
+            str_plus_end_date, plus_plan.id, account.chat_id)
         manuwriter.log(f"Account with chat_id={account.chat_id} has extended its plus previllages until {str_plus_end_date}")
 
     def plan_channel(self, owner_chat_id: int, channel_id: int, channel_name: str, interval: int, channel_title: str):

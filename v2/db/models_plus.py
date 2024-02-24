@@ -26,6 +26,46 @@ class PlanInterval(CanBeKeyboardItemInterface):
         return json.dumps({"d": self.days, "h": self.hours, "m": self.mins})
 
 
+
+class PlusPlan:
+    
+    def __init__(self, title: str, description: str, duration_in_months: int, plus_level: int, price: float, price_currency: str, id: int=None) -> None:
+        self.id: int = id
+        self.title: str = title
+        self.description: str = description
+        self.duration_in_months: int = duration_in_months
+        self.plus_level: int = plus_level
+        self.price: float = price
+        self.price_currency: str = price_currency
+        
+    @staticmethod
+    def Get(id: int):
+        row = DatabasePlusInterface.Get().get_plus_plan(id)
+        return PlusPlan.ExtractRow(row)
+    
+    @staticmethod
+    def ExtractRow(row: list):
+        return PlusPlan(id=row[0], title=row[1], description=row[2], duration_in_months=row[3], plus_level=row[4], price=row[5], price_currency=row[6])
+
+    @staticmethod
+    def PlusPlansList():
+        plans: list[PlusPlan] = DatabasePlusInterface.Get().get_plus_plan()
+        return list(map(PlusPlan.ExtractRow, plans))
+       
+    @staticmethod
+    def Define(title: str, description: str, duration_in_months: int, price: float, price_currency: str = "USDT", plus_level: int = 1) -> bool:
+        try:
+            DatabasePlusInterface().Get().define_plus_plan(title, description, duration_in_months, price, price_currency, plus_level) 
+        except:
+            return False
+        
+        return True
+
+    def save(self):
+        DatabasePlusInterface.Get().update_plus_plan(self)
+        return self
+    
+        
 class Channel:
 
     Instances = {}
@@ -140,8 +180,7 @@ class AccountPlus(Account):
 
     def has_plus_privileges(self) -> bool:
         '''Check if the account has still plus subscription.'''
-        return True   # TODO: DELETE THIS *****
-        return self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date()
+        return self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date() and self.plus_plan_id
 
     def plan_new_channel(self, channel_id: int, interval: int, channel_name: str, channel_title: str = None) -> Channel:
         if not self.has_plus_privileges():
@@ -172,44 +211,9 @@ class AccountPlus(Account):
         for g in garbage:
             del AccountPlus.Instances[g]
 
-
-class PlusPlan:
-    
-    def __init__(self, title: str, description: str, duration_in_months: int, plus_level: int, price: float, price_currency: str, id: int=None) -> None:
-        self.id: int = id
-        self.title: str = title
-        self.description: str = description
-        self.duration_in_months: int = duration_in_months
-        self.plus_level: int = plus_level
-        self.price: float = price
-        self.price_currency: str = price_currency
-        
-    @staticmethod
-    def Get(id: int):
-        row = DatabasePlusInterface.Get().get_plus_plan(id)
-        return PlusPlan.ExtractRow(row)
-    
-    @staticmethod
-    def ExtractRow(row: list):
-        return PlusPlan(id=row[0], title=row[1], description=row[2], duration_in_months=row[3], plus_level=row[4], price=row[5], price_currency=row[6])
-
-    @staticmethod
-    def PlusPlansList():
-        plans: list[PlusPlan] = DatabasePlusInterface.Get().get_plus_plan()
-        return list(map(PlusPlan.ExtractRow, plans))
-       
-    @staticmethod
-    def Define(title: str, description: str, duration_in_months: int, price: float, price_currency: str = "USDT", plus_level: int = 1) -> bool:
-        try:
-            DatabasePlusInterface().Get().define_plus_plan(title, description, duration_in_months, price, price_currency, plus_level) 
-        except:
-            return False
-        
-        return True
-
-    def save(self):
-        DatabasePlusInterface.Get().update_plus_plan(self)
-        
+    def updgrade(self, plus_plan_id):
+        plus_plan = PlusPlan.Get(plus_plan_id)
+        AccountPlus.Database().upgrade_account(self, plus_plan=plus_plan)
         
 class Payment:
     OngoingPayments = {}
@@ -301,3 +305,4 @@ class Payment:
     
     def save(self):
         DatabasePlusInterface.Get().update_payment(self)
+        return self

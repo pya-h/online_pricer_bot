@@ -9,7 +9,7 @@ from botplus import *
 from decouple import config
 from payment.nowpayments import NowpaymentsGateway
 from payment.order import Order
-from db.models_plus import UserStates, Channel
+from db.models_plus import UserStates, Channel, Payment
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
@@ -324,42 +324,21 @@ bot.config_webhook()
 @bot.app.route('/verify', methods=['POST'])
 def verify_payment():
     print(request.json)
-# @app.route('/payment-notification', methods=['POST'])
-# def handle_payment_notification():
-#     data = request.json
 
-#     # Extract necessary information from the payment notification
-#     order_id = data.get('order_id')
-#     amount_paid = data.get('amount')
-#     currency = data.get('currency')
-#     payment_status = data.get('status')
+@bot.app.route('/payment-notification', methods=['POST'])
+def handle_payment_notification(bot: TelegramBotPlus):
+    # Extract necessary information from the payment notification
+    payment = Payment(request.json).save()
+    # Check if the payment was successful
+    if payment.status == 'finished':
+        # Assume you have a mechanism to map order_id to user_id
+        account = AccountPlus.Get(payment.payer_chat_id)
+        account.updgrade(payment.plus_plan.id)
 
-#     # Check if the payment was successful
-#     if payment_status == 'completed':
-#         # Assume you have a mechanism to map order_id to user_id
-#         user_id = get_user_id_from_order_id(order_id)
+        # Notify the user via Telegram bot about the status update
+        bot.send(TelegramMessage(payment.payer_chat_id, f"Your payment of {payment.paid_amount} {payment.currency} was successful. You are now a VIP!"))
 
-#         # Update the user's VIP status to True in your database
-#         update_user_plus_status(user_id)
-
-#         # Notify the user via Telegram bot about the status update
-#         send_telegram_notification(user_id, f"Your payment of {amount_paid} {currency} was successful. You are now a VIP!")
-
-#     return jsonify({'status': 'success'}), 200
-
-
-### Function ###
-# Function to send a notification to the user via Telegram bot
-def send_telegram_notification(user_id, message):
-    telegram_api_url = f'https://api.telegram.org/bot{VIP_BOT_TOKEN}/sendMessage'
-    payload = {
-        'chat_id': user_id,
-        'text': message
-    }
-    response = requests.post(telegram_api_url, json=payload)
-    if response.status_code != 200:
-        print("Failed to send Telegram notification")
-
+    return jsonify({'status': 'success'}), 200
 
 
 if __name__ == '__main__':
