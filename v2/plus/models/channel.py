@@ -32,6 +32,8 @@ class Channel:
         self.interval = interval
         self.last_post_time = last_post_time  # dont forget database has this
 
+    # TODO: Write garbage collector for this class too
+    
     def plan(self) -> bool:
         if self.interval <= 0:
             if self.id in Channel.Instances:

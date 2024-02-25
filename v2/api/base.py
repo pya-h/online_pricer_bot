@@ -6,11 +6,11 @@ from tools.exceptions import CacheFailureException
 CACHE_FOLDER_PATH = 'api.cache'
 CACHE_ARCHIVE_FOLDER_PATH = 'archives'
 
-class BaseAPIManager:
+class BaseAPIService:
     TETHER_SYMBOL = 'USDT'
     DOLLAR_SYMBOL = 'USD'
 
-    '''The very Base class for all api managers'''
+    '''The very Base class for all api services'''
     def __init__(self, url: str, source: str, timeout: int=10, params: dict=None, cache_file_name: str = None) -> None:
         self.URL: str = url
         self.Source: str = source
@@ -65,22 +65,22 @@ class BaseAPIManager:
         return self.latest_data
 
 
-class APIManager(BaseAPIManager):
+class APIService(BaseAPIService):
     UsdInTomans = 52000  # not important, it is just a default value that will be updated at first api get from
     TetherInTomans = 52000
     # sourcearena.ir
 
     def __init__(self, url: str, source: str, max_desired_selection: int=5, params=None, cache_file_name: str = None) -> None:
-        super(APIManager, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
+        super(APIService, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
         self.MAX_DESIRED_SELECTION = max_desired_selection
 
     @staticmethod
     def set_usd_price(value):
-        APIManager.UsdInTomans = value
+        APIService.UsdInTomans = value
 
     @staticmethod
     def set_tether_tomans(value):
-        APIManager.TetherInTomans = value
+        APIService.TetherInTomans = value
 
     def get_desired_ones(self, desired_ones: list):
         pass

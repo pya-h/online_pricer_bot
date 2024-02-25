@@ -1,4 +1,4 @@
-from api.manager import *
+from api.base import *
 from tools.exceptions import InvalidInputException
 
 def get_persian_currency_names() -> tuple:
@@ -18,7 +18,7 @@ def get_persian_currency_names() -> tuple:
     return json.loads(currency_names_fa), json.loads(gold_names_fa)
 
 
-class AbanTether(BaseAPIManager):
+class AbanTether(BaseAPIService):
     TetherSymbol = 'USDT'
     def __init__(self, token: str) -> None:
         self.token = token
@@ -34,7 +34,7 @@ class AbanTether(BaseAPIManager):
         return None
 
 
-class SourceArena(APIManager):
+class SourceArena(APIService):
     Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
     EntitiesIndollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
     CurrenciesInPersian = None
@@ -64,8 +64,8 @@ class SourceArena(APIManager):
         super(SourceArena, self).__init__(url=f"https://sourcearena.ir/api/?token={self.token}&currency",
                                           source="Sourcearena.ir", cache_file_name='sourcearena.json')
         self.aban_tether_token = 'Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Nzg2NzUiLCJpYXQiOjE2OTc2NDcyNTAsImV4cCI6MTcyOTE4MzI1MH0.QfVVufZo8VEtrkbRGoakINgWfyHLPVEcWWnx26nSZ6M'
-        self.tetherManager = AbanTether(aban_tether_token)
-        self.tether_manager_respond = False
+        self.tether_service = AbanTether(aban_tether_token)
+        self.tether_service_respond = False
 
     def get_desired_ones(self, desired_ones: list) -> list:
         if not desired_ones:
@@ -81,7 +81,7 @@ class SourceArena(APIManager):
             price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesIndollars else float(curr['price'])
             if slug == 'USD':
                 self.set_usd_price(price)
-            elif not self.tether_manager_respond and slug == 'TETHER':
+            elif not self.tether_service_respond and slug == 'TETHER':
                 # if aban tether not responded successful, set the tether price from source arena
                 self.set_tether_tomans(price)
 
@@ -112,12 +112,12 @@ class SourceArena(APIManager):
     # --------- Currency -----------
     def send_request(self):
         # first try to set tether irr price from AbanTether
-        self.tether_manager_respond = False
+        self.tether_service_respond = False
         try:
-            result = self.tetherManager.get()
+            result = self.tether_service.get()
             if result:
                 self.set_tether_tomans(result)
-                self.tether_manager_respond = True
+                self.tether_service_respond = True
         except:
             pass
 

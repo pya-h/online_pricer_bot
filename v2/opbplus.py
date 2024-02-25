@@ -16,7 +16,7 @@ from plus.models.payment import Payment
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
-from api.post import PlusPostManager
+from plus.services.post import PostServicePlus
 
 
 # Set up logging
@@ -33,7 +33,7 @@ HOST_URL = config('HOST_URL')
 BOT_USERNAME = config('VIP_BOT_USERNAME')
 ONLINE_PRICE_DEFAULT_INTERVAL = float(config('MAIN_SCHEDULER_DEFAULT_INTERVAL', 10))
 
-channel_post_manager = PlusPostManager(source_arena_api_key=CURRENCY_SOURCEARENA_TOKEN, coinmarketcap_api_key=COINMARKETCAP_API_KEY, aban_tether_api_key=ABAN_TETHER_TOKEN, bot_username=BOT_USERNAME)
+channel_post_service = PostServicePlus(source_arena_api_key=CURRENCY_SOURCEARENA_TOKEN, coinmarketcap_api_key=COINMARKETCAP_API_KEY, aban_tether_api_key=ABAN_TETHER_TOKEN, bot_username=BOT_USERNAME)
 
 # Read the text resource containing the multilanguage data for the bot texts, messages, commands and etc.
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
@@ -89,7 +89,7 @@ def config_gold_list_handler(bot: TelegramBotPlus, message: TelegramMessage) -> 
     '''Handles the user request selecting desired golds'''
     user = message.by
     caption = bot.text("list_types")["gold"][user.language] + "\n\n" + bot.text("selection_hint", user.language)
-    keyboard = InlineKeyboard.CreateDynamicList("cg-gold", bot.post_manager.currencyManager.GoldsInPersian,
+    keyboard = InlineKeyboard.CreateDynamicList("cg-gold", bot.post_service.currency_service.GoldsInPersian,
                                                                    user.desired_currencies, user.language=='fa')
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=caption), keyboard
 
@@ -97,7 +97,7 @@ def config_currency_list_handler(bot: TelegramBotPlus, message: TelegramMessage)
     '''Handles the user request selecting desired currencies'''
     user = message.by
     caption = bot.text("list_types")["currency"][user.language] + "\n\n" + bot.text("selection_hint", user.language)
-    keyboard = InlineKeyboard.CreateDynamicList("cg-curr", bot.post_manager.currencyManager.CurrenciesInPersian,
+    keyboard = InlineKeyboard.CreateDynamicList("cg-curr", bot.post_service.currency_service.CurrenciesInPersian,
                                                                          user.desired_currencies, user.language=='fa')
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=caption), keyboard
 
@@ -106,7 +106,7 @@ def config_crypto_list_handler(bot: TelegramBotPlus, message: TelegramMessage) -
     '''Handles the user request selecting desired cryptocurrencies'''
     user = message.by
     caption = bot.text("list_types")["crypto"][user.language] + "\n\n" + bot.text("selection_hint", user.language)
-    keyboard = InlineKeyboard.CreateDynamicList("cg-cryp", bot.post_manager.cryptoManager.CoinsInPersian,
+    keyboard = InlineKeyboard.CreateDynamicList("cg-cryp", bot.post_service.crypto_service.CoinsInPersian,
                                                                          user.desired_coins)
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=caption), keyboard
 
@@ -145,6 +145,11 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
     channel_data: ForwardOrigin = user.state_data
     # callback_query.text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes"
     try:
+        # TODO: Check if account has a plus plan or not, if not send him payment link, ow.w rum the code below
+        # TODO: TO do that, wrap this piece into a function, then if user is member plus then call the function here
+        # TODO: if not, save the values into user.state_data value; sent the payment link, and call so called function there if the payment is finished success fully.
+        # TODO: *IMPORTANT*: When the second conditiom occures, AccountPlus.GarbageCollect must ignore that user even he/she hasnt have interaction
+        # After 24h the payment link expires, if the user hasnt pay, then remove.
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username, channel_title=channel_data.title, interval=callback_query.value)
         callback_query.text = bot.text('channel_planned_succesfully', user.language) % (channel.title, channel.interval, )
         bot.send(TelegramMessage.Text(user.chat_id, bot.text("add_bot_to_channel_as_admin", user.language)))
@@ -169,7 +174,7 @@ def update_desired_crypto_list(bot: TelegramBotPlus, callback_query: TelegramCal
         user.desired_coins.append(coin_symbol)
     callback_query.replace_on_previous = True
     user.save()
-    return callback_query, InlineKeyboard.CreateDynamicList("cg-cryp", bot.post_manager.cryptoManager.CoinsInPersian, user.desired_coins)
+    return callback_query, InlineKeyboard.CreateDynamicList("cg-cryp", bot.post_service.crypto_service.CoinsInPersian, user.desired_coins)
 
 def update_desired_currency_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Add/Remove a currency item into user's desired list. So that the user see this item's price on next posts'''
@@ -181,7 +186,7 @@ def update_desired_currency_list(bot: TelegramBotPlus, callback_query: TelegramC
         user.desired_currencies.append(currency_symbol)
     callback_query.replace_on_previous = True
     user.save()
-    return callback_query, InlineKeyboard.CreateDynamicList("cg-curr", bot.post_manager.currencyManager.CurrenciesInPersian, user.desired_currencies, user.language=='fa')
+    return callback_query, InlineKeyboard.CreateDynamicList("cg-curr", bot.post_service.currency_service.CurrenciesInPersian, user.desired_currencies, user.language=='fa')
 
 def update_desired_gold_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Add/Remove a gold item into user's desired list. So that the user see this item's price on next posts'''
@@ -193,7 +198,7 @@ def update_desired_gold_list(bot: TelegramBotPlus, callback_query: TelegramCallb
         user.desired_currencies.append(gold_symbol)
     callback_query.replace_on_previous = True
     user.save()
-    return callback_query, InlineKeyboard.CreateDynamicList("cg-gold", bot.post_manager.currencyManager.GoldsInPersian, user.desired_currencies, user.language=='fa')
+    return callback_query, InlineKeyboard.CreateDynamicList("cg-gold", bot.post_service.currency_service.GoldsInPersian, user.desired_currencies, user.language=='fa')
 
 
 def stop_channel_plan_handler(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
@@ -281,7 +286,7 @@ main_keyboard = {
     'fa': Keyboard([text_resources["keywords"]["planning_section"]["fa"], text_resources["keywords"]["config_selections"]["fa"]])
 }
 
-bot = TelegramBotPlus(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, _main_keyboard=main_keyboard, post_manager=channel_post_manager)
+bot = TelegramBotPlus(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, _main_keyboard=main_keyboard, post_service=channel_post_service)
 
 bot.add_cancel_key(bot.keyword('main_menu'))
 bot.add_cancel_key(bot.cmd('cancel'))
@@ -314,7 +319,7 @@ bot.add_command_handler(command=bot.cmd('lang_en'), handler=chnage_language_hand
 bot.add_command_handler(command=bot.cmd('lang_fa'), handler=chnage_language_handler)
 bot.add_command_handler(command=bot.cmd('start'), handler=start_handler)
 
-bot.prepare_new_parallel_job(ONLINE_PRICE_DEFAULT_INTERVAL / 2, channel_post_manager.update_latest_data)  # This will reload cached data for currency/crypto manager
+bot.prepare_new_parallel_job(ONLINE_PRICE_DEFAULT_INTERVAL / 2, channel_post_service.update_latest_data)  # This will reload cached data for currency/crypto service
 # Reading cache files everytime by everychannel is a performance risk, and also may fail (Assume two channels try reading cache in the same time.)
 # So I designed a Job that will read cache file one time on a specific interval and other channels use the loaded data from memory
 # Since the online_pricer_bot itself updates on 10(or whatever) minutes interval, cache files are updated on that interval too, and re-reading the same cache everytime is really a DUMB move,

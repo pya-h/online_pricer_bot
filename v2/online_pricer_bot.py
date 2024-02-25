@@ -1,10 +1,10 @@
 from telegram.ext import *
 from telegram import *
-from api.currency import SourceArena
-from db.account import UserStates, Account
-from api.crypto import CoinMarketCap, CoinGecko
+from api.currency_service import SourceArena
+from models.account import UserStates, Account
+from api.crypto_service import CoinMarketCap, CoinGecko
 from decouple import config
-from db.account import Account
+from models.account import Account
 import json
 from tools import manuwriter, mathematix
 
@@ -89,8 +89,8 @@ def new_inline_keyboard(name, all_choices: dict, selected_ones: list=None, show_
 
 
 # global variables
-cryptoManager = CoinMarketCap(CMC_API_KEY)  # api manager object: instance of CoinGecko or CoinMarketCap
-currencyManager = SourceArena(CURRENCY_TOKEN, ABAN_TETHER_TOKEN)
+crypto_service = CoinMarketCap(CMC_API_KEY)  # api service object: instance of CoinGecko or CoinMarketCap
+currency_service = SourceArena(CURRENCY_TOKEN, ABAN_TETHER_TOKEN)
 is_channel_updates_started = False
 
 
@@ -108,29 +108,29 @@ def construct_new_post(desired_coins=None, desired_currencies=None, exactly_righ
     try:
         if desired_currencies or (not desired_coins and not desired_currencies):
             # this condition is for preventing default values, when user has selected just cryptos
-            currencies = currencyManager.get(desired_currencies, short_text=short_text) if exactly_right_now else \
-                currencyManager.get_latest(desired_currencies)
+            currencies = currency_service.get(desired_currencies, short_text=short_text) if exactly_right_now else \
+                currency_service.get_latest(desired_currencies)
     except Exception as ex:
-        manuwriter.log("Cannot obtain Currencies! ", ex, currencyManager.Source)
-        currencies = currencyManager.get_latest(desired_currencies, short_text=short_text)
+        manuwriter.log("Cannot obtain Currencies! ", ex, currency_service.Source)
+        currencies = currency_service.get_latest(desired_currencies, short_text=short_text)
     try:
         if desired_coins or (not desired_coins and not desired_currencies):
             # this condition is for preventing default values, when user has selected just currencies
-            cryptos = cryptoManager.get(desired_coins, short_text=short_text) if exactly_right_now else \
-                cryptoManager.get_latest(desired_coins, short_text)
+            cryptos = crypto_service.get(desired_coins, short_text=short_text) if exactly_right_now else \
+                crypto_service.get_latest(desired_coins, short_text)
     except Exception as ex:
-        manuwriter.log("Cannot obtain Cryptos! ", ex, cryptoManager.Source)
-        cryptos = cryptoManager.get_latest(desired_coins, short_text=short_text)
+        manuwriter.log("Cannot obtain Cryptos! ", ex, crypto_service.Source)
+        cryptos = crypto_service.get_latest(desired_coins, short_text=short_text)
     return sign_post(currencies + cryptos, for_channel=for_channel)
 
 
 async def notify_changes(context: CallbackContext):
-    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {cryptoManager.Source} تغییر یافت.")
+    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {crypto_service.Source} تغییر یافت.")
 
 
 async def announce_prices(context: CallbackContext):
-    global cryptoManager
-    global currencyManager
+    global crypto_service
+    global currency_service
     res = construct_new_post()
     await context.bot.send_message(chat_id=CHANNEL_ID, text=res)
 
@@ -151,8 +151,8 @@ async def cmd_welcome(update: Update, context: CallbackContext):
 async def cmd_get_prices(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if await is_a_member(account, context):
-        is_latest_data_valid = currencyManager and currencyManager.latest_data and cryptoManager \
-                               and cryptoManager.latest_data and is_channel_updates_started
+        is_latest_data_valid = currency_service and currency_service.latest_data and crypto_service \
+                               and crypto_service.latest_data and is_channel_updates_started
         message = construct_new_post(desired_coins=account.desired_coins,
                                         desired_currencies=account.desired_currencies, for_channel=False,
                                         exactly_right_now=not is_latest_data_valid)
@@ -170,7 +170,7 @@ async def cmd_select_coins(update: Update, context: CallbackContext):
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian,
+                                        reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian,
                                                                          account.desired_coins))
     else:
         await ask2join(update)
@@ -184,7 +184,7 @@ async def cmd_select_currencies(update: Update, context: CallbackContext):
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("currencies", currencyManager.NationalCurrenciesInPersian,
+                                        reply_markup=new_inline_keyboard("currencies", currency_service.NationalCurrenciesInPersian,
                                                                          account.desired_currencies, True))
     else:
         await ask2join(update)
@@ -199,7 +199,7 @@ async def cmd_select_golds(update: Update, context: CallbackContext):
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("golds", currencyManager.GoldsInPersian,
+                                        reply_markup=new_inline_keyboard("golds", currency_service.GoldsInPersian,
                                                                          account.desired_currencies, True))
     else:
         await ask2join(update)
@@ -257,7 +257,7 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
         for job in current_jobs:
             job.schedule_removal()
         is_channel_updates_started = False
-        cryptoManager.latest_prices = ''
+        crypto_service.latest_prices = ''
         await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.',
                                         reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
     else:
@@ -266,8 +266,8 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
 
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
     if Account.Get(update.effective_chat.id).authorization(context.args):
-        global cryptoManager
-        cryptoManager = CoinGecko()
+        global crypto_service
+        crypto_service = CoinGecko()
         await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
                                         reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
         await notify_changes(context)
@@ -277,8 +277,8 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
 
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
     if Account.Get(update.effective_chat.id).authorization(context.args):
-        global cryptoManager
-        cryptoManager = CoinMarketCap(CMC_API_KEY)
+        global crypto_service
+        crypto_service = CoinMarketCap(CMC_API_KEY)
         await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
                                         reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
         await notify_changes(context)
@@ -320,10 +320,10 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
         await update.message.reply_text('شما اجازه چنین کاری را ندارید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
 
 async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
-    if isinstance(cryptoManager, CoinMarketCap):
+    if isinstance(crypto_service, CoinMarketCap):
         for amount in amounts:
             for unit in units:
-                response = cryptoManager.equalize(unit, amount, account.desired_coins)
+                response = crypto_service.equalize(unit, amount, account.desired_coins)
                 await func_send_message(response)
     else:
         await func_send_message("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...")
@@ -410,7 +410,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 # start extracting units
                 while index < count_of_params:
                     source_symbol = params[index].upper()
-                    if source_symbol in cryptoManager.CoinsInPersian:
+                    if source_symbol in crypto_service.CoinsInPersian:
                         units.append(source_symbol)
                     else: # invalud units
                         invalid_units.append(source_symbol)
@@ -425,7 +425,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.state = UserStates.INPUT_EQUALIZER_UNIT
                     account.change_state(UserStates.INPUT_EQUALIZER_UNIT, amounts)
                     await update.message.reply_text(f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
-                                                    reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian))
+                                                    reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian))
                 else:
                     await start_equalizing(update.message.reply_text, account, amounts, units)
                     account.change_state()  # reset state
@@ -458,7 +458,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 return
         else:
             account.desired_coins.remove(data['value'])
-        await query.message.edit_reply_markup(reply_markup=new_inline_keyboard("coins", cryptoManager.CoinsInPersian, account.desired_coins))
+        await query.message.edit_reply_markup(reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian, account.desired_coins))
 
     elif data['type'] == "currencies" or data['type'] == "golds":
         if not data['value'] in account.desired_currencies:
@@ -472,7 +472,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
         await query.message.edit_reply_markup(reply_markup=new_inline_keyboard(
                 data['type'],
-                currencyManager.NationalCurrenciesInPersian if data['type'] == "currencies" else currencyManager.GoldsInPersian,
+                currency_service.NationalCurrenciesInPersian if data['type'] == "currencies" else currency_service.GoldsInPersian,
                 account.desired_currencies, True)
         )
     account.save()

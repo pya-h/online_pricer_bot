@@ -1,11 +1,11 @@
 import coinmarketcapapi as cmc_api
-from api.manager import *
+from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from api.currency import SourceArena
+from api.currency_service import SourceArena
 
 
 # Parent Class
-class CryptoCurrency(APIManager):
+class CryptoCurrency(APIService):
     CoinsInPersian = None
 
     @staticmethod
@@ -91,7 +91,7 @@ class CoinMarketCap(CryptoCurrency):
         self.price_unit = pu
 
     def send_request(self):
-        '''Send request to coinmarketcap to receive the prices. This function differs from other .send_request methods from other BaseAPIManager childs'''
+        '''Send request to coinmarketcap to receive the prices. This function differs from other .send_request methods from other BaseAPIService childs'''
         cmc = cmc_api.CoinMarketCapAPI(self.api_key)
         latest_cap = cmc.cryptocurrency_quotes_latest(symbol=self.symbols_list, convert=self.price_unit)
         self.cache_data(
@@ -112,7 +112,7 @@ class CoinMarketCap(CryptoCurrency):
         res = ''
         for coin in desired_coins:
             price = api_data[coin][0]['quote'][self.price_unit]['price']
-            name = api_data[coin][0]['name'] if coin != BaseAPIManager.TETHER_SYMBOL else 'Tether'
+            name = api_data[coin][0]['name'] if coin != BaseAPIService.TETHER_SYMBOL else 'Tether'
             res += self.crypto_description_row(name, coin, price, short_text=short_text)
 
         if res:
@@ -140,11 +140,11 @@ class CoinMarketCap(CryptoCurrency):
             ("%s %s" % (mathematix.persianify(amount), CryptoCurrency.CoinsInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
-        res += f'🔸 {mathematix.persianify(mathematix.cut_and_separate(absolute_amount))} {SourceArena.GetPersianName(BaseAPIManager.DOLLAR_SYMBOL)}\n'
+        res += f'🔸 {mathematix.persianify(mathematix.cut_and_separate(absolute_amount))} {SourceArena.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
 
         desired_coins = self.get_desired_ones(desired_coins)
-        if BaseAPIManager.TETHER_SYMBOL not in desired_coins:
-            desired_coins.insert(0, BaseAPIManager.TETHER_SYMBOL)
+        if BaseAPIService.TETHER_SYMBOL not in desired_coins:
+            desired_coins.insert(0, BaseAPIService.TETHER_SYMBOL)
         for coin in desired_coins:
             amount_in_this_coin_unit = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
             res += self.equalizer_row(coin, amount_in_this_coin_unit)

@@ -1,6 +1,6 @@
 from payagraph.bot import TelegramBot
 from payagraph.keyboards import Keyboard
-from api.post import PlusPostManager
+from plus.services.post import PostServicePlus
 from typing import Dict
 from payagraph.job import ParallelJob
 from plus.models.account import AccountPlus
@@ -16,24 +16,27 @@ class PostJob(ParallelJob):
         self.account: AccountPlus = AccountPlus.Get(channel.owner_id)
         self.short_text = short_text
 
-    def do(self, bot: TelegramBot, call_time: int):
+    def do(self, bot: TelegramBot, call_time: int) -> bool:
         '''This job's function is obvious(sending post in channel via bot instance)'''
-        post_body = bot.post_manager.create_post(self.account, self.channel, short_text=self.short_text)
+        if not self.account.is_member_plus() or not self.running:
+            return False # False means that postjob is running but it doesnt have run permission because of 
+        post_body = bot.post_service.create_post(self.account, self.channel, short_text=self.short_text)
         message = TelegramMessage.Text(self.channel.id, post_body)
         self.last_run_result = bot.send(message)
         self.last_call_time = call_time
-
+        return True
+    
 
 class TelegramBotPlus(TelegramBot):
     '''Specialized bot for online_pricer_plus bot'''
     def __init__(self, token: str, username: str, host_url: str, text_resources: dict,
-                 _main_keyboard: Dict[str, Keyboard] | Keyboard = None, post_manager=None) -> None:
+                 _main_keyboard: Dict[str, Keyboard] | Keyboard = None, post_service: PostServicePlus=None) -> None:
         super().__init__(token, username, host_url, text_resources, _main_keyboard)
-        self.set_post_managers(post_manager)
+        self.post_service: PostServicePlus = post_service
         self.post_jobs: Dict[int, PostJob] = dict()
 
-    def set_post_managers(self, post_manager: PlusPostManager):
-        self.post_manager = post_manager
+    def set_post_services(self, post_service: PostServicePlus):
+        self.post_service: PostServicePlus = post_service
 
     def prepare_new_post_job(self, channel: Channel, short_text: bool=True):
         post_job = PostJob(channel=channel, short_text=short_text)
@@ -41,11 +44,18 @@ class TelegramBotPlus(TelegramBot):
 
     def ticktock(self):
         now = super().ticktock()
-
+        redundants = []
+        
         for id in self.post_jobs:
             if (self.post_jobs[id].running) and (now - self.post_jobs[id].last_call_time >= self.post_jobs[id].interval):
-                self.post_jobs[id].do(self, now)
-
+                if not self.post_jobs[id].do(self, now): # run the post job, if it wasnt allowed to run (user easnt member plud) 
+                    redundants.append(id)
+        
+        for job_id in redundants:
+            del self.post_jobs[job_id]
+            
+            
+        # if there was any job that its owner plus membership is over then:
     def cancel_postjob(self, channel_id: int):
         self.post_jobs[channel_id].stop()
         del self.post_jobs[channel_id]
