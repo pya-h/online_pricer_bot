@@ -6,6 +6,11 @@ from payagraph.job import ParallelJob
 from plus.models.account import AccountPlus
 from plus.models.channel import Channel
 from payagraph.containers import TelegramMessage
+from plus.gateway.order import Order
+from plus.gateway.nowpayments import NowpaymentsGateway
+from plus.models.plusplan import PlusPlan
+import json
+from payagraph.keyboards import InlineKey, InlineKeyboard
 
 
 class PostJob(ParallelJob):
@@ -70,3 +75,15 @@ class TelegramBotPlus(TelegramBot):
     def keyboard_with_back_key(self, language, *rows) -> Keyboard:
         return Keyboard(*rows, [self.keyword("main_menu", language)])
 
+
+    def prepare_membership_gateway(self, user: AccountPlus, plus_plan_id: int, verification_route: str = 'verify'):
+        order = Order(buyer=user, plus_plan_id=plus_plan_id)  # change this
+        gateway = NowpaymentsGateway(order=order, callback_url=f'{self.host_url}/{verification_route}', on_success_url=self.get_telegram_link())
+        return TelegramMessage.Text(user.chat_id, text=gateway.get_payment_link())
+    
+    def list_all_plans(self):
+        rows = list(map(
+            lambda plan: InlineKey(f"{plan.title} - {plan.price} {plan.price_currency}", callback_data=json.dumps({"a": "buy+plan", "v": plan.id})), PlusPlan.PlusPlansList())
+        )
+        return InlineKeyboard(*rows)
+        

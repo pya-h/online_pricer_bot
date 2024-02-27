@@ -20,8 +20,8 @@
         "en": "Sorry! It seems that your desired channel data has not been received or saved correctly. Please forward another message from the channel to proceed."
     },
     "not_plus": {
-        "fa": "متاسفانه شما در حال حاضر با تعرفه عادی از این کانال استفاده می کنید. برای استفاده از امکانات ابن ربات لطفا از طریق همین ربات یک اشتراک VIP تهیه کنید.",
-        "en": "Unfortunately your using this bot as a normal user. To use this robot you need to upgrade to vip level using this very bot."
+        "fa": "متاسفانه شما در حال حاضر با تعرفه عادی از این کانال استفاده می کنید. برای فعال سازی زمان بندی کانالتان لطفا از لیست زیر یک پلن VIP انتخاب کنید.",
+        "en": "Unfortunately your using this bot as a normal user. To enable your channel scheduling, robot you need to upgrade to vip level. Select your desired plan below:"
     },
     "what_todo": {
         "fa": "خب! چه کاری میتونم برات انجام بدم؟",
@@ -64,8 +64,9 @@
         "fa": "تغییر زبان با مشکل مواجه شد. لطفا لحظاتی دیگر دوباره تلاش کنید و اگر دوباره با این خطا مواجه شدید با پشیبانی تماس حاصل فرمایید تا مشکل شناسایی شود. پیشاپیش از صبوری شما کمال تشکر را داریم.",
         "en": "Can not change the language. Please try again later; And if you encounter with this message again, Please contact the support team to identify the issue. Thank you for your patience."
     },
+
     "channel_planned_succesfully": {
-        "en": "Channel called '%s' planned successfully to post prices every %s minutes, according your desired list set in the 'Set Desired Ones' section.",
+        "en": "Channel called '%s' planned successfully to post prices every %s minutes, according to your desired list set in the 'Set Desired Ones' section.",
         "fa": "کانال با نام '%s' با موفقیت برنامه ریزی شد تا هر %d دقیقه قیمت های ارزها و رمزارزهای انتخاب شده ی شما را پست کند."
     },
     "add_bot_to_channel_as_admin": {

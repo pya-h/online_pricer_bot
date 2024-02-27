@@ -207,6 +207,9 @@ class DatabasePlusInterface:
         vplans = self.execute(True, f"SELECT * FROM {DatabasePlusInterface.TABLE_PLUS_PLANS} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=? LIMIT 1", plus_plan_id)
         return vplans[0] if vplans else None
     
+    def get_all_plus_plans(self):
+        return self.execute(True, f"SELECT * FROM {DatabasePlusInterface.TABLE_PLUS_PLANS}")
+        
     def update_plus_plan(self, plus_plan):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()

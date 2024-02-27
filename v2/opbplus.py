@@ -37,7 +37,7 @@ channel_post_service = PostServicePlus(source_arena_api_key=CURRENCY_SOURCEARENA
 
 # Read the text resource containing the multilanguage data for the bot texts, messages, commands and etc.
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
-text_resources = manuwriter.load_json('plus_texts', 'resources')
+text_resources = manuwriter.load_json('plus_texts', 'plus/resources')
 
 def start_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     # DO smething such as showing tutorial
@@ -75,7 +75,7 @@ def list_channels_for_stop_plan_handler(bot: TelegramBotPlus, message: TelegramM
     user_channels: list[Channel] = list(filter(lambda channel: channel.owner_id == user.chat_id, Channel.Instances.values()))
     keyboard = None
     if user_channels:
-        call_data = lambda value: {"a": "dlpl", "v": value}
+        call_data = lambda value: {"a": "dl-chnpl", "v": value}
         keyboard_rows = [InlineKey(f"{channel.title} - @{channel.name if channel.name else ''}", callback_data=call_data(channel.id)) for channel in user_channels]
         keyboard = InlineKeyboard(*keyboard_rows)
         response = TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("click_channel_to_delete", user.language))
@@ -137,12 +137,17 @@ def chnage_language_handler(bot: TelegramBotPlus, message: TelegramMessage) -> U
         return TelegramMessage.Text(user.chat_id, bot.text('cant_change_language', user.language)), None
     return TelegramMessage.Text(user.chat_id, bot.text("what_todo", user.language)), None
 
+def enable_channel_plan(bot: TelegramBotPlus, user: AccountPlus, channel: Channel):
+    bot.send(TelegramMessage.Text(user.chat_id, bot.text("add_bot_to_channel_as_admin", user.language)))
+    bot.prepare_new_post_job(channel, short_text=True) # creates post job and starts it # Check short_text
+
 def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
     user = callback_query.by
     if not isinstance(user.state_data, ForwardOrigin):
         return TelegramMessage.Text(user.chat_id, bot.text("channel_data_lost", user.language)), None
     channel_data: ForwardOrigin = user.state_data
+    keyboard = None
     # callback_query.text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes"
     try:
         # TODO: Check if account has a plus plan or not, if not send him payment link, ow.w rum the code below
@@ -152,8 +157,12 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
         # After 24h the payment link expires, if the user hasnt pay, then remove.
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username, channel_title=channel_data.title, interval=callback_query.value)
         callback_query.text = bot.text('channel_planned_succesfully', user.language) % (channel.title, channel.interval, )
-        bot.send(TelegramMessage.Text(user.chat_id, bot.text("add_bot_to_channel_as_admin", user.language)))
-        bot.prepare_new_post_job(channel, short_text=True) # creates post job and starts it # Check short_text
+        if user.is_member_plus():
+            enable_channel_plan(bot, user, channel)
+        else:
+            callback_query.text += "\n\n **توجه*: " + bot.text("not_plus", user.language)
+            keyboard = bot.list_all_plans()
+
     except NotPlusException:
         callback_query.text = bot.text("not_plus", user.language)
     except Exception as ex:
@@ -161,8 +170,12 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
     callback_query.replace_on_previous = True
     user.change_state()  # reset user state
 
-    return callback_query, None
+    return callback_query, keyboard
 
+
+def create_payment_link(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+    # use prepare_membership_gateway
+    pass
 
 def update_desired_crypto_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Add/Remove a this coin item into user's desired list. So that the user see this item's price on next posts'''
@@ -201,7 +214,7 @@ def update_desired_gold_list(bot: TelegramBotPlus, callback_query: TelegramCallb
     return callback_query, InlineKeyboard.CreateDynamicList("cg-gold", bot.post_service.currency_service.GoldsInPersian, user.desired_currencies, user.language=='fa')
 
 
-def stop_channel_plan_handler(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
+def delete_channel_plan_handler(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Stop the planning of the selected channel'''
     user = callback_query.by
     channel = None
@@ -310,8 +323,8 @@ bot.add_callback_query_handler(action="int", handler=save_channel_plan)
 bot.add_callback_query_handler(action="cg-cryp", handler=update_desired_crypto_list)
 bot.add_callback_query_handler(action="cg-gold", handler=update_desired_gold_list)
 bot.add_callback_query_handler(action="cg-curr", handler=update_desired_currency_list)
-
-bot.add_callback_query_handler(action="dlpl", handler=stop_channel_plan_handler)
+bot.add_callback_query_handler(action="buy+plan", handler=create_payment_link)
+bot.add_callback_query_handler(action="dl-chnpl", handler=delete_channel_plan_handler)
 
 
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.chat_id, bot.get_uptime()), None))

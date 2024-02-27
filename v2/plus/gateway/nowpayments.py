@@ -1,6 +1,6 @@
 import requests
 from decouple import config
-from payment.order import Order
+from plus.gateway.order import Order
 
 NOWPAYMENTS_API_KEY = config('NOWPAYMENT_API_KEY')
     # Define the base URL for the NowPayments API
@@ -10,13 +10,13 @@ class NowpaymentsGateway:
     # Define the endpoint for creating payment links
     PAYMENT_ENDPOINT = 'invoice'
 
-    def __init__(self, buyer_chat_id: int, order: Order, callback_url: str, on_success_url: str) -> None:
+    def __init__(self, order: Order, callback_url: str, on_success_url: str) -> None:
 
         self.payment_payload: dict = {
             "price_amount": order.cost,
-            "price_currency": order.CostUnit,  # Currency of the payment
+            "price_currency": order.cost_currency,  # Currency of the payment
             # "pay_currency": "BTC",
-            "order_id": str(buyer_chat_id),
+            "order_id": order.id,
             "order_description": order.description,
             "ipn_callback_url": callback_url,  # Callback URL for IPN notifications (to update datbase)
             # "success_redirect_url":  on_success_url # Redirect URL after successful payment

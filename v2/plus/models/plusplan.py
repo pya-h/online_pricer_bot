@@ -1,4 +1,4 @@
-from plus.db.interface_plus import DatabasePlusInterface
+from plus.db.interface import DatabasePlusInterface
 from payagraph.raw import CanBeKeyboardItemInterface
 import json
 
@@ -25,7 +25,7 @@ class PlusPlan:
 
     @staticmethod
     def PlusPlansList():
-        plans: list[PlusPlan] = DatabasePlusInterface.Get().get_plus_plan()
+        plans: list[PlusPlan] = DatabasePlusInterface.Get().get_all_plus_plans()
         return list(map(PlusPlan.ExtractRow, plans))
        
     @staticmethod
