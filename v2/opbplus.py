@@ -57,7 +57,7 @@ def config_selections_handler(bot: TelegramBotPlus, message: TelegramMessage) ->
     user = message.by
     moneys = bot.keyword('moneys')
     keyboard = bot.keyboard_with_back_key(user.language, [moneys['crypto'][user.language], moneys['currency'][user.language], moneys['gold'][user.language]])
-    return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("planning_section", user.language)), keyboard
+    return TelegramMessage.Text(target_chat_id=user.chat_id, text=bot.text("config_selections_section", user.language)), keyboard
 
 
 def select_channel_for_new_planning_handler(bot: TelegramBotPlus, message: TelegramMessage) -> Union[TelegramMessage, Keyboard|InlineKeyboard]:
@@ -150,19 +150,16 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
     keyboard = None
     # callback_query.text=f"{channel_data.__str__()}\nInterval: {callback_query.value} Minutes"
     try:
-        # TODO: Check if account has a plus plan or not, if not send him payment link, ow.w rum the code below
-        # TODO: TO do that, wrap this piece into a function, then if user is member plus then call the function here
-        # TODO: if not, save the values into user.state_data value; sent the payment link, and call so called function there if the payment is finished success fully.
-        # TODO: *IMPORTANT*: When the second conditiom occures, AccountPlus.GarbageCollect must ignore that user even he/she hasnt have interaction
-        # After 24h the payment link expires, if the user hasnt pay, then remove.
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username, channel_title=channel_data.title, interval=callback_query.value)
         callback_query.text = bot.text('channel_planned_succesfully', user.language) % (channel.title, channel.interval, )
         if user.is_member_plus():
             enable_channel_plan(bot, user, channel)
         else:
-            callback_query.text += "\n\n **توجه*: " + bot.text("not_plus", user.language)
+            print("Here")
+            callback_query.text += "\n\n" + bot.text("not_plus", user.language)
+            print("Here2")
             keyboard = bot.list_all_plans()
-
+            print("Here3")
     except NotPlusException:
         callback_query.text = bot.text("not_plus", user.language)
     except Exception as ex:
@@ -175,7 +172,7 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
 
 def create_payment_link(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     # use prepare_membership_gateway
-    pass
+    payment_link = bot.prepare_membership_gateway(callback_query.by, int(callback_query.data))
 
 def update_desired_crypto_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Add/Remove a this coin item into user's desired list. So that the user see this item's price on next posts'''
@@ -241,7 +238,7 @@ def delete_channel_plan_handler(bot: TelegramBotPlus, callback_query: TelegramCa
 def check_channels_membership(bot: TelegramBotPlus, update: dict) -> bool:
     '''channels = array(FIRST_2_JOIN_CHANNEL_ID => array('name' => "Persian College", 'url' => FIRST_2_JOIN_CHANNEL_URL),
         PERSIAN_PROJECT_CHANNEL_ID => array('name' => "Persian Project", 'url' => PERSIAN_PROJECT_CHANNEL_URL));
-        
+
     all_joined = true;
     user_id = isset(update[CALLBACK_QUERY]) ? update[CALLBACK_QUERY]['from']['id'] : update['message']['from']['id'];
     channel_list_menu = array(array());
@@ -283,7 +280,7 @@ def check_channels_membership(bot: TelegramBotPlus, update: dict) -> bool:
 def check_account_is_plus_member(bot: TelegramBotPlus, update: dict) -> bool:
     chat_id = TelegramMessage.GetChatId(update)
     user = AccountPlus.Get(chat_id)
-    
+
     if not user.is_member_plus():
         order = Order(buyer=user, months_counts=2)  # change this
         gateway = NowpaymentsGateway(buyer_chat_id=chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
@@ -305,7 +302,7 @@ bot.add_cancel_key(bot.keyword('main_menu'))
 bot.add_cancel_key(bot.cmd('cancel'))
 
 bot.add_middleware(check_channels_membership)
-bot.add_middleware(check_account_is_plus_member)
+# bot.add_middleware(check_account_is_plus_member)
 
 bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
 bot.add_message_handler(message=bot.keyword('planning_section'), handler=planning_section_handler)
@@ -326,7 +323,7 @@ bot.add_callback_query_handler(action="cg-curr", handler=update_desired_currency
 bot.add_callback_query_handler(action="buy+plan", handler=create_payment_link)
 bot.add_callback_query_handler(action="dl-chnpl", handler=delete_channel_plan_handler)
 
-
+# TODO: Make this Admin command
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (TelegramMessage.Text(message.chat_id, bot.get_uptime()), None))
 bot.add_command_handler(command=bot.cmd('lang_en'), handler=chnage_language_handler)
 bot.add_command_handler(command=bot.cmd('lang_fa'), handler=chnage_language_handler)

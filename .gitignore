@@ -10,3 +10,4 @@ main.env
 bot-backup
 test.env
 v2/test.env
+*.sqbpro

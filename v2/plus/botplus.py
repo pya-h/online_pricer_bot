@@ -24,13 +24,13 @@ class PostJob(ParallelJob):
     def do(self, bot: TelegramBot, call_time: int) -> bool:
         '''This job's function is obvious(sending post in channel via bot instance)'''
         if not self.account.is_member_plus() or not self.running:
-            return False # False means that postjob is running but it doesnt have run permission because of 
+            return False # False means that postjob is running but it doesnt have run permission because of
         post_body = bot.post_service.create_post(self.account, self.channel, short_text=self.short_text)
         message = TelegramMessage.Text(self.channel.id, post_body)
         self.last_run_result = bot.send(message)
         self.last_call_time = call_time
         return True
-    
+
 
 class TelegramBotPlus(TelegramBot):
     '''Specialized bot for online_pricer_plus bot'''
@@ -50,16 +50,16 @@ class TelegramBotPlus(TelegramBot):
     def ticktock(self):
         now = super().ticktock()
         redundants = []
-        
+
         for id in self.post_jobs:
             if (self.post_jobs[id].running) and (now - self.post_jobs[id].last_call_time >= self.post_jobs[id].interval):
-                if not self.post_jobs[id].do(self, now): # run the post job, if it wasnt allowed to run (user easnt member plud) 
+                if not self.post_jobs[id].do(self, now): # run the post job, if it wasnt allowed to run (user easnt member plud)
                     redundants.append(id)
-        
+
         for job_id in redundants:
             del self.post_jobs[job_id]
-            
-            
+
+
         # if there was any job that its owner plus membership is over then:
     def cancel_postjob(self, channel_id: int):
         self.post_jobs[channel_id].stop()
@@ -76,14 +76,13 @@ class TelegramBotPlus(TelegramBot):
         return Keyboard(*rows, [self.keyword("main_menu", language)])
 
 
-    def prepare_membership_gateway(self, user: AccountPlus, plus_plan_id: int, verification_route: str = 'verify'):
+    def prepare_membership_gateway(self, user: AccountPlus, plus_plan_id: int, verification_route: str = 'verify') -> str:
         order = Order(buyer=user, plus_plan_id=plus_plan_id)  # change this
         gateway = NowpaymentsGateway(order=order, callback_url=f'{self.host_url}/{verification_route}', on_success_url=self.get_telegram_link())
         return TelegramMessage.Text(user.chat_id, text=gateway.get_payment_link())
-    
+
     def list_all_plans(self):
         rows = list(map(
             lambda plan: InlineKey(f"{plan.title} - {plan.price} {plan.price_currency}", callback_data=json.dumps({"a": "buy+plan", "v": plan.id})), PlusPlan.PlusPlansList())
         )
         return InlineKeyboard(*rows)
-        

@@ -20,8 +20,12 @@
         "en": "Sorry! It seems that your desired channel data has not been received or saved correctly. Please forward another message from the channel to proceed."
     },
     "not_plus": {
-        "fa": "متاسفانه شما در حال حاضر با تعرفه عادی از این کانال استفاده می کنید. برای فعال سازی زمان بندی کانالتان لطفا از لیست زیر یک پلن VIP انتخاب کنید.",
-        "en": "Unfortunately your using this bot as a normal user. To enable your channel scheduling, robot you need to upgrade to vip level. Select your desired plan below:"
+        "fa": "**توجه**: متاسفانه شما در حال حاضر با تعرفه عادی از این کانال استفاده می کنید. برای فعال سازی زمان بندی کانالتان لطفا از لیست زیر یک پلن VIP انتخاب کنید.",
+        "en": "**Warning**: Unfortunately your using this bot as a normal user. To enable your channel scheduling, robot you need to upgrade to vip level. Select your desired plan below:"
+    },
+    "payment_description": {
+        "fa": "",
+        "en": "**%s**:\n   %s\n\nPrice: **%f %s**"
     },
     "what_todo": {
         "fa": "خب! چه کاری میتونم برات انجام بدم؟",
@@ -31,7 +35,10 @@
         "fa": "اینجا قسمت مدیریت زمان بندی هاست. چه کاری میخواهید انجام دهید؟",
         "en": "Here's the planning management section. What do you want to do?"
     },
-
+    "config_selections_section": {
+        "fa": "اینجا قسمت انتخاب ارزها و رمزارزهای دلخواه شماست. چه کاری میخواهید انجام دهید؟",
+        "en": "Here's the planning management section. What do you want to do?"
+    },
     "what_to_config": {
         "fa": "کدام یک را میخواهید تنظیم کنید؟",
         "en": "Which one do you want to choose?"

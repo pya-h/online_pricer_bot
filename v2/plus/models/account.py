@@ -25,10 +25,11 @@ class AccountPlus(Account):
         return AccountPlus._database
 
     def __init__(self, chat_id: int, currencies: list=None, cryptos: list=None, language: str = 'fa', plus_end_date: datetime = None, plus_plan_id: int = 0) -> None:
-        super().__init__(chat_id, currencies, cryptos, language)
+        super().__init__(chat_id, currencies, cryptos, language, no_arrange=True)
         self.state: UserStates = UserStates.NONE
         self.plus_end_date = plus_end_date
         self.plus_plan_id= plus_plan_id
+        self.arrange_instances()
         # self.channels: Dict[Channel] = dict()  # TODO: Load this from DATABASE
 
     def max_channel_plans(self):
@@ -62,8 +63,6 @@ class AccountPlus(Account):
         return self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date() and self.plus_plan_id
 
     def plan_new_channel(self, channel_id: int, interval: int, channel_name: str, channel_title: str = None) -> Channel:
-        if not self.is_member_plus():
-            raise NotPlusException(self.chat_id)
         channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
         if channel.plan():
             # self.channels[channel_id] = channel
@@ -74,6 +73,9 @@ class AccountPlus(Account):
     def Everybody():
         return AccountPlus.Database().get_all()
 
+    def save(self):
+        self.Database().update(self)
+        return self
 
     def __del__(self):
         self.save()
@@ -93,4 +95,7 @@ class AccountPlus(Account):
     def updgrade(self, plus_plan_id):
         plus_plan = PlusPlan.Get(plus_plan_id)
         AccountPlus.Database().upgrade_account(self, plus_plan=plus_plan)
-        
+
+    def arrange_instances(self):
+        AccountPlus.GarbageCollect()
+        AccountPlus.Instances[self.chat_id] = self

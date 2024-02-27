@@ -22,10 +22,11 @@ class DatabasePlusInterface:
     PAYMENT_COLUMNS = (PAYMENT_ID, PAYMENT_CHATID, PAYMENT_ORDER_ID, PAYMENT_STATUS, PAYMENT_AMOUNT, PAYMENT_CURRENCY,\
         PAYMENT_PAID_AMOUNT, PAYMENT_PAID_CURRENCY, PAYMENT_PLUS_PLAN_ID, PAYMENT_CREATED_ON, PAYMENT_MODIFIED_AT) =\
         ("order_id", "chat_id", "id", "status", "amount", "currency", "paid_amount", "paid_currency", "plus_plan_id", "created", "modified")
-        
+
     TABLE_PLUS_PLANS = "plus_plans"
-    PLUS_PLANS_COLUMNS = (PLUS_PLAN_ID, PLUS_PLAN_DESCRIPTION, PLUS_PLAN_TITLE, PLUS_PLAN_DURATION, PLUS_PLAN_LEVEL, PLUS_PLAN_PRICE, PLUS_PLAN_PRICE_CURRENCY) =\
-        ("id", "description", "title", "duration", "level", "price", "price_currency")
+    PLUS_PLANS_COLUMNS = (PLUS_PLAN_ID, PLUS_PLAN_PRICE, PLUS_PLAN_PRICE_CURRENCY, PLUS_PLAN_DURATION, PLUS_PLAN_LEVEL, PLUS_PLAN_TITLE, \
+                          PLUS_PLAN_TITLE_EN,  PLUS_PLAN_DESCRIPTION, PLUS_PLAN_DESCRIPTION_EN) =\
+        ("id", "price", "price_currency", "duration", "level", "title", "title_en", "description", "description_en")
 
 
     @staticmethod
@@ -40,13 +41,13 @@ class DatabasePlusInterface:
             connection = sqlite3.connect(self._name, detect_types=sqlite3.PARSE_DECLTYPES)
             cursor = connection.cursor()
 
-
             # check if the table accounts was created
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{DatabasePlusInterface.TABLE_PLUS_PLANS}'").fetchone():
                 query = f"CREATE TABLE {DatabasePlusInterface.TABLE_PLUS_PLANS} ({DatabasePlusInterface.PLUS_PLAN_ID} INTEGER PRIMARY KEY," +\
-                    f"{DatabasePlusInterface.PLUS_PLAN_TITLE} TEXT NOT NULL, {DatabasePlusInterface.PLUS_PLAN_DESCRIPTION} TEXT, " +\
-                    f"{DatabasePlusInterface.PLUS_PLAN_DURATION} INTEGER NOT NULL, {DatabasePlusInterface.PLUS_PLAN_LEVEL} INTEGER, {DatabasePlusInterface.PLUS_PLAN_PRICE} REAL NOT NULL, " +\
-                        f"{DatabasePlusInterface.PLUS_PLAN_PRICE_CURRENCY} TEXT)"
+                    f"{DatabasePlusInterface.PLUS_PLAN_PRICE} REAL NOT NULL, {DatabasePlusInterface.PLUS_PLAN_PRICE_CURRENCY} TEXT, " +\
+                    f"{DatabasePlusInterface.PLUS_PLAN_DURATION} INTEGER NOT NULL, {DatabasePlusInterface.PLUS_PLAN_LEVEL} INTEGER, " +\
+                    f"{DatabasePlusInterface.PLUS_PLAN_TITLE} TEXT NOT NULL, {DatabasePlusInterface.PLUS_PLAN_TITLE_EN} TEXT, " +\
+                    f"{DatabasePlusInterface.PLUS_PLAN_DESCRIPTION} TEXT, {DatabasePlusInterface.PLUS_PLAN_DESCRIPTION_EN} TEXT)"
                 # create table account
                 cursor.execute(query)
                 manuwriter.log(f"PLUS Database {DatabasePlusInterface.TABLE_PLUS_PLANS} table created successfuly.", category_name='plus_info')
@@ -127,7 +128,7 @@ class DatabasePlusInterface:
         cursor.execute(f"SELECT * FROM {DatabasePlusInterface.TABLE_ACCOUNTS} WHERE {DatabasePlusInterface.ACCOUNT_ID}=? LIMIT 1", (account.chat_id, ))
         if cursor.fetchone(): # if account with his chat id has been saved before in the database
             columns_to_set = ', '.join([f'{field}=?' for field in DatabasePlusInterface.ACCOUNT_COLUMNS[1:]])
-            
+
             cursor.execute(f'UPDATE {DatabasePlusInterface.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {DatabasePlusInterface.ACCOUNT_ID}=?', \
                 (account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabasePlusInterface.DATE_FORMAT), \
                  account.plus_end_date.strftime(DatabasePlusInterface.DATE_FORMAT) if account.plus_end_date else None, account.plus_plan_id, account.language, account.chat_id))
@@ -143,7 +144,7 @@ class DatabasePlusInterface:
 
     def upgrade_account(self, account, plus_plan):  # use plus mode
         account.plus_end_date = after_n_months(plus_plan.duration_in_months)
-        str_plus_end_date = account.plus_end_date.strftime(DatabasePlusInterface.DATE_FORMAT)
+        str_plus_end_date = account.plus_end_date.strftime(DatabasePlusInterface.DATE_FORMAT) if account.plus_end_date else None
         self.execute(False, f'UPDATE {DatabasePlusInterface.TABLE_ACCOUNTS} SET {DatabasePlusInterface.ACCOUNT_PLUS_END_DATE}=?, {DatabasePlusInterface.ACCOUNT_PLUS_PLAN_ID}=? WHERE {DatabasePlusInterface.ACCOUNT_ID}=?', \
             str_plus_end_date, plus_plan.id, account.chat_id)
         manuwriter.log(f"Account with chat_id={account.chat_id} has extended its plus previllages until {str_plus_end_date}")
@@ -193,38 +194,39 @@ class DatabasePlusInterface:
         cursor.close()
         connection.close()
         return rows
-        
+
     def delete_channel(self, channel_id: int):
         '''Delete channel and its planning'''
         self.execute(False, f"DELETE FROM {DatabasePlusInterface.TABLE_CHANNELS} WHERE {DatabasePlusInterface.CHANNEL_ID} = ?", channel_id)
 
-    def define_plus_plan(self, title: str, description: str, duration_in_months: int, price: float, price_currency: str = "USDT", plus_level: int = 1):
-        fields = ', '.join(DatabasePlusInterface.PLUS_PLANS_COLUMNS[1:])
+    def define_plus_plan(self, title: str, titile_en: str, duration_in_months: int, price: float, price_currency: str = "USDT", plus_level: int = 1):
+        fields = ', '.join(DatabasePlusInterface.PLUS_PLANS_COLUMNS[1:-2])  # in creation mode admin just defines persian title and description
+        # if he wants to add english texts, he should go to edit menu
         self.execute(f"INSERT INTO {DatabasePlusInterface.TABLE_PLUS_PLANS} ({fields}) VALUES (?, ?, ?, ?, ?, ?)", \
-            description, title, duration_in_months, plus_level, price, price_currency)
+            price, price_currency, duration_in_months, plus_level, title, titile_en)
 
     def get_plus_plan(self, plus_plan_id: int):
         vplans = self.execute(True, f"SELECT * FROM {DatabasePlusInterface.TABLE_PLUS_PLANS} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=? LIMIT 1", plus_plan_id)
         return vplans[0] if vplans else None
-    
+
     def get_all_plus_plans(self):
         return self.execute(True, f"SELECT * FROM {DatabasePlusInterface.TABLE_PLUS_PLANS}")
-        
+
     def update_plus_plan(self, plus_plan):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM {DatabasePlusInterface.PLUS_PLANS_COLUMNS} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=? LIMIT 1", (plus_plan.id, ))
+        cursor.execute(f"SELECT * FROM {DatabasePlusInterface.TABLE_PLUS_PLANS} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=? LIMIT 1", (plus_plan.id, ))
         if cursor.fetchone(): # if account with his chat id has been saved before in the database
             columns_to_set = ', '.join([f'{field}=?' for field in DatabasePlusInterface.PLUS_PLANS_COLUMNS[1:]])
-            
-            cursor.execute(f'UPDATE {DatabasePlusInterface.PLUS_PLANS_COLUMNS} SET {columns_to_set} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=?', \
-                (plus_plan.description, plus_plan.title, plus_plan.duration_in_months, plus_plan.plus_level, plus_plan.price, plus_plan.price_currency))
+
+            cursor.execute(f'UPDATE {DatabasePlusInterface.TABLE_PLUS_PLANS} SET {columns_to_set} WHERE {DatabasePlusInterface.PLUS_PLAN_ID}=?', \
+                (plus_plan.price, plus_plan.price_currency, plus_plan.duration_in_months, plus_plan.plus_level, plus_plan.title, plus_plan.title_en, plus_plan.description, plus_plan.description_en))
         else:
             raise NoSuchPlusPlanException(plus_plan.id)
         connection.commit()
         cursor.close()
         connection.close()
-        
+
     def update_payment(self, payment):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
@@ -245,11 +247,11 @@ class DatabasePlusInterface:
         connection.commit()
         cursor.close()
         connection.close()
-    
+
     def get_payment(self, order_id):
         columns = ', '.join(DatabasePlusInterface.PAYMENT_COLUMNS)
         return self.execute(True, f"SELECT {columns} from {DatabasePlusInterface.TABLE_PAYMENTS} WHERE {DatabasePlusInterface.PAYMENT_ORDER_ID}=? ", order_id)
-            
+
     def __init__(self, name="plus_data.db"):
         self._name = name
         self.setup()

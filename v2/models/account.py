@@ -56,8 +56,6 @@ class Account:
     @staticmethod
     def Get(chat_id):
         Account.GarbageCollect()
-        
-        
         if chat_id in Account.Instances:
             Account.Instances[chat_id].last_interaction = tz_today()
             return Account.Instances[chat_id]
@@ -82,9 +80,9 @@ class Account:
 
     def arrange_instances(self):
         Account.GarbageCollect()
-        Account.Instances[self.order_id] = self
-    
-    def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa') -> None:
+        Account.Instances[self.chat_id] = self
+
+    def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa', no_arrange=False) -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
         self.desired_coins: list = cryptos if cryptos else []
@@ -94,7 +92,8 @@ class Account:
         self.state_data: any = None
         self.language: str = language
         # Better Way Garbage Collection
-        self.arrange_instances()
+        if not no_arrange:
+            self.arrange_instances()
 
         # Garbage collection using schedular
         # Account.Instances[chat_id] = self  # this is for optimizing bot performance
