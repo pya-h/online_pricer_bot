@@ -17,6 +17,12 @@ from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
 from plus.services.post import PostServicePlus
+from tools.mathematix import persianify
+
+### TODO: GOLBAL TODOS
+### **** TODO: CREATE JOBS FOR GARBAGE COLLECTION OF MODELS **** ###
+
+
 
 
 # Set up logging
@@ -345,21 +351,29 @@ bot.config_webhook()
 
 @bot.app.route('/verify', methods=['POST'])
 def verify_payment():
-    print(request.json)
-
-@bot.app.route('/payment-notification', methods=['POST'])
-def handle_payment_notification(bot: TelegramBotPlus):
+    manuwriter.log(request.json.__str__(), category_name="PaymentVerificationJSON")
     # Extract necessary information from the payment notification
     payment = Payment(request.json).save()
     # Check if the payment was successful
     if payment.status == 'finished':
-        # Assume you have a mechanism to map order_id to user_id
-        account = AccountPlus.Get(payment.payer_chat_id)
-        account.updgrade(payment.plus_plan.id)
-
-        # Notify the user via Telegram bot about the status update
-        bot.send(TelegramMessage(payment.payer_chat_id, f"Your payment of {payment.paid_amount} {payment.currency} was successful. You are now a VIP!"))
-
+        try:
+            # Assume you have a mechanism to map order_id to user_id
+            account = AccountPlus.Get(payment.payer_chat_id)
+            account.updgrade(payment.plus_plan.id)
+            
+            # Notify the user via Telegram bot about the status update
+            bot.send(TelegramMessage.Text(payment.payer_chat_id, bot.text('plus_plan_activated_for_u', account.language) \
+                % (payment.plus_plan.title if account.language.lower() == 'fa' \
+                    else payment.plus_plan.title_en, \
+                    persianify(account.plus_end_date.strftime("%Y-%M-%d")) if account.language == 'fa' \
+                    else account.plus_end_date.strftime("%Y-%M-%d") )))
+            manuwriter.log(f"\npayer_chat_id:{payment.payer_chat_id}\n\tplan_id:{payment.plus_plan.id}\n\tplan_title:{payment.plus_plan.title_en}\n" +\
+                f"\tpayment_id: {payment.id}\n\torder_id: {payment.order_id}", category_name='payments_success')
+        except Exception as ex:
+            manuwriter.log(f"Payment finished but encountered error while upgrading the user.\n\tpayer_chat_id:{payment.payer_chat_id}" +\
+                f"\n\tplan_id:{payment.plus_plan.id}\n\tplan_title_fa:{payment.plus_plan.title}\n\tplan_title_en:{payment.plus_plan.title_en}\n\tpayment_id: {payment.id}\n\torder_id: {payment.order_id}", ex, 'payments_failed')
+            payment_info = f"Payment ID: {payment.id}\nOrder ID: {payment.order_id}\nChat ID: {payment.payer_chat_id}"
+            bot.send(TelegramMessage.Text(account.chat_id, bot.text("payment_failure", account.language) + f"\n\n{payment_info}"))
     return jsonify({'status': 'success'}), 200
 
 

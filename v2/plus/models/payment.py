@@ -6,7 +6,7 @@ from plus.db.interface import DatabasePlusInterface
 
 class Payment:
     OngoingPayments = {}
-    PaymentDumpInterval = 100 # in minutes
+    PaymentDumpInterval = 60 # in minutes
     PreviousDumpTime: int = now_in_minute()
     
     def load_query_row(self, query_row: list):
@@ -43,7 +43,7 @@ class Payment:
         self.modified_at = data["updated_at"]  
           
     def update_ongoings(self):
-        Payment.GarbageCollect()
+        Payment.GarbageCollect()  # or add a timer?
         Payment.OngoingPayments[self.order_id] = self
       
     @staticmethod

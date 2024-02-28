@@ -31,6 +31,14 @@
         "fa": "**%s**:\n   %s\n\nقیمت: **%s %s**",
         "en": "**%s**:\n   %s\n\nPrice: **%s %s**"
     },
+    "plus_plan_activated_for_u": {
+        "en": "Plan '%s' activated for you and It's valid until %s",
+        "fa": "اشتراک '%s' برای شما فعال شد و تا تاریخ %s معتبر خواهد بود."
+    },
+    "payment_failure": {
+        "fa": "خرید شما با خطایی نامعلوم مواجه شد. اگر خرید شما در درگاه موفقیت آمیز بود و اینجا با این خطا مواجه شده اید لطفا برای بررسی مشکل اطلاعات زیر را به ادمین اطلاع دهید:",
+        "en": "Your payment encountered with some sort of error; If you think your payment was successful and this is wrong, Inform the admin with this information:"
+    }, 
     "what_todo": {
         "fa": "خب! چه کاری میتونم برات انجام بدم؟",
         "en": "Well, What can I do for you?"
