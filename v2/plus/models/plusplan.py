@@ -49,7 +49,7 @@ class PlusPlan:
         if language == 'fa':
             title: str = self.title
             description: str = self.description
-            currency: str = CryptoCurrency.CoinsInPersian[self.price_currency]
+            currency: str = CryptoCurrency.CoinsInPersian[self.price_currency] if self.price_currency.upper() != 'USD' else 'دلار'
             price = persianify(price)
         else:
             title = self.title_en

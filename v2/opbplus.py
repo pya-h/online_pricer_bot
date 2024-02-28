@@ -159,7 +159,7 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
     try:
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username, channel_title=channel_data.title, interval=callback_query.value)
         callback_query.text = bot.text('channel_planned_succesfully', user.language) % (channel.title, channel.interval, )
-        if not user.is_member_plus():
+        if user.is_member_plus():
             enable_channel_plan(bot, user, channel)
         else:
             callback_query.text += "\n\n" + bot.text("not_plus", user.language)
