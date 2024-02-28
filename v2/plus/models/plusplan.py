@@ -44,8 +44,7 @@ class PlusPlan:
         DatabasePlusInterface.Get().update_plus_plan(self)
         return self
 
-    def fill_template_string(self, template_text: str, language: str="fa") -> str:
-        '''Fill the template string with the fields of this object; this is used when bot wants to create payment message with plan description'''
+    def get_data_by_language(self, language="fa"):
         price = cut_and_separate(self.price)
         if language == 'fa':
             title: str = self.title
@@ -56,7 +55,15 @@ class PlusPlan:
             title = self.title_en
             description = self.description_en
             currency = self.price_currency
-            
+        return title, price, currency, description
+    
+    def short_description(self, language="fa"):
+        title, price, currency, _ = self.get_data_by_language(language)   
+        return f"{title} - {price} {currency}"
+
+    def fill_template_string(self, template_text: str, language: str="fa") -> str:
+        '''Fill the template string with the fields of this object; this is used when bot wants to create payment message with plan description'''
+        title, price, currency, description = self.get_data_by_language(language)   
         return template_text % (title, description, price, currency)
     
     

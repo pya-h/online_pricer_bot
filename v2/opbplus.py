@@ -21,7 +21,8 @@ from tools.mathematix import persianify
 
 ### TODO: GOLBAL TODOS
 ### **** TODO: CREATE JOBS FOR GARBAGE COLLECTION OF MODELS **** ###
-
+### **** TODO: ON BOT STARTED PREVIOUS POST JOBS MUST START **** ###
+### **** TODO: ON ENGLISH LANGUAGE< CONFIG CURRENCY SHOWS GOLDS TOO **** ###
 
 
 
@@ -103,7 +104,7 @@ def config_currency_list_handler(bot: TelegramBotPlus, message: TelegramMessage)
     '''Handles the user request selecting desired currencies'''
     user = message.by
     caption = bot.text("list_types")["currency"][user.language] + "\n\n" + bot.text("selection_hint", user.language)
-    keyboard = InlineKeyboard.CreateDynamicList("cg-curr", bot.post_service.currency_service.CurrenciesInPersian,
+    keyboard = InlineKeyboard.CreateDynamicList("cg-curr", bot.post_service.currency_service.NationalCurrenciesInPersian,
                                                                          user.desired_currencies, user.language=='fa')
     return TelegramMessage.Text(target_chat_id=user.chat_id, text=caption), keyboard
 
@@ -158,12 +159,13 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
     try:
         channel = user.plan_new_channel(channel_id=channel_data.id, channel_name=channel_data.username, channel_title=channel_data.title, interval=callback_query.value)
         callback_query.text = bot.text('channel_planned_succesfully', user.language) % (channel.title, channel.interval, )
-        if user.is_member_plus():
+        if not user.is_member_plus():
             enable_channel_plan(bot, user, channel)
         else:
             callback_query.text += "\n\n" + bot.text("not_plus", user.language)
-            keyboard = bot.list_all_plans()
-
+            keyboard = bot.list_all_plans(user.language)
+            if not keyboard:
+                callback_query.text = bot.text("no_plans_available", user.language)
     except NotPlusException:
         callback_query.text = bot.text("not_plus", user.language)
     except Exception as ex:
@@ -367,6 +369,9 @@ def verify_payment():
                     else payment.plus_plan.title_en, \
                     persianify(account.plus_end_date.strftime("%Y-%M-%d")) if account.language == 'fa' \
                     else account.plus_end_date.strftime("%Y-%M-%d") )))
+            for channel in account.my_channel_plans():
+                ### TODO: Edit this for when We add garbage collect for channels
+                bot.prepare_new_post_job(channel)
             manuwriter.log(f"\npayer_chat_id:{payment.payer_chat_id}\n\tplan_id:{payment.plus_plan.id}\n\tplan_title:{payment.plus_plan.title_en}\n" +\
                 f"\tpayment_id: {payment.id}\n\torder_id: {payment.order_id}", category_name='payments_success')
         except Exception as ex:

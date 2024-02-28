@@ -19,8 +19,7 @@ class TelegramBotCore:
         self.token = token
         self.bot_api_url = f"https://api.telegram.org/bot{self.token}"
         self.host_url = host_url
-        self.username = username
-        self.text_resources: dict = text_resources  # this is for making add multi-language support to the bot
+        self.bot_username = username
         self._main_keyboard: Dict[str, Keyboard]|Keyboard = _main_keyboard
 
 
@@ -51,7 +50,7 @@ class TelegramBotCore:
         url = f"{self.bot_api_url}/editMessageText"
         chat_id = modified_message.chat_id
         payload = {'chat_id': chat_id, 'text': modified_message.text, 'message_id': modified_message.id}
-        if (keyboard):
+        if keyboard:
             if not isinstance(keyboard, InlineKeyboard):
                 raise InvalidKeyboardException('Only InlineKeyboard is allowed when editting a message.')
             keyboard.attach_to(payload)
@@ -63,7 +62,45 @@ class TelegramBotCore:
 
 
     def get_telegram_link(self) -> str:
-        return f'https://t.me/{self.username}'
+        return f'https://t.me/{self.bot_username}'
+
+    def config_webhook(self, webhook_path = '/'):
+        # **Telegram hook route**
+        @self.app.route(webhook_path, methods=['POST'])
+        def main_route():
+            # code below must be add to middlewares
+            allowed_to_continue = True
+            for middleware in self.middlewares:
+                allowed_to_continue = allowed_to_continue and middleware(self, request.json)
+            
+            if allowed_to_continue:
+                self.handle(request.json)
+            return jsonify({'status': 'ok'})
+
+    def go(self, debug=True):
+        self.app.run(debug=debug)
+        
+
+class TelegramBot(TelegramBotCore):
+    '''More Customizable and smart part of the TelegramBot; This object will allow to add handlers that are used by TelegramBotCore.handle function and
+        by calling .handle function make the bot to handle user messages automatically, of sorts.'''
+    def __init__(self, token: str, username: str, host_url: str, text_resources: dict, _main_keyboard: Dict[str, Keyboard]|Keyboard = None) -> None:
+        super().__init__(token, username, host_url, text_resources, _main_keyboard)
+        self.middlewares: list[Callable[[TelegramBotCore, dict], bool]] = [] # middlewares run before everything when a message is sent
+        # if all middlewares returned True, bot is allowed to continue handling a message
+        # This is useful for implement channel memberships and plus checks
+        self.text_resources: dict = text_resources  # this is for making add multi-language support to the bot
+        
+        self.state_handlers: Dict[UserStates, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
+        self.command_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
+        self.message_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()  # bot handlers, fills with add_handler
+        self.callback_query_hanndlers: Dict[str, Callable[[TelegramBotCore, TelegramCallbackQuery], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
+        # these handler will be checked when running bot.handle
+        self.cancel_keys: list = []  # Keywords that if the user sends them, in every state and condition, everything cancels out and user returns back to main menu
+        self.parallels: list[ParallelJob] = []
+        self.clock = None
+        ### Flask App configs ###
+        self.app: Flask = Flask(__name__)
 
     def text(self, text_key: str, language: str = None) -> str|dict:  # short for gettext
         '''resource function: get an specific text from the texts_resources json loaded into bot object'''
@@ -89,46 +126,6 @@ class TelegramBotCore:
         except:
             pass
         return None
-
-
-
-class TelegramBot(TelegramBotCore):
-    '''More Customizable and smart part of the TelegramBot; This object will allow to add handlers that are used by TelegramBotCore.handle function and
-        by calling .handle function make the bot to handle user messages automatically, of sorts.'''
-    def __init__(self, token: str, username: str, host_url: str, text_resources: dict, _main_keyboard: Dict[str, Keyboard]|Keyboard = None) -> None:
-        super().__init__(token, username, host_url, text_resources, _main_keyboard)
-        self.middlewares: list[Callable[[TelegramBotCore, dict], bool]] = [] # middlewares run before everything when a message is sent
-        # if all middlewares returned True, bot is allowed to continue handling a message
-        # This is useful for implement channel memberships and plus checks
-        
-        self.state_handlers: Dict[UserStates, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
-        self.command_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
-        self.message_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()  # bot handlers, fills with add_handler
-        self.callback_query_hanndlers: Dict[str, Callable[[TelegramBotCore, TelegramCallbackQuery], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
-        # these handler will be checked when running bot.handle
-        self.cancel_keys: list = []  # Keywords that if the user sends them, in every state and condition, everything cancels out and user returns back to main menu
-        self.parallels: list[ParallelJob] = []
-        self.clock = None
-        ### Flask App configs ###
-        self.app: Flask = Flask(__name__)
-
-
-    def config_webhook(self, webhook_path = '/'):
-        # **Telegram hook route**
-        @self.app.route(webhook_path, methods=['POST'])
-        def main_route():
-            # code below must be add to middlewares
-            allowed_to_continue = True
-            for middleware in self.middlewares:
-                allowed_to_continue = allowed_to_continue and middleware(self, request.json)
-            
-            if allowed_to_continue:
-                self.handle(request.json)
-            return jsonify({'status': 'ok'})
-
-    def go(self, debug=True):
-        self.app.run(debug=debug)
-
     def start_clock(self):
         '''Start the clock and handle(/run if needed) parallel jobs. As parallel jobs are optional, the clock is not running from start of the bot. it starts by direct demand of developer or user.'''
         self.clock = Planner(1.0, self.ticktock)

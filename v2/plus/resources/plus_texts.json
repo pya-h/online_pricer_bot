@@ -83,7 +83,10 @@
         "fa": "تغییر زبان با مشکل مواجه شد. لطفا لحظاتی دیگر دوباره تلاش کنید و اگر دوباره با این خطا مواجه شدید با پشیبانی تماس حاصل فرمایید تا مشکل شناسایی شود. پیشاپیش از صبوری شما کمال تشکر را داریم.",
         "en": "Can not change the language. Please try again later; And if you encounter with this message again, Please contact the support team to identify the issue. Thank you for your patience."
     },
-
+    "no_plans_available": {
+        "fa": "درحال حاضر هیچ اشتراک VIP ای موجود نیست!",
+        "en": "No VIP plans available right now!"
+    },
     "channel_planned_succesfully": {
         "en": "Channel called '%s' planned successfully to post prices every %s minutes, according to your desired list set in the 'Set Desired Ones' section.",
         "fa": "کانال با نام '%s' با موفقیت برنامه ریزی شد تا هر %d دقیقه قیمت های ارزها و رمزارزهای انتخاب شده ی شما را پست کند."

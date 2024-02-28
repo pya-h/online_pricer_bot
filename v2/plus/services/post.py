@@ -43,7 +43,7 @@ class PostServicePlus(PostService):
         '''This will be called by plus robot as a job on a propper interval, so that channels use the most recent data gradually, alongside considering performance handling issues.'''
         try:
             self.currency_service.load_cache()
-        except:
+        except Exception as ex:
             # force reload
             try:
                 manuwriter.log('Currency cache load failed. Trying force reload (API call) to update channels currency latest_data!', ex, 'PLUS_CACHE')
@@ -53,11 +53,11 @@ class PostServicePlus(PostService):
 
         try:
             self.crypto_service.load_cache()
-        except:
+        except Exception as ex:
             # force reload
             try:
                 manuwriter.log('Crypto cache load failed. Using force reload (API call) to update channels crypto latest_data!', ex, 'PLUS_CACHE')
                 self.crypto_service.latest_data = self.crypto_service.send_request()
-            except:
+            except Exception as ex:
                 manuwriter.log('Can not update crypto data for other channels use!', ex, 'PLUS_FATALITY')
         print('Updated post_service')

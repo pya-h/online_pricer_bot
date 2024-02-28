@@ -76,8 +76,12 @@ class TelegramBotPlus(TelegramBot):
         return Keyboard(*rows, [self.keyword("main_menu", language)])
 
 
-    def list_all_plans(self):
+    def list_all_plans(self, lang="fa"):
+        plans = PlusPlan.PlusPlansList()
+        lang = lang.lower()
+        if not plans or not len(plans):
+            return None
         rows = list(map(
-            lambda plan: InlineKey(f"{plan.title} - {plan.price} {plan.price_currency}", callback_data=json.dumps({"a": "buy+plan", "v": plan.id})), PlusPlan.PlusPlansList())
+            lambda plan: InlineKey(plan.short_description(lang), callback_data=json.dumps({"a": "buy+plan", "v": plan.id})), plans)
         )
         return InlineKeyboard(*rows)

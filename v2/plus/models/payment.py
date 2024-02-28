@@ -26,7 +26,7 @@ class Payment:
         self.plus_plan = PlusPlan.Get(plus_plan_id)
         self.created_at = query_row[9]
         self.modified_at = query_row[10]
-    
+
     def load_nowpayment_data(self, data: dict|str):
         if isinstance(data, str):
             data = json.loads(data)
