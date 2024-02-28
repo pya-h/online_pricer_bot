@@ -155,11 +155,9 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
         if user.is_member_plus():
             enable_channel_plan(bot, user, channel)
         else:
-            print("Here")
             callback_query.text += "\n\n" + bot.text("not_plus", user.language)
-            print("Here2")
             keyboard = bot.list_all_plans()
-            print("Here3")
+
     except NotPlusException:
         callback_query.text = bot.text("not_plus", user.language)
     except Exception as ex:
@@ -172,7 +170,9 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
 
 def create_payment_link(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     # use prepare_membership_gateway
-    payment_link = bot.prepare_membership_gateway(callback_query.by, int(callback_query.data))
+    callback_query.text = bot.prepare_membership_gateway(callback_query.by, int(callback_query.data))
+    callback_query.replace_on_previous = True
+    return callback_query, None
 
 def update_desired_crypto_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Add/Remove a this coin item into user's desired list. So that the user see this item's price on next posts'''

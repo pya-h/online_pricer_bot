@@ -24,7 +24,7 @@
         "en": "**Warning**: Unfortunately your using this bot as a normal user. To enable your channel scheduling, robot you need to upgrade to vip level. Select your desired plan below:"
     },
     "payment_description": {
-        "fa": "",
+        "fa": "**%s**:\n   %s\n\nقیمت: **%s %s**",
         "en": "**%s**:\n   %s\n\nPrice: **%f %s**"
     },
     "what_todo": {
