@@ -23,9 +23,13 @@
         "fa": "**توجه**: متاسفانه شما در حال حاضر با تعرفه عادی از این کانال استفاده می کنید. برای فعال سازی زمان بندی کانالتان لطفا از لیست زیر یک پلن VIP انتخاب کنید.",
         "en": "**Warning**: Unfortunately your using this bot as a normal user. To enable your channel scheduling, robot you need to upgrade to vip level. Select your desired plan below:"
     },
+    "pay": {
+        "fa": "پرداخت",
+        "en": "Pay"
+    },
     "payment_description": {
         "fa": "**%s**:\n   %s\n\nقیمت: **%s %s**",
-        "en": "**%s**:\n   %s\n\nPrice: **%f %s**"
+        "en": "**%s**:\n   %s\n\nPrice: **%s %s**"
     },
     "what_todo": {
         "fa": "خب! چه کاری میتونم برات انجام بدم؟",

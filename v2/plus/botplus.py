@@ -76,11 +76,6 @@ class TelegramBotPlus(TelegramBot):
         return Keyboard(*rows, [self.keyword("main_menu", language)])
 
 
-    def prepare_membership_gateway(self, user: AccountPlus, plus_plan_id: int, verification_route: str = 'verify') -> str:
-        order = Order(buyer=user, plus_plan_id=plus_plan_id)  # change this
-        gateway = NowpaymentsGateway(order=order, callback_url=f'{self.host_url}/{verification_route}', on_success_url=self.get_telegram_link())
-        return TelegramMessage.Text(user.chat_id, text=gateway.get_payment_link())
-
     def list_all_plans(self):
         rows = list(map(
             lambda plan: InlineKey(f"{plan.title} - {plan.price} {plan.price_currency}", callback_data=json.dumps({"a": "buy+plan", "v": plan.id})), PlusPlan.PlusPlansList())

@@ -170,9 +170,13 @@ def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuer
 
 def create_payment_link(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     # use prepare_membership_gateway
-    callback_query.text = bot.prepare_membership_gateway(callback_query.by, int(callback_query.data))
+    user = callback_query.by
+    order = Order(buyer=user, plus_plan_id=int(callback_query.value))  # change this
+    gateway = NowpaymentsGateway(order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
+    payment_link_keyboard = InlineKeyboard(InlineKey(bot.text("pay", user.language), url=gateway.get_payment_link()))
+    callback_query.text = order.plus_plan.fill_template_string(bot.text("payment_description", user.language), user.language)
     callback_query.replace_on_previous = True
-    return callback_query, None
+    return callback_query, payment_link_keyboard
 
 def update_desired_crypto_list(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[TelegramMessage, Keyboard|InlineKeyboard]:
     '''Add/Remove a this coin item into user's desired list. So that the user see this item's price on next posts'''
