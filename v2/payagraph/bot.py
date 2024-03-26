@@ -47,6 +47,21 @@ class TelegramBotCore:
             log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{chat_id}\nResponse text: {response.text}", category_name="PLUS_FATALITY")
         return response  # as dict
 
+    def answer_callback_query(self, callback_query: TelegramCallbackQuery, show_alert: bool = False, cache_time_sec: int = None, url_to_be_opened: str = None):
+        '''Edits a message on telegram. it will be called by .handle function when GenericMessage.replace_on_previous is True [text, photo, whatever]'''
+        url = f"{self.bot_api_url}/answerCallbackQuery"
+        payload = {'callback_query_id': callback_query.callback_id, 'text': callback_query.text, 'show_alert': show_alert}
+
+        if cache_time_sec:
+            payload['cache_time'] = cache_time_sec
+
+        if url_to_be_opened:
+            payload['url'] = url_to_be_opened
+
+        response = requests.post(url, json=payload)
+        if response.status_code != 200:
+            log(f"answerCallbackQuery Failure => status code:{response.status_code}\n\callback_query_id:{callback_query.callback_id}\ncallback_query_text:{callback_query.text}\nResponse text: {response.text}", category_name="PLUS_FATALITY")
+        return response  # as dict
 
 
 
@@ -219,6 +234,8 @@ class TelegramBot(TelegramBotCore):
             if message.action in self.callback_query_hanndlers:
                 handler: Callable[[TelegramBotCore, TelegramCallbackQuery], Union[GenericMessage, Keyboard|InlineKeyboard]]  = self.callback_query_hanndlers[message.action]
                 response, keyboard = handler(self, message)
+                if not response.replace_on_previous:
+                    self.answer_callback_query(message, cache_time_sec=1)
         else:
             message = GenericMessage(telegram_data)
             user = message.by

@@ -66,7 +66,6 @@ class PlusPlan:
         title, price, currency, description = self.get_data_by_language(language)
         return template_text % (title, description, price, currency)
 
-
 class PlanInterval(CanBeKeyboardItemInterface):
     def __init__(self, title: str, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
         self._title = title
@@ -75,7 +74,7 @@ class PlanInterval(CanBeKeyboardItemInterface):
         self.mins = minutes + self.hours * 60  # total interval in minutes
 
     def value(self) -> int:
-        return self.mins  # this is for InlineKeyboared.Arrange
+        return self.mins  # this is for GlassButtonboared.Arrange
 
     def title(self) -> str:
         return self._title

@@ -55,7 +55,8 @@ class GenericMessage:
         self.chat_id: int = self.msg['chat']['id']  # this is target chat_id, it may differ from self.by.chat_id
         self.by: AccountPlus = AccountPlus.Get(self.msg['chat']['id']) if self.chat_id >= 0 else None  # negative chat_id means its a channel
         # TODO: *** define two separate users: One is SENDER_USER and another is TARGET_USER
-
+        if 'from' in self.msg:
+            self.by.set_extra_info(self.msg['from']['first_name'], self.msg['from']['username'] if 'username' in self.msg['from'] else None)
         # cause bot may get a message from a user (with chat_id A) and send it to another user with another chat_id(B); so dont mistake them
         self.forward_origin: ForwardOrigin = ForwardOrigin(self.msg['forward_origin']) if 'forward_origin' in self.msg else None
         self.replace_on_previous = False
@@ -80,7 +81,17 @@ class GenericMessage:
         return None
 
     @staticmethod
-    def GetChatId(update_data: dict) -> int:
+    def GetAccountDirectly(update_data: dict) -> AccountPlus:
+        try:
+            return AccountPlus.Get(
+                int(update_data['message']['chat']['id'] if 'message' in update_data else update_data["callback_query"]['chat']['id'])
+            )
+        except:
+            pass
+        return None
+
+    @staticmethod
+    def GetUserId(update_data: dict) -> int:
         try:
             return int(update_data['message']['from']['id'] if 'message' in update_data else update_data["callback_query"]['from']['id'])
         except:
@@ -92,6 +103,7 @@ class TelegramCallbackQuery(GenericMessage):
 
     def __init__(self, data: dict) -> None:
         super().__init__(data['callback_query'])
+        self.callback_id = data['callback_query']['id']
         self.data: str|dict = data['callback_query']['data']
         self.action: str = None
         self.value : str = self.data

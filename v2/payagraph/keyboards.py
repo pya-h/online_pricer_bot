@@ -32,7 +32,7 @@ class Keyboard:
 
 
 
-class InlineKey:
+class GlassButton:
     '''Inline kyeboard items'''
     def __init__(self, text: str, callback_data: dict|str = None, url: str = None, ask_location: bool = False, ask_contact: bool = False) -> None:
         self.text: str = text
@@ -75,14 +75,14 @@ class InlineKeyboard(Keyboard):
     def __init__(self, *rows):
         self.keys = list([row if isinstance(row, list) else [row] for row in rows])
 
-    def make_standard_key(self, key: any) -> InlineKey:
+    def make_standard_key(self, key: any) -> GlassButton:
         v = None
         try:
-            v = key if isinstance(key, InlineKey) \
-                else InlineKey(text=key["text"]).set_params(key) if isinstance(key, dict) \
-                else InlineKey(str(key))
+            v = key if isinstance(key, GlassButton) \
+                else GlassButton(text=key["text"]).set_params(key) if isinstance(key, dict) \
+                else GlassButton(str(key))
         except:
-            v = InlineKey(text="!!")
+            v = GlassButton(text="!!")
         return v
 
     def as_dict(self) -> dict:
@@ -101,7 +101,7 @@ class InlineKeyboard(Keyboard):
     @staticmethod
     def Arrange(list_of_keys: list[CanBeKeyboardItemInterface], callback_action: str):
         keys_count = len(list_of_keys)
-        keys = [[ InlineKey(list_of_keys[j].title(), {"a": callback_action, "v": list_of_keys[j].value()}) \
+        keys = [[ GlassButton(list_of_keys[j].title(), {"a": callback_action, "v": list_of_keys[j].value()}) \
                  for j in range(i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count)] \
                     for i in range(ceil(keys_count // 5))]
 
@@ -124,7 +124,7 @@ class InlineKeyboard(Keyboard):
             i += 1 + int(len(btn_text) / 5)
             if choice in selected_ones:
                 btn_text += "✅"
-            row.append(InlineKey(btn_text, callback_data=json.dumps({"a": callback_action, "v": choice})))
+            row.append(GlassButton(btn_text, callback_data=json.dumps({"a": callback_action, "v": choice})))
             if i >= 5:
                 buttons.append(row)
                 row = []

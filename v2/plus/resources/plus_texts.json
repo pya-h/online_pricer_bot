@@ -1,4 +1,20 @@
 {
+    "welcome": {
+        "fa": "کاربر %s\nبه ربات [ قیمت لحظه ای پلاس ] خوش آمدید🌷🙏\n\n🔹 زبان ربات را تعیین کنید:",
+        "en": "User %s\nWelcome to the [ Online pricer Plus ] bot 🌷🙏\n\n🔹 Set the language of the bot:"
+    },
+    "languages": {
+        "fa": { "fa": "🇮🇷 فارسی", "en": "🇬🇧 انگلیسی" },
+        "en": { "fa": "🇮🇷 Persian", "en": "🇬🇧 English" }
+    },
+    "invalid_language": {
+        "fa": "زبان انتخابی شما در لیست زبان های استاندارد این زبات نیست! لطفا صرفا زبان را از گزینه های اراپه شده انتخاب کنید.",
+        "en": "There's no such language in this bot standard language list. Please select only the provided language options!"
+    },
+    "switched_language": {
+        "fa": "✅ زبان ربات فارسی شد.",
+        "en": "✅ Language switched to English."
+    },
     "select_channel": {
         "fa": "حال نوبت به انتخاب کانال موردنظرتان رسیده است. ابتدا ربات را در کانال مربوطه ادمین کنید. سپس جهت شناساندن کانالتان به ربات یک پیام از آن به اینجا فوروارد کنید...",
         "en": "Ok. Now it's time to choose the channel you want to plan. First add this bot to your desired channel as admin, Then forward one of its messages here, to identify channel id."
@@ -38,7 +54,7 @@
     "payment_failure": {
         "fa": "خرید شما با خطایی نامعلوم مواجه شد. اگر خرید شما در درگاه موفقیت آمیز بود و اینجا با این خطا مواجه شده اید لطفا برای بررسی مشکل اطلاعات زیر را به ادمین اطلاع دهید:",
         "en": "Your payment encountered with some sort of error; If you think your payment was successful and this is wrong, Inform the admin with this information:"
-    }, 
+    },
     "what_todo": {
         "fa": "خب! چه کاری میتونم برات انجام بدم؟",
         "en": "Well, What can I do for you?"

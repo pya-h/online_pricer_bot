@@ -12,6 +12,7 @@ class UserStates(Enum):
     NONE = 0
     SELECT_CHANNEL = 4
     SELECT_INTERVAL = 5
+    SELECT_LANGUAGE = 6
 
 class AccountPlus(Account):
 
@@ -31,6 +32,14 @@ class AccountPlus(Account):
         self.plus_plan_id= plus_plan_id
         self.arrange_instances()
         # self.channels: Dict[Channel] = dict()  # TODO: Load this from DATABASE
+        self.username: str = None
+        self.firstname: str = None
+
+    def set_extra_info(self, firstname: str, username: str = None) -> None:
+        '''This extra infos are just for temprory messaging purposes and wont be saved in database.'''
+        self.firstname = firstname
+        self.username = username
+
 
     def max_channel_plans(self):
         # decide with plus_plan_id

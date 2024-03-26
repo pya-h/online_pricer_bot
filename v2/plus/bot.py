@@ -10,7 +10,7 @@ from plus.gateway.order import Order
 from plus.gateway.nowpayments import NowpaymentsGateway
 from plus.models.plusplan import PlusPlan
 import json
-from payagraph.keyboards import InlineKey, InlineKeyboard
+from payagraph.keyboards import GlassButton, InlineKeyboard
 
 
 class PostJob(ParallelJob):
@@ -82,6 +82,11 @@ class TelegramBotPlus(TelegramBot):
         if not plans or not len(plans):
             return None
         rows = list(map(
-            lambda plan: InlineKey(plan.short_description(lang), callback_data=json.dumps({"a": "buy+plan", "v": plan.id})), plans)
+            lambda plan: GlassButton(plan.short_description(lang), callback_data=json.dumps({"a": "buy+plan", "v": plan.id})), plans)
         )
         return InlineKeyboard(*rows)
+
+    def language_glass_buttons(self, language) -> InlineKeyboard:
+        return InlineKeyboard(
+            [GlassButton(self.text('languages', language)[lang_option], {'a': 's-l', 'v': lang_option}) for lang_option in ("en", "fa")]
+        )

@@ -3,7 +3,7 @@ import logging
 from payagraph.bot import *
 from payagraph.containers import *
 from payagraph.keyboards import *
-from plus.botplus import *
+from plus.bot import *
 
 from decouple import config
 from plus.gateway.order import Order
@@ -46,11 +46,13 @@ channel_post_service = PostServicePlus(source_arena_api_key=CURRENCY_SOURCEARENA
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
 text_resources = manuwriter.load_json('plus_texts', 'plus/resources')
 
+def get_language_select_menu(bot: TelegramBotPlus, account: AccountPlus) -> Union[GenericMessage, InlineKeyboard]:
+    return GenericMessage.Text(account.chat_id, bot.text("welcome", account.language) % (account.firstname, )), bot.language_glass_buttons(account.language)
+
 def start_handler(bot: TelegramBotPlus, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
     # DO smething such as showing tutorial
-    message.text = bot.text("what_todo", message.by.language)
-    message.by.change_state()
-    return message, None
+    message.by.change_state(UserStates.SELECT_LANGUAGE)
+    return get_language_select_menu(bot, message.by)
 
 def planning_section_handler(bot: TelegramBotPlus, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
     '''Handles the user request showing user planning panel'''
@@ -83,7 +85,7 @@ def list_channels_for_stop_plan_handler(bot: TelegramBotPlus, message: GenericMe
     keyboard = None
     if user_channels:
         call_data = lambda value: {"a": "dl-chnpl", "v": value}
-        keyboard_rows = [InlineKey(f"{channel.title} - @{channel.name if channel.name else ''}", callback_data=call_data(channel.id)) for channel in user_channels]
+        keyboard_rows = [GlassButton(f"{channel.title} - @{channel.name if channel.name else ''}", callback_data=call_data(channel.id)) for channel in user_channels]
         keyboard = InlineKeyboard(*keyboard_rows)
         response = GenericMessage.Text(target_chat_id=user.chat_id, text=bot.text("click_channel_to_delete", user.language))
     else:
@@ -131,22 +133,45 @@ def select_channel_handler(bot: TelegramBotPlus, message: GenericMessage) -> Uni
     response.text = bot.text("just_forward_channel_message", user.language)
     return response, None
 
+def enable_channel_plan(bot: TelegramBotPlus, user: AccountPlus, channel: Channel):
+    bot.send(GenericMessage.Text(user.chat_id, bot.text("add_bot_to_channel_as_admin", user.language)))
+    bot.prepare_new_post_job(channel, short_text=True) # creates post job and starts it # Check short_text
 
-def chnage_language_handler(bot: TelegramBotPlus, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
+
+def switch_langauge_query_handler(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[GenericMessage, Keyboard|InlineKeyboard]:
+    # use prepare_membership_gateway
+    user = callback_query.by
+    lang = callback_query.value.lower() # language value
+    keyboard = None
+    if lang != "fa" and lang != "en":
+        callback_query.text = bot.text("invalid_language", user.language)
+        keyboard = bot.language_glass_buttons(user.language)
+        callback_query.replace_on_previous = True
+    else:
+        callback_query.replace_on_previous = False
+        user.language = lang
+        user.change_state()
+        try:
+            user.save()
+            callback_query.text = bot.text("switched_language", user.language)
+        except:
+            return GenericMessage.Text(user.chat_id, bot.text('cant_change_language', user.language)), None
+
+    return callback_query, keyboard
+
+
+def set_language_command_handler(bot: TelegramBotPlus, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
     user = message.by
     lang = message.text[1:3].lower()
     if lang != 'en' and lang != 'fa':  # its rare but its good to make sure
-        return GenericMessage.Text(user.chat_id, "Unknown languege!"), None
+        return GenericMessage.Text(user.chat_id, bot.text("invalid_language", user.language)), None
+    user.language = lang
     try:
-        user.language = lang
         user.save()
     except:
         return GenericMessage.Text(user.chat_id, bot.text('cant_change_language', user.language)), None
     return GenericMessage.Text(user.chat_id, bot.text("what_todo", user.language)), None
 
-def enable_channel_plan(bot: TelegramBotPlus, user: AccountPlus, channel: Channel):
-    bot.send(GenericMessage.Text(user.chat_id, bot.text("add_bot_to_channel_as_admin", user.language)))
-    bot.prepare_new_post_job(channel, short_text=True) # creates post job and starts it # Check short_text
 
 def save_channel_plan(bot: TelegramBotPlus, callback_query: TelegramCallbackQuery)-> Union[GenericMessage, Keyboard|InlineKeyboard]:
     '''After user selects the channel and planning interval, this function will be called and will save and plan the result.'''
@@ -181,7 +206,7 @@ def create_payment_link(bot: TelegramBotPlus, callback_query: TelegramCallbackQu
     user = callback_query.by
     order = Order(buyer=user, plus_plan_id=int(callback_query.value))  # change this
     gateway = NowpaymentsGateway(order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
-    payment_link_keyboard = InlineKeyboard(InlineKey(bot.text("pay", user.language), url=gateway.get_payment_link()))
+    payment_link_keyboard = InlineKeyboard(GlassButton(bot.text("pay", user.language), url=gateway.get_payment_link()))
     callback_query.text = order.plus_plan.fill_template_string(bot.text("payment_description", user.language), user.language)
     callback_query.replace_on_previous = True
     return callback_query, payment_link_keyboard
@@ -247,6 +272,19 @@ def delete_channel_plan_handler(bot: TelegramBotPlus, callback_query: TelegramCa
     return callback_query, None
 
 # Middlewares
+def ask_language_first(bot: TelegramBotPlus, update: dict) -> bool:
+    '''This middleware actual use is on first start, when the user skips selecting language, this will put the question in repeat until the user selects a language.'''
+    account = GenericMessage.GetAccountDirectly(update)
+    if not account or account.state != UserStates.SELECT_LANGUAGE:
+        return True
+    # if 'callback_query' in update:
+    #     cq = TelegramCallbackQuery(update)
+    #     if cq.action == 's-l':
+    #         return True
+    bot.send(*get_language_select_menu(bot, account))
+    return False # prevent handler from going on, because user first must select the language
+
+
 def check_channels_membership(bot: TelegramBotPlus, update: dict) -> bool:
     '''channels = array(FIRST_2_JOIN_CHANNEL_ID => array('name' => "Persian College", 'url' => FIRST_2_JOIN_CHANNEL_URL),
         PERSIAN_PROJECT_CHANNEL_ID => array('name' => "Persian Project", 'url' => PERSIAN_PROJECT_CHANNEL_URL));
@@ -295,9 +333,10 @@ def check_account_is_plus_member(bot: TelegramBotPlus, update: dict) -> bool:
 
     if not user.is_member_plus():
         order = Order(buyer=user, months_counts=2)  # change this
-        gateway = NowpaymentsGateway(buyer_chat_id=chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
-        response = GenericMessage.Text(chat_id, text=gateway.get_payment_link())
-        bot.send(message=response)
+        # gateway = NowpaymentsGateway(buyer_chat_id=chat_id, order=order, callback_url=f'{bot.host_url}/verify', on_success_url=bot.get_telegram_link())
+        # FIXME: Send upgrade message
+        # response = GenericMessage.Text(chat_id, text=gateway.get_payment_link())
+        # bot.send(message=response)
 
         return False
     return True
@@ -314,7 +353,7 @@ bot.add_cancel_key(bot.keyword('main_menu'))
 bot.add_cancel_key(bot.cmd('cancel'))
 
 bot.add_middleware(check_channels_membership)
-# bot.add_middleware(check_account_is_plus_member)
+bot.add_middleware(ask_language_first)
 
 bot.add_state_handler(state=UserStates.SELECT_CHANNEL, handler=select_channel_handler)
 bot.add_message_handler(message=bot.keyword('planning_section'), handler=planning_section_handler)
@@ -327,7 +366,7 @@ bot.add_message_handler(message=bot.keyword('moneys')['gold'], handler=config_go
 bot.add_message_handler(message=bot.keyword('moneys')['currency'], handler=config_currency_list_handler)
 bot.add_message_handler(message=bot.keyword('moneys')['crypto'], handler=config_crypto_list_handler)
 
-
+bot.add_callback_query_handler(action="s-l", handler=switch_langauge_query_handler)
 bot.add_callback_query_handler(action="int", handler=save_channel_plan)
 bot.add_callback_query_handler(action="cg-cryp", handler=update_desired_crypto_list)
 bot.add_callback_query_handler(action="cg-gold", handler=update_desired_gold_list)
@@ -337,8 +376,8 @@ bot.add_callback_query_handler(action="dl-chnpl", handler=delete_channel_plan_ha
 
 # TODO: Make this Admin command
 bot.add_command_handler(command='uptime', handler=lambda bot, message: (GenericMessage.Text(message.chat_id, bot.get_uptime()), None))
-bot.add_command_handler(command=bot.cmd('lang_en'), handler=chnage_language_handler)
-bot.add_command_handler(command=bot.cmd('lang_fa'), handler=chnage_language_handler)
+bot.add_command_handler(command=bot.cmd('lang_en'), handler=set_language_command_handler)
+bot.add_command_handler(command=bot.cmd('lang_fa'), handler=set_language_command_handler)
 bot.add_command_handler(command=bot.cmd('start'), handler=start_handler)
 
 bot.prepare_new_parallel_job(ONLINE_PRICE_DEFAULT_INTERVAL / 2, channel_post_service.update_latest_data)  # This will reload cached data for currency/crypto service
@@ -351,36 +390,36 @@ bot.start_clock()
 
 bot.config_webhook()
 
-@bot.app.route('/verify', methods=['POST'])
-def verify_payment():
-    manuwriter.log(request.json.__str__(), category_name="PaymentVerificationJSON")
-    # Extract necessary information from the payment notification
-    payment = Payment(request.json).save()
-    # Check if the payment was successful
-    if payment.status == 'finished':
-        try:
-            # Assume you have a mechanism to map order_id to user_id
-            account = AccountPlus.Get(payment.payer_chat_id)
-            account.updgrade(payment.plus_plan.id)
+# @bot.app.route('/verify', methods=['POST'])
+# def verify_payment():
+#     manuwriter.log(request.json.__str__(), category_name="PaymentVerificationJSON")
+#     # Extract necessary information from the payment notification
+#     payment = Payment(request.json).save()
+#     # Check if the payment was successful
+#     if payment.status == 'finished':
+#         try:
+#             # Assume you have a mechanism to map order_id to user_id
+#             account = AccountPlus.Get(payment.payer_chat_id)
+#             account.updgrade(payment.plus_plan.id)
 
-            # Notify the user via Telegram bot about the status update
-            bot.send(GenericMessage.Text(payment.payer_chat_id, bot.text('plus_plan_activated_for_u', account.language) \
-                % (payment.plus_plan.title if account.language.lower() == 'fa' \
-                    else payment.plus_plan.title_en, \
-                    persianify(account.plus_end_date.strftime("%Y-%M-%d")) if account.language == 'fa' \
-                    else account.plus_end_date.strftime("%Y-%M-%d") )))
-            for channel in account.my_channel_plans():
-                ### TODO: Edit this for when We add garbage collect for channels
-                bot.prepare_new_post_job(channel)
-            manuwriter.log(f"\npayer_chat_id:{payment.payer_chat_id}\n\tplan_id:{payment.plus_plan.id}\n\tplan_title:{payment.plus_plan.title_en}\n" +\
-                f"\tpayment_id: {payment.id}\n\torder_id: {payment.order_id}", category_name='payments_success')
-        except Exception as ex:
-            manuwriter.log(f"Payment finished but encountered error while upgrading the user.\n\tpayer_chat_id:{payment.payer_chat_id}" +\
-                f"\n\tplan_id:{payment.plus_plan.id}\n\tplan_title_fa:{payment.plus_plan.title}\n\tplan_title_en:{payment.plus_plan.title_en}\n\tpayment_id: {payment.id}\n\torder_id: {payment.order_id}", ex, 'payments_failed')
-            payment_info = f"Payment ID: {payment.id}\nOrder ID: {payment.order_id}\nChat ID: {payment.payer_chat_id}"
-            bot.send(GenericMessage.Text(account.chat_id, bot.text("payment_failure", account.language) + f"\n\n{payment_info}"))
-    return jsonify({'status': 'success'}), 200
+#             # Notify the user via Telegram bot about the status update
+#             bot.send(GenericMessage.Text(payment.payer_chat_id, bot.text('plus_plan_activated_for_u', account.language) \
+#                 % (payment.plus_plan.title if account.language.lower() == 'fa' \
+#                     else payment.plus_plan.title_en, \
+#                     persianify(account.plus_end_date.strftime("%Y-%M-%d")) if account.language == 'fa' \
+#                     else account.plus_end_date.strftime("%Y-%M-%d") )))
+#             for channel in account.my_channel_plans():
+#                 ### TODO: Edit this for when We add garbage collect for channels
+#                 bot.prepare_new_post_job(channel)
+#             manuwriter.log(f"\npayer_chat_id:{payment.payer_chat_id}\n\tplan_id:{payment.plus_plan.id}\n\tplan_title:{payment.plus_plan.title_en}\n" +\
+#                 f"\tpayment_id: {payment.id}\n\torder_id: {payment.order_id}", category_name='payments_success')
+#         except Exception as ex:
+#             manuwriter.log(f"Payment finished but encountered error while upgrading the user.\n\tpayer_chat_id:{payment.payer_chat_id}" +\
+#                 f"\n\tplan_id:{payment.plus_plan.id}\n\tplan_title_fa:{payment.plus_plan.title}\n\tplan_title_en:{payment.plus_plan.title_en}\n\tpayment_id: {payment.id}\n\torder_id: {payment.order_id}", ex, 'payments_failed')
+#             payment_info = f"Payment ID: {payment.id}\nOrder ID: {payment.order_id}\nChat ID: {payment.payer_chat_id}"
+#             bot.send(GenericMessage.Text(account.chat_id, bot.text("payment_failure", account.language) + f"\n\n{payment_info}"))
+#     return jsonify({'status': 'success'}), 200
 
 
 if __name__ == '__main__':
-    bot.go(False)  # Run the Flask app
+    bot.go()  # Run the Flask app
