@@ -5,7 +5,7 @@ from typing import Dict
 from payagraph.job import ParallelJob
 from plus.models.account import AccountPlus
 from plus.models.channel import Channel
-from payagraph.containers import TelegramMessage
+from payagraph.containers import GenericMessage
 from plus.gateway.order import Order
 from plus.gateway.nowpayments import NowpaymentsGateway
 from plus.models.plusplan import PlusPlan
@@ -26,7 +26,7 @@ class PostJob(ParallelJob):
         if not self.account.is_member_plus() or not self.running:
             return False # False means that postjob is running but it doesnt have run permission because of
         post_body = bot.post_service.create_post(self.account, self.channel, short_text=self.short_text)
-        message = TelegramMessage.Text(self.channel.id, post_body)
+        message = GenericMessage.Text(self.channel.id, post_body)
         self.last_run_result = bot.send(message)
         self.last_call_time = call_time
         return True

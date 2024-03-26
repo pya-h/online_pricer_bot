@@ -15,25 +15,12 @@ from payagraph.keyboards import InlineKeyboard
 
 class TelegramBotCore:
     ''' Main and static part of the class; Can be used to create bots without using handler funcionalities; user state management, message and command check and all other stuffs are on developer. handle function has no use in this mode of bot development.'''
-    def __init__(self, token: str, username: str, host_url: str, text_resources: dict, _main_keyboard: Dict[str, Keyboard]|Keyboard = None) -> None:
+    def __init__(self, token: str, host_url: str) -> None:
         self.token = token
         self.bot_api_url = f"https://api.telegram.org/bot{self.token}"
         self.host_url = host_url
-        self.bot_username = username
-        self._main_keyboard: Dict[str, Keyboard]|Keyboard = _main_keyboard
 
-
-    def main_keyboard(self, user_language: str = None) -> Keyboard:
-        '''Get the keyboard that must be shown in most cases and on Start screen.'''
-        if isinstance(self._main_keyboard, Keyboard):
-            return self._main_keyboard
-        if isinstance(self._main_keyboard, dict):
-            if not user_language or user_language not in self._main_keyboard:
-                return self._main_keyboard.values()[0]
-            return self._main_keyboard[user_language]
-        return None
-
-    def send(self, message: TelegramMessage, keyboard: Keyboard|InlineKeyboard = None):
+    def send(self, message: GenericMessage, keyboard: Keyboard|InlineKeyboard = None):
         '''Calls the Telegram send message api.'''
         url = f"{self.bot_api_url}/sendMessage"
         chat_id = message.chat_id
@@ -45,8 +32,8 @@ class TelegramBotCore:
             log(f"User-Responding Failure => status code:{response.status_code}\n\tChatId:{chat_id}\nResponse text: {response.text}", category_name="PLUS_FATALITY")
         return response  # as dict
 
-    def edit(self, modified_message: TelegramMessage, keyboard: InlineKeyboard):
-        '''Edits a message on telegram. it will be called by .handle function when TelegramMessage.replace_on_previous is True [text, photo, whatever]'''
+    def edit(self, modified_message: GenericMessage, keyboard: InlineKeyboard):
+        '''Edits a message on telegram. it will be called by .handle function when GenericMessage.replace_on_previous is True [text, photo, whatever]'''
         url = f"{self.bot_api_url}/editMessageText"
         chat_id = modified_message.chat_id
         payload = {'chat_id': chat_id, 'text': modified_message.text, 'message_id': modified_message.id}
@@ -61,6 +48,42 @@ class TelegramBotCore:
         return response  # as dict
 
 
+
+
+class TelegramBot(TelegramBotCore):
+    '''More Customizable and smart part of the TelegramBot; This object will allow to add handlers that are used by TelegramBotCore.handle function and
+        by calling .handle function make the bot to handle user messages automatically, of sorts.'''
+    def __init__(self, token: str, username: str, host_url: str, text_resources: dict, _main_keyboard: Dict[str, Keyboard]|Keyboard = None) -> None:
+        super().__init__(token, host_url)
+        self.bot_username = username
+        self._main_keyboard: Dict[str, Keyboard]|Keyboard = _main_keyboard
+        self.middlewares: list[Callable[[TelegramBotCore, dict], bool]] = [] # middlewares run before everything when a message is sent
+        # if all middlewares returned True, bot is allowed to continue handling a message
+        # This is useful for implement channel memberships and plus checks
+        self.text_resources: dict = text_resources  # this is for making add multi-language support to the bot
+
+        self.state_handlers: Dict[UserStates, Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()
+        self.command_handlers: Dict[str, Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()
+        self.message_handlers: Dict[str, Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()  # bot handlers, fills with add_handler
+        self.callback_query_hanndlers: Dict[str, Callable[[TelegramBotCore, TelegramCallbackQuery], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()
+        # these handler will be checked when running bot.handle
+        self.cancel_keys: list = []  # Keywords that if the user sends them, in every state and condition, everything cancels out and user returns back to main menu
+        self.parallels: list[ParallelJob] = []
+        self.clock = None
+        ### Flask App configs ###
+        self.app: Flask = Flask(__name__)
+
+
+    def main_keyboard(self, user_language: str = None) -> Keyboard:
+        '''Get the keyboard that must be shown in most cases and on Start screen.'''
+        if isinstance(self._main_keyboard, Keyboard):
+            return self._main_keyboard
+        if isinstance(self._main_keyboard, dict):
+            if not user_language or user_language not in self._main_keyboard:
+                return self._main_keyboard.values()[0]
+            return self._main_keyboard[user_language]
+        return None
+
     def get_telegram_link(self) -> str:
         return f'https://t.me/{self.bot_username}'
 
@@ -72,35 +95,13 @@ class TelegramBotCore:
             allowed_to_continue = True
             for middleware in self.middlewares:
                 allowed_to_continue = allowed_to_continue and middleware(self, request.json)
-            
+
             if allowed_to_continue:
                 self.handle(request.json)
             return jsonify({'status': 'ok'})
 
     def go(self, debug=True):
         self.app.run(debug=debug)
-        
-
-class TelegramBot(TelegramBotCore):
-    '''More Customizable and smart part of the TelegramBot; This object will allow to add handlers that are used by TelegramBotCore.handle function and
-        by calling .handle function make the bot to handle user messages automatically, of sorts.'''
-    def __init__(self, token: str, username: str, host_url: str, text_resources: dict, _main_keyboard: Dict[str, Keyboard]|Keyboard = None) -> None:
-        super().__init__(token, username, host_url, text_resources, _main_keyboard)
-        self.middlewares: list[Callable[[TelegramBotCore, dict], bool]] = [] # middlewares run before everything when a message is sent
-        # if all middlewares returned True, bot is allowed to continue handling a message
-        # This is useful for implement channel memberships and plus checks
-        self.text_resources: dict = text_resources  # this is for making add multi-language support to the bot
-        
-        self.state_handlers: Dict[UserStates, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
-        self.command_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
-        self.message_handlers: Dict[str, Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()  # bot handlers, fills with add_handler
-        self.callback_query_hanndlers: Dict[str, Callable[[TelegramBotCore, TelegramCallbackQuery], Union[TelegramMessage, Keyboard|InlineKeyboard]]] = dict()
-        # these handler will be checked when running bot.handle
-        self.cancel_keys: list = []  # Keywords that if the user sends them, in every state and condition, everything cancels out and user returns back to main menu
-        self.parallels: list[ParallelJob] = []
-        self.clock = None
-        ### Flask App configs ###
-        self.app: Flask = Flask(__name__)
 
     def text(self, text_key: str, language: str = None) -> str|dict:  # short for gettext
         '''resource function: get an specific text from the texts_resources json loaded into bot object'''
@@ -154,12 +155,12 @@ class TelegramBot(TelegramBotCore):
         self.cancel_keys.extend(key.values() if isinstance(key, dict) else [key])
 
     # Main Sections:
-    def add_state_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]], state: UserStates|int):
+    def add_state_handler(self, handler: Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]], state: UserStates|int):
         '''Add a handler for special states of user. Depending on the appliance and structure of the bot, it must have its own UserStates enum, that you must add handler for each value of the enum. States are useful when getting multiple inputs for a model, or when special actions must be taken other than normal handlers'''
         self.state_handlers[state] = handler
 
     # Main Sections:
-    def add_message_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]], message: dict|list|str = None):
+    def add_message_handler(self, handler: Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]], message: dict|list|str = None):
         '''Add message handlers; Provide specific messages in your desired languages (as dict) to call their provided handlers when that message is sent by user;'''
         # if your bot has multiple languages then notice that your language keys must match with these keys in message
         if message:
@@ -171,12 +172,12 @@ class TelegramBot(TelegramBotCore):
             return
         # TODO: ?if msg_texts if none, then the handler is global
 
-    def add_command_handler(self, handler: Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]], command: str):
+    def add_command_handler(self, handler: Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]], command: str):
         '''Add a Handler for a message starting with forthslash(/), so if the user sends that command, this handler will run.'''
         self.command_handlers[f"/{command}" if command[0] != '/' else command] = handler
 
 
-    def add_callback_query_handler(self, handler: Callable[[TelegramBotCore, TelegramCallbackQuery], Union[TelegramMessage, Keyboard|InlineKeyboard]], action: str = None):
+    def add_callback_query_handler(self, handler: Callable[[TelegramBotCore, TelegramCallbackQuery], Union[GenericMessage, Keyboard|InlineKeyboard]], action: str = None):
         '''Add handler for each action value of the inline callback keyboards. Each group of inline keyboards have a spacial CallbackQuery.action, that each action value has its special handler '''
         self.callback_query_hanndlers[action] = handler
 
@@ -189,7 +190,7 @@ class TelegramBot(TelegramBotCore):
 
     def add_middleware(self, middleware: Callable[[TelegramBotCore, dict], bool]):
         self.middlewares.append(middleware)
-        
+
     def prepare_new_parallel_job(self, interval: int, functionality: Callable[..., any], *params) -> ParallelJob:
         '''Create a new ParallelJob object and then add it to bot parallel job list and start it.'''
         job = ParallelJob(interval, functionality, *params)
@@ -198,9 +199,9 @@ class TelegramBot(TelegramBotCore):
 
     def handle(self, telegram_data: dict):
         '''determine what course of action to take based on the message sent to the bot by user. First command/message/state handler and middlewares and then call the handle with telegram request data.'''
-        message: TelegramMessage | TelegramCallbackQuery = None
+        message: GenericMessage | TelegramCallbackQuery = None
         user: AccountPlus = None
-        response: TelegramMessage| TelegramCallbackQuery = None
+        response: GenericMessage| TelegramCallbackQuery = None
         keyboard: Keyboard | InlineKeyboard = None
         dont_use_main_keyboard: bool = False
         # TODO: run middlewares first
@@ -216,16 +217,16 @@ class TelegramBot(TelegramBotCore):
             message = TelegramCallbackQuery(telegram_data)
             user = message.by
             if message.action in self.callback_query_hanndlers:
-                handler: Callable[[TelegramBotCore, TelegramCallbackQuery], Union[TelegramMessage, Keyboard|InlineKeyboard]]  = self.callback_query_hanndlers[message.action]
+                handler: Callable[[TelegramBotCore, TelegramCallbackQuery], Union[GenericMessage, Keyboard|InlineKeyboard]]  = self.callback_query_hanndlers[message.action]
                 response, keyboard = handler(self, message)
         else:
-            message = TelegramMessage(telegram_data)
+            message = GenericMessage(telegram_data)
             user = message.by
-            handler: Callable[[TelegramBotCore, TelegramMessage], Union[TelegramMessage, Keyboard|InlineKeyboard]] = None
+            handler: Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]] = None
             if message.text in self.cancel_keys:
                 # Cancel out everything
                 user.change_state()
-                response = TelegramMessage.Text(user.chat_id, self.text('what_todo', user.language))
+                response = GenericMessage.Text(user.chat_id, self.text('what_todo', user.language))
             elif message.text in self.command_handlers:
                 handler = self.command_handlers[message.text]
                 response, keyboard = handler(self, message)
@@ -240,7 +241,7 @@ class TelegramBot(TelegramBotCore):
                         response, keyboard = handler(self, message)
 
         if not response:
-            response = TelegramMessage.Text(target_chat_id=user.chat_id, text=self.text("wrong_command", user.language))
+            response = GenericMessage.Text(target_chat_id=user.chat_id, text=self.text("wrong_command", user.language))
 
         # if message != response or ((keyboard) and not isinstance(keyboard, InlineKeyboard)):
         if not response.replace_on_previous or ((keyboard) and not isinstance(keyboard, InlineKeyboard)):

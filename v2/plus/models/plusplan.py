@@ -1,5 +1,5 @@
 from plus.db.interface import DatabasePlusInterface
-from payagraph.raw import CanBeKeyboardItemInterface
+from payagraph.types import CanBeKeyboardItemInterface
 import json
 from api.crypto_service import CryptoCurrency
 from tools.mathematix import cut_and_separate, persianify
@@ -56,17 +56,17 @@ class PlusPlan:
             description = self.description_en
             currency = self.price_currency
         return title, price, currency, description
-    
+
     def short_description(self, language="fa"):
-        title, price, currency, _ = self.get_data_by_language(language)   
+        title, price, currency, _ = self.get_data_by_language(language)
         return f"{title} - {price} {currency}"
 
     def fill_template_string(self, template_text: str, language: str="fa") -> str:
         '''Fill the template string with the fields of this object; this is used when bot wants to create payment message with plan description'''
-        title, price, currency, description = self.get_data_by_language(language)   
+        title, price, currency, description = self.get_data_by_language(language)
         return template_text % (title, description, price, currency)
-    
-    
+
+
 class PlanInterval(CanBeKeyboardItemInterface):
     def __init__(self, title: str, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
         self._title = title
