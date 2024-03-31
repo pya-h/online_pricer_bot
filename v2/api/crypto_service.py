@@ -79,26 +79,30 @@ class CoinMarketCap(CryptoCurrency):
         self.price_unit: str = price_unit
         self.symbols_list: str = None
         self.update_symbols_list()
+        self.cmc_api = cmc_api.CoinMarketCapAPI(self.api_key)
 
     def update_symbols_list(self):
         '''Construct the list of all cryptocurrency coin symbols'''
-        self.symbols_list = ''
-        for cn in CryptoCurrency.CoinsInPersian:
-            self.symbols_list += cn + ","
-        self.symbols_list = self.symbols_list[:-1]  # remove last ','
+        self.symbols_list = ','.join(CryptoCurrency.CoinsInPersian)
 
     def set_price_unit(self, pu):
         self.price_unit = pu
 
-    def send_request(self):
+    def send_request(self, custom_symbol_list: list = None):
         '''Send request to coinmarketcap to receive the prices. This function differs from other .send_request methods from other BaseAPIService childs'''
-        cmc = cmc_api.CoinMarketCapAPI(self.api_key)
-        latest_cap = cmc.cryptocurrency_quotes_latest(symbol=self.symbols_list, convert=self.price_unit)
-        self.cache_data(
-            json.dumps(latest_cap.data)
-        )
-
-        return latest_cap.data
+        latest_cap = None
+        try:
+            latest_cap = self.cmc_api.cryptocurrency_quotes_latest(
+                symbol=self.symbols_list if not custom_symbol_list else ','.join(custom_symbol_list), 
+                convert=self.price_unit
+            )
+            self.cache_data(
+                json.dumps(latest_cap.data)
+            )
+        except Exception as ex:
+            manuwriter.log("CoinMarketCap Api Failure", exception=ex, category_name="CoinMarketCapFailure")
+        result = latest_cap.data if latest_cap else []
+        return result
 
     def extract_api_response(self, desired_coins:list = None, short_text:bool = True, optional_api_data:list = None):
         '''This function constructs a text string that in each row has the latest price of a
