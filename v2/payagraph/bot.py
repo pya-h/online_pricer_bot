@@ -61,7 +61,7 @@ class TelegramBotCore:
         response = requests.post(url, json=payload)
         if response.status_code != 200:
             log(f"answerCallbackQuery Failure => status code:{response.status_code}\n\callback_query_id:{callback_query_id}\ncallback_query_text:{text}\nResponse text: {response.text}", category_name="PLUS_FATALITY")
-        return response  # as dict
+        return response 
 
 
 

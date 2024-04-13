@@ -341,13 +341,14 @@ def check_account_is_plus_member(bot: TelegramBotPlus, update: dict) -> bool:
         return False
     return True
 
+bot = TelegramBotPlus(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, post_service=channel_post_service)
 
-main_keyboard = {
-    'en': Keyboard([text_resources["keywords"]["planning_section"]["en"], text_resources["keywords"]["config_selections"]["en"]]),
-    'fa': Keyboard([text_resources["keywords"]["planning_section"]["fa"], text_resources["keywords"]["config_selections"]["fa"]])
-}
-
-bot = TelegramBotPlus(token=VIP_BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, text_resources=text_resources, _main_keyboard=main_keyboard, post_service=channel_post_service)
+bot.main_keyboard_from_resources(["plan_group", "plan_channel"],
+                    ["config_prices", "latest_prices"],
+                    ["config_calculator", "calculator"],
+                    ["price_alarm_list", "new_price_alarm"],
+                    ["my_plan", "setting"]
+)
 
 bot.add_cancel_key(bot.keyword('main_menu'))
 bot.add_cancel_key(bot.cmd('cancel'))

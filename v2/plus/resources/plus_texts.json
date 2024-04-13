@@ -130,21 +130,45 @@
         }
     },
     "keywords": {
-        "planning_section": {
+        "plan_channel": {
             "fa": "زمان بندی کانال",
             "en": "Channel Planning"
         },
-        "your_channels": {
-            "fa": "کانال های شما",
-            "en": "Your channels"
+        "plan_group": {
+            "fa": "زمان بندی گروه",
+            "en": "Group Planning"
         },
-        "new_planning": {
-            "fa": "زمان بندی کانال جدید",
-            "en": "Plan New Channel"
+        "latest_prices": {
+            "fa": "مشاهده قیمت ها",
+            "en": "Get Prices"
         },
-        "stop_planning": {
-            "fa": "توقف زمان بندی",
-            "en": "Stop Planning"
+        "config_prices": {
+            "fa": "لیست مشاهده قیمت ها",
+            "en": "Config Price List"
+        },
+        "calculator": {
+            "fa": "ماشین حساب",
+            "en": "Calculator"
+        },
+        "config_calculator": {
+            "fa": "لیست ماشین حساب من",
+            "en": "My Calculator List"
+        },
+        "new_price_alarm": {
+            "fa": "ایجاد هشدار قیمت",
+            "en": "New Price Alarm"
+        },
+        "price_alarm_list": {
+            "fa": "لیست هشدار قیمت",
+            "en": "My Alarm List"
+        },
+        "setting": {
+            "en": "Setting",
+            "fa": "تنظیمات"
+        },
+        "my_plan": {
+            "fa": "اشتراک پلاس من",
+            "en": "My Plus Plan"
         },
 
         "main_menu": {

@@ -11,6 +11,7 @@ from plus.gateway.nowpayments import NowpaymentsGateway
 from plus.models.plusplan import PlusPlan
 import json
 from payagraph.keyboards import GlassButton, InlineKeyboard
+from typing import List
 
 
 class PostJob(ParallelJob):
@@ -39,6 +40,13 @@ class TelegramBotPlus(TelegramBot):
         super().__init__(token, username, host_url, text_resources, _main_keyboard)
         self.post_service: PostServicePlus = post_service
         self.post_jobs: Dict[int, PostJob] = dict()
+
+    def main_keyboard_from_resources(self, *resource_keys: list) -> Keyboard:
+
+        buttons = lambda lang: [[self.keyword(btn, lang) for btn in row]
+                    for row in resource_keys]
+        self._main_keyboard = {'en': Keyboard(*buttons('en')), 'fa': Keyboard(*buttons('fa'))}
+        return self._main_keyboard
 
     def set_post_services(self, post_service: PostServicePlus):
         self.post_service: PostServicePlus = post_service
