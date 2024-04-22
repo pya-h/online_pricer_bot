@@ -10,3 +10,6 @@
     The bot automatically converts that token to equivalents (AutoCalculator). This list of token from which this input must convert to is selected by the,
     vip user that added the bot to group.
     * Note: The names are general: Ot can be persian or english name, or symbol. The language of which the bot sends message is selected by owner too.
+
+# APIs:
+    * Ive had implemented async requesting methods. Change whole project GET and POST requests to use this async veriosn.
