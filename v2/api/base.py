@@ -1,6 +1,7 @@
 import requests, json
 from tools import mathematix, manuwriter
 from tools.exceptions import CacheFailureException
+from api.price_seek import PriceSeek
 
 
 CACHE_FOLDER_PATH = 'api.cache'
@@ -39,12 +40,16 @@ class BaseAPIService:
             manuwriter.log('Caching failure!', ex, category_name='FATALITY')
             raise CacheFailureException(ex)
 
-    def send_request(self, headers: dict = None):
+    def send_request(self, headers: dict = None, no_cache:bool = False):
         data = None
         try:
             response = requests.get(self.URL, timeout=self.timeout, headers=headers, json=self.params)
+            if not response or response.status_code != 200:
+                return None
             data = json.loads(response.text)
-            if self.cache_file_name and response.status_code == 200 and (response is not None) and (response.text):
+            if no_cache:
+                return data
+            if self.cache_file_name and response.text is not None:
                 self.cache_data(response.text)
 
         except requests.exceptions.RequestException as e:
@@ -68,11 +73,10 @@ class BaseAPIService:
 class APIService(BaseAPIService):
     UsdInTomans = 52000  # not important, it is just a default value that will be updated at first api get from
     TetherInTomans = 52000
-    # sourcearena.ir
 
     def __init__(self, url: str, source: str, max_desired_selection: int=5, params=None, cache_file_name: str = None) -> None:
         super(APIService, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
-        self.MAX_DESIRED_SELECTION = max_desired_selection
+        self.max_desired_selection = max_desired_selection
 
     @staticmethod
     def set_usd_price(value):

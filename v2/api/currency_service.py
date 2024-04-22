@@ -25,18 +25,23 @@ class AbanTether(BaseAPIService):
         super(AbanTether, self).__init__(url=f'https://abantether.com/api/v1/otc/coin-price?coin={AbanTether.TetherSymbol}',
                                             source="Abantether.com")
         self.headers = {'Authorization': f'Token {self.token}'}
+        self.recent_response: float|None = None
 
     def get(self):
         response = self.send_request(headers=self.headers)
+        self.recent_response = None
         if response and AbanTether.TetherSymbol in response:
             value = response[AbanTether.TetherSymbol]
-            return (float(value['irtPriceBuy']) + float(value['irtPriceSell'])) / 2.0
+            mid = (float(value['irtPriceBuy']) + float(value['irtPriceSell'])) / 2.0
+            self.recent_response = mid
+            return mid
+        
         return None
 
 
 class SourceArena(APIService):
     Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
-    EntitiesIndollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
+    EntitiesInDollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
     CurrenciesInPersian = None
     NationalCurrenciesInPersian = None
     GoldsInPersian = None
@@ -65,7 +70,7 @@ class SourceArena(APIService):
                                           source="Sourcearena.ir", cache_file_name='sourcearena.json')
         self.aban_tether_token = 'Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Nzg2NzUiLCJpYXQiOjE2OTc2NDcyNTAsImV4cCI6MTcyOTE4MzI1MH0.QfVVufZo8VEtrkbRGoakINgWfyHLPVEcWWnx26nSZ6M'
         self.tether_service = AbanTether(aban_tether_token)
-        self.tether_service_respond = False
+        self.usd_service = PriceSeek()
 
     def get_desired_ones(self, desired_ones: list) -> list:
         if not desired_ones:
@@ -76,18 +81,14 @@ class SourceArena(APIService):
         desired_ones = self.get_desired_ones(desired_ones)
         api_data = optional_api_data or self.latest_data
         rows = {}
+        
         for curr in api_data:
             slug = curr['slug'].upper()
-            price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesIndollars else float(curr['price'])
-            if slug == 'USD':
-                self.set_usd_price(price)
-            elif not self.tether_service_respond and slug == 'TETHER':
-                # if aban tether not responded successful, set the tether price from source arena
-                self.set_tether_tomans(price)
+            price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesInDollars else float(curr['price'])
 
             if slug in desired_ones:
                 # repetitive code OR using multiple conditions (?)
-                if slug not in SourceArena.EntitiesIndollars:
+                if slug not in SourceArena.EntitiesInDollars:
                     toman, _ = self.rounded_prices(price, False)
                     toman = mathematix.persianify(toman)
                     rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان"
@@ -99,31 +100,48 @@ class SourceArena(APIService):
         res_curr = ''
         res_gold = ''
         for slug in desired_ones:
+                
             if slug in SourceArena.NationalCurrenciesInPersian:
-                res_curr += f'🔸 {rows[slug]}\n'
+                res_curr += f'🔸 {rows[slug]}\n' if slug in rows else f'❗️ {SourceArena.CurrenciesInPersian[slug]: قیمت دریافت نشد.}'
             else:
-                res_gold += f'🔸 {rows[slug]}\n'
+                res_gold += f'🔸 {rows[slug]}\n' if slug in rows else f'❗️ {SourceArena.CurrenciesInPersian[slug]: قیمت دریافت نشد.}'
         if res_curr:
             res_curr = f'📌 #قیمت_لحظه_ای #بازار_ارز \n{res_curr}\n'
         if res_gold:
             res_gold = f'📌 #قیمت_لحظه_ای #بازار_طلا \n{res_gold}\n'
         return res_curr + res_gold
 
-    # --------- Currency -----------
-    def send_request(self):
-        # first try to set tether irr price from AbanTether
-        self.tether_service_respond = False
+    async def update_services(self):
         try:
-            result = self.tether_service.get()
-            if result:
-                self.set_tether_tomans(result)
-                self.tether_service_respond = True
+            await self.usd_service.get_value()
         except:
             pass
+        try:
+            self.tether_service.get()
+        except:
+            pass
+        
+    # --------- Currency -----------
+    async def send_request(self):
+        await self.update_services()
 
-        response = super(SourceArena, self).send_request()
+        response = super(SourceArena, self).send_request(no_cache=True)
         return response["data"] if 'data' in response else []
 
+
+    async def get(self, desired_ones: list=None, short_text: bool=True) -> str:
+        self.latest_data = await self.send_request()  # update latest
+        usd_t = {curr['slug']: curr for curr in \
+            list(filter(lambda d: d['slug'].upper() == 'TETHER' or d['slug'].upper() == 'USD', self.latest_data))}
+        print(usd_t)
+        if self.usd_service.recent_response:
+            self.set_usd_price(self.usd_service.recent_response)
+            usd_t['USD']['price'] = self.usd_service.recent_response
+        if self.tether_service.recent_response:
+            self.set_tether_tomans(self.tether_service.recent_response)
+            usd_t['TETHER']['price'] = self.tether_service.recent_response
+        self.cache_data(self.dumps(self.latest_data))
+        return self.extract_api_response(desired_ones, short_text=short_text)
 
     def load_cache(self) -> list|dict:
         try:

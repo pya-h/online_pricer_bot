@@ -26,7 +26,7 @@ class CryptoCurrency(APIService):
 
     def get_desired_ones(self, desired_ones: list):
         if not desired_ones:
-            desired_ones = list(CryptoCurrency.CoinsInPersian.keys())[:self.MAX_DESIRED_SELECTION]
+            desired_ones = list(CryptoCurrency.CoinsInPersian.keys())[:self.max_desired_selection]
         return desired_ones
 
     def crypto_description_row(self, name: str, symbol: str, price:float|int|str, short_text: bool=True):
@@ -115,6 +115,8 @@ class CoinMarketCap(CryptoCurrency):
 
         res = ''
         for coin in desired_coins:
+            if not api_data[coin]:
+                res += f'❗️ {CryptoCurrency.CoinsInPersian[coin]}: قیمت دریافت نشد.'
             price = api_data[coin][0]['quote'][self.price_unit]['price']
             name = api_data[coin][0]['name'] if coin != BaseAPIService.TETHER_SYMBOL else 'Tether'
             res += self.crypto_description_row(name, coin, price, short_text=short_text)

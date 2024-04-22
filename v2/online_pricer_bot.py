@@ -47,6 +47,7 @@ def get_propper_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(menu_main if not is_admin else admin_keyboard, resize_keyboard=True)
 
 async def is_a_member(account: Account, context: CallbackContext):
+    return True
     chat1 = await context.bot.get_chat_member(CHANNEL_ID, account.chat_id)
     chat2 = await context.bot.get_chat_member(SECOND_CHANNEL_ID, account.chat_id)
     return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
@@ -102,13 +103,13 @@ def sign_post(message: str, for_channel: bool=True) -> str:
     footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
     return f'{header}\n{message}\n{footer}'
 
-def construct_new_post(desired_coins=None, desired_currencies=None, exactly_right_now=True, short_text=True, for_channel=True) -> str:
+async def construct_new_post(desired_coins=None, desired_currencies=None, exactly_right_now=True, short_text=True, for_channel=True) -> str:
     currencies = cryptos = ''
 
     try:
         if desired_currencies or (not desired_coins and not desired_currencies):
             # this condition is for preventing default values, when user has selected just cryptos
-            currencies = currency_service.get(desired_currencies, short_text=short_text) if exactly_right_now else \
+            currencies = await currency_service.get(desired_currencies, short_text=short_text) if exactly_right_now else \
                 currency_service.get_latest(desired_currencies)
     except Exception as ex:
         manuwriter.log("Cannot obtain Currencies! ", ex, currency_service.Source)
@@ -131,7 +132,7 @@ async def notify_changes(context: CallbackContext):
 async def announce_prices(context: CallbackContext):
     global crypto_service
     global currency_service
-    res = construct_new_post()
+    res = await construct_new_post()
     await context.bot.send_message(chat_id=CHANNEL_ID, text=res)
 
 
@@ -153,7 +154,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
     if await is_a_member(account, context):
         is_latest_data_valid = currency_service and currency_service.latest_data and crypto_service \
                                and crypto_service.latest_data and is_channel_updates_started
-        message = construct_new_post(desired_coins=account.desired_coins,
+        message = await construct_new_post(desired_coins=account.desired_coins,
                                         desired_currencies=account.desired_currencies, for_channel=False,
                                         exactly_right_now=not is_latest_data_valid)
 

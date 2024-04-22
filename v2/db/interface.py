@@ -33,7 +33,7 @@ class DatabaseInterface:
                 manuwriter.log(f"{DatabaseInterface.TABLE_ACCOUNTS} table created successfuly.", category_name='info')
 
             # else: # TEMP-*****
-            #     cursor.execute(f'ALTER TABLE {DatabaseInterface.TABLE_ACCOUNTS} ADD {DatabaseInterface.ACCOUNT_LAST_INTERACTION} DATE')
+            #     cursor.execute(f'ALTER TABLE {DatabaseInterface.TABLE_ACCOUNTS} ADD {DatabaseInterface.ACCOUNT_LANGUAGE} TEXT')
             #     connection.commit()
             manuwriter.log("Database setup completed.", category_name='info')
             cursor.close()
