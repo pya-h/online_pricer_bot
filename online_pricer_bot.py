@@ -47,6 +47,7 @@ def get_propper_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(menu_main if not is_admin else admin_keyboard, resize_keyboard=True)
 
 async def is_a_member(account: Account, context: CallbackContext):
+    return True
     chat1 = await context.bot.get_chat_member(CHANNEL_ID, account.chat_id)
     chat2 = await context.bot.get_chat_member(SECOND_CHANNEL_ID, account.chat_id)
     return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
@@ -116,7 +117,7 @@ async def construct_new_post(desired_coins=None, desired_currencies=None, exactl
     try:
         if desired_coins or (not desired_coins and not desired_currencies):
             # this condition is for preventing default values, when user has selected just currencies
-            cryptos = crypto_service.get(desired_coins, short_text=short_text) if exactly_right_now else \
+            cryptos = await crypto_service.get(desired_coins, short_text=short_text) if exactly_right_now else \
                 crypto_service.get_latest(desired_coins, short_text)
     except Exception as ex:
         manuwriter.log("Cannot obtain Cryptos! ", ex, crypto_service.Source)

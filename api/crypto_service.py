@@ -84,7 +84,7 @@ class CoinMarketCap(CryptoCurrency):
     def set_price_unit(self, pu):
         self.price_unit = pu
 
-    def get_request(self, custom_symbol_list: list = None):
+    async def get_request(self, custom_symbol_list: list = None):
         '''Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService childs'''
         latest_cap = None
         try:
@@ -140,6 +140,7 @@ class CoinMarketCap(CryptoCurrency):
         # text header
         res: str = f'💱☯ معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
             ("%s %s" % (mathematix.persianify(amount), CryptoCurrency.CoinsInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
+
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
         res += f'🔸 {mathematix.persianify(mathematix.cut_and_separate(absolute_amount))} {SourceArena.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
@@ -147,6 +148,7 @@ class CoinMarketCap(CryptoCurrency):
         desired_coins = self.get_desired_ones(desired_coins)
         if BaseAPIService.TETHER_SYMBOL not in desired_coins:
             desired_coins.insert(0, BaseAPIService.TETHER_SYMBOL)
+
         for coin in desired_coins:
             amount_in_this_coin_unit = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
             res += self.equalizer_row(coin, amount_in_this_coin_unit)

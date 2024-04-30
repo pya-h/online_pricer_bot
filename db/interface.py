@@ -27,7 +27,7 @@ class DatabaseInterface:
             # check if the table accounts was created
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{DatabaseInterface.TABLE_ACCOUNTS}'").fetchone():
                 query = f"CREATE TABLE {DatabaseInterface.TABLE_ACCOUNTS} ({DatabaseInterface.ACCOUNT_ID} INTEGER PRIMARY KEY," +\
-                    f"{DatabaseInterface.ACCOUNT_CURRENCIES} TEXT, {DatabaseInterface.ACCOUNT_CRYPTOS} TEXT, {DatabaseInterface.ACCOUNT_LAST_INTERACTION} DATE)"
+                    f"{DatabaseInterface.ACCOUNT_CURRENCIES} TEXT, {DatabaseInterface.ACCOUNT_CRYPTOS} TEXT, {DatabaseInterface.ACCOUNT_LAST_INTERACTION} DATE, {DatabaseInterface.ACCOUNT_LANGUAGE} TEXT)"
                 # create table account
                 cursor.execute(query)
                 manuwriter.log(f"{DatabaseInterface.TABLE_ACCOUNTS} table created successfuly.", category_name='info')
@@ -52,7 +52,8 @@ class DatabaseInterface:
             query = f"INSERT INTO {DatabaseInterface.TABLE_ACCOUNTS} {DatabaseInterface.ACCOUNT_ALL_FIELDS} VALUES (?, ?, ?, ?, ?)"
             connection = sqlite3.connect(self._name)
             cursor = connection.cursor()
-            cursor.execute(query, (account.chat_id, account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), account.language))
+            cursor.execute(query, (account.chat_id, account.str_desired_currencies(),
+                                   account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), account.language))
             manuwriter.log(f"New account: {account} saved into database successfully.", category_name=f'{log_category_prefix}info')
             cursor.close()
             connection.commit()
@@ -90,7 +91,8 @@ class DatabaseInterface:
         if cursor.fetchone(): # if account with his chat id has been saved before in the database
             FIELDS_TO_SET = f'{DatabaseInterface.ACCOUNT_CURRENCIES}=?, {DatabaseInterface.ACCOUNT_CRYPTOS}=?, {DatabaseInterface.ACCOUNT_LAST_INTERACTION}=?, {DatabaseInterface.ACCOUNT_LANGUAGE}=?'
             cursor.execute(f'UPDATE {DatabaseInterface.TABLE_ACCOUNTS} SET {FIELDS_TO_SET} WHERE {DatabaseInterface.ACCOUNT_ID}=?', \
-                (account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), account.language, account.chat_id))
+                (account.str_desired_currencies(), account.str_desired_coins(), 
+                 account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), account.language, account.chat_id))
         else:
             cursor.execute(f"INSERT INTO {DatabaseInterface.TABLE_ACCOUNTS} {DatabaseInterface.ACCOUNT_ALL_FIELDS} VALUES (?, ?, ?, ?, ?)", \
                 (account.chat_id, account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), account.language))

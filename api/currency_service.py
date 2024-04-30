@@ -1,6 +1,7 @@
 from api.base import *
 from tools.exceptions import InvalidInputException
 import json
+from api.price_seek import PriceSeek
 
 
 def get_persian_currency_names() -> tuple:
@@ -31,8 +32,8 @@ class AbanTether(BaseAPIService):
         self.recent_total_response: dict = {}
         self.no_response_counts = 0
 
-    def get(self):
-        self.recent_total_response = self.get_request(headers=self.headers)
+    async def get(self):
+        self.recent_total_response = await self.get_request(headers=self.headers)
         self.no_response_counts += 1
         self.recent_response = None
         if self.recent_total_response and AbanTether.TetherSymbol in self.recent_total_response:
@@ -130,7 +131,7 @@ class SourceArena(APIService):
         except:
             pass
         try:
-            self.tether_service.get()
+            await self.tether_service.get()
         except:
             pass
 
@@ -138,10 +139,9 @@ class SourceArena(APIService):
     async def get_request(self):
         await self.update_services()
 
-        response_text = super(SourceArena, self).get_request(no_cache=True)
-        response = json.loads(response_text)
-        return response["data"] if 'data' in response else [], response_text
+        response = await super(SourceArena, self).get_request(no_cache=True)
 
+        return response.data["data"] if 'data' in response.data else [], response.text
 
     async def get(self, desired_ones: list=None, short_text: bool=True) -> str:
         self.latest_data, response_text = await self.get_request()  # update latest
@@ -162,9 +162,7 @@ class SourceArena(APIService):
             self.set_tether_tomans((float(usd_t['TETHER']['price']) / 10.0) or SourceArena.DefaultTetherInTomans)
 
         self.cache_data(response_text)
-
         self.tether_service.cache_data(self.tether_service.summary(self.usd_service.recent_response), custom_file_name='usd_t')
-
         return self.extract_api_response(desired_ones, short_text=short_text)
 
     def load_cache(self) -> list|dict:
