@@ -94,7 +94,7 @@ def short_timestamp(date_delimiter='-', time_delimiter='.', datetime_delimiter='
         now = tz_today()  # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
 
-        time = now.strftime(f"%H{time_delimiter}%M")
+        time = now.strftime(now.strftime("%H" if not show_minutes else f"%H{time_delimiter}%M"))
         return f'{year}{date_delimiter}{month:02d}{date_delimiter}{day:02d}{datetime_delimiter}{time}'
 
     except Exception as ex:
@@ -201,7 +201,7 @@ def now_in_minute() -> int:
 def from_now_time_diff(t):
     '''time passed from time:t in minutes'''
     return (tz_today() - t).total_seconds() // 60
-    
+
 if __name__ == "__main__":
     d = datetime.today()
     j = gregorian_to_jalali(d.year, d.month, d.day)

@@ -23,11 +23,7 @@ class CryptoCurrency(APIService):
         super().__init__(url, source, max_desired_selection, params, cache_file_name)
         if not CryptoCurrency.CoinsInPersian:
             CryptoCurrency.CoinsInPersian = CryptoCurrency.get_persian_coin_names()
-
-    def get_desired_ones(self, desired_ones: list):
-        if not desired_ones:
-            desired_ones = list(CryptoCurrency.CoinsInPersian.keys())[:self.max_desired_selection]
-        return desired_ones
+        self.get_desired_ones = lambda desired_ones: desired_ones or list(CryptoCurrency.CoinsInPersian.keys())[:self.max_desired_selection]
 
     def crypto_description_row(self, name: str, symbol: str, price:float|int|str, short_text: bool=True):
         if isinstance(price, str):
@@ -93,7 +89,7 @@ class CoinMarketCap(CryptoCurrency):
         latest_cap = None
         try:
             latest_cap = self.cmc_api.cryptocurrency_quotes_latest(
-                symbol=self.symbols_list if not custom_symbol_list else ','.join(custom_symbol_list), 
+                symbol=self.symbols_list if not custom_symbol_list else ','.join(custom_symbol_list),
                 convert=self.price_unit
             )
             self.cache_data(

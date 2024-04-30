@@ -21,7 +21,7 @@ class BaseAPIService:
         self.latest_data = []  # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
         # Causing: App enhancement, less APi Calls(For best managemnt of non-free API uses), Less cache file read for improving bot performance and speed and prevention of lags
 
-    def cache_data(self, data: str) -> None:
+    def cache_data(self, data: str, custom_file_name: str = None) -> None:
         can_be_archived = True
         try:
             _, can_be_archived = manuwriter.prepare_folder(CACHE_FOLDER_PATH, CACHE_ARCHIVE_FOLDER_PATH)
@@ -29,11 +29,13 @@ class BaseAPIService:
             manuwriter.log('api-cache folder creation failed!', e, 'cache')
             raise CacheFailureException('Cache Folder creation failed!')
         try:
-            manuwriter.fwrite_from_scratch(f'./{CACHE_FOLDER_PATH}/{self.cache_file_name}', data, self.Source)
+            filename = self.cache_file_name if not custom_file_name else custom_file_name
+
+            manuwriter.fwrite_from_scratch(f'./{CACHE_FOLDER_PATH}/{filename}', data, self.Source)
             if can_be_archived:  # as mentioned before, archiving is not crucial; so it will be ignored if its folder can not be created
                 # although u should be aware that these errors and failure circumstances are rare
                 # Its just for making sure app never crashes
-                manuwriter.fwrite_from_scratch('./%s/%s/%s_%s.json' % (CACHE_FOLDER_PATH, CACHE_ARCHIVE_FOLDER_PATH, self.cache_file_name, mathematix.short_timestamp()), data, self.Source)
+                manuwriter.fwrite_from_scratch('./%s/%s/%s_%s.json' % (CACHE_FOLDER_PATH, CACHE_ARCHIVE_FOLDER_PATH, filename, mathematix.short_timestamp()), data, self.Source)
 
         except Exception as ex: # caching is so imortant for the performance of second bot that :
             # as soon as something goes wrong in caching, the admin must be informed.
@@ -46,9 +48,9 @@ class BaseAPIService:
             response = requests.get(self.URL, timeout=self.timeout, headers=headers, json=self.params)
             if not response or response.status_code != 200:
                 return None
-            data = json.loads(response.text)
             if no_cache:
-                return data
+                return response.text
+            data = json.loads(response.text)
             if self.cache_file_name and response.text is not None:
                 self.cache_data(response.text)
 
@@ -71,8 +73,8 @@ class BaseAPIService:
 
 
 class APIService(BaseAPIService):
-    UsdInTomans = 52000  # not important, it is just a default value that will be updated at first api get from
-    TetherInTomans = 52000
+    UsdInTomans = None  # not important, it is just a default value that will be updated at first api get from
+    TetherInTomans = None
 
     def __init__(self, url: str, source: str, max_desired_selection: int=5, params=None, cache_file_name: str = None) -> None:
         super(APIService, self).__init__(url, source, params=params, cache_file_name=cache_file_name)

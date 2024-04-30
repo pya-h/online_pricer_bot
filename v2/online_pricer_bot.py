@@ -47,7 +47,7 @@ def get_propper_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(menu_main if not is_admin else admin_keyboard, resize_keyboard=True)
 
 async def is_a_member(account: Account, context: CallbackContext):
-    return True
+    return True  # FIXME: REMOVE THISSSS
     chat1 = await context.bot.get_chat_member(CHANNEL_ID, account.chat_id)
     chat2 = await context.bot.get_chat_member(SECOND_CHANNEL_ID, account.chat_id)
     return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
