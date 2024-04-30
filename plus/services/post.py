@@ -47,7 +47,7 @@ class PostServicePlus(PostService):
             # force reload
             try:
                 manuwriter.log('Currency cache load failed. Trying force reload (API call) to update channels currency latest_data!', ex, 'PLUS_CACHE')
-                self.currency_service.latest_data = self.currency_service.send_request()
+                self.currency_service.latest_data = self.currency_service.get_request()
             except Exception as ex:
                 manuwriter.log('Can not update currency data for other channels use!', ex, 'PLUS_FATALITY')
 
@@ -57,7 +57,7 @@ class PostServicePlus(PostService):
             # force reload
             try:
                 manuwriter.log('Crypto cache load failed. Using force reload (API call) to update channels crypto latest_data!', ex, 'PLUS_CACHE')
-                self.crypto_service.latest_data = self.crypto_service.send_request()
+                self.crypto_service.latest_data = self.crypto_service.get_request()
             except Exception as ex:
                 manuwriter.log('Can not update crypto data for other channels use!', ex, 'PLUS_FATALITY')
         print('Updated post_service')

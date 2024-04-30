@@ -84,8 +84,8 @@ class CoinMarketCap(CryptoCurrency):
     def set_price_unit(self, pu):
         self.price_unit = pu
 
-    def send_request(self, custom_symbol_list: list = None):
-        '''Send request to coinmarketcap to receive the prices. This function differs from other .send_request methods from other BaseAPIService childs'''
+    def get_request(self, custom_symbol_list: list = None):
+        '''Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService childs'''
         latest_cap = None
         try:
             latest_cap = self.cmc_api.cryptocurrency_quotes_latest(

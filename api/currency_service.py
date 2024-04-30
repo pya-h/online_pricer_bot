@@ -32,7 +32,7 @@ class AbanTether(BaseAPIService):
         self.no_response_counts = 0
 
     def get(self):
-        self.recent_total_response = self.send_request(headers=self.headers)
+        self.recent_total_response = self.get_request(headers=self.headers)
         self.no_response_counts += 1
         self.recent_response = None
         if self.recent_total_response and AbanTether.TetherSymbol in self.recent_total_response:
@@ -135,16 +135,16 @@ class SourceArena(APIService):
             pass
 
     # --------- Currency -----------
-    async def send_request(self):
+    async def get_request(self):
         await self.update_services()
 
-        response_text = super(SourceArena, self).send_request(no_cache=True)
+        response_text = super(SourceArena, self).get_request(no_cache=True)
         response = json.loads(response_text)
         return response["data"] if 'data' in response else [], response_text
 
 
     async def get(self, desired_ones: list=None, short_text: bool=True) -> str:
-        self.latest_data, response_text = await self.send_request()  # update latest
+        self.latest_data, response_text = await self.get_request()  # update latest
 
         usd_t = {curr['slug']: curr for curr in \
             list(filter(lambda d: d['slug'].upper() == 'TETHER' or d['slug'].upper() == 'USD', self.latest_data))}

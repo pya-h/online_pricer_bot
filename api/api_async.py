@@ -41,9 +41,9 @@ class Request:
         if not self.__headers or not isinstance(self.__headers, dict):
             self.__headers = dict()
 
-        while idx < length:
+        while idx < length - 1:
             self.__headers[args[idx]] = args[idx + 1]
-
+            idx += 1
         return self
 
     def payload(self, *args):

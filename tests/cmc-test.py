@@ -14,6 +14,6 @@ def save(data: dict):
     
 while True:
     l = input('You coin symbol list separated by spaces ["x" for using default list]')
-    data = cmc.send_request(custom_symbol_list=l.split() if l != 'x' else None)
+    data = cmc.get_request(custom_symbol_list=l.split() if l != 'x' else None)
     save(data)
     print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n')

@@ -1,7 +1,7 @@
 import requests, json
 from tools import mathematix, manuwriter
 from tools.exceptions import CacheFailureException
-from api.price_seek import PriceSeek
+import api.api_async as api
 
 
 CACHE_FOLDER_PATH = 'api.cache'
@@ -16,7 +16,7 @@ class BaseAPIService:
         self.URL: str = url
         self.Source: str = source
         self.timeout: int = timeout
-        self.params: dict = params
+        self.params: dict = params or dict()
         self.cache_file_name: str = cache_file_name
         self.latest_data = []  # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
         # Causing: App enhancement, less APi Calls(For best managemnt of non-free API uses), Less cache file read for improving bot performance and speed and prevention of lags
@@ -42,10 +42,11 @@ class BaseAPIService:
             manuwriter.log('Caching failure!', ex, category_name='FATALITY')
             raise CacheFailureException(ex)
 
-    def send_request(self, headers: dict = None, no_cache:bool = False):
+    async def get_request(self, headers: dict = None, no_cache:bool = False):
         data = None
         try:
-            response = requests.get(self.URL, timeout=self.timeout, headers=headers, json=self.params)
+            request = api.Request(self.URL, headers=headers, payload=self.params)
+            response = await request.get()
             if not response or response.status_code != 200:
                 return None
             if no_cache:
@@ -54,9 +55,6 @@ class BaseAPIService:
             if self.cache_file_name and response.text is not None:
                 self.cache_data(response.text)
 
-        except requests.exceptions.RequestException as e:
-        # Handle any request exceptions
-            manuwriter.log("Error occurred while making the request:", e, category_name=self.Source)
         except Exception as e:
             # Handle any other exceptions
             manuwriter.log("An unexpected error occurred:", e, category_name=self.Source)
@@ -94,8 +92,8 @@ class APIService(BaseAPIService):
     def extract_api_response(self, desired_ones: list=None, short_text: bool=True, optional_api_data:list = None) -> str:
         pass
 
-    def get(self, desired_ones: list=None, short_text: bool=True) -> str:
-        self.latest_data = self.send_request()  # update latest
+    async def get(self, desired_ones: list=None, short_text: bool=True) -> str:
+        self.latest_data = await self.get_request()  # update latest
         return self.extract_api_response(desired_ones, short_text=short_text)
 
     def get_latest(self, desired_ones: list=None, short_text: bool=True) -> str:
@@ -110,7 +108,7 @@ class APIService(BaseAPIService):
             if not self.latest_data: # if there is no cache, and the no latest data eigher, to prevent craching, call the api for once
                 try:
                     manuwriter.log("Couldnt read cache; Using Direct api call to obtain data.", ex, category_name='CACHE')
-                    self.latest_data = self.send_request()  # the condition that is happende, may be due to lack of cache file,
+                    self.latest_data = self.get_request()  # the condition that is happende, may be due to lack of cache file,
                     # This may be cause when this app is run before oneline_pricer_bot for the first time.
                     # sending a request will make new cache and solve this issue.
                 except Exception as fex:
