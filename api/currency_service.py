@@ -2,6 +2,8 @@ from api.base import *
 from tools.exceptions import InvalidInputException
 import json
 from api.price_seek import PriceSeek
+from datetime import datetime
+from random import randint
 
 
 def get_persian_currency_names() -> tuple:
@@ -30,8 +32,10 @@ class AbanTether(BaseAPIService):
         self.headers = {'Authorization': f'Token {self.token}'}
         self.recent_response: float|None = None
         self.recent_total_response: dict = {}
-        self.no_response_counts = 0
-
+        self.no_response_counts: int = 0
+        self.last_guess_date: datetime = mathematix.tz_today()
+        self.usd_recent_guess: int = 0
+        
     async def get(self):
         self.recent_total_response = await self.get_request(headers=self.headers)
         self.no_response_counts += 1
@@ -51,6 +55,22 @@ class AbanTether(BaseAPIService):
         tether['USD'] = dollor_price
         return json.dumps(tether)
 
+    def time_for_next_guess(self) -> int:
+        if not self.recent_response:
+            return False
+        if not self.usd_recent_guess:
+            return True
+        diff, self.last_guess_date = mathematix.from_now_time_diff(self.last_guess_date)
+        if diff < 60:
+            return False
+        return self.last_guess_date.hour >= 10 and self.last_guess_date.hour < 22
+    
+    def guess_dollar_price(self, guess_range: int = 100) -> int:
+        if not self.time_for_next_guess():
+            return self.usd_recent_guess
+        diff = randint(1, guess_range)
+        self.usd_recent_guess = self.recent_response - diff
+        return self.usd_recent_guess
 
 class SourceArena(APIService):
     Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
@@ -149,18 +169,28 @@ class SourceArena(APIService):
         usd_t = {curr['slug']: curr for curr in \
             list(filter(lambda d: d['slug'].upper() == 'TETHER' or d['slug'].upper() == 'USD', self.latest_data))}
 
-        if self.usd_service.recent_response:
-            self.set_usd_price(self.usd_service.recent_response)
-            usd_t['USD']['price'] = self.usd_service.recent_response
-        elif not self.UsdInTomans or self.usd_service.no_response_counts > SourceArena.MaxExtraServicesFailure:
-            self.set_usd_price((float(usd_t['USD']['price']) / 10.0) or SourceArena.DefaultUsbInTomans)
-
         if self.tether_service.recent_response:
             self.set_tether_tomans(self.tether_service.recent_response)
             usd_t['TETHER']['price'] = self.tether_service.recent_response
         elif not self.TetherInTomans or self.tether_service.no_response_counts > SourceArena.MaxExtraServicesFailure:
-            self.set_tether_tomans((float(usd_t['TETHER']['price']) / 10.0) or SourceArena.DefaultTetherInTomans)
-
+            try:
+                self.set_tether_tomans((float(usd_t['TETHER']['price']) / 10.0) or SourceArena.DefaultTetherInTomans)
+            except:
+                if not SourceArena.TetherInTomans:
+                    SourceArena.TetherInTomans = SourceArena.DefaultTetherInTomans
+                    
+        if self.usd_service.recent_response:
+            self.set_usd_price(self.usd_service.recent_response)
+            usd_t['USD']['price'] = self.usd_service.recent_response
+        elif not self.UsdInTomans or self.usd_service.no_response_counts > SourceArena.MaxExtraServicesFailure:
+            # TODO: INFORM THIS TO SUNSCRIBER ADMINS
+            try:
+                usd_guessed_price = self.tether_service.guess_dollar_price()
+                self.set_usd_price(usd_guessed_price or (float(usd_t['USD']['price']) / 10.0) or SourceArena.DefaultUsbInTomans)
+            except:
+                if not SourceArena.UsdInTomans:
+                    SourceArena.UsdInTomans = SourceArena.DefaultUsdInTomans
+                    
         self.cache_data(response_text)
         self.tether_service.cache_data(self.tether_service.summary(self.usd_service.recent_response), custom_file_name='usd_t')
         return self.extract_api_response(desired_ones, short_text=short_text)

@@ -198,9 +198,10 @@ def minutes_to_timestamp(minutes: int) -> str:
 def now_in_minute() -> int:
     return time() // 60
 
-def from_now_time_diff(t):
+def from_now_time_diff(dt: datetime):
     '''time passed from time:t in minutes'''
-    return (tz_today() - t).total_seconds() // 60
+    now = tz_today()
+    return (now - dt).total_seconds() // 60, now
 
 if __name__ == "__main__":
     d = datetime.today()

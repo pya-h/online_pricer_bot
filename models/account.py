@@ -32,7 +32,8 @@ class Account:
         return Account._database
 
     def no_interaction_duration(self):
-        return from_now_time_diff(self.last_interaction)
+        diff, _ =  from_now_time_diff(self.last_interaction)
+        return diff
 
     @staticmethod
     def GarbageCollect():
