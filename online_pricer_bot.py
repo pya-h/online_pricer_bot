@@ -7,12 +7,21 @@ from decouple import config
 from models.account import Account
 import json
 from tools import manuwriter, mathematix
+from enum import Enum
 
-# constants such as keyboard button texts
-COMMANDS = (CMD_GET, CMD_SELECT_COINS, CMD_SELECT_CURRENCIES, CMD_SELECT_GOLDS, CMD_EQUALIZER, CMD_CANCEL) = (
-    'مشاهده لیست قیمت من', 'ارز دیجیتال', "ارز", "طلا", "تبدیل گر", "لغو")
-ADMIN_COMMANDS = (CMD_ADMIN_POST, CMD_ADMIN_START_SCHEDULE, CMD_ADMIN_STOP_SCHEDULE, CMD_ADMIN_STATISTICS) \
-    = ('اطلاع رسانی', 'زمانبندی کانال', 'توقف زمانبندی', 'آمار')
+class BotCommand(Enum):
+    GET_FA = 'مشاهده لیست قیمت من'
+    SELECT_COINS_FA = 'ارز دیجیتال'
+    SELECT_CURRENCIES_FA = "ارز"
+    SELECT_GOLDS_FA = 'طلا'
+    EQUALIZER_FA = "ماشین حساب"
+    CANCEL_FA = 'لغو'
+
+    ADMIN_POST_FA = 'اطلاع رسانی'
+    ADMIN_START_SCHEDULE_FA = 'زمانبندی کانال'
+    ADMIN_STOP_SCHEDULE_FA = 'توقف زمانبندی'
+    ADMIN_STATISTICS_FA = 'آمار'
+
 
 # environment values
 BOT_TOKEN = config('MAIN_BOT_TOKEN')
@@ -27,14 +36,14 @@ schedule_interval = float(config('MAIN_SCHEDULER_DEFAULT_INTERVAL', 10))
 
 # main keyboard (soft keyboard of course)
 menu_main = [
-    [KeyboardButton(CMD_EQUALIZER), KeyboardButton(CMD_GET)],
-    [KeyboardButton(CMD_SELECT_COINS), KeyboardButton(CMD_SELECT_CURRENCIES), KeyboardButton(CMD_SELECT_GOLDS)],
+    [KeyboardButton(BotCommand.EQUALIZER_FA), KeyboardButton(BotCommand.GET_FA)],
+    [KeyboardButton(BotCommand.SELECT_COINS_FA), KeyboardButton(BotCommand.SELECT_CURRENCIES_FA), KeyboardButton(BotCommand.SELECT_GOLDS_FA)],
 ]
 
 admin_keyboard = [
     *menu_main,
-    [KeyboardButton(CMD_ADMIN_POST), KeyboardButton(CMD_ADMIN_STATISTICS)],
-    [KeyboardButton(CMD_ADMIN_START_SCHEDULE), KeyboardButton(CMD_ADMIN_STOP_SCHEDULE)],
+    [KeyboardButton(BotCommand.ADMIN_POST_FA), KeyboardButton(BotCommand.ADMIN_STATISTICS_FA)],
+    [KeyboardButton(BotCommand.ADMIN_START_SCHEDULE_FA), KeyboardButton(BotCommand.ADMIN_STOP_SCHEDULE_FA)],
 
 ]
 
@@ -332,107 +341,108 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
 
 async def handle_messages(update: Update, context: CallbackContext):
     if update and update.message:
-        msg = update.message.text
         # TODO: Use match-case here
-        if msg == CMD_GET:
-            await cmd_get_prices(update, context)
-        elif msg == CMD_SELECT_COINS:
-            await cmd_select_coins(update, context)
-        elif msg == CMD_SELECT_CURRENCIES:
-            await cmd_select_currencies(update, context)
-        elif msg == CMD_SELECT_GOLDS:
-            await cmd_select_golds(update, context)
-        elif msg == CMD_ADMIN_POST:
-            await cmd_send_post(update, context)
-        elif msg == CMD_ADMIN_START_SCHEDULE:
-            await cmd_schedule_channel_update(update, context)
-        elif msg == CMD_ADMIN_STOP_SCHEDULE:
-            await cmd_stop_schedule(update, context)
-        elif msg == CMD_ADMIN_STATISTICS:
-            await cmd_report_statistics(update, context)
-        elif msg == CMD_EQUALIZER:
-            await cmd_equalizer(update, context)
-        else:
-            # check account state first, to see if he/she is in input state
-            account = Account.Get(update.effective_chat.id)
-            if msg == CMD_CANCEL:
-                account.change_state()  # reset .state and .state_data
-                await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
-                                                reply_markup=get_propper_keyboard(account.is_admin))
+        match update.message.text:
+            case BotCommand.GET_FA.value:
+                await cmd_get_prices(update, context)
+            case BotCommand.SELECT_COINS_FA.value:
+                await cmd_select_coins(update, context)
+            case BotCommand.SELECT_CURRENCIES_FA.value:
+                await cmd_select_currencies(update, context)
+            case BotCommand.SELECT_GOLDS_FA.value:
+                await cmd_select_golds(update, context)
+            case BotCommand.ADMIN_POST_FA.value:
+                await cmd_send_post(update, context)
+            case BotCommand.ADMIN_START_SCHEDULE_FA.value:
+                await cmd_schedule_channel_update(update, context)
+            case BotCommand.ADMIN_STOP_SCHEDULE_FA.value:
+                await cmd_stop_schedule(update, context)
+            case BotCommand.ADMIN_STATISTICS_FA.value:
+                await cmd_report_statistics(update, context)
+            case BotCommand.EQUALIZER_FA.value:
+                await cmd_equalizer(update, context)
+            case _:
+                # check account state first, to see if he/she is in input state
+                account = Account.Get(update.effective_chat.id)
+                msg = update.message.text
+                if msg == BotCommand.CANCEL_FA:
+                    account.change_state()  # reset .state and .state_data
+                    await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
+                                                    reply_markup=get_propper_keyboard(account.is_admin))
 
-            elif account.state == UserStates.SEND_POST and account.authorization(context.args):
-                # admin is trying to send post
-                all_accounts = Account.Everybody()
-                progress_text = "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: "
-                telegram_response = await update.message.reply_text(progress_text)
-                message_id = None
-                try:
-                    message_id = telegram_response['message_id']
-                except:
+                elif account.state == UserStates.SEND_POST and account.authorization(context.args):
+                    # admin is trying to send post
+                    all_accounts = Account.Everybody()
+                    progress_text = "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: "
+                    telegram_response = await update.message.reply_text(progress_text)
                     message_id = None
-                number_of_accounts = len(all_accounts)
-                progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
-                for index, chat_id in enumerate(all_accounts):
                     try:
-                        if message_id and index % progress_update_trigger == 0:
-                            progress = 100 * index / number_of_accounts
-                            await context.bot.edit_message_text(chat_id=account.chat_id, message_id=message_id, text=f'{progress_text}{progress:.2f} %')
-                        if chat_id != account.chat_id:
-                            await update.message.copy(chat_id)
+                        message_id = telegram_response['message_id']
                     except:
-                        pass  # maybe remove the account from database ?
-                if message_id:
-                    await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
-                await update.message.reply_text(f'✅ پیام شما با موفقیت برای تمامی کاربران ربات ({len(all_accounts)} نفر) ارسال شد.',
-                                                reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-                account.change_state()  # reset .state and .state_data
-            elif account.state == UserStates.INPUT_EQUALIZER_AMOUNT:
-                params = msg.split()
-                count_of_params = len(params)
-                # extract parameters and categorize themn into units and amounts
-                amounts = []
-                units = [] if not account.state_data else account.state_data
-                invalid_units = []
-                index = 0
-                # extract amounts from params
-                try:
+                        message_id = None
+                    number_of_accounts = len(all_accounts)
+                    progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
+                    for index, chat_id in enumerate(all_accounts):
+                        try:
+                            if message_id and index % progress_update_trigger == 0:
+                                progress = 100 * index / number_of_accounts
+                                await context.bot.edit_message_text(chat_id=account.chat_id, message_id=message_id, text=f'{progress_text}{progress:.2f} %')
+                            if chat_id != account.chat_id:
+                                await update.message.copy(chat_id)
+                        except:
+                            pass  # maybe remove the account from database ?
+                    if message_id:
+                        await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
+                    await update.message.reply_text(f'✅ پیام شما با موفقیت برای تمامی کاربران ربات ({len(all_accounts)} نفر) ارسال شد.',
+                                                    reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+                    account.change_state()  # reset .state and .state_data
+                elif account.state == UserStates.INPUT_EQUALIZER_AMOUNT:
+                    params = msg.split()
+                    count_of_params = len(params)
+                    # extract parameters and categorize themn into units and amounts
+                    amounts = []
+                    units = [] if not account.state_data else account.state_data
+                    invalid_units = []
+                    index = 0
+                    # extract amounts from params
+                    try:
+                        while index < count_of_params:
+                            amount = float(params[index])
+                            amounts.append(amount)
+                            index += 1
+                    except:
+                        pass
+
+                    if not amounts:
+                        await update.message.reply_text("مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
+                                reply_markup=get_propper_keyboard(account.is_admin))
+                        return
+
+                    # start extracting units
                     while index < count_of_params:
-                        amount = float(params[index])
-                        amounts.append(amount)
+                        source_symbol = params[index].upper()
+                        if source_symbol in crypto_service.CoinsInPersian:
+                            units.append(source_symbol)
+                        else: # invalud units
+                            invalid_units.append(source_symbol)
+
                         index += 1
-                except:
-                    pass
-
-                if not amounts:
-                    await update.message.reply_text("مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
-                            reply_markup=get_propper_keyboard(account.is_admin))
-                    return
-
-                # start extracting units
-                while index < count_of_params:
-                    source_symbol = params[index].upper()
-                    if source_symbol in crypto_service.CoinsInPersian:
-                        units.append(source_symbol)
-                    else: # invalud units
-                        invalid_units.append(source_symbol)
-
-                    index += 1
-                # if there was some units that are invalid are not supported
-                if invalid_units:
-                    await update.message.reply_text(f'هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند: \n {", ".join(invalid_units)}',
-                                                    reply_markup=get_propper_keyboard(account.is_admin), reply_to_message_id=update.message.message_id)
-                if not units:
-                    # Open select unit reply_markup list
-                    account.state = UserStates.INPUT_EQUALIZER_UNIT
-                    account.change_state(UserStates.INPUT_EQUALIZER_UNIT, amounts)
-                    await update.message.reply_text(f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
-                                                    reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian))
+                    # if there was some units that are invalid are not supported
+                    if invalid_units:
+                        await update.message.reply_text(f'هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند: \n {", ".join(invalid_units)}',
+                                                        reply_markup=get_propper_keyboard(account.is_admin), reply_to_message_id=update.message.message_id)
+                    if not units:
+                        # Open select unit reply_markup list
+                        account.state = UserStates.INPUT_EQUALIZER_UNIT
+                        account.change_state(UserStates.INPUT_EQUALIZER_UNIT, amounts)
+                        await update.message.reply_text(f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
+                                                        reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian))
+                    else:
+                        await start_equalizing(update.message.reply_text, account, amounts, units)
+                        account.change_state()  # reset state
                 else:
-                    await start_equalizing(update.message.reply_text, account, amounts, units)
-                    account.change_state()  # reset state
-            else:
-                await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
-                                                reply_markup=get_propper_keyboard(account.is_admin))
+                    await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
+                                                    reply_markup=get_propper_keyboard(account.is_admin))
 
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):

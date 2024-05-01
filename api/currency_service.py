@@ -185,8 +185,7 @@ class SourceArena(APIService):
         elif not self.UsdInTomans or self.usd_service.no_response_counts > SourceArena.MaxExtraServicesFailure:
             # TODO: INFORM THIS TO SUNSCRIBER ADMINS
             try:
-                usd_guessed_price = self.tether_service.guess_dollar_price()
-                self.set_usd_price(usd_guessed_price or (float(usd_t['USD']['price']) / 10.0) or SourceArena.DefaultUsbInTomans)
+                self.set_usd_price(self.tether_service.guess_dollar_price() or (float(usd_t['USD']['price']) / 10.0) or SourceArena.DefaultUsbInTomans)
             except:
                 if not SourceArena.UsdInTomans:
                     SourceArena.UsdInTomans = SourceArena.DefaultUsdInTomans
