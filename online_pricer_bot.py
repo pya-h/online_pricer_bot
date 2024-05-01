@@ -48,7 +48,7 @@ admin_keyboard = [
 ]
 
 cancel_menu = [
-    [KeyboardButton(CMD_CANCEL)],
+    [KeyboardButton(BotCommand.CANCEL_FA)],
 ]
 
 
@@ -74,7 +74,7 @@ async def ask2join(update):
                                         [InlineKeyboardButton("@Crypto_AKSA", url="https://t.me/Crypto_AKSA"),
                                          InlineKeyboardButton("@Online_pricer", url="https://t.me/Online_pricer")]
                                     ]))
-
+    return None
 
 # this function creates inline keyboard for selecting coin/currency as desired ones
 def new_inline_keyboard(name, all_choices: dict, selected_ones: list=None, show_full_names: bool=False):
@@ -133,6 +133,10 @@ async def construct_new_post(desired_coins=None, desired_currencies=None, exactl
     return sign_post(currencies + cryptos, for_channel=for_channel)
 
 
+async def say_youre_not_allowed(reply):
+    await reply('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+    return None
+
 async def notify_changes(context: CallbackContext):
     await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {crypto_service.Source} تغییر یافت.")
 
@@ -147,78 +151,77 @@ async def announce_prices(context: CallbackContext):
 async def cmd_welcome(update: Update, context: CallbackContext):
     acc = Account.Get(update.effective_chat.id)
     # get old or create new account => automatically will be added to Account.Instances
-    if await is_a_member(acc, context):
-        await update.message.reply_text(f'''کاربر {update.message.chat.first_name}\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏
+    if not await is_a_member(acc, context):
+        return await ask2join(update)
+
+    await update.message.reply_text(f'''کاربر {update.message.chat.first_name}\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏
 
 اگر برای اولین بار است که میخواهید از این ربات استفاده کنید توصیه میکنیم از طریق لینک زیر آموزش ویدیوئی ربات را مشاهده کنید:
 🎥 https://t.me/Online_pricer/3443''', disable_web_page_preview=True,
-                                        reply_markup=ReplyKeyboardMarkup(menu_main if not acc.is_admin else admin_keyboard, resize_keyboard=True))
-    else:
-        await ask2join(update)
-
+                                    reply_markup=ReplyKeyboardMarkup(menu_main if not acc.is_admin else admin_keyboard, resize_keyboard=True))
 
 async def cmd_get_prices(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if await is_a_member(account, context):
-        is_latest_data_valid = currency_service and currency_service.latest_data and crypto_service \
-                               and crypto_service.latest_data and is_channel_updates_started
-        message = await construct_new_post(desired_coins=account.desired_coins,
-                                        desired_currencies=account.desired_currencies, for_channel=False,
-                                        exactly_right_now=not is_latest_data_valid)
+    if not await is_a_member(account, context):
+        return await ask2join(update)
 
-        await update.message.reply_text(message, reply_markup=get_propper_keyboard(account.is_admin))
-    else:
-        await ask2join(update)
+    is_latest_data_valid = currency_service and currency_service.latest_data and crypto_service \
+                            and crypto_service.latest_data and is_channel_updates_started
+    message = await construct_new_post(desired_coins=account.desired_coins,
+                                    desired_currencies=account.desired_currencies, for_channel=False,
+                                    exactly_right_now=not is_latest_data_valid)
+
+    await update.message.reply_text(message, reply_markup=get_propper_keyboard(account.is_admin))
 
 
 async def cmd_select_coins(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if await is_a_member(account, context):
-        await update.message.reply_text('''📌 #لیست_بازار_ارز_دیجیتال
+    if not await is_a_member(account, context):
+        return await ask2join(update)
+
+    await update.message.reply_text('''📌 #لیست_بازار_ارز_دیجیتال
 
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian,
-                                                                         account.desired_coins))
-    else:
-        await ask2join(update)
+                                    reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian,
+                                                                        account.desired_coins))
 
 
 async def cmd_select_currencies(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if await is_a_member(account, context):
-        await update.message.reply_text('''📌 #لیست_بازار_ارز
+    if not await is_a_member(account, context):
+        return await ask2join(update)
+    await update.message.reply_text('''📌 #لیست_بازار_ارز
 
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("currencies", currency_service.NationalCurrenciesInPersian,
-                                                                         account.desired_currencies, True))
-    else:
-        await ask2join(update)
+                                    reply_markup=new_inline_keyboard("currencies", currency_service.NationalCurrenciesInPersian,
+                                                                        account.desired_currencies, True))        
 
 
 # TODO: complete this
 async def cmd_select_golds(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if await is_a_member(account, context):
-        await update.message.reply_text(    '''📌 #لیست_بازار_طلا
+    if not await is_a_member(account, context):
+        return await ask2join(update)
+    await update.message.reply_text('''📌 #لیست_بازار_طلا
 
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                        reply_markup=new_inline_keyboard("golds", currency_service.GoldsInPersian,
-                                                                         account.desired_currencies, True))
-    else:
-        await ask2join(update)
+                                    reply_markup=new_inline_keyboard("golds", currency_service.GoldsInPersian,
+                                                                        account.desired_currencies, True))
 
 
 async def cmd_equalizer(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if await is_a_member(account, context):
-        account.change_state(UserStates.INPUT_EQUALIZER_AMOUNT)
-        await update.message.reply_text('''♻️💱 ماشین حساب 💱☯
+    if not await is_a_member(account, context):
+        return await ask2join(update)
+
+    account.change_state(UserStates.INPUT_EQUALIZER_AMOUNT)
+    await update.message.reply_text('''♻️💱 ماشین حساب 💱☯
 در این بخش می‌توانید با مشخص کردن مبلغ مشخص تحت یک ارز مشخص، مبلغ معادل آن در ارزهای دیجیتال دیگر را مشاهده کنید. فرایند معادل‌سازی، بصورت پیش‌فرض، بر اساس لیست ارز دیجیتال تنظیم شده‌ی شما در ربات انجام می‌گردد.
 
 👁‍🗨 راهنما 👁‍🗨
@@ -226,116 +229,117 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 1⃣ مبلغ را وارد کنید، سپس یک لیست طولانی ارز دیجیتال (همانند لیست قسمت تنظیم ارز دیجیتال) مشاهده می‌کنید، با انتخاب ارز دلخواه، ربات فرایند معادل‌سازی را انجام داده و بلافاصله پیام‌بعدی لیست معاد‌ل‌ها را دریافت خواهید کرد.
 
 2⃣ مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
-                                        reply_markup=get_propper_keyboard(account.is_admin))
-    else:
-        await ask2join(update)
+                                    reply_markup=get_propper_keyboard(account.is_admin))
 
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     global schedule_interval
-    if Account.Get(update.effective_chat.id).authorization(context.args):
-        schedule_interval = 10
-        try:
-            if context.args:
-                try:
-                    schedule_interval = int(context.args[-1])
-                except ValueError:
-                    schedule_interval = float(context.args[-1])
+    if not Account.Get(update.effective_chat.id).authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text)
+    
+    schedule_interval = 10
+    try:
+        if context.args:
+            try:
+                schedule_interval = int(context.args[-1])
+            except ValueError:
+                schedule_interval = float(context.args[-1])
 
-        except Exception as e:
-            manuwriter.log("Something went wrong while scheduling: ", e)
-            pass
-        global is_channel_updates_started
-        if not is_channel_updates_started:
-            is_channel_updates_started = True
-            context.job_queue.run_repeating(announce_prices, interval=schedule_interval * 60, first=1,
-                                            name=MAIN_SCHEDULER_IDENTIFIER)
-            await update.message.reply_text(f'زمان بندی {schedule_interval} دقیقه ای با موفقیت انجام شد.',
-                                            reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-        else:
-            await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.",
-                                            reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-    else:
-        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+    except Exception as e:
+        manuwriter.log("Something went wrong while scheduling: ", e)
+        
+    global is_channel_updates_started
+    if not is_channel_updates_started:
+        await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.",
+                                        reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+        return
+    
+    is_channel_updates_started = True
+    context.job_queue.run_repeating(announce_prices, interval=schedule_interval * 60, first=1,
+                                    name=MAIN_SCHEDULER_IDENTIFIER)
+    await update.message.reply_text(f'زمان بندی {schedule_interval} دقیقه ای با موفقیت انجام شد.',
+                                    reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
 
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
-    if Account.Get(update.effective_chat.id).authorization(context.args):
-        global is_channel_updates_started
-        current_jobs = context.job_queue.get_jobs_by_name(MAIN_SCHEDULER_IDENTIFIER)
-        for job in current_jobs:
-            job.schedule_removal()
-        is_channel_updates_started = False
-        crypto_service.latest_prices = ''
-        await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.',
-                                        reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-    else:
-        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+    if not Account.Get(update.effective_chat.id).authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text)
+    
+    global is_channel_updates_started
+    current_jobs = context.job_queue.get_jobs_by_name(MAIN_SCHEDULER_IDENTIFIER)
+    for job in current_jobs:
+        job.schedule_removal()
+    is_channel_updates_started = False
+    crypto_service.latest_prices = ''
+    await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.',
+                                    reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
 
 
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
-    if Account.Get(update.effective_chat.id).authorization(context.args):
-        global crypto_service
-        crypto_service = CoinGecko()
-        await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
-                                        reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-        await notify_changes(context)
-    else:
-        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+    if not Account.Get(update.effective_chat.id).authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text)
+    
+    global crypto_service
+    crypto_service = CoinGecko()
+    await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
+                                    reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+    await notify_changes(context)
 
 
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
-    if Account.Get(update.effective_chat.id).authorization(context.args):
-        global crypto_service
-        crypto_service = CoinMarketCap(CMC_API_KEY)
-        await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
-                                        reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-        await notify_changes(context)
-    else:
-        await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+    if not Account.Get(update.effective_chat.id).authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text)
+    
+    global crypto_service
+    crypto_service = CoinMarketCap(CMC_API_KEY)
+    await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
+                                    reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+    await notify_changes(context)
 
 
 async def cmd_admin_login(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if await is_a_member(account, context):
-        if account.authorization(context.args):
-            await update.message.reply_text(
-                'اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-        else:
-            await update.message.reply_text('اطلاعات وارد شده صحیح نیستند!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
-    else:
-        await ask2join(update)
+    if not await is_a_member(account, context):
+        return await ask2join(update)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text)
+    
+    await update.message.reply_text(
+        'اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
+
 
 async def cmd_send_post(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if account.authorization(context.args):
-        account.change_state(UserStates.SEND_POST)
-        await update.message.reply_text('''🔹 پست خود را ارسال کنید:
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text)
+
+    account.change_state(UserStates.SEND_POST)
+    await update.message.reply_text('''🔹 پست خود را ارسال کنید:
 (این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''', reply_markup=ReplyKeyboardMarkup(cancel_menu, resize_keyboard=True))
-    else:
-        await update.message.reply_text('شما اجازه چنین کاری را ندارید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+
 
 async def cmd_report_statistics(update: Update, context: CallbackContext):
-    if Account.Get(update.effective_chat.id).authorization(context.args):
-        stats = Account.Statistics()
-        await update.message.reply_text(f'''🔷 تعداد کاربران فعال ربات:
+    if not Account.Get(update.effective_chat.id).authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text)
+
+    stats = Account.Statistics()
+    await update.message.reply_text(f'''🔷 تعداد کاربران فعال ربات:
 
 🔹 امروز: {stats['daily']}
 🔹 دیروز: {stats['yesterday']}
 🔹 هفته اخیر: {stats['weekly']}
 🔹 ماه اخیر: {stats['monthly']}
 🔹 تعداد کل کاربران ربات: {stats['all']}''', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
-    else:
-        await update.message.reply_text('شما اجازه چنین کاری را ندارید!', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
+
 
 async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
-    if isinstance(crypto_service, CoinMarketCap):
-        for amount in amounts:
-            for unit in units:
-                response = crypto_service.equalize(unit, amount, account.desired_coins)
-                await func_send_message(response)
-    else:
+    if not isinstance(crypto_service, CoinMarketCap):
         await func_send_message("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...")
+        return
+    for amount in amounts:
+        for unit in units:
+            response = crypto_service.equalize(unit, amount, account.desired_coins)
+            await func_send_message(response)
 
 
 async def handle_messages(update: Update, context: CallbackContext):
