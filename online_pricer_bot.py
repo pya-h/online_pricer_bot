@@ -36,21 +36,20 @@ schedule_interval = float(config('MAIN_SCHEDULER_DEFAULT_INTERVAL', 10))
 
 # main keyboard (soft keyboard of course)
 menu_main = [
-    [KeyboardButton(BotCommand.EQUALIZER_FA), KeyboardButton(BotCommand.GET_FA)],
-    [KeyboardButton(BotCommand.SELECT_COINS_FA), KeyboardButton(BotCommand.SELECT_CURRENCIES_FA), KeyboardButton(BotCommand.SELECT_GOLDS_FA)],
+    [KeyboardButton(BotCommand.EQUALIZER_FA.value), KeyboardButton(BotCommand.GET_FA.value)],
+    [KeyboardButton(BotCommand.SELECT_COINS_FA.value), KeyboardButton(BotCommand.SELECT_CURRENCIES_FA.value), KeyboardButton(BotCommand.SELECT_GOLDS_FA.value)],
 ]
 
 admin_keyboard = [
     *menu_main,
-    [KeyboardButton(BotCommand.ADMIN_POST_FA), KeyboardButton(BotCommand.ADMIN_STATISTICS_FA)],
-    [KeyboardButton(BotCommand.ADMIN_START_SCHEDULE_FA), KeyboardButton(BotCommand.ADMIN_STOP_SCHEDULE_FA)],
+    [KeyboardButton(BotCommand.ADMIN_POST_FA.value), KeyboardButton(BotCommand.ADMIN_STATISTICS_FA.value)],
+    [KeyboardButton(BotCommand.ADMIN_START_SCHEDULE_FA.value), KeyboardButton(BotCommand.ADMIN_STOP_SCHEDULE_FA.value)],
 
 ]
 
 cancel_menu = [
-    [KeyboardButton(BotCommand.CANCEL_FA)],
+    [KeyboardButton(BotCommand.CANCEL_FA.value)],
 ]
-
 
 def get_propper_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(menu_main if not is_admin else admin_keyboard, resize_keyboard=True)
@@ -198,7 +197,7 @@ async def cmd_select_currencies(update: Update, context: CallbackContext):
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
                                     reply_markup=new_inline_keyboard("currencies", currency_service.NationalCurrenciesInPersian,
-                                                                        account.desired_currencies, True))        
+                                                                        account.desired_currencies, True))
 
 
 # TODO: complete this
@@ -236,7 +235,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     global schedule_interval
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
-    
+
     schedule_interval = 10
     try:
         if context.args:
@@ -247,13 +246,13 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
 
     except Exception as e:
         manuwriter.log("Something went wrong while scheduling: ", e)
-        
+
     global is_channel_updates_started
     if not is_channel_updates_started:
         await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.",
                                         reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
         return
-    
+
     is_channel_updates_started = True
     context.job_queue.run_repeating(announce_prices, interval=schedule_interval * 60, first=1,
                                     name=MAIN_SCHEDULER_IDENTIFIER)
@@ -264,7 +263,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
-    
+
     global is_channel_updates_started
     current_jobs = context.job_queue.get_jobs_by_name(MAIN_SCHEDULER_IDENTIFIER)
     for job in current_jobs:
@@ -278,7 +277,7 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
-    
+
     global crypto_service
     crypto_service = CoinGecko()
     await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
@@ -289,7 +288,7 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
-    
+
     global crypto_service
     crypto_service = CoinMarketCap(CMC_API_KEY)
     await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
@@ -303,7 +302,7 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
         return await ask2join(update)
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
-    
+
     await update.message.reply_text(
         'اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.', reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
 
@@ -368,7 +367,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 # check account state first, to see if he/she is in input state
                 account = Account.Get(update.effective_chat.id)
                 msg = update.message.text
-                if msg == BotCommand.CANCEL_FA:
+                if msg == BotCommand.CANCEL_FA.value:
                     account.change_state()  # reset .state and .state_data
                     await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
                                                     reply_markup=get_propper_keyboard(account.is_admin))
@@ -419,12 +418,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                             else:
                                 await start_equalizing(update.message.reply_text, account, amounts, units)
                                 account.change_state()  # reset state
-                        
+
                         case UserStates.SEND_POST:
                             if not account.authorization(context.args):
                                 await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید.', reply_markup=ReplyKeyboardMarkup(menu_main, resize_keyboard=True))
                                 return
-                            
+
                             # admin is trying to send post
                             all_accounts = Account.Everybody()
                             progress_text = "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: "

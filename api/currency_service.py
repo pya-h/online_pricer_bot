@@ -17,8 +17,7 @@ def get_persian_currency_names() -> tuple:
         gold_names_fa = json_file.read()
         json_file.close()
     except Exception as e:
-        print(e)
-        pass
+        manuwriter.log('Cannot get currency names', exception=e, category_name='Currency')
 
     return json.loads(currency_names_fa), json.loads(gold_names_fa)
 
@@ -35,7 +34,7 @@ class AbanTether(BaseAPIService):
         self.no_response_counts: int = 0
         self.last_guess_date: datetime = mathematix.tz_today()
         self.usd_recent_guess: int = 0
-        
+
     async def get(self):
         self.recent_total_response = await self.get_request(headers=self.headers)
         self.no_response_counts += 1
@@ -64,7 +63,7 @@ class AbanTether(BaseAPIService):
         if diff < 60:
             return False
         return self.last_guess_date.hour >= 10 and self.last_guess_date.hour < 22
-    
+
     def guess_dollar_price(self, guess_range: int = 100) -> int:
         if not self.time_for_next_guess():
             return self.usd_recent_guess
@@ -178,7 +177,7 @@ class SourceArena(APIService):
             except:
                 if not SourceArena.TetherInTomans:
                     SourceArena.TetherInTomans = SourceArena.DefaultTetherInTomans
-                    
+
         if self.usd_service.recent_response:
             self.set_usd_price(self.usd_service.recent_response)
             usd_t['USD']['price'] = self.usd_service.recent_response
@@ -186,10 +185,11 @@ class SourceArena(APIService):
             # TODO: INFORM THIS TO SUNSCRIBER ADMINS
             try:
                 self.set_usd_price(self.tether_service.guess_dollar_price() or (float(usd_t['USD']['price']) / 10.0) or SourceArena.DefaultUsbInTomans)
+                usd_t['USD']['price'] = self.UsdInTomans * 10.0 # in dict must be in fuckin rials; this fuckin country with its fuckin worthless currency
             except:
                 if not SourceArena.UsdInTomans:
                     SourceArena.UsdInTomans = SourceArena.DefaultUsdInTomans
-                    
+
         self.cache_data(response_text)
         self.tether_service.cache_data(self.tether_service.summary(self.usd_service.recent_response), custom_file_name='usd_t')
         return self.extract_api_response(desired_ones, short_text=short_text)

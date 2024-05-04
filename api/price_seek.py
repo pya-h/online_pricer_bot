@@ -89,7 +89,6 @@ if __name__ == '__main__':
         while True:
             try:
                 usd_seeker = PriceSeek()
-                print(await usd_seeker.get_all())
                 sleep(10)
             except:
                 pass

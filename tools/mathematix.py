@@ -80,7 +80,6 @@ def timestamp() -> str:
         return f'📆 {date} {weekday} {time}'
 
     except Exception as ex:
-        print('Calculating jalili date and time encountered with error: ', ex)
         try:
             now = tz_today()  # timezone.localize(datetime.now())
             return f'📆 {now.year}/{now.month:02d}/{now.day:02d} {weekday} {now.strftime("%H:%M")}'
