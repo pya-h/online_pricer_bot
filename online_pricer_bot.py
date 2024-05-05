@@ -248,7 +248,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         manuwriter.log("Something went wrong while scheduling: ", e)
 
     global is_channel_updates_started
-    if not is_channel_updates_started:
+    if is_channel_updates_started:
         await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.",
                                         reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
         return
