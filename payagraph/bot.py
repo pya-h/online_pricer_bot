@@ -61,7 +61,7 @@ class TelegramBotCore:
         response = requests.post(url, json=payload)
         if response.status_code != 200:
             log(f"answerCallbackQuery Failure => status code:{response.status_code}\n\callback_query_id:{callback_query_id}\ncallback_query_text:{text}\nResponse text: {response.text}", category_name="PLUS_FATALITY")
-        return response 
+        return response
 
 
 
@@ -115,7 +115,7 @@ class TelegramBot(TelegramBotCore):
                 self.handle(request.json)
             return jsonify({'status': 'ok'})
 
-    def go(self, debug=True):
+    def go(self, debug=False):
         self.app.run(debug=debug)
 
     def text(self, text_key: str, language: str = None) -> str|dict:  # short for gettext

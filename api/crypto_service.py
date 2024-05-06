@@ -62,6 +62,8 @@ class CoinGecko(CryptoCurrency):
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}'
         return res
 
+    #TODO: Implement equalize for CoinGecko too
+
 
 # --------- COINMARKETCAP -----------
 class CoinMarketCap(CryptoCurrency):
@@ -128,12 +130,26 @@ class CoinMarketCap(CryptoCurrency):
         value = mathematix.persianify(value_cut)
         return f'🔸 {value} {CryptoCurrency.CoinsInPersian[unit_symbol]}\n'
 
-    def equalize(self, source_unit_symbol: str, amount: float|int, desired_coins: list = None) -> str:
+    def usd_to_cryptos(self, absolute_amount: float|int, source_unit_symbol: str, cryptos: list = None) -> str:
+        cryptos = self.get_desired_ones(cryptos)
+
+        if BaseAPIService.TETHER_SYMBOL not in cryptos and source_unit_symbol != BaseAPIService.TETHER_SYMBOL:
+            cryptos.insert(0, BaseAPIService.TETHER_SYMBOL)
+
+        for coin in cryptos:
+            if coin == source_unit_symbol:
+                continue
+            amount_in_this_coin_unit = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
+            res += self.equalizer_row(coin, amount_in_this_coin_unit)
+
+        return res
+
+    def equalize(self, source_unit_symbol: str, amount: float|int, desired_cryptos: list = None) -> str:
         '''This function gets an amount param, alongside with a source_unit_symbol [and abviously with the users desired coins]
             and it returns a text string, that in each row of that, shows that amount equivalent in another cryptocurrency unit.'''
         # First check the required data is prepared
         if not self.latest_data:
-            raise NoLatestDataException('Use for equalizing!')
+            raise NoLatestDataException('use for equalizing!')
         if source_unit_symbol not in self.latest_data or source_unit_symbol not in CryptoCurrency.CoinsInPersian:
             raise InvalidInputException('Coin symbol!')
 
@@ -143,14 +159,12 @@ class CoinMarketCap(CryptoCurrency):
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
-        res += f'🔸 {mathematix.persianify(mathematix.cut_and_separate(absolute_amount))} {SourceArena.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
 
-        desired_coins = self.get_desired_ones(desired_coins)
-        if BaseAPIService.TETHER_SYMBOL not in desired_coins:
-            desired_coins.insert(0, BaseAPIService.TETHER_SYMBOL)
+        abs_usd, abs_toman = self.rounded_prices(absolute_amount, tether_as_unit_price=True)
+        res += f'🔸 {mathematix.persianify(abs_usd)} {SourceArena.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
 
-        for coin in desired_coins:
-            amount_in_this_coin_unit = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
-            res += self.equalizer_row(coin, amount_in_this_coin_unit)
+        res += f'🔸 {mathematix.persianify(abs_toman)} تومان\n'
+
+        res += self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos)
 
         return res

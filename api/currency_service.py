@@ -4,6 +4,8 @@ import json
 from api.price_seek import PriceSeek
 from datetime import datetime
 from random import randint
+from tools.exceptions import InvalidInputException
+from typing import Dict
 
 
 def get_persian_currency_names() -> tuple:
@@ -59,10 +61,13 @@ class AbanTether(BaseAPIService):
             return False
         if not self.usd_recent_guess:
             return True
-        diff, self.last_guess_date = mathematix.from_now_time_diff(self.last_guess_date)
+        diff, now = mathematix.from_now_time_diff(self.last_guess_date)
         if diff < 60:
             return False
-        return self.last_guess_date.hour >= 10 and self.last_guess_date.hour < 22
+        if now.hour >= 10 and now.hour < 22:
+            self.last_guess_date = now
+            return True
+        return False
 
     def guess_dollar_price(self, guess_range: int = 100) -> int:
         if not self.time_for_next_guess():
@@ -109,6 +114,7 @@ class SourceArena(APIService):
         self.tether_service = AbanTether(aban_tether_token)
         self.usd_service = PriceSeek()
         self.get_desired_ones = lambda desired_ones: desired_ones or SourceArena.Defaults
+        self.direct_prices: Dict[str, float] = {}
 
     def extract_api_response(self, desired_ones: list=None, short_text: bool=True, optional_api_data:list = None) -> str:
         desired_ones = self.get_desired_ones(desired_ones)
@@ -118,7 +124,7 @@ class SourceArena(APIService):
         for curr in api_data:
             slug = curr['slug'].upper()
             price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesInDollars else float(curr['price'])
-
+            self.direct_prices[slug] = price
             if slug in desired_ones:
                 # repetitive code OR using multiple conditions (?)
                 if slug not in SourceArena.EntitiesInDollars:
@@ -200,3 +206,59 @@ class SourceArena(APIService):
         except:
             self.latest_data = []
         return self.latest_data
+
+    def equalizer_row(self, unit_symbol: str, value: float|int):
+        '''returns the row shape/format of the equalizing coin.'''
+        value_cut = mathematix.cut_and_separate(value)
+        value = mathematix.persianify(value_cut)
+        return f'🔸 {value} {CryptoCurrency.CoinsInPersian[unit_symbol]}\n'
+
+    def tomans_to_currencies(self, absolute_amount: float|int, source_unit_symbol: str, currencies: list = None) -> str:
+        currencies = self.get_desired_ones(currencies)
+
+
+        for curr in self.latest_data:
+            slug = curr['slug'].upper()
+            price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesInDollars else float(curr['price'])
+
+            if slug in currencies:
+                # repetitive code OR using multiple conditions (?)
+                if slug not in SourceArena.EntitiesInDollars:
+                    toman, _ = self.rounded_prices(price, False)
+                    toman = mathematix.persianify(toman)
+                    rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان"
+                else:
+                    usd, toman = self.rounded_prices(price)
+                    toman = mathematix.persianify(toman)
+                    rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
+
+        for item in currencies:
+            curr =
+            if item == source_unit_symbol:
+                continue
+            amount_in_this_item_unit = absolute_amount  / float(self.latest_data[item][0]['quote'][self.price_unit]['price'])
+            res += self.equalizer_row(item, amount_in_this_item_unit)
+
+        return res
+
+    def equalize(self, source_unit_symbol: str, amount: float|int, desired_cryptos: list = None) -> str:
+
+        # text header
+        res: str = f'💱☯ معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز  ' + \
+            ("%s %s" % (mathematix.persianify(amount), SourceArena.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
+
+        # first row is the equivalent price in USD(the price unit selected by the bot configs.)
+        source = list(filter(lambda curr: curr['slug'].upper() == source_unit_symbol, self.latest_data))
+        if not source:
+            raise InvalidInputException('currency sumbol')
+
+        absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
+
+        abs_usd, abs_toman = self.rounded_prices(absolute_amount, tether_as_unit_price=True)
+        res += f'🔸 {mathematix.persianify(abs_usd)} {SourceArena.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
+
+        res += f'🔸 {mathematix.persianify(abs_toman)} تومان\n'
+
+        res += self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos)
+
+        return res
