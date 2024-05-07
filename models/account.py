@@ -88,7 +88,7 @@ class Account:
         Account.Instances[self.chat_id] = self
 
     def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa', 
-                 plus_end_date: datetime = None, plus_plan_id: int = 0, state: UserStates = UserStates.NONE, cache = None) -> None:
+                 plus_end_date: datetime = None, plus_plan_id: int = 0, state: UserStates = UserStates.NONE, cache = None, is_admin: bool = False) -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
         self.desired_coins: list = cryptos if cryptos else []
@@ -103,7 +103,8 @@ class Account:
         self.username: str = None
         self.firstname: str = None
         self.arrange_instances()
-
+        self.is_admin: bool = is_admin
+        
     def change_state(self, state: UserStates = UserStates.NONE, data: any = None):
         self.state = state
         self.state_data = data
