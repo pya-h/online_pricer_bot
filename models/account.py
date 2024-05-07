@@ -19,13 +19,12 @@ class UserStates(Enum):
     SELECT_CHANNEL = 4
     SELECT_INTERVAL = 5
     SELECT_LANGUAGE = 6
-
+    CONFIG_BAZAARS = 7
 
 class Account:
     # states:
 
     _database = None
-    Scheduler = None
     GarbageCollectionInterval = 30
     PreviousGarbageCollectionTime: int = now_in_minute() # in minutes
     Instances = {}  # active accounts will cache into this; so there's no need to access database everytime

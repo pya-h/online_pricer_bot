@@ -1,9 +1,12 @@
 from enum import Enum
 from tools.manuwriter import load_json
 from decouple import config
-from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, Update
+from telegram.ext import CallbackContext
+
 from json import dumps as jsonify
 from typing import List
+from bot.post import PostMan
 
 
 class ResourceManager:
@@ -44,12 +47,44 @@ class BotMan:
         self.resourceman = resourceman
         # environment values
         self.token: str = config('BOT_TOKEN')
-        self.main_channel_id: int = config('CHANNEL_ID')
-        self.supporting_channel_id: int = config('SECOND_CHANNEL_ID')
-        self.main_queue_id: str = config('MAIN_SCHEDULER_IDENTIFIER')
+        username: str = config('BOT_USERNAME')
+        self.username = f"@{username}"
+        self.url = f"https://t.me/{username}"
+
+        CMC_API_KEY = config('COINMARKETCAP_API_KEY')
+        CURRENCY_TOKEN = config('CURRENCY_TOKEN')
+        ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
+
+        self.postman = PostMan(CURRENCY_TOKEN, ABAN_TETHER_TOKEN, CMC_API_KEY)
+
+        self.channels = [
+            {'id': config('CHANNEL_ID'), 'url': config('CHANNEL_URL')},
+            {'id': config('SECOND_CHANNEL_ID', None), 'url': config('SECOND_CHANNEL_URL', None)}
+        ]
+        
+        self.channels[0]['username'] = config('CHANNEL_USERNAME', self.channels[0]['url'])
+        if not self.channels[1]['id']:
+            del self.channels[1]
+        else:
+            self.channels[-1]['username'] = config('SECOND_CHANNEL_USERNAME', self.channels[-1]['url'])
+
+        self.main_queue_id: str = 'mainplan'
+        self.main_plan_interval: float = 10.0
 
         self.text = self.resourceman.text
         
+        # TODO: Update these to be dynamic with languages.
+        self.menu_main_keys = []
+        self.menu_main: ReplyKeyboardMarkup = None
+        self.admin_keyboard: ReplyKeyboardMarkup = None
+        self.cancel_menu_key = []
+        self.return_key = []
+        self.bazaars_menu_keys: ReplyKeyboardMarkup = None
+
+        self.setup_main_keyboards()
+        self.is_main_plan_on: bool = False
+        
+    def setup_main_keyboards(self):
         # TODO: Update these to be dynamic with languages.
         self.menu_main_keys = [
             [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
@@ -107,3 +142,28 @@ class BotMan:
         return ReplyKeyboardMarkup(btns, resize_keyboard=True)
 
 
+
+    async def has_subscribed_us(self, chat_id: int, context: CallbackContext) -> bool:
+        chat1 = await context.bot.get_chat_member(self.channels[0]['id'], chat_id)
+        chat2 = await context.bot.get_chat_member(self.channels[-1]['id'], chat_id)
+        return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
+
+
+    async def ask_for_subscription(self, update: Update, language: str = 'fa'):
+        await update.message.reply_text(self.resourceman.text('ask_subscription_message', language) % (self.channels[0]['username'], self.channels[-1]['username']),
+                                        reply_markup=InlineKeyboardMarkup([
+                                            [InlineKeyboardButton(self.channels[-1]['username'], url=self.channels[-1]['url']),
+                                            InlineKeyboardButton(self.channels[0]['username'], url=self.channels[0]['username'])]
+                                        ]))
+        return None
+    
+    @property
+    def currency_serv(self):
+        return self.postman.currency_service
+    
+    @property
+    def crypto_serv(self):
+        return self.postman.crypto_service
+    
+    async def next_post(self):
+        return await self.postman.create_post(interval=self.main_plan_interval)

@@ -1,150 +1,78 @@
 from telegram.ext import CallbackContext, filters, CommandHandler, ApplicationBuilder as BotApplicationBuilder, MessageHandler, CallbackQueryHandler
-from telegram import Update, ChatMember, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from api.currency_service import SourceArena
+from telegram import Update, ReplyKeyboardMarkup
 from models.account import UserStates, Account
-from api.crypto_service import CoinMarketCap, CoinGecko
-from decouple import config
 from models.account import Account
 import json
 from tools.manuwriter import log
-from tools.mathematix import persianify, timestamp
 from bot.manager import BotMan
+from api.crypto_service import CoinGecko, CoinMarketCap
 
 
 botman = BotMan()
 
-CMC_API_KEY = config('COINMARKETCAP_API_KEY')
-CURRENCY_TOKEN = config('CURRENCY_TOKEN')
-ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
-
-schedule_interval = float(config('MAIN_SCHEDULER_DEFAULT_INTERVAL', 10))
-
-
-# global variables
-crypto_service = CoinMarketCap(CMC_API_KEY)  # api service object: instance of CoinGecko or CoinMarketCap
-currency_service = SourceArena(CURRENCY_TOKEN, ABAN_TETHER_TOKEN)
-is_channel_updates_started = False
-
-
-async def is_a_member(account: Account, context: CallbackContext):
-    chat1 = await context.bot.get_chat_member(botman.main_channel_id, account.chat_id)
-    chat2 = await context.bot.get_chat_member(botman.supporting_channel_id, account.chat_id)
-    return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
-
-
-async def ask2join(update):
-    await update.message.reply_text('''کاربر عزیز🌷🙏
-
-⚠️ برای استفاده از ۱۴۸ بازار مالی مختلف در [ ربات قیمت لحظه ای ] باید عضو کانال های زیر شوید:
-
-🆔 @Online_pricer
-🆔 @Crypto_AKSA
-
-✅ بعد از عضویت در این کانال ها، دوباره بر روی گزینه دلخواه خود کلیک کنید.''',
-                                    reply_markup=InlineKeyboardMarkup([
-                                        [InlineKeyboardButton("@Crypto_AKSA", url="https://t.me/Crypto_AKSA"),
-                                         InlineKeyboardButton("@Online_pricer", url="https://t.me/Online_pricer")]
-                                    ]))
-    return None
-
-
 async def show_config_price_list_options(update: Update):
     account = Account.Get(update.effective_chat.id)
-
+    account.state = UserStates.CONFIG_BAZAARS
     await update.message.reply_text(botman.text('config_which_bazaar', account.language), reply_markup=botman.bazaars_menu_keys)
 
 async def select_coin_menu(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        return await botman.ask_for_subscription(update, account.language)
 
     await update.message.reply_text('''📌 #لیست_بازار_ارز_دیجیتال
 
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=botman.inline_keyboard("coins", crypto_service.CoinsInPersian,
+                                    reply_markup=botman.inline_keyboard("coins", botman.crypto_serv.CoinsInPersian,
                                                                         account.desired_coins))
 
 
 async def select_currency_menu(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        return await botman.ask_for_subscription(update, account.language)
     await update.message.reply_text('''📌 #لیست_بازار_ارز
 
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=botman.inline_keyboard("currencies", currency_service.NationalCurrenciesInPersian,
+                                    reply_markup=botman.inline_keyboard("currencies", botman.currency_serv.NationalCurrenciesInPersian,
                                                                         account.desired_currencies, True))
 
 
 # TODO: complete this
 async def select_gold_menu(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        return await botman.ask_for_subscription(update, account.language)
     await update.message.reply_text('''📌 #لیست_بازار_طلا
 
 👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
 👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=botman.inline_keyboard("golds", currency_service.GoldsInPersian,
+                                    reply_markup=botman.inline_keyboard("golds", botman.currency_serv.GoldsInPersian,
                                                                         account.desired_currencies, True))
 
-
-
-def sign_post(message: str, for_channel: bool=True) -> str:
-    ts = timestamp()
-    interval_fa = persianify(schedule_interval.__str__())
-    header = f'✅ بروزرسانی قیمت ها (هر {interval_fa} دقیقه)\n' if for_channel else ''
-    header += ts + '\n' # + '🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
-    footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
-    return f'{header}\n{message}\n{footer}'
-
-async def construct_new_post(desired_coins=None, desired_currencies=None, exactly_right_now=True, short_text=True, for_channel=True) -> str:
-    currencies = cryptos = ''
-
-    try:
-        if desired_currencies or (not desired_coins and not desired_currencies):
-            # this condition is for preventing default values, when user has selected just cryptos
-            currencies = await currency_service.get(desired_currencies, short_text=short_text) if exactly_right_now else \
-                currency_service.get_latest(desired_currencies)
-    except Exception as ex:
-        log("Cannot obtain Currencies! ", ex, currency_service.Source)
-        currencies = currency_service.get_latest(desired_currencies, short_text=short_text)
-    try:
-        if desired_coins or (not desired_coins and not desired_currencies):
-            # this condition is for preventing default values, when user has selected just currencies
-            cryptos = await crypto_service.get(desired_coins, short_text=short_text) if exactly_right_now else \
-                crypto_service.get_latest(desired_coins, short_text)
-    except Exception as ex:
-        log("Cannot obtain Cryptos! ", ex, crypto_service.Source)
-        cryptos = crypto_service.get_latest(desired_coins, short_text=short_text)
-    return sign_post(currencies + cryptos, for_channel=for_channel)
-
-
 async def say_youre_not_allowed(reply):
-    await reply('شما مجاز به انجام چنین کاری نیستید!', reply_markup=ReplyKeyboardMarkup(botman.menu_main, resize_keyboard=True))
+    await reply('شما مجاز به انجام چنین کاری نیستید!', reply_markup=botman.menu_main)
     return None
 
 async def notify_changes(context: CallbackContext):
-    await context.bot.send_message(chat_id=botman.main_channel_id, text=f"منبع قیمت ها به {crypto_service.Source} تغییر یافت.")
+    await context.bot.send_message(chat_id=botman.channels[0]['id'], text=f"منبع قیمت ها به {botman.crypto_serv.Source} تغییر یافت.")
 
 
 async def announce_prices(context: CallbackContext):
-    global crypto_service
-    global currency_service
-    res = await construct_new_post()
-    await context.bot.send_message(chat_id=botman.main_channel_id, text=res)
+    res = await botman.next_post()
+    await context.bot.send_message(chat_id=botman.channels[0]['id'], text=res)
 
 
 async def cmd_welcome(update: Update, context: CallbackContext):
     acc = Account.Get(update.effective_chat.id)
     # get old or create new account => automatically will be added to Account.Instances
-    if not await is_a_member(acc, context):
-        return await ask2join(update)
+    if not await botman.has_subscribed_us(acc.chat_id, context):
+        return await botman.ask_for_subscription(update, acc.language)
 
     await update.message.reply_text(f'''کاربر {update.message.chat.first_name}\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏
 
@@ -154,12 +82,12 @@ async def cmd_welcome(update: Update, context: CallbackContext):
 
 async def cmd_get_prices(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        return await botman.ask_for_subscription(update, account.language)
 
-    is_latest_data_valid = currency_service and currency_service.latest_data and crypto_service \
-                            and crypto_service.latest_data and is_channel_updates_started
-    message = await construct_new_post(desired_coins=account.desired_coins,
+    is_latest_data_valid = botman.currency_serv and botman.currency_serv.latest_data and botman.crypto_serv \
+                            and botman.crypto_serv.latest_data and botman.is_main_plan_on
+    message = await botman.postman.create_post(desired_coins=account.desired_coins,
                                     desired_currencies=account.desired_currencies, for_channel=False,
                                     exactly_right_now=not is_latest_data_valid)
 
@@ -167,8 +95,8 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
 
 async def cmd_equalizer(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        return await botman.ask_for_subscription(update, account.language)
 
     account.change_state(UserStates.INPUT_EQUALIZER_AMOUNT)
     await update.message.reply_text('''♻️💱 ماشین حساب 💱☯
@@ -183,31 +111,29 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
-    global schedule_interval
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
 
-    schedule_interval = 10
+    botman.main_plan_interval = 10
     try:
         if context.args:
             try:
-                schedule_interval = int(context.args[-1])
+                botman.main_plan_interval = int(context.args[-1])
             except ValueError:
-                schedule_interval = float(context.args[-1])
+                botman.main_plan_interval = float(context.args[-1])
 
     except Exception as e:
         log("Something went wrong while scheduling: ", e)
 
-    global is_channel_updates_started
-    if is_channel_updates_started:
+    if botman.is_main_plan_on:
         await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.",
                                         reply_markup=botman.admin_keyboard)
         return
 
-    is_channel_updates_started = True
-    context.job_queue.run_repeating(announce_prices, interval=schedule_interval * 60, first=1,
+    botman.is_main_plan_on = True
+    context.job_queue.run_repeating(announce_prices, interval=botman.main_plan_interval * 60, first=1,
                                     name=botman.main_queue_id)
-    await update.message.reply_text(f'زمان بندی {schedule_interval} دقیقه ای با موفقیت انجام شد.',
+    await update.message.reply_text(f'زمان بندی {botman.main_plan_interval} دقیقه ای با موفقیت انجام شد.',
                                     reply_markup=botman.admin_keyboard)
 
 
@@ -215,12 +141,11 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
 
-    global is_channel_updates_started
     current_jobs = context.job_queue.get_jobs_by_name(botman.main_queue_id)
     for job in current_jobs:
         job.schedule_removal()
-    is_channel_updates_started = False
-    crypto_service.latest_prices = ''
+    botman.is_main_plan_on = False
+    botman.crypto_serv.latest_prices = ''
     await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.',
                                     reply_markup=botman.admin_keyboard)
 
@@ -229,8 +154,7 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
 
-    global crypto_service
-    crypto_service = CoinGecko()
+    botman.crypto_serv = CoinGecko()
     await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
                                     reply_markup=botman.admin_keyboard)
     await notify_changes(context)
@@ -240,8 +164,7 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
 
-    global crypto_service
-    crypto_service = CoinMarketCap(CMC_API_KEY)
+    botman.crypto_serv = CoinMarketCap(botman.postman.coinmarketcap_api_key)
     await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
                                     reply_markup=botman.admin_keyboard)
     await notify_changes(context)
@@ -249,8 +172,8 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
 
 async def cmd_admin_login(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        return await botman.ask_for_subscription(update, account.language)
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
 
@@ -265,7 +188,7 @@ async def cmd_send_post(update: Update, context: CallbackContext):
 
     account.change_state(UserStates.SEND_POST)
     await update.message.reply_text('''🔹 پست خود را ارسال کنید:
-(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''', reply_markup=ReplyKeyboardMarkup(botman.cancel_menu, resize_keyboard=True))
+(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''', reply_markup=botman.cancel_menu)
 
 
 async def cmd_report_statistics(update: Update, context: CallbackContext):
@@ -283,12 +206,12 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 
 
 async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
-    if not isinstance(crypto_service, CoinMarketCap):
+    if not isinstance(botman.crypto_serv, CoinMarketCap):
         await func_send_message("در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...")
         return
     for amount in amounts:
         for unit in units:
-            response = crypto_service.equalize(unit, amount, account.desired_coins)
+            response = botman.crypto_serv.equalize(unit, amount, account.desired_coins)
             await func_send_message(response)
 
 
@@ -352,7 +275,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             # start extracting units
                             while index < count_of_params:
                                 source_symbol = params[index].upper()
-                                if source_symbol in crypto_service.CoinsInPersian:
+                                if source_symbol in botman.crypto_serv.CoinsInPersian:
                                     units.append(source_symbol)
                                 else:
                                     invalid_units.append(source_symbol)
@@ -367,14 +290,14 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 account.state = UserStates.INPUT_EQUALIZER_UNIT
                                 account.change_state(UserStates.INPUT_EQUALIZER_UNIT, amounts)
                                 await update.message.reply_text(f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
-                                                                reply_markup=botman.inline_keyboard("coins", crypto_service.CoinsInPersian))
+                                                                reply_markup=botman.inline_keyboard("coins", botman.crypto_serv.CoinsInPersian))
                             else:
                                 await start_equalizing(update.message.reply_text, account, amounts, units)
                                 account.change_state()  # reset state
 
                         case UserStates.SEND_POST:
                             if not account.authorization(context.args):
-                                await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید.', reply_markup=ReplyKeyboardMarkup(botman.menu_main, resize_keyboard=True))
+                                await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید.', botman.menu_main)
                                 return
 
                             # admin is trying to send post
@@ -382,6 +305,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             progress_text = "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: "
                             telegram_response = await update.message.reply_text(progress_text)
                             message_id = None
+
                             try:
                                 message_id = telegram_response['message_id']
                             except:
@@ -432,7 +356,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 return
         else:
             account.desired_coins.remove(data['value'])
-        await query.message.edit_reply_markup(reply_markup=botman.inline_keyboard("coins", crypto_service.CoinsInPersian, account.desired_coins))
+        await query.message.edit_reply_markup(reply_markup=botman.inline_keyboard("coins", botman.crypto_serv.CoinsInPersian, account.desired_coins))
 
     elif data['type'] == "currencies" or data['type'] == "golds":
         if not data['value'] in account.desired_currencies:
@@ -446,7 +370,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
         await query.message.edit_reply_markup(reply_markup=botman.inline_keyboard(
                 data['type'],
-                currency_service.NationalCurrenciesInPersian if data['type'] == "currencies" else currency_service.GoldsInPersian,
+                botman.currency_serv.NationalCurrenciesInPersian if data['type'] == "currencies" else botman.currency_serv.GoldsInPersian,
                 account.desired_currencies, True)
         )
     account.save()

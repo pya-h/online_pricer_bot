@@ -57,5 +57,13 @@
     "config_which_bazaar": {
         "fa": "لیست کدام بازار را می خواهید تنظیم کنید؟",
         "en": "Which one do you want to config?"
+    },
+    "ask_subscription_message": {
+        "fa": "کاربر عزیز🌷🙏\n\n⚠️ برای استفاده از انواع بازارهای مالی مختلف در [ ربات قیمت لحظه ای ] باید عضو کانال های زیر شوید:\n\n🆔 %s\n🆔 %s\n\n✅ بعد از عضویت در این کانال ها، دوباره بر روی گزینه دلخواه خود کلیک کنید.",
+        "en": "Dear user🌷🙏\nTo use our vast range of financial market in [ Online Pricer Telegram Bot ] we must ask you to join our channels below:\n\nn🆔 %s\nn🆔 %s\n\nAfter joining these channels you can freely start using our services."
+    },
+    "channels_summary": {
+        "fa": "🆔 آدرس کانال: %s\n⚜️ آدرس دیگر مجموعه های ما: %s\n",
+        "en": "🆔 Channel URL: %s\n⚜️ Our other links: %s\n"
     }
 }
