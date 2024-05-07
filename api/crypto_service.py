@@ -123,13 +123,6 @@ class CoinMarketCap(CryptoCurrency):
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}'
         return res
 
-
-    def equalizer_row(self, unit_symbol: str, value: float|int):
-        '''returns the row shape/format of the equalizing coin.'''
-        value_cut = mathematix.cut_and_separate(value)
-        value = mathematix.persianify(value_cut)
-        return f'🔸 {value} {CryptoCurrency.CoinsInPersian[unit_symbol]}\n'
-
     def usd_to_cryptos(self, absolute_amount: float|int, source_unit_symbol: str, cryptos: list = None) -> str:
         cryptos = self.get_desired_ones(cryptos)
 
@@ -139,8 +132,9 @@ class CoinMarketCap(CryptoCurrency):
         for coin in cryptos:
             if coin == source_unit_symbol:
                 continue
-            amount_in_this_coin_unit = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
-            res += self.equalizer_row(coin, amount_in_this_coin_unit)
+            coin_equalized_price = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
+            coin_equalized_price = mathematix.persianify(mathematix.cut_and_separate(coin_equalized_price))
+            res += f'🔸 {coin_equalized_price} {CryptoCurrency.CoinsInPersian[coin]}\n'
 
         return res
 

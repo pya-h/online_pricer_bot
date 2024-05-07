@@ -1,5 +1,44 @@
 {
     "not_allowed": {
 
+    },
+    "main_keyboard": {
+        "get_prices": {
+            "fa": "مشاهده قیمت ها",
+            "en": "View Prices"
+        },
+        "config_lists": {
+            "fa": " لیست مشاهده قیمت ها",
+            "en": "View List of Prices"
+        },
+        "calculator": {
+            "fa": " ماشین حساب",
+            "en" : "Calculator"
+        },
+        "config_calculator": {
+            "fa": "لیست ماشین حساب من",
+            "en": "My Calculator List"
+        },
+        "price_notification": {
+            "fa": "ایجاد هشدار قیمت",
+            "en": "Create a Price Alert"
+        },
+        "config_notification": {
+            "fa": "لیست هشدار قیمت من",
+            "en": "My Price Alert List"
+        },
+        "settings": {
+            "fa": "⚙️ تنظیمات",
+            "en": "⚙️ Settings"
+        }
+    },
+    "second_step_keyboard": {
+        "fa": "بازگشت به منوی اصلی", 
+        "en": "Back To Main Meny"
+    },
+
+    "config_which_bazaar": {
+        "fa": "لیست کدام بازار را می خواهید تنظیم کنید؟",
+        "en": "Which one do you want to config?"
     }
 }

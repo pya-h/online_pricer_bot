@@ -1,33 +1,18 @@
-from telegram.ext import *
-from telegram import *
+from telegram.ext import CallbackContext, filters, CommandHandler, ApplicationBuilder as BotApplicationBuilder, MessageHandler, CallbackQueryHandler
+from telegram import Update, KeyboardButton, ChatMember, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from api.currency_service import SourceArena
 from models.account import UserStates, Account
 from api.crypto_service import CoinMarketCap, CoinGecko
 from decouple import config
 from models.account import Account
 import json
-from tools import manuwriter, mathematix
-from enum import Enum
-
-class BotCommand(Enum):
-    GET_FA = 'مشاهده لیست قیمت من'
-    SELECT_COINS_FA = 'ارز دیجیتال'
-    SELECT_CURRENCIES_FA = "ارز"
-    SELECT_GOLDS_FA = 'طلا'
-    EQUALIZER_FA = "ماشین حساب"
-    CANCEL_FA = 'لغو'
-
-    ADMIN_POST_FA = 'اطلاع رسانی'
-    ADMIN_START_SCHEDULE_FA = 'زمانبندی کانال'
-    ADMIN_STOP_SCHEDULE_FA = 'توقف زمانبندی'
-    ADMIN_STATISTICS_FA = 'آمار'
+from tools.manuwriter import log
+from tools.mathematix import persianify, timestamp
+from bot.manager import BotMan
 
 
-# environment values
-BOT_TOKEN = config('MAIN_BOT_TOKEN')
-CHANNEL_ID = config('CHANNEL_ID')
-SECOND_CHANNEL_ID = config('SECOND_CHANNEL_ID')
-MAIN_SCHEDULER_IDENTIFIER = config('MAIN_SCHEDULER_IDENTIFIER')
+botman = BotMan()
+
 CMC_API_KEY = config('COINMARKETCAP_API_KEY')
 CURRENCY_TOKEN = config('CURRENCY_TOKEN')
 ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
@@ -36,27 +21,35 @@ schedule_interval = float(config('MAIN_SCHEDULER_DEFAULT_INTERVAL', 10))
 
 # main keyboard (soft keyboard of course)
 menu_main = [
-    [KeyboardButton(BotCommand.EQUALIZER_FA.value), KeyboardButton(BotCommand.GET_FA.value)],
-    [KeyboardButton(BotCommand.SELECT_COINS_FA.value), KeyboardButton(BotCommand.SELECT_CURRENCIES_FA.value), KeyboardButton(BotCommand.SELECT_GOLDS_FA.value)],
+    [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
+    [KeyboardButton(BotMan.Commands.EQUALIZER_FA.value)],
 ]
 
 admin_keyboard = [
     *menu_main,
-    [KeyboardButton(BotCommand.ADMIN_POST_FA.value), KeyboardButton(BotCommand.ADMIN_STATISTICS_FA.value)],
-    [KeyboardButton(BotCommand.ADMIN_START_SCHEDULE_FA.value), KeyboardButton(BotCommand.ADMIN_STOP_SCHEDULE_FA.value)],
+    [KeyboardButton(BotMan.Commands.ADMIN_POST_FA.value), KeyboardButton(BotMan.Commands.ADMIN_STATISTICS_FA.value)],
+    [KeyboardButton(BotMan.Commands.ADMIN_START_SCHEDULE_FA.value), KeyboardButton(BotMan.Commands.ADMIN_STOP_SCHEDULE_FA.value)],
 
 ]
 
 cancel_menu = [
-    [KeyboardButton(BotCommand.CANCEL_FA.value)],
+    [KeyboardButton(BotMan.Commands.CANCEL_FA.value)],
 ]
+
+
+# global variables
+crypto_service = CoinMarketCap(CMC_API_KEY)  # api service object: instance of CoinGecko or CoinMarketCap
+currency_service = SourceArena(CURRENCY_TOKEN, ABAN_TETHER_TOKEN)
+is_channel_updates_started = False
+
+
 
 def get_propper_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(menu_main if not is_admin else admin_keyboard, resize_keyboard=True)
 
 async def is_a_member(account: Account, context: CallbackContext):
-    chat1 = await context.bot.get_chat_member(CHANNEL_ID, account.chat_id)
-    chat2 = await context.bot.get_chat_member(SECOND_CHANNEL_ID, account.chat_id)
+    chat1 = await context.bot.get_chat_member(botman.main_channel_id, account.chat_id)
+    chat2 = await context.bot.get_chat_member(botman.supporting_channel_id, account.chat_id)
     return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
 
 
@@ -96,17 +89,56 @@ def new_inline_keyboard(name, all_choices: dict, selected_ones: list=None, show_
     return InlineKeyboardMarkup(buttons)
 
 
-# global variables
-crypto_service = CoinMarketCap(CMC_API_KEY)  # api service object: instance of CoinGecko or CoinMarketCap
-currency_service = SourceArena(CURRENCY_TOKEN, ABAN_TETHER_TOKEN)
-is_channel_updates_started = False
+async def show_config_price_list_options(update: Update, context: CallbackContext):
+    await update.message.reply_text(botman.text('config_which_bazaar'), reply_markup=)
+
+async def select_coin_menu(update: Update, context: CallbackContext):
+    account = Account.Get(update.effective_chat.id)
+    if not await is_a_member(account, context):
+        return await ask2join(update)
+
+    await update.message.reply_text('''📌 #لیست_بازار_ارز_دیجیتال
+
+👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
+👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
+👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+                                    reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian,
+                                                                        account.desired_coins))
+
+
+async def select_currency_menu(update: Update, context: CallbackContext):
+    account = Account.Get(update.effective_chat.id)
+    if not await is_a_member(account, context):
+        return await ask2join(update)
+    await update.message.reply_text('''📌 #لیست_بازار_ارز
+
+👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
+👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
+👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+                                    reply_markup=new_inline_keyboard("currencies", currency_service.NationalCurrenciesInPersian,
+                                                                        account.desired_currencies, True))
+
+
+# TODO: complete this
+async def select_gold_menu(update: Update, context: CallbackContext):
+    account = Account.Get(update.effective_chat.id)
+    if not await is_a_member(account, context):
+        return await ask2join(update)
+    await update.message.reply_text('''📌 #لیست_بازار_طلا
+
+👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
+👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
+👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+                                    reply_markup=new_inline_keyboard("golds", currency_service.GoldsInPersian,
+                                                                        account.desired_currencies, True))
+
 
 
 def sign_post(message: str, for_channel: bool=True) -> str:
-    timestamp = mathematix.timestamp()
-    interval_fa = mathematix.persianify(schedule_interval.__str__())
+    ts = timestamp()
+    interval_fa = persianify(schedule_interval.__str__())
     header = f'✅ بروزرسانی قیمت ها (هر {interval_fa} دقیقه)\n' if for_channel else ''
-    header += timestamp + '\n' # + '🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
+    header += ts + '\n' # + '🆔 آدرس کانال: @Online_pricer\n⚜️ آدرس دیگر مجموعه های ما: @Crypto_AKSA\n'
     footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
     return f'{header}\n{message}\n{footer}'
 
@@ -119,7 +151,7 @@ async def construct_new_post(desired_coins=None, desired_currencies=None, exactl
             currencies = await currency_service.get(desired_currencies, short_text=short_text) if exactly_right_now else \
                 currency_service.get_latest(desired_currencies)
     except Exception as ex:
-        manuwriter.log("Cannot obtain Currencies! ", ex, currency_service.Source)
+        log("Cannot obtain Currencies! ", ex, currency_service.Source)
         currencies = currency_service.get_latest(desired_currencies, short_text=short_text)
     try:
         if desired_coins or (not desired_coins and not desired_currencies):
@@ -127,7 +159,7 @@ async def construct_new_post(desired_coins=None, desired_currencies=None, exactl
             cryptos = await crypto_service.get(desired_coins, short_text=short_text) if exactly_right_now else \
                 crypto_service.get_latest(desired_coins, short_text)
     except Exception as ex:
-        manuwriter.log("Cannot obtain Cryptos! ", ex, crypto_service.Source)
+        log("Cannot obtain Cryptos! ", ex, crypto_service.Source)
         cryptos = crypto_service.get_latest(desired_coins, short_text=short_text)
     return sign_post(currencies + cryptos, for_channel=for_channel)
 
@@ -137,14 +169,14 @@ async def say_youre_not_allowed(reply):
     return None
 
 async def notify_changes(context: CallbackContext):
-    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"منبع قیمت ها به {crypto_service.Source} تغییر یافت.")
+    await context.bot.send_message(chat_id=botman.main_channel_id, text=f"منبع قیمت ها به {crypto_service.Source} تغییر یافت.")
 
 
 async def announce_prices(context: CallbackContext):
     global crypto_service
     global currency_service
     res = await construct_new_post()
-    await context.bot.send_message(chat_id=CHANNEL_ID, text=res)
+    await context.bot.send_message(chat_id=botman.main_channel_id, text=res)
 
 
 async def cmd_welcome(update: Update, context: CallbackContext):
@@ -171,48 +203,6 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
                                     exactly_right_now=not is_latest_data_valid)
 
     await update.message.reply_text(message, reply_markup=get_propper_keyboard(account.is_admin))
-
-
-async def cmd_select_coins(update: Update, context: CallbackContext):
-    account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
-
-    await update.message.reply_text('''📌 #لیست_بازار_ارز_دیجیتال
-
-👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=new_inline_keyboard("coins", crypto_service.CoinsInPersian,
-                                                                        account.desired_coins))
-
-
-async def cmd_select_currencies(update: Update, context: CallbackContext):
-    account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
-    await update.message.reply_text('''📌 #لیست_بازار_ارز
-
-👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=new_inline_keyboard("currencies", currency_service.NationalCurrenciesInPersian,
-                                                                        account.desired_currencies, True))
-
-
-# TODO: complete this
-async def cmd_select_golds(update: Update, context: CallbackContext):
-    account = Account.Get(update.effective_chat.id)
-    if not await is_a_member(account, context):
-        return await ask2join(update)
-    await update.message.reply_text('''📌 #لیست_بازار_طلا
-
-👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=new_inline_keyboard("golds", currency_service.GoldsInPersian,
-                                                                        account.desired_currencies, True))
-
 
 async def cmd_equalizer(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
@@ -245,7 +235,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
                 schedule_interval = float(context.args[-1])
 
     except Exception as e:
-        manuwriter.log("Something went wrong while scheduling: ", e)
+        log("Something went wrong while scheduling: ", e)
 
     global is_channel_updates_started
     if is_channel_updates_started:
@@ -255,7 +245,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
 
     is_channel_updates_started = True
     context.job_queue.run_repeating(announce_prices, interval=schedule_interval * 60, first=1,
-                                    name=MAIN_SCHEDULER_IDENTIFIER)
+                                    name=botman.main_queue_id)
     await update.message.reply_text(f'زمان بندی {schedule_interval} دقیقه ای با موفقیت انجام شد.',
                                     reply_markup=ReplyKeyboardMarkup(admin_keyboard, resize_keyboard=True))
 
@@ -265,7 +255,7 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
         return await say_youre_not_allowed(update.message.reply_text)
 
     global is_channel_updates_started
-    current_jobs = context.job_queue.get_jobs_by_name(MAIN_SCHEDULER_IDENTIFIER)
+    current_jobs = context.job_queue.get_jobs_by_name(botman.main_queue_id)
     for job in current_jobs:
         job.schedule_removal()
     is_channel_updates_started = False
@@ -345,29 +335,31 @@ async def handle_messages(update: Update, context: CallbackContext):
     if update and update.message:
 
         match update.message.text:
-            case BotCommand.GET_FA.value:
+            case BotMan.Commands.GET_FA.value:
                 await cmd_get_prices(update, context)
-            case BotCommand.SELECT_COINS_FA.value:
-                await cmd_select_coins(update, context)
-            case BotCommand.SELECT_CURRENCIES_FA.value:
-                await cmd_select_currencies(update, context)
-            case BotCommand.SELECT_GOLDS_FA.value:
-                await cmd_select_golds(update, context)
-            case BotCommand.ADMIN_POST_FA.value:
+            case BotMan.Commands.CONFIG_PRICE_LIST_FA.value:
+                await show_config_price_list_options(update)
+            case BotMan.Commands.SELECT_COINS_FA.value:
+                await select_coin_menu(update, context)
+            case BotMan.Commands.SELECT_CURRENCIES_FA.value:
+                await select_currency_menu(update, context)
+            case BotMan.Commands.SELECT_GOLDS_FA.value:
+                await select_gold_menu(update, context)
+            case BotMan.Commands.ADMIN_POST_FA.value:
                 await cmd_send_post(update, context)
-            case BotCommand.ADMIN_START_SCHEDULE_FA.value:
+            case BotMan.Commands.ADMIN_START_SCHEDULE_FA.value:
                 await cmd_schedule_channel_update(update, context)
-            case BotCommand.ADMIN_STOP_SCHEDULE_FA.value:
+            case BotMan.Commands.ADMIN_STOP_SCHEDULE_FA.value:
                 await cmd_stop_schedule(update, context)
-            case BotCommand.ADMIN_STATISTICS_FA.value:
+            case BotMan.Commands.ADMIN_STATISTICS_FA.value:
                 await cmd_report_statistics(update, context)
-            case BotCommand.EQUALIZER_FA.value:
+            case BotMan.Commands.EQUALIZER_FA.value:
                 await cmd_equalizer(update, context)
             case _:
                 # check account state first, to see if he/she is in input state
                 account = Account.Get(update.effective_chat.id)
                 msg = update.message.text
-                if msg == BotCommand.CANCEL_FA.value:
+                if msg == BotMan.Commands.CANCEL_FA.value:
                     account.change_state()  # reset .state and .state_data
                     await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
                                                     reply_markup=get_propper_keyboard(account.is_admin))
@@ -500,13 +492,13 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
 
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
+    app = BotApplicationBuilder().token(botman.token).build()
+    
     app.add_handler(CommandHandler("start", cmd_welcome))
     app.add_handler(CommandHandler("get", cmd_get_prices))
-    app.add_handler(CommandHandler("crypto", cmd_select_coins))
-    app.add_handler(CommandHandler("currency", cmd_select_currencies))
-    app.add_handler(CommandHandler("gold", cmd_select_golds))
+    app.add_handler(CommandHandler("crypto", select_coin_menu))
+    app.add_handler(CommandHandler("currency", select_currency_menu))
+    app.add_handler(CommandHandler("gold", select_gold_menu))
     app.add_handler(CommandHandler("equalizer", cmd_equalizer))
 
     # ADMIN SECTION
@@ -532,4 +524,4 @@ if __name__ == '__main__':
         main()
     except Exception as ex:
         print(ex)
-        manuwriter.log("Server crashed because: ", ex, 'FATALITY')
+        log("Server crashed because: ", ex, 'FATALITY')

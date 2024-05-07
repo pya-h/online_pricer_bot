@@ -1,204 +1,0 @@
-{
-    "welcome": {
-        "fa": "کاربر %s\nبه ربات [ قیمت لحظه ای پلاس ] خوش آمدید🌷🙏\n\n🔹 زبان ربات را تعیین کنید:",
-        "en": "User %s\nWelcome to the [ Online pricer Plus ] bot 🌷🙏\n\n🔹 Set the language of the bot:"
-    },
-    "languages": {
-        "fa": { "fa": "🇮🇷 فارسی", "en": "🇬🇧 انگلیسی" },
-        "en": { "fa": "🇮🇷 Persian", "en": "🇬🇧 English" }
-    },
-    "invalid_language": {
-        "fa": "زبان انتخابی شما در لیست زبان های استاندارد این زبات نیست! لطفا صرفا زبان را از گزینه های اراپه شده انتخاب کنید.",
-        "en": "There's no such language in this bot standard language list. Please select only the provided language options!"
-    },
-    "switched_language": {
-        "fa": "✅ زبان ربات فارسی شد.",
-        "en": "✅ Language switched to English."
-    },
-    "select_channel": {
-        "fa": "حال نوبت به انتخاب کانال موردنظرتان رسیده است. ابتدا ربات را در کانال مربوطه ادمین کنید. سپس جهت شناساندن کانالتان به ربات یک پیام از آن به اینجا فوروارد کنید...",
-        "en": "Ok. Now it's time to choose the channel you want to plan. First add this bot to your desired channel as admin, Then forward one of its messages here, to identify channel id."
-    },
-    "just_forward_channel_message": {
-        "fa": "لطفا یک پیام از کانال موردنظر ارسال کنید تا ربات آن را شناسایی کند.",
-        "en": "Please forward a message from your desired channel to identidy it."
-    },
-    "wrong_command": {
-        "fa": "متوجه درخواست شما نشدم! لطفا دوباره تلاش کنید ...",
-        "en": "I didn't understand your request. Please try again..."
-    },
-    "select_interval": {
-        "fa": "دوره زمان بندی کانال هر چند وقت یکبار باشد؟",
-        "en": "Now select the interval of channel update:"
-    },
-    "channel_data_lost": {
-        "fa": "متاسفانه اطلاعات کانال موردنظر شما به درستی دریافت یا ذخیره نشده است. لطفا مجددا یک پیام دیگر از آن برای ربات ارسال کن.",
-        "en": "Sorry! It seems that your desired channel data has not been received or saved correctly. Please forward another message from the channel to proceed."
-    },
-    "not_plus": {
-        "fa": "**توجه**: متاسفانه شما در حال حاضر با تعرفه عادی از این کانال استفاده می کنید. برای فعال سازی زمان بندی کانالتان لطفا از لیست زیر یک پلن VIP انتخاب کنید.",
-        "en": "**Warning**: Unfortunately your using this bot as a normal user. To enable your channel scheduling, robot you need to upgrade to vip level. Select your desired plan below:"
-    },
-    "pay": {
-        "fa": "پرداخت",
-        "en": "Pay"
-    },
-    "payment_description": {
-        "fa": "**%s**:\n   %s\n\nقیمت: **%s %s**",
-        "en": "**%s**:\n   %s\n\nPrice: **%s %s**"
-    },
-    "plus_plan_activated_for_u": {
-        "en": "Plan '%s' activated for you and It's valid until %s",
-        "fa": "اشتراک '%s' برای شما فعال شد و تا تاریخ %s معتبر خواهد بود."
-    },
-    "payment_failure": {
-        "fa": "خرید شما با خطایی نامعلوم مواجه شد. اگر خرید شما در درگاه موفقیت آمیز بود و اینجا با این خطا مواجه شده اید لطفا برای بررسی مشکل اطلاعات زیر را به ادمین اطلاع دهید:",
-        "en": "Your payment encountered with some sort of error; If you think your payment was successful and this is wrong, Inform the admin with this information:"
-    },
-    "what_todo": {
-        "fa": "خب! چه کاری میتونم برات انجام بدم؟",
-        "en": "Well, What can I do for you?"
-    },
-    "planning_section": {
-        "fa": "اینجا قسمت مدیریت زمان بندی هاست. چه کاری میخواهید انجام دهید؟",
-        "en": "Here's the planning management section. What do you want to do?"
-    },
-    "config_selections_section": {
-        "fa": "اینجا قسمت انتخاب ارزها و رمزارزهای دلخواه شماست. چه کاری میخواهید انجام دهید؟",
-        "en": "Here's the planning management section. What do you want to do?"
-    },
-    "what_to_config": {
-        "fa": "کدام یک را میخواهید تنظیم کنید؟",
-        "en": "Which one do you want to choose?"
-    },
-    "selection_hint": {
-        "fa": "👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.\n 👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.",
-        "en": "Click on the desired option, to enable its tick(✅), indicating that its on your desired list.\nClicking a selected item again, will disable its tick() and removes it from your list."
-    },
-    "channel_plan_disabled": {
-        "fa": "زمان بندی کانال %s با موفقیت غیرفعال شد.",
-        "en": "Channel %s planning disabled successfully."
-    },
-    "channel_not_found": {
-        "fa": "کانال مورد نظر یافت نشد. لطفا لحظاتی دیگر دوباره تلاش کنید و اگر دوباره با این خطا مواجه شدید با واحد پشتیبانی تماس بگیرید تا مشکل ریشه یابی شود. پیشانپیش از صبوری شما کمال تشکر را داریم.",
-        "en": "Channel cannot be found. Please try again later and if this happens again, contact with channel support team to check the issue. Thank you for your patience."
-    },
-    "channel_plan_cant_stop": {
-        "fa": "متاسفانه غیرفعال سازی زمانبندی کانال با مشکل مواجه شد. لطفا لحظاتی دیگر دوباره تلاش کنید و اگر دوباره با این خطا مواجه شدید با پشیبانی تماس حاصل فرمایید تا مشکل شناسایی شود. پیشاپیش از صبوری شما کمال تشکر را داریم.",
-        "en": "Couldn't stop the channel plan. Please try again later; And if you encounter with this message again, Please contact the support team to identify the issue. Thank you for your patience."
-    },
-    "click_channel_to_delete": {
-        "fa": "با کلیک بر روی نام کانال موردنظرتان می توانید زمان بندی آن را متوقف کنید.",
-        "en": "Click your desired channel name in order to disable its planning."
-    },
-    "no_channels_to_disable": {
-        "fa": "شما هنوز کانالی را زمان بندی نکرده اید. می توانید با استفاده از گزینه 'زمان بندی کانال جدید' این کار را انجام دهید.",
-        "en": "You haven't plan any channel yet. You can use 'Plan New Channel' option to do that."
-    },
-    "cant_change_language": {
-        "fa": "تغییر زبان با مشکل مواجه شد. لطفا لحظاتی دیگر دوباره تلاش کنید و اگر دوباره با این خطا مواجه شدید با پشیبانی تماس حاصل فرمایید تا مشکل شناسایی شود. پیشاپیش از صبوری شما کمال تشکر را داریم.",
-        "en": "Can not change the language. Please try again later; And if you encounter with this message again, Please contact the support team to identify the issue. Thank you for your patience."
-    },
-    "no_plans_available": {
-        "fa": "درحال حاضر هیچ اشتراک VIP ای موجود نیست!",
-        "en": "No VIP plans available right now!"
-    },
-    "channel_planned_succesfully": {
-        "en": "Channel called '%s' planned successfully to post prices every %s minutes, according to your desired list set in the 'Set Desired Ones' section.",
-        "fa": "کانال با نام '%s' با موفقیت برنامه ریزی شد تا هر %d دقیقه قیمت های ارزها و رمزارزهای انتخاب شده ی شما را پست کند."
-    },
-    "add_bot_to_channel_as_admin": {
-        "fa": "*هشدار: برای اینکه ربات بتواند روی کانال شما پست کند باید آن را در کانال خود اضافه کرده و دسترسی ادمین دهید. این خواسته ما نیست و از شرایط تلگرام برای فعالیت ربات ها داخل کانال است.",
-        "en": "*Warning: For the bot to be able to post on your channel, it must be added to your channel with admin rights. This is not our desure, It's telegram condition for bot activities in a channel."
-    },
-    "max_channel_plans_reached": {
-        "en": "You are allowed to have maximum number of %d channels planned. For increase this limit wait for our VIP plus plans.",
-        "fa": "متاسفانه شما نمی توانید بیش از %d برنامه ریزی کانال انجام دهید. برای افزایش این محدودیت منتظر بسته های VIP+ ما باشید."
-    },
-    "list_types": {
-        "gold": {
-            "fa": "📌 #لیست_بازار_طلا",
-            "en": "# Gold Price List 📌"
-        },
-        "currency": {
-            "fa": "📌 #لیست_بازار_ارز",
-            "en": "# Currency Price List 📌"
-        },
-        "crypto": {
-            "fa": "📌 #لیست_بازار_ارزدیجیتال",
-            "en": "# Cryptocurrency Price List 📌"
-        }
-    },
-    "keywords": {
-        "plan_channel": {
-            "fa": "زمان بندی کانال",
-            "en": "Channel Planning"
-        },
-        "plan_group": {
-            "fa": "زمان بندی گروه",
-            "en": "Group Planning"
-        },
-        "latest_prices": {
-            "fa": "مشاهده قیمت ها",
-            "en": "Get Prices"
-        },
-        "config_prices": {
-            "fa": "لیست مشاهده قیمت ها",
-            "en": "Config Price List"
-        },
-        "calculator": {
-            "fa": "ماشین حساب",
-            "en": "Calculator"
-        },
-        "config_calculator": {
-            "fa": "لیست ماشین حساب من",
-            "en": "My Calculator List"
-        },
-        "new_price_alarm": {
-            "fa": "ایجاد هشدار قیمت",
-            "en": "New Price Alarm"
-        },
-        "price_alarm_list": {
-            "fa": "لیست هشدار قیمت",
-            "en": "My Alarm List"
-        },
-        "setting": {
-            "en": "Setting",
-            "fa": "تنظیمات"
-        },
-        "my_plan": {
-            "fa": "اشتراک پلاس من",
-            "en": "My Plus Plan"
-        },
-
-        "main_menu": {
-            "fa": "منوی اصلی",
-            "en": "Main Menu"
-        },
-        "moneys": {
-            "gold": {
-                "fa": "طلا",
-                "en": "Gold"
-            },
-            "currency": {
-                "fa": "ارز",
-                "en": "Currency"
-            },
-            "crypto": {
-                "fa": "ارز دیجیتال",
-                "en": "Cryptocurrency"
-            }
-        },
-        "config_selections": {
-            "fa": "تنظیم لیست قیمت",
-            "en": "Set Desired Ones"
-        }
-    },
-    "commands": {
-        "lang_en": "/en",
-        "lang_fa": "/fa",
-        "planning_section": "/plan",
-        "cancel": "/cancel",
-        "start": "/start"
-    }
-}
