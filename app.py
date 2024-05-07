@@ -425,7 +425,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 account.change_state(UserStates.INPUT_EQUALIZER_AMOUNT, data['value'].upper())
             return
         if not data['value'] in account.desired_coins:
-            if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
+            if len(account.desired_coins) + len(account.desired_currencies) < Account.desires_count_max:
                 account.desired_coins.append(data['value'])
             else:
                 await query.answer(text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.', show_alert=True)
@@ -436,7 +436,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     elif data['type'] == "currencies" or data['type'] == "golds":
         if not data['value'] in account.desired_currencies:
-            if len(account.desired_coins) + len(account.desired_currencies) < Account.MaxSelectionInDesiredOnes:
+            if len(account.desired_coins) + len(account.desired_currencies) < Account.desires_count_max:
                 account.desired_currencies.append(data['value'])
             else:
                 await query.answer(text='مجموع موارد انتخابی شما به تعداد ۲۰ رسیده است.', show_alert=True)

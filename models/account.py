@@ -1,9 +1,11 @@
 from decouple import config
 from db.interface import *
 from datetime import datetime, date
-# from apscheduler.schedulers.background import BackgroundScheduler
 from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
+from tools.manuwriter import log
 from enum import Enum
+from models.channel import Channel
+from models.plusplan import PlusPlan
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
@@ -14,11 +16,14 @@ class UserStates(Enum):
     SEND_POST = 1
     INPUT_EQUALIZER_AMOUNT = 2
     INPUT_EQUALIZER_UNIT = 3
+    SELECT_CHANNEL = 4
+    SELECT_INTERVAL = 5
+    SELECT_LANGUAGE = 6
+
 
 class Account:
     # states:
 
-    MaxSelectionInDesiredOnes = 20
     _database = None
     Scheduler = None
     GarbageCollectionInterval = 30
@@ -52,7 +57,7 @@ class Account:
         for g in garbage:
             del Account.Instances[g]
 
-        manuwriter.log(f"Cleaned {cleaned_counts} accounts from my simple cache store.", category_name="account_gc")
+        log(f"Cleaned {cleaned_counts} accounts from my simple cache store.", category_name="account_gc")
 
     @staticmethod
     def Get(chat_id):
@@ -83,28 +88,22 @@ class Account:
         Account.GarbageCollect()
         Account.Instances[self.chat_id] = self
 
-    def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa', no_arrange=False) -> None:
+    def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa', 
+                 plus_end_date: datetime = None, plus_plan_id: int = 0, state: UserStates = UserStates.NONE, cache = None) -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
         self.desired_coins: list = cryptos if cryptos else []
         self.desired_currencies: list = currencies if currencies else []
         self.last_interaction: datetime = tz_today()
-        self.state: UserStates = None
-        self.state_data: any = None
         self.language: str = language
-        # Better Way Garbage Collection
-        if not no_arrange:
-            self.arrange_instances()
-
-        # Garbage collection using schedular
-        # Account.Instances[chat_id] = self  # this is for optimizing bot performance
-        # # saving recent users in the memory will reduce the delays for getting information, vs. using database everytime
-
-        # if not Account.Scheduler:
-        #     # start garbage collector to optimize memory use
-        #     Account.Scheduler = BackgroundScheduler()
-        #     Account.Scheduler.add_job(Account.GarbageCollect, 'interval', seconds=Account.GarbageCollectionInterval*60)
-        #     Account.Scheduler.start()
+        self.state: UserStates = state
+        self.cache = cache
+        self.plus_end_date = plus_end_date
+        self.plus_plan_id = plus_plan_id
+        self.desires_count_max = 20  #FIXME: update this with plus plan
+        self.username: str = None
+        self.firstname: str = None
+        self.arrange_instances()
 
     def change_state(self, state: UserStates = UserStates.NONE, data: any = None):
         self.state = state
@@ -130,6 +129,67 @@ class Account:
 
     def str_desired_currencies(self):
         return ';'.join(self.desired_currencies)
+
+    def set_extra_info(self, firstname: str, username: str = None) -> None:
+        '''This extra infos are just for temprory messaging purposes and wont be saved in database.'''
+        self.firstname = firstname
+        self.username = username
+
+
+    def max_channel_plans(self):
+        # decide with plus_plan_id
+        return 3
+
+    def my_channel_plans(self) -> list[Channel]:
+        return list(filter(lambda channel: channel.owner_id == self.chat_id, Channel.Instances.values()))
+
+    @staticmethod
+    def Get(chat_id):
+        if chat_id in Account.Instances:
+            Account.Instances[chat_id].last_interaction = tz_today()
+            return Account.Instances[chat_id]
+        row = Account.Database().get(chat_id)
+        if row:
+            currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
+            cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
+            plus_end_date = datetime.strptime(row[4], DatabaseInterface.DATE_FORMAT) if row[4] else None
+            try:
+                plus_plan_id= int(row[5])
+            except:
+                plus_plan_id= 0
+            state = row[6]
+            cache = row[7]
+            language = row[-1]
+            return Account(chat_id=int(row[0]), currencies=currs.split(";") if currs else None,
+                        cryptos=cryptos.split(';') if cryptos else None, plus_end_date=plus_end_date, 
+                        plus_plan_id=plus_plan_id, language=language, state=state, cache=cache)
+
+        return Account(chat_id=chat_id).save()
+
+    def is_member_plus(self) -> bool:
+        '''Check if the account has still plus subscription.'''
+        return self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date() and self.plus_plan_id
+
+    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str, channel_title: str = None) -> Channel:
+        channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
+        if channel.plan():
+            # self.channels[channel_id] = channel
+            return channel
+        return None
+    def updgrade(self, plus_plan_id):
+        plus_plan = PlusPlan.Get(plus_plan_id)
+        Account.Database().upgrade_account(self, plus_plan=plus_plan)
+        
+    @staticmethod
+    def Everybody():
+        return Account.Database().get_all()
+
+    def save(self):
+        self.Database().update(self)
+        return self
+
+    def __del__(self):
+        self.save()
 
     @staticmethod
     def Statistics():

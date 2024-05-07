@@ -125,7 +125,7 @@ class CoinMarketCap(CryptoCurrency):
 
     def usd_to_cryptos(self, absolute_amount: float|int, source_unit_symbol: str, cryptos: list = None) -> str:
         cryptos = self.get_desired_ones(cryptos)
-
+        res: str = ''
         if BaseAPIService.TETHER_SYMBOL not in cryptos and source_unit_symbol != BaseAPIService.TETHER_SYMBOL:
             cryptos.insert(0, BaseAPIService.TETHER_SYMBOL)
 

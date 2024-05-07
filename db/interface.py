@@ -1,23 +1,44 @@
 import sqlite3
 from datetime import datetime
-from tools import manuwriter
+from tools.manuwriter import log
+from tools.exceptions import NoSuchPlusPlanException
+from tools.mathematix import after_n_months
+from time import time
+
 
 class DatabaseInterface:
     _instance = None
     TABLE_ACCOUNTS = "accounts"
-    ACCOUNT_ID = 'id'
-    ACCOUNT_CURRENCIES = 'currencies'
-    ACCOUNT_CRYPTOS = 'cryptos'
-    ACCOUNT_LAST_INTERACTION = 'last_interaction'
-    ACCOUNT_LANGUAGE = 'language'
-    ACCOUNT_ALL_FIELDS = f'({ACCOUNT_ID}, {ACCOUNT_CURRENCIES}, {ACCOUNT_CRYPTOS}, {ACCOUNT_LAST_INTERACTION}, {ACCOUNT_LANGUAGE})'
     DATE_FORMAT = '%Y-%m-%d'
+    ACCOUNT_COLUMNS = (ACCOUNT_ID, ACCOUNT_CURRENCIES, ACCOUNT_CRYPTOS, ACCOUNT_LAST_INTERACTION, ACCOUNT_PLUS_END_DATE, ACCOUNT_PLUS_PLAN_ID, ACCOUNT_STATE, ACCOUNT_CACHE, ACCOUNT_LANGUAGE) =\
+        ('id', 'currencies', 'cryptos', 'last_interaction', 'plus_end_date', 'plus_plan_id', 'state', 'cache', 'language')
+    ACCOUNT_ALL_FIELDS = f'({ACCOUNT_ID}, {ACCOUNT_CURRENCIES}, {ACCOUNT_CRYPTOS}, {ACCOUNT_LAST_INTERACTION}, {ACCOUNT_PLUS_END_DATE}, {ACCOUNT_PLUS_PLAN_ID}, {ACCOUNT_LANGUAGE})'
+
+    TABLE_CHANNELS = "channels"  # channels to be scheduled
+    CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_OWNER_ID, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME) =\
+        ("id", "name", "title", "owner_id", "interval", "last_post_time")
+
+    TABLE_PAYMENTS = "payments"
+    PAYMENT_COLUMNS = (PAYMENT_ID, PAYMENT_CHATID, PAYMENT_ORDER_ID, PAYMENT_STATUS, PAYMENT_AMOUNT, PAYMENT_CURRENCY,\
+        PAYMENT_PAID_AMOUNT, PAYMENT_PAID_CURRENCY, PAYMENT_PLUS_PLAN_ID, PAYMENT_CREATED_ON, PAYMENT_MODIFIED_AT) =\
+        ("order_id", "chat_id", "id", "status", "amount", "currency", "paid_amount", "paid_currency", "plus_plan_id", "created", "modified")
+
+    TABLE_PLUS_PLANS = "plus_plans"
+    PLUS_PLANS_COLUMNS = (PLUS_PLAN_ID, PLUS_PLAN_PRICE, PLUS_PLAN_PRICE_CURRENCY, PLUS_PLAN_DURATION, PLUS_PLAN_LEVEL, PLUS_PLAN_TITLE, \
+                          PLUS_PLAN_TITLE_EN,  PLUS_PLAN_DESCRIPTION, PLUS_PLAN_DESCRIPTION_EN) =\
+        ("id", "price", "price_currency", "duration", "level", "title", "title_en", "description", "description_en")
+
+
     @staticmethod
     def Get():
         if not DatabaseInterface._instance:
             DatabaseInterface._instance = DatabaseInterface()
         return DatabaseInterface._instance
 
+    def sync(self):
+        '''cursor.execute(f'ALTER TABLE {DatabaseInterface.TABLE_ACCOUNTS} ADD {DatabaseInterface.ACCOUNT_LAST_INTERACTION} DATE')
+        connection.commit()'''
+                
     def setup(self):
         connection = None
         try:
@@ -25,17 +46,53 @@ class DatabaseInterface:
             cursor = connection.cursor()
 
             # check if the table accounts was created
-            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{DatabaseInterface.TABLE_ACCOUNTS}'").fetchone():
-                query = f"CREATE TABLE {DatabaseInterface.TABLE_ACCOUNTS} ({DatabaseInterface.ACCOUNT_ID} INTEGER PRIMARY KEY," +\
-                    f"{DatabaseInterface.ACCOUNT_CURRENCIES} TEXT, {DatabaseInterface.ACCOUNT_CRYPTOS} TEXT, {DatabaseInterface.ACCOUNT_LAST_INTERACTION} DATE, {DatabaseInterface.ACCOUNT_LANGUAGE} TEXT)"
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{DatabaseInterface.TABLE_PLUS_PLANS}'").fetchone():
+                query = f"CREATE TABLE {DatabaseInterface.TABLE_PLUS_PLANS} ({DatabaseInterface.PLUS_PLAN_ID} INTEGER PRIMARY KEY," +\
+                    f"{DatabaseInterface.PLUS_PLAN_PRICE} REAL NOT NULL, {DatabaseInterface.PLUS_PLAN_PRICE_CURRENCY} TEXT, " +\
+                    f"{DatabaseInterface.PLUS_PLAN_DURATION} INTEGER NOT NULL, {DatabaseInterface.PLUS_PLAN_LEVEL} INTEGER, " +\
+                    f"{DatabaseInterface.PLUS_PLAN_TITLE} TEXT NOT NULL, {DatabaseInterface.PLUS_PLAN_TITLE_EN} TEXT, " +\
+                    f"{DatabaseInterface.PLUS_PLAN_DESCRIPTION} TEXT, {DatabaseInterface.PLUS_PLAN_DESCRIPTION_EN} TEXT)"
                 # create table account
                 cursor.execute(query)
-                manuwriter.log(f"{DatabaseInterface.TABLE_ACCOUNTS} table created successfuly.", category_name='info')
+                log(f"PLUS Database {DatabaseInterface.TABLE_PLUS_PLANS} table created successfuly.", category_name='plus_info')
 
-            # else: # TEMP-*****
-            #     cursor.execute(f'ALTER TABLE {DatabaseInterface.TABLE_ACCOUNTS} ADD {DatabaseInterface.ACCOUNT_LANGUAGE} TEXT')
-            #     connection.commit()
-            manuwriter.log("Database setup completed.", category_name='info')
+            # check if the table accounts was created
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{DatabaseInterface.TABLE_ACCOUNTS}'").fetchone():
+                query = f"CREATE TABLE {DatabaseInterface.TABLE_ACCOUNTS} ({DatabaseInterface.ACCOUNT_ID} INTEGER PRIMARY KEY," +\
+                    f"{DatabaseInterface.ACCOUNT_CURRENCIES} TEXT, {DatabaseInterface.ACCOUNT_CRYPTOS} TEXT, {DatabaseInterface.ACCOUNT_LAST_INTERACTION} DATE, " +\
+                    f"{DatabaseInterface.ACCOUNT_PLUS_END_DATE} DATE, {DatabaseInterface.ACCOUNT_PLUS_PLAN_ID} INTEGER," +\
+                    f"{DatabaseInterface.ACCOUNT_STATE} INTEGER DEFAULT 0, {DatabaseInterface.ACCOUNT_CACHE} TEXT DEFAULT NULL, {DatabaseInterface.ACCOUNT_LANGUAGE} TEXT, " +\
+                    f"FOREIGN KEY({DatabaseInterface.ACCOUNT_PLUS_PLAN_ID}) REFERENCES {DatabaseInterface.TABLE_PLUS_PLANS}({DatabaseInterface.PLUS_PLAN_ID}))"
+                # create table account
+                cursor.execute(query)
+                log(f"PLUS Database {DatabaseInterface.TABLE_ACCOUNTS} table created successfuly.", category_name='plus_info')
+            else: # TEMP-*****
+                self.sync()
+
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{DatabaseInterface.TABLE_CHANNELS}'").fetchone():
+                query = f"CREATE TABLE {DatabaseInterface.TABLE_CHANNELS} ({DatabaseInterface.CHANNEL_ID} INTEGER PRIMARY KEY, " +\
+                    f"{DatabaseInterface.CHANNEL_INTERVAL} INTEGER NOT_NULL, {DatabaseInterface.CHANNEL_LAST_POST_TIME} INTEGER, " +\
+                    f"{DatabaseInterface.CHANNEL_NAME} TEXT, {DatabaseInterface.CHANNEL_TITLE} TEXT NOT_NULL," +\
+                    f"{DatabaseInterface.CHANNEL_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({DatabaseInterface.CHANNEL_OWNER_ID}) REFERENCES {DatabaseInterface.TABLE_ACCOUNTS}({DatabaseInterface.ACCOUNT_ID}))"
+                # create table account
+                cursor.execute(query)
+                log(f"PLUS Database {DatabaseInterface.TABLE_CHANNELS} table created successfuly.", category_name='plus_info')
+
+            # Table payments existence check
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{DatabaseInterface.TABLE_PAYMENTS}'").fetchone():
+                query = f"CREATE TABLE {DatabaseInterface.TABLE_PAYMENTS} ({DatabaseInterface.PAYMENT_ID} INTEGER NOT_NULL, " +\
+                    f"{DatabaseInterface.PAYMENT_ORDER_ID} INTEGER NOT_NULL, {DatabaseInterface.PAYMENT_CHATID} INTEGER NOT_NULL, " +\
+                    f"{DatabaseInterface.PAYMENT_AMOUNT} REAL NOT_NULL, {DatabaseInterface.PAYMENT_CURRENCY} TEXT NOT_NULL, " +\
+                    f"{DatabaseInterface.PAYMENT_PAID_AMOUNT} REAL, {DatabaseInterface.PAYMENT_PAID_CURRENCY} TEXT, " +\
+                    f"{DatabaseInterface.PAYMENT_STATUS} TEXT NOT NULL, {DatabaseInterface.PAYMENT_CREATED_ON} TEXT, {DatabaseInterface.PAYMENT_MODIFIED_AT} TEXT," +\
+                    f"{DatabaseInterface.PAYMENT_PLUS_PLAN_ID} INTEGER NOT NULL, " +\
+                    f"FOREIGN KEY({DatabaseInterface.PAYMENT_CHATID}) REFERENCES {DatabaseInterface.TABLE_ACCOUNTS}({DatabaseInterface.ACCOUNT_ID})," +\
+                    f"FOREIGN KEY({DatabaseInterface.PAYMENT_PLUS_PLAN_ID}) REFERENCES {DatabaseInterface.TABLE_PLUS_PLANS}({DatabaseInterface.PLUS_PLAN_ID}))"
+                # create table account
+                cursor.execute(query)
+                log(f"plus Database {DatabaseInterface.TABLE_PAYMENTS} table created successfuly.", category_name='plus_info')
+
+            log("plus Database setup completed.", category_name='plus_info')
             cursor.close()
             connection.close()
         except Exception as ex:
@@ -44,64 +101,161 @@ class DatabaseInterface:
             raise ex  # create custom exception for this
 
 
-    def add(self, account, log_category_prefix=''):
-        connection = None
+    def add(self, account):
         if not account:
             raise Exception("You must provide an Account to save")
         try:
-            query = f"INSERT INTO {DatabaseInterface.TABLE_ACCOUNTS} {DatabaseInterface.ACCOUNT_ALL_FIELDS} VALUES (?, ?, ?, ?, ?)"
-            connection = sqlite3.connect(self._name)
-            cursor = connection.cursor()
-            cursor.execute(query, (account.chat_id, account.str_desired_currencies(),
-                                   account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), account.language))
-            manuwriter.log(f"New account: {account} saved into database successfully.", category_name=f'{log_category_prefix}info')
-            cursor.close()
-            connection.commit()
-            connection.close()
+            columns = ', '.join(DatabaseInterface.ACCOUNT_COLUMNS)
+            query = f"INSERT INTO {DatabaseInterface.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            self.execute(False, query, account.chat_id, account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), \
+                                   account.plus_end_date, account.plus_plan_id, account.state.value, account.cache, account.language)
+            log(f"New account: {account} saved into plus database successfully.", category_name=f'plus_info')
         except Exception as ex:
-            manuwriter.log(f"Cannot save this account:{account}", ex, category_name=f'{log_category_prefix}database')
-            if connection:
-                connection.close()
+            log(f"Cannot save this account:{account}", ex, category_name=f'plus_database')
             raise ex  # custom ex needed here too
 
     def get(self, chat_id):
-        connection = sqlite3.connect(self._name)
-        cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM {DatabaseInterface.TABLE_ACCOUNTS} WHERE {DatabaseInterface.ACCOUNT_ID}=? LIMIT 1", (chat_id, ))
-        row = cursor.fetchone()
-        cursor.close()
-        connection.close()
-        return row
+        accounts = self.execute(True, f"SELECT * FROM {DatabaseInterface.TABLE_ACCOUNTS} WHERE {DatabaseInterface.ACCOUNT_ID}=? LIMIT 1", chat_id)
+        return accounts[0] if accounts else None
 
     def get_all(self, column: str=ACCOUNT_ID) -> list:
-        connection = sqlite3.connect(self._name)
-        cursor = connection.cursor()
-        cursor.execute(f"SELECT ({column}) FROM {DatabaseInterface.TABLE_ACCOUNTS}")
-        rows = cursor.fetchall()
-        cursor.close()
-        connection.close()
+        rows = self.execute(True, f"SELECT ({column}) FROM {DatabaseInterface.TABLE_ACCOUNTS}")
         if column == DatabaseInterface.ACCOUNT_LAST_INTERACTION:
             return [datetime.strptime(row[0], DatabaseInterface.DATE_FORMAT) if row[0] else None for row in rows]
         return [row[0] for row in rows] # just return a list of ids
 
-    def update(self, account, log_category_prefix=''):
+    def update(self, account):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
         cursor.execute(f"SELECT * FROM {DatabaseInterface.TABLE_ACCOUNTS} WHERE {DatabaseInterface.ACCOUNT_ID}=? LIMIT 1", (account.chat_id, ))
         if cursor.fetchone(): # if account with his chat id has been saved before in the database
-            FIELDS_TO_SET = f'{DatabaseInterface.ACCOUNT_CURRENCIES}=?, {DatabaseInterface.ACCOUNT_CRYPTOS}=?, {DatabaseInterface.ACCOUNT_LAST_INTERACTION}=?, {DatabaseInterface.ACCOUNT_LANGUAGE}=?'
-            cursor.execute(f'UPDATE {DatabaseInterface.TABLE_ACCOUNTS} SET {FIELDS_TO_SET} WHERE {DatabaseInterface.ACCOUNT_ID}=?', \
-                (account.str_desired_currencies(), account.str_desired_coins(), 
-                 account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), account.language, account.chat_id))
+            columns_to_set = ', '.join([f'{field}=?' for field in DatabaseInterface.ACCOUNT_COLUMNS[1:]])
+
+            cursor.execute(f'UPDATE {DatabaseInterface.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {DatabaseInterface.ACCOUNT_ID}=?', \
+                (account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), \
+                 account.plus_end_date.strftime(DatabaseInterface.DATE_FORMAT) if account.plus_end_date else None, account.plus_plan_id,
+                account.state.value, account.cache, account.language, account.chat_id))
         else:
-            cursor.execute(f"INSERT INTO {DatabaseInterface.TABLE_ACCOUNTS} {DatabaseInterface.ACCOUNT_ALL_FIELDS} VALUES (?, ?, ?, ?, ?)", \
-                (account.chat_id, account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), account.language))
-            manuwriter.log("New account started using this bot with chat_id=: " + account.__str__(), category_name=f'{log_category_prefix}info')
+            columns = ', '.join(DatabaseInterface.ACCOUNT_COLUMNS)
+            cursor.execute(f"INSERT INTO {DatabaseInterface.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", \
+                (account.chat_id, account.str_desired_currencies(), account.str_desired_coins(), account.last_interaction.strftime(DatabaseInterface.DATE_FORMAT), \
+                 account.plus_end_date.strftime(DatabaseInterface.DATE_FORMAT) if account.plus_end_date else None, account.plus_plan_id, 
+                 account.state.value, account.cache, account.language))
+            log("New account started using this bot with chat_id=: " + account.__str__(), category_name=f'plus_info')
         connection.commit()
         cursor.close()
         connection.close()
 
+    def upgrade_account(self, account, plus_plan):  # use plus mode
+        account.plus_end_date = after_n_months(plus_plan.duration_in_months)
+        str_plus_end_date = account.plus_end_date.strftime(DatabaseInterface.DATE_FORMAT) if account.plus_end_date else None
+        self.execute(False, f'UPDATE {DatabaseInterface.TABLE_ACCOUNTS} SET {DatabaseInterface.ACCOUNT_PLUS_END_DATE}=?, {DatabaseInterface.ACCOUNT_PLUS_PLAN_ID}=? WHERE {DatabaseInterface.ACCOUNT_ID}=?', \
+            str_plus_end_date, plus_plan.id, account.chat_id)
+        log(f"Account with chat_id={account.chat_id} has extended its plus previllages until {str_plus_end_date}")
+
+    def plan_channel(self, owner_chat_id: int, channel_id: int, channel_name: str, interval: int, channel_title: str):
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {DatabaseInterface.TABLE_CHANNELS} WHERE {DatabaseInterface.CHANNEL_ID}=? LIMIT 1", (channel_id, ))
+        now_in_minutes = time() // 60
+        if cursor.fetchone(): # if account with his chat id has been saved before in the database
+            columns_to_set = ', '.join([f'{field}=?' for field in DatabaseInterface.CHANNELS_COLUMNS[1:]])
+            cursor.execute(f'UPDATE {DatabaseInterface.TABLE_CHANNELS} SET {columns_to_set} WHERE {DatabaseInterface.CHANNEL_ID}=?', \
+                (channel_name, channel_title, owner_chat_id, interval, now_in_minutes, channel_id))
+            log(f"Channel with the id of [{channel_id}, {channel_name}] has been RE-planned by owner_chat_id=: {owner_chat_id}", category_name='plus_info')
+        else:
+            columns = ', '.join(DatabaseInterface.CHANNELS_COLUMNS)
+            cursor.execute(f"INSERT INTO {DatabaseInterface.TABLE_CHANNELS} ({columns}) VALUES (?, ?, ?, ?, ?, ?)", \
+                (channel_id, channel_name, channel_title, owner_chat_id, interval, now_in_minutes))
+            log(f"New channel with the id of [{channel_id}, {channel_name}] has benn planned by owner_chat_id=: {owner_chat_id}", category_name='plus_info')
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+    def get_channel(self, channel_id: int):
+        channels = self.execute(True, f"SELECT * FROM {DatabaseInterface.TABLE_CHANNELS} WHERE {DatabaseInterface.CHANNEL_ID}=? LIMIT 1", channel_id)
+        return channels[0] if channels else None
+
+    def get_account_channels(self, owner_chat_id: int) -> list:
+        '''Get all channels related to this account'''
+        return self.execute(True, f"SELECT * FROM {DatabaseInterface.TABLE_CHANNELS} WHERE {DatabaseInterface.CHANNEL_OWNER_ID}=?", owner_chat_id)
+
+
+    def get_channels_by_interval(self, min_interval: int = 0) -> list:
+        '''Finds all the channels with plan interval > min_interval'''
+        return self.execute(True, f"SELECT * FROM {DatabaseInterface.TABLE_CHANNELS} WHERE {DatabaseInterface.CHANNEL_INTERVAL} > ?", min_interval)
+
+    def execute(self, is_fetch_query: bool, query: str, *params):
+        '''Execute queries that doesnt return result such as insert or delete'''
+        rows = None
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
+        cursor.execute(query, (*params, ))
+        if is_fetch_query:
+            rows = cursor.fetchall()
+        else:
+            connection.commit()
+        cursor.close()
+        connection.close()
+        return rows
+
+    def delete_channel(self, channel_id: int):
+        '''Delete channel and its planning'''
+        self.execute(False, f"DELETE FROM {DatabaseInterface.TABLE_CHANNELS} WHERE {DatabaseInterface.CHANNEL_ID} = ?", channel_id)
+
+    def define_plus_plan(self, title: str, titile_en: str, duration_in_months: int, price: float, price_currency: str = "USDT", plus_level: int = 1):
+        fields = ', '.join(DatabaseInterface.PLUS_PLANS_COLUMNS[1:-2])  # in creation mode admin just defines persian title and description
+        # if he wants to add english texts, he should go to edit menu
+        self.execute(f"INSERT INTO {DatabaseInterface.TABLE_PLUS_PLANS} ({fields}) VALUES (?, ?, ?, ?, ?, ?)", \
+            price, price_currency, duration_in_months, plus_level, title, titile_en)
+
+    def get_plus_plan(self, plus_plan_id: int):
+        vplans = self.execute(True, f"SELECT * FROM {DatabaseInterface.TABLE_PLUS_PLANS} WHERE {DatabaseInterface.PLUS_PLAN_ID}=? LIMIT 1", plus_plan_id)
+        return vplans[0] if vplans else None
+
+    def get_all_plus_plans(self):
+        return self.execute(True, f"SELECT * FROM {DatabaseInterface.TABLE_PLUS_PLANS}")
+
+    def update_plus_plan(self, plus_plan):
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {DatabaseInterface.TABLE_PLUS_PLANS} WHERE {DatabaseInterface.PLUS_PLAN_ID}=? LIMIT 1", (plus_plan.id, ))
+        if cursor.fetchone(): # if account with his chat id has been saved before in the database
+            columns_to_set = ', '.join([f'{field}=?' for field in DatabaseInterface.PLUS_PLANS_COLUMNS[1:]])
+
+            cursor.execute(f'UPDATE {DatabaseInterface.TABLE_PLUS_PLANS} SET {columns_to_set} WHERE {DatabaseInterface.PLUS_PLAN_ID}=?', \
+                (plus_plan.price, plus_plan.price_currency, plus_plan.duration_in_months, plus_plan.plus_level, plus_plan.title, plus_plan.title_en, plus_plan.description, plus_plan.description_en))
+        else:
+            raise NoSuchPlusPlanException(plus_plan.id)
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+    def update_payment(self, payment):
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {DatabaseInterface.TABLE_PAYMENTS} WHERE {DatabaseInterface.PAYMENT_ORDER_ID}=? LIMIT 1", (payment.order_id, ))
+
+        if cursor.fetchone(): # if account with his chat id has been saved before in the database
+            columns = ', '.join(f"{field}=?" for field in DatabaseInterface.PAYMENT_COLUMNS[2:])
+            cursor.execute(f'UPDATE {DatabaseInterface.TABLE_PAYMENTS} SET {columns} WHERE {DatabaseInterface.PAYMENT_ORDER_ID}=?', \
+                (payment.id, payment.status, payment.amount, payment.currency, payment.paid_amount, payment.paid_currency, payment.plus_plan.id, \
+                    payment.created_at, payment.modified_at, payment.order_id))
+            log(f"Payment with order_id of {payment.order_id}, and payment id of {payment.id} status changed to {payment.status}", category_name='payments')
+        else:
+            columns = ', '.join(DatabaseInterface.PAYMENT_COLUMNS)
+            cursor.execute(f"INSERT INTO {DatabaseInterface.TABLE_PAYMENTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", \
+                (payment.order_id, payment.payer_chat_id, payment.id, payment.status, payment.amount, payment.currency.upper(), \
+                payment.paid_amount, payment.paid_currency.upper(), payment.plus_plan.id, payment.created_at, payment.modified_at))
+            log(f"New payment with the id of {payment.id} and order_id of {payment.order_id}, and status of {payment.status} added for user with chatid =: {payment.payer_chat_id}", category_name='payments')
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+    def get_payment(self, order_id):
+        columns = ', '.join(DatabaseInterface.PAYMENT_COLUMNS)
+        return self.execute(True, f"SELECT {columns} from {DatabaseInterface.TABLE_PAYMENTS} WHERE {DatabaseInterface.PAYMENT_ORDER_ID}=? ", order_id)
+
     def __init__(self, name="data.db"):
-        print("CAlling with the name of ", name)
         self._name = name
         self.setup()
