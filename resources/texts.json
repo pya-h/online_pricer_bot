@@ -8,11 +8,11 @@
             "en": "View Prices"
         },
         "config_lists": {
-            "fa": " لیست مشاهده قیمت ها",
+            "fa": "لیست مشاهده قیمت ها",
             "en": "View List of Prices"
         },
         "calculator": {
-            "fa": " ماشین حساب",
+            "fa": "ماشین حساب",
             "en" : "Calculator"
         },
         "config_calculator": {
@@ -32,11 +32,28 @@
             "en": "⚙️ Settings"
         }
     },
-    "second_step_keyboard": {
-        "fa": "بازگشت به منوی اصلی", 
-        "en": "Back To Main Meny"
+    "keyboard": {
+        "crypto": {
+            "fa": "بازار ارز دیجیتال",
+            "en": "Cryptocurrency"
+        },
+        "currency": {
+            "fa": "بازار ارز",
+            "en": "National Currency"
+        },
+        "gold": {
+            "fa": "بازار طلا",
+            "en": "Gold"
+        },
+        "return": {
+            "fa": "بازگشت", 
+            "en": "Return"
+        },
+        "cancel": {
+            "fa": "لغو", 
+            "en": "Cancel"
+        }
     },
-
     "config_which_bazaar": {
         "fa": "لیست کدام بازار را می خواهید تنظیم کنید؟",
         "en": "Which one do you want to config?"
