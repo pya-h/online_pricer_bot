@@ -5,7 +5,7 @@ from api.currency_service import SourceArena
 
 
 # Parent Class
-class CryptoCurrency(APIService):
+class CryptoCurrencyService(APIService):
     CoinsInPersian = None
 
     @staticmethod
@@ -21,9 +21,9 @@ class CryptoCurrency(APIService):
 
     def __init__(self, url: str, source: str, max_desired_selection: int = 5, params=None, cache_file_name: str = None) -> None:
         super().__init__(url, source, max_desired_selection, params, cache_file_name)
-        if not CryptoCurrency.CoinsInPersian:
-            CryptoCurrency.CoinsInPersian = CryptoCurrency.get_persian_coin_names()
-        self.get_desired_ones = lambda desired_ones: desired_ones or list(CryptoCurrency.CoinsInPersian.keys())[:self.max_desired_selection]
+        if not CryptoCurrencyService.CoinsInPersian:
+            CryptoCurrencyService.CoinsInPersian = CryptoCurrencyService.get_persian_coin_names()
+        self.get_desired_ones = lambda desired_ones: desired_ones or list(CryptoCurrencyService.CoinsInPersian.keys())[:self.max_desired_selection]
 
     def crypto_description_row(self, name: str, symbol: str, price:float|int|str, short_text: bool=True):
         if isinstance(price, str):
@@ -33,13 +33,13 @@ class CryptoCurrency(APIService):
         else:
             rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.TetherInTomans)
         rp_toman = mathematix.persianify(rp_toman)
-        return f'🔸 {CryptoCurrency.CoinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
-            else f'🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrency.CoinsInPersian[symbol]}: {rp_toman} تومان\n'
+        return f'🔸 {CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
+            else f'🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان\n'
 
 
 
 # --------- COINGECKO -----------
-class CoinGecko(CryptoCurrency):
+class CoinGecko(CryptoCurrencyService):
     '''CoinGecko Class. The object of this class will get the cryptocurrency prices from coingecko.'''
     def __init__(self, params=None) -> None:
 
@@ -66,7 +66,7 @@ class CoinGecko(CryptoCurrency):
 
 
 # --------- COINMARKETCAP -----------
-class CoinMarketCap(CryptoCurrency):
+class CoinMarketCap(CryptoCurrencyService):
     '''CoinMarketCap Class. The object of this class will get the cryptocurrency prices from CoinMarketCap.'''
 
     def __init__(self, api_key, price_unit='USD', params=None) -> None:
@@ -81,7 +81,7 @@ class CoinMarketCap(CryptoCurrency):
 
     def update_symbols_list(self):
         '''Construct the list of all cryptocurrency coin symbols'''
-        self.symbols_list = ','.join(CryptoCurrency.CoinsInPersian)
+        self.symbols_list = ','.join(CryptoCurrencyService.CoinsInPersian)
 
     def set_price_unit(self, pu):
         self.price_unit = pu
@@ -114,7 +114,7 @@ class CoinMarketCap(CryptoCurrency):
         res = ''
         for coin in desired_coins:
             if not api_data[coin]:
-                res += f'❗️ {CryptoCurrency.CoinsInPersian[coin]}: قیمت دریافت نشد.'
+                res += f'❗️ {CryptoCurrencyService.CoinsInPersian[coin]}: قیمت دریافت نشد.'
             price = api_data[coin][0]['quote'][self.price_unit]['price']
             name = api_data[coin][0]['name'] if coin != BaseAPIService.TETHER_SYMBOL else 'Tether'
             res += self.crypto_description_row(name, coin, price, short_text=short_text)
@@ -134,7 +134,7 @@ class CoinMarketCap(CryptoCurrency):
                 continue
             coin_equalized_price = absolute_amount  / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
             coin_equalized_price = mathematix.persianify(mathematix.cut_and_separate(coin_equalized_price))
-            res += f'🔸 {coin_equalized_price} {CryptoCurrency.CoinsInPersian[coin]}\n'
+            res += f'🔸 {coin_equalized_price} {CryptoCurrencyService.CoinsInPersian[coin]}\n'
 
         return res
 
@@ -144,12 +144,12 @@ class CoinMarketCap(CryptoCurrency):
         # First check the required data is prepared
         if not self.latest_data:
             raise NoLatestDataException('use for equalizing!')
-        if source_unit_symbol not in self.latest_data or source_unit_symbol not in CryptoCurrency.CoinsInPersian:
+        if source_unit_symbol not in self.latest_data or source_unit_symbol not in CryptoCurrencyService.CoinsInPersian:
             raise InvalidInputException('Coin symbol!')
 
         # text header
         res: str = f'💱☯ معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
-            ("%s %s" % (mathematix.persianify(amount), CryptoCurrency.CoinsInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
+                   ("%s %s" % (mathematix.persianify(amount), CryptoCurrencyService.CoinsInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])

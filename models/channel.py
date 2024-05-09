@@ -37,7 +37,7 @@ class Channel:
     def plan(self) -> bool:
         if self.interval <= 0:
             if self.id in Channel.Instances:
-                # unplan and delete in database
+                # plan and delete in database
                 del Channel.Instances[self.id]
             return False  # Plan removed
 

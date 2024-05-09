@@ -52,6 +52,10 @@
         "cancel": {
             "fa": "لغو", 
             "en": "Cancel"
+        },
+        "close": {
+            "fa": "بستن ❎",
+            "en": "Close ❎"
         }
     },
     "config_which_bazaar": {
@@ -65,5 +69,20 @@
     "channels_summary": {
         "fa": "🆔 آدرس کانال: %s\n⚜️ آدرس دیگر مجموعه های ما: %s\n",
         "en": "🆔 Channel URL: %s\n⚜️ Our other links: %s\n"
+    },
+    "list_updated": {
+        "fa": "✅ لیست مربوطه با موفقیت به روزرسانی شد.",
+        "en": "✅ This last has been successfully updated."
+    },
+    "errors": {
+        "max_selection": {
+            "fa": "مجموع موارد انتخابی شما به تعداد %d رسیده است.",
+            "en": "Your selection count is now reached to %d options."
+        },
+
+        "unknown": {
+            "fa": "یک مشکل غیرمنتظره اتفاق افتاده است. لطفا دوباره تلاش کنید.",
+            "en": "An unexpected error has happened. Please try again."
+        }
     }
 }

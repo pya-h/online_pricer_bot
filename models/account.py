@@ -6,37 +6,42 @@ from tools.manuwriter import log
 from enum import Enum
 from models.channel import Channel
 from models.plusplan import PlusPlan
+from typing import List
+from bot.types import SelectionListTypes,  MarketOptions
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
 
-class UserStates(Enum):
-    NONE = 0
-    SEND_POST = 1
-    INPUT_EQUALIZER_AMOUNT = 2
-    INPUT_EQUALIZER_UNIT = 3
-    SELECT_CHANNEL = 4
-    SELECT_INTERVAL = 5
-    SELECT_LANGUAGE = 6
-    CONFIG_BAZAARS = 7
 
 class Account:
     # states:
+    class States(Enum):
+        NONE = 0
+        SEND_POST = 1
+        INPUT_EQUALIZER_AMOUNT = 2
+        INPUT_EQUALIZER_UNIT = 3
+        SELECT_CHANNEL = 4
+        SELECT_INTERVAL = 5
+        SELECT_LANGUAGE = 6
+        CONFIG_MARKETS = 7
+        CONFIG_CALCULATOR_LIST = 8
 
     _database = None
     GarbageCollectionInterval = 30
-    PreviousGarbageCollectionTime: int = now_in_minute() # in minutes
+    PreviousGarbageCollectionTime: int = now_in_minute()  # in minutes
     Instances = {}  # active accounts will cache into this; so there's no need to access database everytime
+
     # causing a slight enhancement on performance
+
     @staticmethod
     def Database():
-        if Account._database == None:
+        if Account._database is None:
             Account._database = DatabaseInterface.Get()
         return Account._database
 
     def no_interaction_duration(self):
-        diff, _ =  from_now_time_diff(self.last_interaction)
+        diff, _ = from_now_time_diff(self.last_interaction)
         return diff
 
     @staticmethod
@@ -58,56 +63,37 @@ class Account:
 
         log(f"Cleaned {cleaned_counts} accounts from my simple cache store.", category_name="account_gc")
 
-    @staticmethod
-    def Get(chat_id):
-        Account.GarbageCollect()
-        if chat_id in Account.Instances:
-            Account.Instances[chat_id].last_interaction = tz_today()
-            return Account.Instances[chat_id]
-        row = Account.Database().get(chat_id)
-        if row:
-            currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
-            cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
-            return Account(int(row[0]), currs.split(";") if currs else None, cryptos.split(';') if cryptos else None)
-
-        return Account(chat_id=chat_id).save()
-
-    @staticmethod
-    def Everybody():
-        return Account.Database().get_all()
-
-    def save(self):
-        self.Database().update(self)
-        return self
-
-    def __del__(self):
-        self.save()
-
     def arrange_instances(self):
         Account.GarbageCollect()
         Account.Instances[self.chat_id] = self
 
-    def __init__(self, chat_id, currencies=None, cryptos=None, language: str='fa', 
-                 plus_end_date: datetime = None, plus_plan_id: int = 0, state: UserStates = UserStates.NONE, cache = None, is_admin: bool = False) -> None:
+    def __init__(self, chat_id, currencies=None, cryptos=None, language: str = 'fa',
+                 plus_end_date: datetime = None, plus_plan_id: int = 0, state: States = States.NONE, cache=None,
+                 is_admin: bool = False) -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
+
         self.desired_coins: list = cryptos if cryptos else []
         self.desired_currencies: list = currencies if currencies else []
+
+        self.calc_coins: list = cryptos if cryptos else []
+        self.calc_currencies: list = currencies if currencies else []
+
         self.last_interaction: datetime = tz_today()
         self.language: str = language
-        self.state: UserStates = state
+        self.state: Account.States = state
         self.cache = cache
         self.plus_end_date = plus_end_date
         self.plus_plan_id = plus_plan_id
-        self.desires_count_max = 20  #FIXME: update this with plus plan
-        self.username: str = None
-        self.firstname: str = None
+        self.desires_count_max = 10  # FIXME: update this with plus plan
+        self.username: str | None = None
+        self.firstname: str | None = None
         self.arrange_instances()
         self.is_admin: bool = is_admin
-        
-    def change_state(self, state: UserStates = UserStates.NONE, data: any = None):
+
+    def change_state(self, state: States = States.NONE, data: any = None):
         self.state = state
-        self.state_data = data
+        self.cache = data
 
     def __str__(self) -> str:
         return f'{self.chat_id}'
@@ -130,11 +116,24 @@ class Account:
     def str_desired_currencies(self):
         return ';'.join(self.desired_currencies)
 
+    def str_calc_coins(self):
+        return ';'.join(self.calc_coins)
+
+    def str_calc_currencies(self):
+        return ';'.join(self.calc_currencies)
+
+    @staticmethod
+    def str2list(string: str):
+        return string.split(';') if string else None
+
+    @staticmethod
+    def list2str(lst: List[str]):
+        return ';'.join(lst)
+
     def set_extra_info(self, firstname: str, username: str = None) -> None:
-        '''This extra infos are just for temprory messaging purposes and wont be saved in database.'''
+        """This extra info are just for temporary messaging purposes and won't be saved in database."""
         self.firstname = firstname
         self.username = username
-
 
     def max_channel_plans(self):
         # decide with plus_plan_id
@@ -154,32 +153,33 @@ class Account:
             cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
             plus_end_date = datetime.strptime(row[4], DatabaseInterface.DATE_FORMAT) if row[4] else None
             try:
-                plus_plan_id= int(row[5])
+                plus_plan_id = int(row[5])
             except:
-                plus_plan_id= 0
+                plus_plan_id = 0
             state = row[6]
             cache = row[7]
             language = row[-1]
-            return Account(chat_id=int(row[0]), currencies=currs.split(";") if currs else None,
-                        cryptos=cryptos.split(';') if cryptos else None, plus_end_date=plus_end_date, 
-                        plus_plan_id=plus_plan_id, language=language, state=state, cache=cache)
+            return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos) , plus_end_date=plus_end_date,
+                           plus_plan_id=plus_plan_id, language=language, state=state, cache=cache)
 
         return Account(chat_id=chat_id).save()
 
     def is_member_plus(self) -> bool:
-        '''Check if the account has still plus subscription.'''
+        """Check if the account has still plus subscription."""
         return self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date() and self.plus_plan_id
 
-    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str, channel_title: str = None) -> Channel:
+    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str,
+                         channel_title: str = None) -> Channel | None:
         channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
         if channel.plan():
             # self.channels[channel_id] = channel
             return channel
         return None
-    def updgrade(self, plus_plan_id):
+
+    def upgrade(self, plus_plan_id):
         plus_plan = PlusPlan.Get(plus_plan_id)
         Account.Database().upgrade_account(self, plus_plan=plus_plan)
-        
+
     @staticmethod
     def Everybody():
         return Account.Database().get_all()
@@ -191,11 +191,33 @@ class Account:
     def __del__(self):
         self.save()
 
+    def handle_market_selection(self, list_type: SelectionListTypes, market: MarketOptions, symbol: str):
+        target_list: List[str]
+        related_list: List[str]
+
+        match list_type:
+            case SelectionListTypes.FOLLOWING:
+                (target_list, related_list) = (self.desired_coins, self.desired_currencies) if market == MarketOptions.CRYPTO else (self.desired_currencies, self.desired_coins)
+            case SelectionListTypes.CALCULATOR:
+                (target_list, related_list) = (self.calc_coins, self.calc_currencies) if market == MarketOptions.CRYPTO else (self.calc_currencies, self.desired_coins)
+            case _:
+                raise Exception(f'Account is in invalid state: {self.state.value}')
+
+        if symbol.upper() not in target_list:
+            if len(target_list) + len(related_list) < self.desires_count_max:
+                target_list.append(symbol)
+                self.save()
+                return
+
+            raise ValueError(self.desires_count_max)
+
+        target_list.remove(symbol)
+
     @staticmethod
     def Statistics():
         # first save all last interactions:
-        for id in Account.Instances:
-            Account.Instances[id].save()
+        for kid in Account.Instances:
+            Account.Instances[kid].save()
         now = tz_today().date()
         today_actives, yesterday_actives, this_week_actives, this_month_actives = 0, 0, 0, 0
 
@@ -212,11 +234,24 @@ class Account:
                         if now.day == interaction_date.day + 1:
                             yesterday_actives += 1
                     elif now.month == interaction_date.month + 1:
-                        delta = now - (interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
+                        delta = now - (
+                            interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
                         if delta and delta.days == 1:
                             yesterday_actives += 1
                 elif now.year == interaction_date.year + 1 and now.month == 1 and interaction_date.month == 12:
-                        delta = now - (interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
-                        if delta and delta.days == 1:
-                            yesterday_actives += 1
-        return {'daily': today_actives, 'yesterday': yesterday_actives, 'weekly': this_week_actives, 'monthly': this_month_actives, 'all': len(last_interactions)}
+                    delta = now - (
+                        interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
+                    if delta and delta.days == 1:
+                        yesterday_actives += 1
+        return {'daily': today_actives, 'yesterday': yesterday_actives, 'weekly': this_week_actives,
+                'monthly': this_month_actives, 'all': len(last_interactions)}
+
+    def match_state_with_selection_type(self):
+        match self.state:
+            case Account.States.CONFIG_MARKETS:
+                return SelectionListTypes.FOLLOWING
+            case Account.States.INPUT_EQUALIZER_UNIT:
+                return SelectionListTypes.EQUALIZER_UNIT
+            case Account.States.CONFIG_CALCULATOR_LIST:
+                return SelectionListTypes.CALCULATOR
+        return None

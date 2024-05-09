@@ -1,6 +1,6 @@
 import requests
 from tools.manuwriter import log
-from plus.models.account import UserStates, AccountPlus
+from plus.models.account import Account.States, AccountPlus
 from typing import Callable, Dict, Union
 from tools.mathematix import minutes_to_timestamp
 from payagraph.containers import *
@@ -77,7 +77,7 @@ class TelegramBot(TelegramBotCore):
         # This is useful for implement channel memberships and plus checks
         self.text_resources: dict = text_resources  # this is for making add multi-language support to the bot
 
-        self.state_handlers: Dict[UserStates, Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()
+        self.state_handlers: Dict[Account.States, Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()
         self.command_handlers: Dict[str, Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()
         self.message_handlers: Dict[str, Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()  # bot handlers, fills with add_handler
         self.callback_query_hanndlers: Dict[str, Callable[[TelegramBotCore, TelegramCallbackQuery], Union[GenericMessage, Keyboard|InlineKeyboard]]] = dict()
@@ -170,8 +170,8 @@ class TelegramBot(TelegramBotCore):
         self.cancel_keys.extend(key.values() if isinstance(key, dict) else [key])
 
     # Main Sections:
-    def add_state_handler(self, handler: Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]], state: UserStates|int):
-        '''Add a handler for special states of user. Depending on the appliance and structure of the bot, it must have its own UserStates enum, that you must add handler for each value of the enum. States are useful when getting multiple inputs for a model, or when special actions must be taken other than normal handlers'''
+    def add_state_handler(self, handler: Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]], state: Account.States|int):
+        '''Add a handler for special states of user. Depending on the appliance and structure of the bot, it must have its own Account.States enum, that you must add handler for each value of the enum. States are useful when getting multiple inputs for a model, or when special actions must be taken other than normal handlers'''
         self.state_handlers[state] = handler
 
     # Main Sections:
@@ -248,7 +248,7 @@ class TelegramBot(TelegramBotCore):
                 handler = self.command_handlers[message.text]
                 response, keyboard = handler(self, message)
             else:
-                if user.state != UserStates.NONE and user.state in self.state_handlers:
+                if user.state != Account.States.NONE and user.state in self.state_handlers:
                     handler = self.state_handlers[user.state]
                     response, keyboard = handler(self, message)
 

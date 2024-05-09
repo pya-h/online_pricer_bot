@@ -1,12 +1,13 @@
 from db.interface import DatabaseInterface
 from payagraph.types import CanBeKeyboardItemInterface
 import json
-from api.crypto_service import CryptoCurrency
+from api.crypto_service import CryptoCurrencyService
 from tools.mathematix import cut_and_separate, persianify
+from typing import List
+
 
 class PlusPlan:
-
-    def __init__(self, title: str, description: str, duration_in_months: int, plus_level: int, price: float, price_currency: str, id: int=None, title_en: str = None, description_en: str = None) -> None:
+    def __init__(self, title: str, description: str, duration_in_months: int, plus_level: int, price: float, price_currency: str, id: int | None = None, title_en: str = None, description_en: str = None) -> None:
         self.id: int = id
         self.title: str = title
         self.description: str = description
@@ -28,13 +29,13 @@ class PlusPlan:
 
     @staticmethod
     def PlusPlansList():
-        plans: list[PlusPlan] = DatabaseInterface.Get().get_all_plus_plans()
+        plans: List[PlusPlan] = DatabaseInterface.Get().get_all_plus_plans()
         return list(map(PlusPlan.ExtractRow, plans))
 
     @staticmethod
     def Define(title: str, title_en: str, duration_in_months: int, price: float, price_currency: str = "USDT", plus_level: int = 1) -> bool:
         try:
-            DatabaseInterface().Get().define_plus_plan(title=title, titile_en=title_en, duration_in_months=duration_in_months, price=price, price_currency=price_currency, plus_level=plus_level)
+            DatabaseInterface().Get().define_plus_plan(title=title, title_en=title_en, duration_in_months=duration_in_months, price=price, price_currency=price_currency, plus_level=plus_level)
         except:
             return False
 
@@ -49,7 +50,7 @@ class PlusPlan:
         if language == 'fa':
             title: str = self.title
             description: str = self.description
-            currency: str = CryptoCurrency.CoinsInPersian[self.price_currency] if self.price_currency.upper() != 'USD' else 'دلار'
+            currency: str = CryptoCurrencyService.CoinsInPersian[self.price_currency] if self.price_currency.upper() != 'USD' else 'دلار'
             price = persianify(price)
         else:
             title = self.title_en
@@ -61,10 +62,11 @@ class PlusPlan:
         title, price, currency, _ = self.get_data_by_language(language)
         return f"{title} - {price} {currency}"
 
-    def fill_template_string(self, template_text: str, language: str="fa") -> str:
-        '''Fill the template string with the fields of this object; this is used when bot wants to create payment message with plan description'''
+    def fill_template_string(self, template_text: str, language: str = "fa") -> str:
+        """Fill the template string with the fields of this object; this is used when bot wants to create payment message with plan description"""
         title, price, currency, description = self.get_data_by_language(language)
         return template_text % (title, description, price, currency)
+
 
 class PlanInterval(CanBeKeyboardItemInterface):
     def __init__(self, title: str, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
@@ -74,7 +76,7 @@ class PlanInterval(CanBeKeyboardItemInterface):
         self.mins = minutes + self.hours * 60  # total interval in minutes
 
     def value(self) -> int:
-        return self.mins  # this is for GlassButtonboared.Arrange
+        return self.mins  # this is for GlassButton.Arrange
 
     def title(self) -> str:
         return self._title
