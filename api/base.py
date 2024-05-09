@@ -42,7 +42,7 @@ class BaseAPIService:
             manuwriter.log('Caching failure!', ex, category_name='FATALITY')
             raise CacheFailureException(ex)
 
-    async def get_request(self, headers: dict = None, no_cache:bool = False):
+    async def get_request(self, headers: dict = None, no_cache: bool = False):
         response: api.Response|None = None
         try:
             request = api.Request(self.URL, headers=headers, payload=self.params)
@@ -62,7 +62,7 @@ class BaseAPIService:
         return response.data
 
     def load_cache(self) -> list|dict:
-        '''Read cache and convert it to python dict/list.'''
+        """Read cache and convert it to python dict/list."""
         json_cache_file = open(f'./{CACHE_FOLDER_PATH}/{self.cache_file_name}', 'r')
         str_json = json_cache_file.read()
         json_cache_file.close()
@@ -74,17 +74,17 @@ class APIService(BaseAPIService):
     UsdInTomans = None  # not important, it is just a default value that will be updated at first api get from
     TetherInTomans = None
 
-    def __init__(self, url: str, source: str, max_desired_selection: int=5, params=None, cache_file_name: str = None) -> None:
+    def __init__(self, url: str, source: str, max_desired_selection: int = 5, params=None, cache_file_name: str = None) -> None:
         super(APIService, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
         self.max_desired_selection = max_desired_selection
 
     @staticmethod
     def set_usd_price(value):
-        APIService.UsdInTomans = value
+        APIService.UsdInTomans = float(value)
 
     @staticmethod
     def set_tether_tomans(value):
-        APIService.TetherInTomans = value
+        APIService.TetherInTomans = float(value)
 
     def get_desired_ones(self, desired_ones: list):
         pass
@@ -118,9 +118,9 @@ class APIService(BaseAPIService):
 
         return self.extract_api_response(desired_ones, short_text=short_text, optional_api_data=self.latest_data)
 
-
-    def rounded_prices(self, price:float|int, convert: bool=True, tether_as_unit_price: bool=False):
+    def rounded_prices(self, price: float | int, convert: bool = True, tether_as_unit_price: bool = False):
         if convert:
             converted_price = price * (self.TetherInTomans if tether_as_unit_price else self.UsdInTomans)
             return mathematix.cut_and_separate(price), mathematix.cut_and_separate(converted_price)
+
         return mathematix.cut_and_separate(price), None

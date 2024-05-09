@@ -1,7 +1,7 @@
 import coinmarketcapapi as cmc_api
 from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from api.currency_service import SourceArena
+from api.currency_service import Navasan
 
 
 # Parent Class
@@ -12,7 +12,7 @@ class CryptoCurrencyService(APIService):
     def get_persian_coin_names() -> dict:
         coins_fa = "{}"
         try:
-            persian_coin_names_file = open("./api/coins.fa.json", "r")
+            persian_coin_names_file = open("./api/data/coins.fa.json", "r")
             coins_fa = persian_coin_names_file.read()
             persian_coin_names_file.close()
         except:
@@ -159,7 +159,7 @@ class CoinMarketCap(CryptoCurrencyService):
             self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
 
         abs_usd, abs_toman = self.rounded_prices(absolute_amount, tether_as_unit_price=True)
-        res += f'🔸 {mathematix.persianify(abs_usd)} {SourceArena.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
+        res += f'🔸 {mathematix.persianify(abs_usd)} {Navasan.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
 
         res += f'🔸 {mathematix.persianify(abs_toman)} تومان\n'
 

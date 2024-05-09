@@ -1,155 +1,145 @@
 from api.base import *
-from tools.exceptions import InvalidInputException
 import json
-from api.price_seek import PriceSeek
-from datetime import datetime
-from random import randint
 from tools.exceptions import InvalidInputException
-from typing import Dict
+from api.tether_service import AbanTether
+from tools.manuwriter import log
+from tools.mathematix import persianify
 
 
-def get_persian_currency_names() -> tuple:
-    currency_names_fa = "{}"
+def get_gold_names(filename: str):
     gold_names_fa = "{}"
     try:
-        json_file = open("./api/national-currencies.fa.json", "r")
-        currency_names_fa = json_file.read()
-        json_file.close()
-        json_file = open("./api/golds.fa.json", "r")
+        json_file = open(f"./api/data/{filename}.json", "r")
         gold_names_fa = json_file.read()
         json_file.close()
     except Exception as e:
-        manuwriter.log('Cannot get currency names', exception=e, category_name='Currency')
+        log('Cannot get currency names', exception=e, category_name='Currency')
+    return json.loads(gold_names_fa)
+
+
+def get_persian_currency_names():
+    currency_names_fa = "{}"
+    gold_names_fa = "{}"
+    try:
+        json_file = open("./api/data/national-currencies.fa.json", "r")
+        currency_names_fa = json_file.read()
+        json_file.close()
+        json_file = open("./api/data/golds.fa.json", "r")
+        gold_names_fa = json_file.read()
+        json_file.close()
+    except Exception as e:
+        log('Cannot get currency names', exception=e, category_name='Currency')
 
     return json.loads(currency_names_fa), json.loads(gold_names_fa)
 
 
-class AbanTether(BaseAPIService):
-    TetherSymbol = 'USDT'
-
-    def __init__(self, token: str) -> None:
-        self.token = token
-        super(AbanTether, self).__init__(
-            url=f'https://abantether.com/api/v1/otc/coin-price?coin={AbanTether.TetherSymbol}',
-            source="Abantether.com")
-        self.headers = {'Authorization': f'Token {self.token}'}
-        self.recent_response: float | None = None
-        self.recent_total_response: dict = {}
-        self.no_response_counts: int = 0
-        self.last_guess_date: datetime = mathematix.tz_today()
-        self.usd_recent_guess: int = 0
-
-    async def get(self):
-        self.recent_total_response = await self.get_request(headers=self.headers)
-        self.no_response_counts += 1
-        self.recent_response = None
-        if self.recent_total_response and AbanTether.TetherSymbol in self.recent_total_response:
-            value = self.recent_total_response[AbanTether.TetherSymbol]
-            mid = (float(value['irtPriceBuy']) + float(value['irtPriceSell'])) / 2.0
-            self.recent_response = mid
-            self.no_response_counts = 0
-            return mid
-
-        return None
-
-    def summary(self, dollar_price: float) -> str:
-        tether = self.recent_total_response[AbanTether.TetherSymbol]
-        tether['irtMidPoint'] = self.recent_response
-        tether['USD'] = dollar_price
-        return json.dumps(tether)
-
-    def time_for_next_guess(self) -> int:
-        if not self.recent_response:
-            return False
-        if not self.usd_recent_guess:
-            return True
-        diff, now = mathematix.from_now_time_diff(self.last_guess_date)
-        if diff < 60:
-            return False
-        if 10 <= now.hour < 22:
-            self.last_guess_date = now
-            return True
-        return False
-
-    def guess_dollar_price(self, guess_range: int = 100) -> int | float:
-        if not self.time_for_next_guess():
-            return self.usd_recent_guess
-        diff = randint(1, guess_range)
-        self.usd_recent_guess = self.recent_response - diff
-        return self.usd_recent_guess
-
-
 class CurrencyService(APIService):
+    DefaultTetherInTomans = 61300
+    DefaultUsbInTomans = 61000
+
     def __init__(self, url: str, source: str, cache_file_name: str, token: str, tether_service_token: str) -> None:
         super(CurrencyService, self).__init__(url=url, source=source, cache_file_name=cache_file_name)
         self.token = token
         self.tether_service_token = tether_service_token
 
 
-class SourceArena(CurrencyService):
-    Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
+class GoldService(BaseAPIService):
     EntitiesInDollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
+    GoldsInPersian = None
+
+    def __init__(self, token: str) -> None:
+        super().__init__(url=f"https://sourcearena.ir/api/?token={token}&currency",
+                         source="GoldService.ir", cache_file_name='SourceArenaGolds.json',)
+        self.token = token
+        if not GoldService.GoldsInPersian:
+            GoldService.GoldsInPersian = get_gold_names('golds.sa.fa')
+
+    async def append_gold_prices(self, api_data: dict):
+        self.latest_data = await self.get_request()  # update latest
+        for curr in self.latest_data:
+            slug = curr['slug'].upper()
+
+            if slug in GoldService.GoldsInPersian:
+                # repetitive code OR using multiple conditions (?)
+                if slug not in GoldService.EntitiesInDollars:
+                    api_data[slug.lower()] = {'value': float(curr['price']) / 10,}
+                else:
+                    api_data[slug.lower()] = {'value': float(curr['price']), 'usd': True}
+
+    # --------- Currency -----------
+    async def get_request(self):
+        response = await super(GoldService, self).get_request()
+        return response["data"] if 'data' in response else []
+
+    def load_cache(self) -> list | dict:
+        try:
+            self.latest_data = super(GoldService, self).load_cache()['data']
+        except:
+            self.latest_data = []
+        return self.latest_data
+
+
+class Navasan(CurrencyService):
+    Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
     CurrenciesInPersian = None
     NationalCurrenciesInPersian = None
     GoldsInPersian = None
     MaxExtraServicesFailure = 5
-    DefaultTetherInTomans = 61300
-    DefaultUsbInTomans = 61000
 
     @staticmethod
     def LoadPersianNames():
-        SourceArena.NationalCurrenciesInPersian, SourceArena.GoldsInPersian = get_persian_currency_names()
-        SourceArena.CurrenciesInPersian = dict(SourceArena.NationalCurrenciesInPersian, **SourceArena.GoldsInPersian)
+        Navasan.NationalCurrenciesInPersian, Navasan.GoldsInPersian = get_persian_currency_names()
+        Navasan.GoldsInPersian = dict(Navasan.GoldsInPersian, **GoldService.GoldsInPersian)
+        Navasan.CurrenciesInPersian = dict(Navasan.NationalCurrenciesInPersian, **Navasan.GoldsInPersian)
 
     @staticmethod
     def GetPersianName(symbol: str) -> str:
-        if SourceArena.CurrenciesInPersian is None or not SourceArena.CurrenciesInPersian:
-            SourceArena.LoadPersianNames()
-        if symbol not in SourceArena.CurrenciesInPersian:
+        if Navasan.CurrenciesInPersian is None or not Navasan.CurrenciesInPersian:
+            Navasan.LoadPersianNames()
+        if symbol not in Navasan.CurrenciesInPersian:
             raise InvalidInputException('Currency Symbol/Name!')
-        return SourceArena.CurrenciesInPersian[symbol]
+        return Navasan.CurrenciesInPersian[symbol]
 
     def __init__(self, token: str, aban_tether_token: str) -> None:
-        super().__init__(url=f"https://sourcearena.ir/api/?token={token}&currency",
-                         source="Sourcearena.ir", cache_file_name='sourcearena.json',
+        super().__init__(url=f"https://sourcearena.ir/api/?token={token}&currency&v2",
+                         source="Navasan.ir", cache_file_name='Navasan.json',
                          tether_service_token=aban_tether_token, token=token)
-        if not SourceArena.NationalCurrenciesInPersian or not SourceArena.GoldsInPersian or not SourceArena.CurrenciesInPersian:
-            SourceArena.LoadPersianNames()
-
         self.tether_service = AbanTether(aban_tether_token)
-        self.usd_service = PriceSeek()
-        self.get_desired_ones = lambda desired_ones: desired_ones or SourceArena.Defaults
-        self.direct_prices: Dict[str, float] = {}
+        self.get_desired_ones = lambda desired_ones: desired_ones or Navasan.Defaults
+        self.gold_service: GoldService = GoldService(self.token)
+        if not Navasan.NationalCurrenciesInPersian or not Navasan.GoldsInPersian or not Navasan.CurrenciesInPersian:
+            Navasan.LoadPersianNames()
 
     def extract_api_response(self, desired_ones: list = None, short_text: bool = True,
                              optional_api_data: list = None) -> str:
         desired_ones = self.get_desired_ones(desired_ones)
         api_data = optional_api_data or self.latest_data
+        print(api_data)
         rows = {}
-
-        for curr in api_data:
-            slug = curr['slug'].upper()
-            price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesInDollars else float(curr['price'])
-            self.direct_prices[slug] = price
-            if slug in desired_ones:
-                # repetitive code OR using multiple conditions (?)
-                if slug not in SourceArena.EntitiesInDollars:
-                    toman, _ = self.rounded_prices(price, False)
-                    toman = mathematix.persianify(toman)
-                    rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان"
-                else:
-                    usd, toman = self.rounded_prices(price)
-                    toman = mathematix.persianify(toman)
-                    rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
 
         res_curr = ''
         res_gold = ''
+        
         for slug in desired_ones:
-
-            if slug in SourceArena.NationalCurrenciesInPersian:
-                res_curr += f'🔸 {rows[slug]}\n' if slug in rows else f'❗️ {SourceArena.CurrenciesInPersian[slug]}: قیمت دریافت نشد.\n'
+            slug_l = slug.lower()
+            curr = api_data[slug_l]
+            price = float(curr['value'])
+            toman: float = 0.0
+            usd: float | None = None
+            
+            if 'usd' not in curr or not curr['usd']:
+                toman, _ = self.rounded_prices(price, False)
             else:
-                res_gold += f'🔸 {rows[slug]}\n' if slug in rows else f'❗️ {SourceArena.CurrenciesInPersian[slug]}: قیمت دریافت نشد.\n'
+                usd, toman = self.rounded_prices(price)
+
+            toman = persianify(toman)
+            row = f"{Navasan.CurrenciesInPersian[slug]}: {toman} تومان" + (f" / {usd}$" if usd else '')
+
+            if slug in Navasan.NationalCurrenciesInPersian:
+                res_curr += f'🔸 {row}\n'
+            else:
+                res_gold += f'🔸 {row}\n'
+                
         if res_curr:
             res_curr = f'📌 #قیمت_لحظه_ای #بازار_ارز \n{res_curr}\n'
         if res_gold:
@@ -158,10 +148,6 @@ class SourceArena(CurrencyService):
 
     async def update_services(self):
         try:
-            await self.usd_service.get_value()
-        except:
-            pass
-        try:
             await self.tether_service.get()
         except:
             pass
@@ -169,60 +155,46 @@ class SourceArena(CurrencyService):
     # --------- Currency -----------
     async def get_request(self):
         await self.update_services()
-
-        response = await super(SourceArena, self).get_request(no_cache=True)
-
-        return response.data["data"] if 'data' in response.data else [], response.text
+        response = await super(Navasan, self).get_request(no_cache=True)
+        return response.data
 
     async def get(self, desired_ones: list = None, short_text: bool = True) -> str:
-        self.latest_data, response_text = await self.get_request()  # update latest
-
-        # FIXME: AFTER IMPLEMENTING NAVASAN API, THERE IS NO NEED TO SEARCH LIKE THIS, RESULT IS DICT
-        # FIXME: CHECK
-
-        usd_t = {curr['slug']: curr for curr in \
-                 list(filter(lambda d: d['slug'].upper() == 'TETHER' or d['slug'].upper() == 'USD', self.latest_data))}
-
+        self.latest_data = await self.get_request()  # update latest
+        try:
+            await self.gold_service.append_gold_prices(self.latest_data)
+        except Exception as ex:
+            log('Cant get source arena gold prices', ex, 'SourceArenaGolds')
         if self.tether_service.recent_response:
             self.set_tether_tomans(self.tether_service.recent_response)
-            usd_t['TETHER']['price'] = self.tether_service.recent_response
-        elif not self.TetherInTomans or self.tether_service.no_response_counts > SourceArena.MaxExtraServicesFailure:
+        elif not self.TetherInTomans or self.tether_service.no_response_counts > Navasan.MaxExtraServicesFailure:
             try:
-                self.set_tether_tomans((float(usd_t['TETHER']['price']) / 10.0) or SourceArena.DefaultTetherInTomans)
+                '''second tether service'''
             except:
-                if not SourceArena.TetherInTomans:
-                    SourceArena.TetherInTomans = SourceArena.DefaultTetherInTomans
+                if not Navasan.TetherInTomans:
+                    Navasan.TetherInTomans = Navasan.DefaultTetherInTomans
 
-        if self.usd_service.recent_response:
-            self.set_usd_price(self.usd_service.recent_response)
-            usd_t['USD']['price'] = self.usd_service.recent_response
-        elif not self.UsdInTomans or self.usd_service.no_response_counts > SourceArena.MaxExtraServicesFailure:
-            # TODO: INFORM THIS TO SUNSCRIBER ADMINS
-            try:
-                self.set_usd_price(self.tether_service.guess_dollar_price() or (
-                            float(usd_t['USD']['price']) / 10.0) or SourceArena.DefaultUsbInTomans)
-                usd_t['USD'][
-                    'price'] = self.UsdInTomans * 10.0  # in dict must be in fuckin rials; this fuckin country with its fuckin worthless currency
-            except:
-                if not SourceArena.UsdInTomans:
-                    SourceArena.UsdInTomans = SourceArena.DefaultUsdInTomans
+        try:
+            self.set_usd_price(self.latest_data['usd']['value'])
+        except:
+            if not Navasan.UsdInTomans:
+                Navasan.UsdInTomans = Navasan.DefaultUsbInTomans
 
-        self.cache_data(response_text)
-        self.tether_service.cache_data(self.tether_service.summary(self.usd_service.recent_response),
-                                       custom_file_name='usd_t')
+        self.cache_data(json.dumps(self.latest_data))
+        self.tether_service.cache_data(self.tether_service.summary(),
+                                       custom_file_name='tether')
         return self.extract_api_response(desired_ones, short_text=short_text)
 
     def load_cache(self) -> list | dict:
         try:
-            self.latest_data = super(SourceArena, self).load_cache()['data']
+            self.latest_data = super(Navasan, self).load_cache()['data']
         except:
             self.latest_data = []
         return self.latest_data
 
     # def equalizer_row(self, unit_symbol: str, value: float|int):
     #     '''returns the row shape/format of the equalizing coin.'''
-    #     value_cut = mathematix.cut_and_separate(value)
-    #     value = mathematix.persianify(value_cut)
+    #     value_cut = cut_and_separate(value)
+    #     value = persianify(value_cut)
     #     return f'🔸 {value} {CryptoCurrency.CoinsInPersian[unit_symbol]}\n'
 
     # def tomans_to_currencies(self, absolute_amount: float|int, source_unit_symbol: str, currencies: list = None) -> str:
@@ -230,18 +202,18 @@ class SourceArena(CurrencyService):
 
     #     for curr in self.latest_data:
     #         slug = curr['slug'].upper()
-    #         price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesInDollars else float(curr['price'])
+    #         price = float(curr['price']) / 10 if slug not in Navasan.EntitiesInDollars else float(curr['price'])
 
     #         if slug in currencies:
     #             # repetitive code OR using multiple conditions (?)
-    #             if slug not in SourceArena.EntitiesInDollars:
+    #             if slug not in Navasan.EntitiesInDollars:
     #                 toman, _ = self.rounded_prices(price, False)
-    #                 toman = mathematix.persianify(toman)
-    #                 rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان"
+    #                 toman = persianify(toman)
+    #                 rows[slug] = f"{Navasan.CurrenciesInPersian[slug]}: {toman} تومان"
     #             else:
     #                 usd, toman = self.rounded_prices(price)
-    #                 toman = mathematix.persianify(toman)
-    #                 rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
+    #                 toman = persianify(toman)
+    #                 rows[slug] = f"{Navasan.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
 
     #     for item in currencies:
     #         curr =
@@ -256,7 +228,7 @@ class SourceArena(CurrencyService):
 
     #     # text header
     #     res: str = f'💱☯ معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز  ' + \
-    #         ("%s %s" % (mathematix.persianify(amount), SourceArena.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
+    #         ("%s %s" % (persianify(amount), Navasan.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
 
     #     # first row is the equivalent price in USD(the price unit selected by the bot configs.)
     #     source = list(filter(lambda curr: curr['slug'].upper() == source_unit_symbol, self.latest_data))
@@ -266,9 +238,9 @@ class SourceArena(CurrencyService):
     #     absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
 
     #     abs_usd, abs_toman = self.rounded_prices(absolute_amount, tether_as_unit_price=True)
-    #     res += f'🔸 {mathematix.persianify(abs_usd)} {SourceArena.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
+    #     res += f'🔸 {persianify(abs_usd)} {Navasan.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
 
-    #     res += f'🔸 {mathematix.persianify(abs_toman)} تومان\n'
+    #     res += f'🔸 {persianify(abs_toman)} تومان\n'
 
     #     res += self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_currencies)
 
