@@ -14,17 +14,17 @@ class PostMan:
         self.crypto_service: CoinGecko|CoinMarketCap = CoinMarketCap(self.coinmarketcap_api_key)  # api service object: instance of CoinGecko or CoinMarketCap
         self.currency_service: SourceArena = SourceArena(self.source_arena_api_key, self.aban_tether_api_key)
 
-
-    def sign_post(self, post_body: str, interval: float, for_channel: bool=True) -> str:
+    @staticmethod
+    def sign_post(post_body: str, interval: float, for_channel: bool = True) -> str:
         interval_fa = persianify(interval.__str__())
         header = f'✅ بروزرسانی قیمت ها (هر {interval_fa} دقیقه)\n' if for_channel else ''
         header += timestamp() + '\n'
         footer = '🆔 @Online_pricer\n🤖 @Online_pricer_bot'
         return f'{header}\n{post_body}\n{footer}'
 
-    async def create_post(self, desired_coins:list = None,
-                          desired_currencies:list = None, exactly_right_now: bool=True, 
-                          short_text: bool=True, for_channel: bool=True, interval: float = 10) -> str:
+    async def create_post(self, desired_coins: list = None,
+                          desired_currencies: list = None, exactly_right_now: bool = True,
+                          short_text: bool = True, for_channel: bool = True, interval: float = 10) -> str:
         currencies = cryptos = ''
         print(exactly_right_now)
         try:

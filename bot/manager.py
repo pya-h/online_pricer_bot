@@ -89,7 +89,7 @@ class BotMan:
         self.cancel_menu_key = []
         self.cancel_menu: ReplyKeyboardMarkup | None = None
         self.return_key = []
-        self.bazaars_menu_keys: ReplyKeyboardMarkup | None = None
+        self.markets_menu: ReplyKeyboardMarkup | None = None
 
         self.setup_main_keyboards()
         self.is_main_plan_on: bool = False
@@ -123,7 +123,7 @@ class BotMan:
             [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
         ]
 
-        self.bazaars_menu_keys = ReplyKeyboardMarkup([
+        self.markets_menu = ReplyKeyboardMarkup([
             [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_FA.value)],
             [KeyboardButton(BotMan.Commands.GOLDS_FA.value)],
             [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)], *self.return_key

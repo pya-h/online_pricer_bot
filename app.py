@@ -15,54 +15,64 @@ botman = BotMan()
 async def show_market_types(update: Update, next_state: Account.States):
     account = Account.Get(update.effective_chat.id)
     account.change_state(next_state)
-    await update.message.reply_text(botman.text('config_which_bazaar', account.language),
-                                    reply_markup=botman.bazaars_menu_keys)
+    await update.message.reply_text(botman.text('config_which_market', account.language),
+                                    reply_markup=botman.markets_menu)
+
+
+async def prepare_market_selection_menu(update: Update, context: CallbackContext, market: MarketOptions):
+    account = Account.Get(update.effective_chat.id)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        await botman.ask_for_subscription(update, account.language)
+        raise LookupError('User not a member')
+    list_type = account.match_state_with_selection_type()
+    selection_list = account.handle_market_selection(list_type, market)
+    return list_type, selection_list
 
 
 async def select_coin_menu(update: Update, context: CallbackContext):
-    account = Account.Get(update.effective_chat.id)
-    if not await botman.has_subscribed_us(account.chat_id, context):
-        return await botman.ask_for_subscription(update, account.language)
-
-    await update.message.reply_text('''📌 #لیست_بازار_ارز_دیجیتال
-
-👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-👈 شما میتوانید نهایت 10 گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(), MarketOptions.CRYPTO,
-                                                                        botman.crypto_serv.CoinsInPersian,
-                                                                        account.desired_coins, close_button=True))
+    try:
+        list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CRYPTO)
+        await update.message.reply_text('''📌 #لیست_بازار_ارز_دیجیتال
+    
+    👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
+    👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
+    👈 شما میتوانید نهایت 10 گزینه را در لیست خود قرار دهید.''',
+                                        reply_markup=botman.inline_keyboard(list_type, MarketOptions.CRYPTO, botman.crypto_serv.CoinsInPersian,
+                                                                            selection_list, close_button=True))
+    except LookupError:
+        pass
 
 
 async def select_currency_menu(update: Update, context: CallbackContext):
-    account = Account.Get(update.effective_chat.id)
-    if not await botman.has_subscribed_us(account.chat_id, context):
-        return await botman.ask_for_subscription(update, account.language)
-    await update.message.reply_text('''📌 #لیست_بازار_ارز
+    try:
+        list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CURRENCY)
+        await update.message.reply_text('''📌 #لیست_بازار_ارز
+    
+    👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
+    👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
+    👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+                                        reply_markup=botman.inline_keyboard(list_type, MarketOptions.CURRENCY,
+                                                                            botman.currency_serv.NationalCurrenciesInPersian,
+                                                                            selection_list, full_names=True,
+                                                                            close_button=True))
+    except LookupError:
+        pass
 
-👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(), MarketOptions.CURRENCY,
-                                                                        botman.currency_serv.NationalCurrenciesInPersian,
-                                                                        account.desired_currencies, full_names=True,
-                                                                        close_button=True))
 
-
-# TODO: complete this
 async def select_gold_menu(update: Update, context: CallbackContext):
-    account = Account.Get(update.effective_chat.id)
-    if not await botman.has_subscribed_us(account.chat_id, context):
-        return await botman.ask_for_subscription(update, account.language)
-    await update.message.reply_text('''📌 #لیست_بازار_طلا
-
-👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
-                                    reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(), MarketOptions.GOLD,
-                                                                        botman.currency_serv.GoldsInPersian,
-                                                                        account.desired_currencies, full_names=True,
-                                                                        close_button=True))
+    try:
+        list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CURRENCY)
+        await update.message.reply_text('''📌 #لیست_بازار_طلا
+    
+    👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
+    👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
+    👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+                                        reply_markup=botman.inline_keyboard(list_type, MarketOptions.GOLD,
+                                                                            botman.currency_serv.GoldsInPersian,
+                                                                            selection_list, full_names=True,
+                                                                            close_button=True))
+    except LookupError:
+        pass
 
 
 async def say_youre_not_allowed(reply):
@@ -100,7 +110,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
 
     is_latest_data_valid = botman.currency_serv and botman.currency_serv.latest_data and botman.crypto_serv \
                            and botman.crypto_serv.latest_data and botman.is_main_plan_on
-    message = await botman.postman.create_post(desired_coins=account.desired_coins,
+    message = await botman.postman.create_post(desired_coins=account.desired_cryptos,
                                                desired_currencies=account.desired_currencies, for_channel=False,
                                                exactly_right_now=not is_latest_data_valid)
 
@@ -227,7 +237,7 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
         return
     for amount in amounts:
         for unit in units:
-            response = botman.crypto_serv.equalize(unit, amount, account.calc_coins)
+            response = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos)
             await func_send_message(response)
 
 
@@ -379,24 +389,25 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
                                    account, account.cache, [unit_symbol])
             account.change_state()  # reset state
-        else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any condition possible(or not.!)
+        else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
+            # condition possible(or not.!)
             await query.message.edit_text('حالا مبلغ مربوط به این واحد ارزی را وارد کنید:')
             account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, data['v'].upper())
         return
 
     try:
-        account.handle_market_selection(list_type, market, data['v'])
+        selection_list = account.handle_market_selection(list_type, market, data['v'])
         if market == MarketOptions.CRYPTO:
             await query.message.edit_reply_markup(
                 reply_markup=botman.inline_keyboard(list_type, market, botman.crypto_serv.CoinsInPersian,
-                                                    account.desired_coins, close_button=True))
+                                                    selection_list, close_button=True))
         else:
-            await query.message.edit_reply_markup(reply_markup=botman.inline_keyboard(list_type,
-                                                                                      market,
+            await query.message.edit_reply_markup(reply_markup=botman.inline_keyboard(list_type, market,
                                                                                       botman.currency_serv.NationalCurrenciesInPersian if market == MarketOptions.CURRENCY else botman.currency_serv.GoldsInPersian,
-                                                                                      selected_ones=account.desired_currencies,
+                                                                                      selected_ones=selection_list,
                                                                                       full_names=market != MarketOptions.CRYPTO,
-                                                                                      # FIXME: This bool param needs to be updated
+                                                                                      # FIXME: This bool param needs
+                                                                                      #  to be updated
                                                                                       close_button=True
                                                                                       )
                                                   )

@@ -11,3 +11,4 @@ bot-backup
 test.env
 v2/test.env
 *.sqbpro
+.idea

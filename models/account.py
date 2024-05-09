@@ -7,8 +7,7 @@ from enum import Enum
 from models.channel import Channel
 from models.plusplan import PlusPlan
 from typing import List
-from bot.types import SelectionListTypes,  MarketOptions
-
+from bot.types import SelectionListTypes, MarketOptions
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
@@ -67,17 +66,21 @@ class Account:
         Account.GarbageCollect()
         Account.Instances[self.chat_id] = self
 
-    def __init__(self, chat_id, currencies=None, cryptos=None, language: str = 'fa',
+    def __init__(self, chat_id, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None, calc_currencies: List[str] = None,
+                 notification_cryptos: List[str] = None, notification_currencies: List[str] = None, language: str = 'fa',
                  plus_end_date: datetime = None, plus_plan_id: int = 0, state: States = States.NONE, cache=None,
                  is_admin: bool = False) -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
 
-        self.desired_coins: list = cryptos if cryptos else []
+        self.desired_cryptos: list = cryptos if cryptos else []
         self.desired_currencies: list = currencies if currencies else []
 
-        self.calc_coins: list = cryptos if cryptos else []
-        self.calc_currencies: list = currencies if currencies else []
+        self.calc_cryptos: list = calc_cryptos if calc_cryptos else []
+        self.calc_currencies: list = calc_currencies if calc_currencies else []
+
+        self.notification_cryptos: list = notification_cryptos if notification_cryptos else []
+        self.notification_currencies: list = notification_currencies if notification_currencies else []
 
         self.last_interaction: datetime = tz_today()
         self.language: str = language
@@ -110,17 +113,23 @@ class Account:
 
         return False
 
-    def str_desired_coins(self):
-        return ';'.join(self.desired_coins)
+    def str_desired_cryptos(self):
+        return ';'.join(self.desired_cryptos)
 
     def str_desired_currencies(self):
         return ';'.join(self.desired_currencies)
 
-    def str_calc_coins(self):
-        return ';'.join(self.calc_coins)
+    def str_calc_cryptos(self):
+        return ';'.join(self.calc_cryptos)
 
     def str_calc_currencies(self):
         return ';'.join(self.calc_currencies)
+
+    def str_notification_cryptos(self):
+        return ';'.join(self.notification_cryptos)
+
+    def str_notification_currencies(self):
+        return ';'.join(self.notification_currencies)
 
     @staticmethod
     def str2list(string: str):
@@ -148,18 +157,30 @@ class Account:
             Account.Instances[chat_id].last_interaction = tz_today()
             return Account.Instances[chat_id]
         row = Account.Database().get(chat_id)
+
+        def xstr(r):
+            return r if not r or r[-1] != ";" else r[:-1]
+
         if row:
-            currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
-            cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
-            plus_end_date = datetime.strptime(row[4], DatabaseInterface.DATE_FORMAT) if row[4] else None
+            currs = xstr(row[1])
+            cryptos = xstr(row[2])
+            calc_currs = xstr(row[3])
+            calc_cryptos = xstr(row[4])
+            notif_currs = xstr(row[5])
+            notif_cryptos = xstr(row[6])
+            # add new rows here
+
+            plus_end_date = datetime.strptime(row[-6], DatabaseInterface.DATE_FORMAT) if row[-6] else None
             try:
-                plus_plan_id = int(row[5])
+                plus_plan_id = int(row[-5])
             except:
                 plus_plan_id = 0
-            state = row[6]
-            cache = row[7]
+            state = row[-4]
+            cache = row[-3]
+            is_admin = row[-2]
             language = row[-1]
-            return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos) , plus_end_date=plus_end_date,
+            return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos),
+                           plus_end_date=plus_end_date, calc_currencies=calc_currs, calc_cryptos=calc_cryptos, notification_currencies=notif_currs, notification_cryptos=notif_cryptos,
                            plus_plan_id=plus_plan_id, language=language, state=state, cache=cache)
 
         return Account(chat_id=chat_id).save()
@@ -191,27 +212,32 @@ class Account:
     def __del__(self):
         self.save()
 
-    def handle_market_selection(self, list_type: SelectionListTypes, market: MarketOptions, symbol: str):
+    def handle_market_selection(self, list_type: SelectionListTypes, market: MarketOptions, symbol: str | None = None):
         target_list: List[str]
         related_list: List[str]
 
         match list_type:
             case SelectionListTypes.FOLLOWING:
-                (target_list, related_list) = (self.desired_coins, self.desired_currencies) if market == MarketOptions.CRYPTO else (self.desired_currencies, self.desired_coins)
+                (target_list, related_list) = (
+                    self.desired_cryptos, self.desired_currencies) if market == MarketOptions.CRYPTO else (
+                    self.desired_currencies, self.desired_cryptos)
             case SelectionListTypes.CALCULATOR:
-                (target_list, related_list) = (self.calc_coins, self.calc_currencies) if market == MarketOptions.CRYPTO else (self.calc_currencies, self.desired_coins)
+                (target_list, related_list) = (
+                    self.calc_cryptos, self.calc_currencies) if market == MarketOptions.CRYPTO else (
+                    self.calc_currencies, self.calc_cryptos)
             case _:
                 raise Exception(f'Account is in invalid state: {self.state.value}')
 
-        if symbol.upper() not in target_list:
-            if len(target_list) + len(related_list) < self.desires_count_max:
+        if symbol:
+            if symbol.upper() not in target_list:
+                if len(target_list) + len(related_list) >= self.desires_count_max:
+                    raise ValueError(self.desires_count_max)
+
                 target_list.append(symbol)
                 self.save()
-                return
-
-            raise ValueError(self.desires_count_max)
-
-        target_list.remove(symbol)
+            else:
+                target_list.remove(symbol)
+        return target_list
 
     @staticmethod
     def Statistics():
