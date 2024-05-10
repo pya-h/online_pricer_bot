@@ -128,8 +128,6 @@ class CoinMarketCapService(CryptoCurrencyService):
     def usd_to_cryptos(self, absolute_amount: float | int, source_unit_symbol: str, cryptos: list = None) -> str:
         cryptos = self.get_desired_ones(cryptos)
         res: str = ''
-        if BaseAPIService.TETHER_SYMBOL not in cryptos and source_unit_symbol != BaseAPIService.TETHER_SYMBOL:
-            cryptos.insert(0, BaseAPIService.TETHER_SYMBOL)
 
         for coin in cryptos:
             if coin == source_unit_symbol:
@@ -150,18 +148,12 @@ class CoinMarketCapService(CryptoCurrencyService):
             raise InvalidInputException('Coin symbol!')
 
         # text header
-        res: str = f'💱☯ معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز دیجیتال ' + \
-                   ("%s %s" % (mathematix.persianify(amount),
+        res: str = ("%s %s" % (mathematix.persianify(amount),
                                CryptoCurrencyService.CoinsInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(
             self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
-
-        abs_usd, abs_toman = self.rounded_prices(absolute_amount, tether_as_unit_price=True)
-        # res += f'🔸 {mathematix.persianify(abs_usd)} {NavasanService.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
-
-        res += f'🔸 {mathematix.persianify(abs_toman)} تومان\n'
 
         res += self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos)
 

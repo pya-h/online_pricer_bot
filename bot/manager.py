@@ -161,8 +161,6 @@ class BotMan:
 
     def inline_url(self, urls_data: List[Dict[str, str]]):
         """this function creates inline url keyboard for messages"""
-        if not selected_ones:
-            selected_ones = []
         buttons = []
         row = []
         i = 0

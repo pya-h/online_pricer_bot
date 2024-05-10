@@ -176,7 +176,7 @@ class Account:
             is_admin = row[-2]
             language = row[-1]
             return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos),
-                           plus_end_date=plus_end_date, calc_currencies=calc_currs, calc_cryptos=calc_cryptos, is_admin=is_admin,
+                           plus_end_date=plus_end_date, calc_currencies=Account.str2list(calc_currs), calc_cryptos=Account.str2list(calc_cryptos), is_admin=is_admin,
                            plus_plan_id=plus_plan_id, language=language, state=state, cache=cache)
 
         return Account(chat_id=chat_id).save()

@@ -110,15 +110,13 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
         return await botman.ask_for_subscription(update, account.language)
 
     account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT)
-    await update.message.reply_text('''♻️💱 ماشین حساب 💱☯
-در این بخش می‌توانید با مشخص کردن مبلغ مشخص تحت یک ارز مشخص، مبلغ معادل آن در ارزهای دیجیتال دیگر را مشاهده کنید. فرایند معادل‌سازی، بصورت پیش‌فرض، بر اساس لیست ارز دیجیتال تنظیم شده‌ی شما در ربات انجام می‌گردد.
+    hint_examples = '''1) 100 USD
+2) 10 50 BTC TRX
+3) 5 GOLD ETH EUR
 
-👁‍🗨 راهنما 👁‍🗨
-پس از انتخاب گزینه‌ی <تبدیل‌گر> دو روش پیش‌ رو خواهید داشت:
-1⃣ مبلغ را وارد کنید، سپس یک لیست طولانی ارز دیجیتال (همانند لیست قسمت تنظیم ارز دیجیتال) مشاهده می‌کنید، با انتخاب ارز دلخواه، ربات فرایند معادل‌سازی را انجام داده و بلافاصله پیام‌بعدی لیست معاد‌ل‌ها را دریافت خواهید کرد.
-
-2⃣ مبلغ را وارد کرده و یک فاصله قرار داده و نماد ارز دیجیتال را در جلوی مبلغ بنویسید. ربات بصورت خودکار ارز دیجیتال موردنظر شما را شناسایی گرده و فرایند را تکمیل می‌کند.''',
-                                    reply_markup=botman.mainkeyboard(account.is_admin))
+'''
+    await update.message.reply_text(botman.text('calculator_hint', account.language) + hint_examples + \
+                                    botman.text('calculator_hint_footer', account.language),reply_markup=botman.mainkeyboard(account.is_admin))
 
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
@@ -222,9 +220,11 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
         await func_send_message(
             "در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...")
         return
+    response: str
     for amount in amounts:
         for unit in units:
-            response = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos)
+            response = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos) if unit in botman.crypto_serv.CoinsInPersian \
+                else botman.currency_serv.equalize(unit, amount, account.calc_currencies)
             await func_send_message(response)
 
 
@@ -291,7 +291,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             # start extracting units
                             while index < count_of_params:
                                 source_symbol = params[index].upper()
-                                if source_symbol in botman.crypto_serv.CoinsInPersian:
+                                if source_symbol in botman.crypto_serv.CoinsInPersian or source_symbol in botman.currency_serv.CurrenciesInPersian:
                                     units.append(source_symbol)
                                 else:
                                     invalid_units.append(source_symbol)
@@ -390,13 +390,11 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                                                     selection_list, close_button=True))
         else:
             await query.message.edit_reply_markup(reply_markup=botman.inline_keyboard(list_type, market,
-                                                                                      botman.currency_serv.NationalCurrenciesInPersian if market == MarketOptions.CURRENCY else botman.currency_serv.GoldsInPersian,
-                                                                                      selected_ones=selection_list,
-                                                                                      full_names=market != MarketOptions.CRYPTO,
-                                                                                      # FIXME: This bool param needs
-                                                                                      #  to be updated
-                                                                                      close_button=True
-                                                                                      )
+                                                            botman.currency_serv.NationalCurrenciesInPersian if market == MarketOptions.CURRENCY else botman.currency_serv.GoldsInPersian,
+                                                            selected_ones=selection_list,
+                                                            full_names=market != MarketOptions.CRYPTO,
+                                                            close_button=True
+                                                        )
                                                   )
     except ValueError as reached_max_ex:
         max_selection = int(reached_max_ex.__str__())
@@ -407,6 +405,8 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             await query.message.reply_text(text=botman.error('max_selection', account.language) % (max_selection,) \
                                            + botman.error('get_premium', account.language), 
                                            reply_markup=botman.inline_url([{'text_key': "premium", 'url': link}]))
+        else:
+            await query.message.reply_text(text=botman.error('max_selection', account.language) % (max_selection,))
 
     except Exception as selection_ex:
         log('User could\'t select coins', selection_ex, 'general')

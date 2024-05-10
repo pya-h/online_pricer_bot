@@ -83,7 +83,7 @@
             "fa": "⚠️ تعداد موارد انتخابی شما به سقف مجاز (%d عدد) رسیده است.",
             "en": "⚠️ The number of your selected items has reached the limit (10 items)."
         },
-        "buy_premium_to_extend": {
+        "get_premium": {
             "fa": "\n\n💎 با پریمیوم کردن رباتتان می توانید تا ۱۰۰ قیمت را در لیست خود اضافه کنید",
             "en": "\n\n💎 By premiumizing your bot, you can add up to 100 prices to your list."
         },
@@ -95,5 +95,13 @@
     "select_your_set": {
         "fa": "🔹 بر روی گزینه های مدنظرتان کلیک کنید تا در لیستتان اضافه شوند:",
         "en": "🔹 Click on the options you want to add to your list:"
+    },
+    "calculator_hint": {
+        "fa": "🔹 مقدار مدنظرتان را همراه با نام اختصاریِ مدنظرتان (به انگلیسی) بنویسید: \n(بین مقدار و نام اختصاری یک فاصله قرار دهید)\n(شما می توانید در یک سطر یک الی چند مورد مانند مثال های زیر بنویسید)\n\nمثال ها:\n",
+        "en": "🔹 Write the amount you want along with the abbreviated name you want (in English):\n(Put a space between the value and the short name)\n(You can write one to several items in one line like the examples below)\n\nExamples:\n"
+    },
+    "calculator_hint_footer": {
+        "fa": "🔹 اگر نام اختصاری مورد نظرتان را نمی دانید کافیست فقط مقدار مورد نظرتان را بنویسید:\n\nمثال:\n50",
+        "en": "🔹 If you don't know the short name you want, just write the value you want:\n\nExamples:\n50"
     }
 }
