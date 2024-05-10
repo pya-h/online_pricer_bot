@@ -228,9 +228,14 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
     response: str
     for amount in amounts:
         for unit in units:
-            response = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos) if unit in botman.crypto_serv.CoinsInPersian \
-                else botman.currency_serv.equalize(unit, amount, account.calc_currencies)
-            await func_send_message(response)
+            if unit in botman.crypto_serv.CoinsInPersian:
+                header, response, _, absoulte_irt = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos)
+                response = botman.currency_serv.irt_to_currencies(absoulte_irt, unit, account.calc_currencies) + "\n\n" + response
+            else:
+                header, response, absolute_usd, _  = botman.currency_serv.equalize(unit, amount, account.calc_currencies)
+                response += "\n\n" + botman.crypto_serv.usd_to_cryptos(absolute_usd, unit, account.calc_cryptos)
+
+            await func_send_message(header + response)
 
 
 async def handle_messages(update: Update, context: CallbackContext):

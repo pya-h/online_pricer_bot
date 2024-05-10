@@ -2,6 +2,7 @@ import coinmarketcapapi as cmc_api
 from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
 from api.currency_service import NavasanService
+from typing import Union
 
 
 # Parent Class
@@ -136,9 +137,9 @@ class CoinMarketCapService(CryptoCurrencyService):
             coin_equalized_price = mathematix.persianify(mathematix.cut_and_separate(coin_equalized_price))
             res += f'🔸 {coin_equalized_price} {CryptoCurrencyService.CoinsInPersian[coin]}\n'
 
-        return res
+        return f'📌#بازار_ارز_دیجیتال\n{res}'
 
-    def equalize(self, source_unit_symbol: str, amount: float | int, desired_cryptos: list = None) -> str:
+    def equalize(self, source_unit_symbol: str, amount: float | int, desired_cryptos: list = None) -> Union[str, float | int, float | int]:
         """This function gets an amount param, alongside with a source_unit_symbol [and abviously with the users desired coins]
             and it returns a text string, that in each row of that, shows that amount equivalent in another cryptocurrency unit."""
         # First check the required data is prepared
@@ -148,13 +149,11 @@ class CoinMarketCapService(CryptoCurrencyService):
             raise InvalidInputException('Coin symbol!')
 
         # text header
-        res: str = ("%s %s" % (mathematix.persianify(amount),
-                               CryptoCurrencyService.CoinsInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
+        header: str = ("✅ %s %s" % (mathematix.persianify(amount),
+                               CryptoCurrencyService.CoinsInPersian[source_unit_symbol])) + 'معادل است با:\n\n'
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(
             self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
 
-        res += self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos)
-
-        return res
+        return header, self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos), absolute_amount, self.to_irt_exact(absolute_amount, True)

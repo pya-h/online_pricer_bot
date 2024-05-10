@@ -5,6 +5,7 @@ from api.tether_service import AbanTetherService, NobitexService
 from tools.manuwriter import log
 from tools.mathematix import persianify
 from tools.exceptions import NoLatestDataException
+from typing import Union
 
 
 def get_gold_names(filename: str):
@@ -193,20 +194,29 @@ class NavasanService(CurrencyService):
             self.latest_data = []
         return self.latest_data
     
+    def irt_to_usd(self, irt_price: float | int) -> float | int:
+        return irt_price / self.UsdInTomans
+    
     def irt_to_currencies(self, absolute_amount: float | int, source_unit_slug: str, currencies: list = None) -> str:
         currencies = self.get_desired_ones(currencies)
-        res: str = ''
+        res_gold, res_curr = '', ''
 
         for slug in currencies:
             if slug == source_unit_slug:
                 continue
             slug_equalized_price = absolute_amount / float(self.latest_data[slug.lower()]['value'])
             slug_equalized_price = mathematix.persianify(mathematix.cut_and_separate(slug_equalized_price))
-            res += f'🔸 {slug_equalized_price} {NavasanService.CurrenciesInPersian[slug]}\n'
+            if slug in NavasanService.NationalCurrenciesInPersian:
+                res_curr += f'🔸 {slug_equalized_price} {NavasanService.CurrenciesInPersian[slug]}\n'
+            else:
+                res_gold += f'🔸 {slug_equalized_price} {NavasanService.CurrenciesInPersian[slug]}\n'
 
-        return res
+        return f'''📌#بازار_ارز
+{res_curr}
+📌#بازار_طلا
+{res_gold}'''
 
-    def equalize(self, source_unit_symbol: str, amount: float | int, target_currencies: list = None) -> str:
+    def equalize(self, source_unit_symbol: str, amount: float | int, target_currencies: list = None) -> Union[str, float | int, float | int]:
         """This function gets an amount param, alongside with a source_unit_symbol [and abviously with the users desired coins]
             and it returns a text string, that in each row of that, shows that amount equivalent in another currency unit."""
         # First check the required data is prepared
@@ -216,13 +226,12 @@ class NavasanService(CurrencyService):
             raise InvalidInputException('Currency/Gold symbol!')
 
         # text header
-        res: str = ("%s %s" % (mathematix.persianify(amount),
-                               NavasanService.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
+        header: str = ("✅ %s %s" % (mathematix.persianify(amount),
+                               NavasanService.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با::\n\n'
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(
             self.latest_data[source_unit_symbol.lower()]['value'])
 
-        res += self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies)
 
-        return res
+        return  header, self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies), self.irt_to_usd(absolute_amount), absolute_amount
