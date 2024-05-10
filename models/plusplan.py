@@ -1,5 +1,4 @@
 from db.interface import DatabaseInterface
-from payagraph.types import CanBeKeyboardItemInterface
 import json
 from api.crypto_service import CryptoCurrencyService
 from tools.mathematix import cut_and_separate, persianify
@@ -68,7 +67,7 @@ class PlusPlan:
         return template_text % (title, description, price, currency)
 
 
-class PlanInterval(CanBeKeyboardItemInterface):
+class PlanInterval:
     def __init__(self, title: str, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
         self._title = title
         self.days = days

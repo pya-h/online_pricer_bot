@@ -6,7 +6,6 @@ import json
 from tools.manuwriter import log
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
-
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 
 botman = BotMan()
