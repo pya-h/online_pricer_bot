@@ -104,7 +104,7 @@ class NavasanService(CurrencyService):
     @staticmethod
     def LoadPersianNames():
         NavasanService.NationalCurrenciesInPersian, NavasanService.GoldsInPersian = get_persian_currency_names()
-        NavasanService.GoldsInPersian = dict(NavasanService.GoldsInPersian, **GoldService.GoldsInPersian)
+        NavasanService.GoldsInPersian = dict(GoldService.GoldsInPersian, **NavasanService.GoldsInPersian)
         NavasanService.CurrenciesInPersian = dict(NavasanService.NationalCurrenciesInPersian, **NavasanService.GoldsInPersian)
 
     @staticmethod
@@ -131,13 +131,14 @@ class NavasanService(CurrencyService):
                 price = float(curr['value']) 
                 toman: float = 0.0
                 usd: float | None = None
-                
                 if 'usd' not in curr or not curr['usd']:
                     toman, _ = self.rounded_prices(price, False)
                 else:
                     usd, toman = self.rounded_prices(price)
 
                 toman = persianify(toman)
+                if price < 0:
+                    toman = f"{toman[1:]}-"
                 row = f"{NavasanService.CurrenciesInPersian[slug]}: {toman} تومان" + (f" / {usd}$" if usd else '')
             else:
                 row = f'{NavasanService.CurrenciesInPersian[slug]}: ❗️ قیمت دریافت نشد.'
@@ -151,6 +152,7 @@ class NavasanService(CurrencyService):
             res_curr = f'📌 #قیمت_لحظه_ای #بازار_ارز \n{res_curr}\n'
         if res_gold:
             res_gold = f'📌 #قیمت_لحظه_ای #بازار_طلا \n{res_gold}\n'
+
         return res_curr + res_gold
 
     async def update_services(self):
@@ -189,58 +191,3 @@ class NavasanService(CurrencyService):
         except:
             self.latest_data = []
         return self.latest_data
-
-    # def equalizer_row(self, unit_symbol: str, value: float|int):
-    #     '''returns the row shape/format of the equalizing coin.'''
-    #     value_cut = cut_and_separate(value)
-    #     value = persianify(value_cut)
-    #     return f'🔸 {value} {CryptoCurrency.CoinsInPersian[unit_symbol]}\n'
-
-    # def tomans_to_currencies(self, absolute_amount: float|int, source_unit_symbol: str, currencies: list = None) -> str:
-    #     currencies = self.get_desired_ones(currencies)
-
-    #     for curr in self.latest_data:
-    #         slug = curr['slug'].upper()
-    #         price = float(curr['price']) / 10 if slug not in Navasan.EntitiesInDollars else float(curr['price'])
-
-    #         if slug in currencies:
-    #             # repetitive code OR using multiple conditions (?)
-    #             if slug not in Navasan.EntitiesInDollars:
-    #                 toman, _ = self.rounded_prices(price, False)
-    #                 toman = persianify(toman)
-    #                 rows[slug] = f"{Navasan.CurrenciesInPersian[slug]}: {toman} تومان"
-    #             else:
-    #                 usd, toman = self.rounded_prices(price)
-    #                 toman = persianify(toman)
-    #                 rows[slug] = f"{Navasan.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
-
-    #     for item in currencies:
-    #         curr =
-    #         if item == source_unit_symbol:
-    #             continue
-    #         amount_in_this_item_unit = absolute_amount  / float(self.latest_data[item][0]['quote'][self.price_unit]['price'])
-    #         res += self.equalizer_row(item, amount_in_this_item_unit)
-
-    #     return res
-
-    # def equalize(self, source_unit_symbol: str, amount: float|int, desired_currencies: list = None) -> str:
-
-    #     # text header
-    #     res: str = f'💱☯ معادل سازی ♻️💱\nبا توجه به آخرین قیمت های بازار ارز  ' + \
-    #         ("%s %s" % (persianify(amount), Navasan.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
-
-    #     # first row is the equivalent price in USD(the price unit selected by the bot configs.)
-    #     source = list(filter(lambda curr: curr['slug'].upper() == source_unit_symbol, self.latest_data))
-    #     if not source:
-    #         raise InvalidInputException('currency sumbol')
-
-    #     absolute_amount: float = amount * float(self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
-
-    #     abs_usd, abs_toman = self.rounded_prices(absolute_amount, tether_as_unit_price=True)
-    #     res += f'🔸 {persianify(abs_usd)} {Navasan.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
-
-    #     res += f'🔸 {persianify(abs_toman)} تومان\n'
-
-    #     res += self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_currencies)
-
-    #     return res

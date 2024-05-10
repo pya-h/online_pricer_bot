@@ -31,11 +31,7 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
 async def select_coin_menu(update: Update, context: CallbackContext):
     try:
         list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CRYPTO)
-        await update.message.reply_text('''📌 #لیست_بازار_ارز_دیجیتال
-    
-    👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-    👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-    👈 شما میتوانید نهایت 10 گزینه را در لیست خود قرار دهید.''',
+        await update.message.reply_text(botman.text('select_your_set', Account.Get(update.effective_chat.id).language),
                                         reply_markup=botman.inline_keyboard(list_type, MarketOptions.CRYPTO, botman.crypto_serv.CoinsInPersian,
                                                                             selection_list, close_button=True))
     except LookupError:
@@ -45,11 +41,7 @@ async def select_coin_menu(update: Update, context: CallbackContext):
 async def select_currency_menu(update: Update, context: CallbackContext):
     try:
         list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CURRENCY)
-        await update.message.reply_text('''📌 #لیست_بازار_ارز
-    
-    👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-    👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-    👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+        await update.message.reply_text(botman.text('select_your_set', Account.Get(update.effective_chat.id).language),
                                         reply_markup=botman.inline_keyboard(list_type, MarketOptions.CURRENCY,
                                                                             botman.currency_serv.NationalCurrenciesInPersian,
                                                                             selection_list, full_names=True,
@@ -61,11 +53,7 @@ async def select_currency_menu(update: Update, context: CallbackContext):
 async def select_gold_menu(update: Update, context: CallbackContext):
     try:
         list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CURRENCY)
-        await update.message.reply_text('''📌 #لیست_بازار_طلا
-    
-    👈 با فعال کردن تیک (✅) گزینه های مد نظرتان، آنها را در لیست خود قرار دهید.
-    👈 با دوباره کلیک کردن، تیک () برداشته شده و آن گزینه از لیستتان حذف می شود.
-    👈 شما میتوانید نهایت ۲۰ گزینه را در لیست خود قرار دهید.''',
+        await update.message.reply_text(botman.text('select_your_set', Account.Get(update.effective_chat.id).language),
                                         reply_markup=botman.inline_keyboard(list_type, MarketOptions.GOLD,
                                                                             botman.currency_serv.GoldsInPersian,
                                                                             selection_list, full_names=True,
@@ -412,11 +400,23 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                                                   )
     except ValueError as reached_max_ex:
         max_selection = int(reached_max_ex.__str__())
-        await query.answer(text=botman.error('max_selection', account.language) % (max_selection,), show_alert=True)
+        # await query.answer(text=botman.error('max_selection', account.language) % (max_selection,), show_alert=True)
+
+        if not account.is_premium_member():
+            link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
+            await query.message.reply_text(text=botman.error('max_selection', account.language) % (max_selection,) \
+                                           + botman.error('get_premium', account.language), 
+                                           reply_markup=botman.inline_url([{'text_key': "premium", 'url': link}]))
+
     except Exception as selection_ex:
         log('User could\'t select coins', selection_ex, 'general')
         account.change_state()
         await query.answer(text=botman.error('unknown', account.language), show_alert=True)
+
+async def cmd_switch_language(update: Update, context: CallbackContext):
+    acc = Account.Get(update.effective_chat.id)
+    acc.language = "en" if acc.language.lower() == 'fa' else 'fa'
+    acc.save()
 
 
 def main():
@@ -437,6 +437,7 @@ def main():
     app.add_handler(CommandHandler("stats", cmd_report_statistics))
     app.add_handler(CommandHandler("gecko", cmd_change_source_to_coingecko))
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
+    app.add_handler(CommandHandler("lang", cmd_switch_language))
 
     app.add_handler(MessageHandler(filters.ALL, handle_messages))
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))

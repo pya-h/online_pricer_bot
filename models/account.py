@@ -11,7 +11,8 @@ from bot.types import SelectionListTypes, MarketOptions
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
-
+HARDCODE_ADMIN_USERNAME = config('HARDCODE_ADMIN_USERNAME', 'pya_h')
+HARDCODE_ADMIN_CHATID = int(config('HARDCODE_ADMIN_CHATID', 0))
 
 class Account:
     # states:
@@ -88,7 +89,8 @@ class Account:
         self.username: str | None = None
         self.firstname: str | None = None
         self.arrange_instances()
-        self.is_admin: bool = is_admin
+        self.is_admin: bool = self.chat_id == HARDCODE_ADMIN_CHATID
+
 
     def change_state(self, state: States = States.NONE, data: any = None):
         self.state = state
@@ -121,6 +123,12 @@ class Account:
     def str_calc_currencies(self):
         return ';'.join(self.calc_currencies)
 
+    @property
+    def max_selection_count(self):
+        if self.is_admin:
+            return 50
+        return self.desires_count_max
+    
     @staticmethod
     def str2list(string: str):
         return string.split(';') if string else None
@@ -173,9 +181,13 @@ class Account:
 
         return Account(chat_id=chat_id).save()
 
-    def is_member_plus(self) -> bool:
+    @staticmethod
+    def GetHardcodeAdmin():
+        return {'id': HARDCODE_ADMIN_CHATID, 'username': HARDCODE_ADMIN_USERNAME}
+    
+    def is_premium_member(self) -> bool:
         """Check if the account has still plus subscription."""
-        return self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date() and self.plus_plan_id
+        return self.is_admin or (self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date() and self.plus_plan_id)
 
     def plan_new_channel(self, channel_id: int, interval: int, channel_name: str,
                          channel_title: str = None) -> Channel | None:
@@ -218,8 +230,8 @@ class Account:
 
         if symbol:
             if symbol.upper() not in target_list:
-                if len(target_list) + len(related_list) >= self.desires_count_max:
-                    raise ValueError(self.desires_count_max)
+                if len(target_list) + len(related_list) >= self.max_selection_count:
+                    raise ValueError(self.max_selection_count)
 
                 target_list.append(symbol)
                 self.save()

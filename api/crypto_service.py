@@ -159,7 +159,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
 
         abs_usd, abs_toman = self.rounded_prices(absolute_amount, tether_as_unit_price=True)
-        res += f'🔸 {mathematix.persianify(abs_usd)} {NavasanService.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
+        # res += f'🔸 {mathematix.persianify(abs_usd)} {NavasanService.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
 
         res += f'🔸 {mathematix.persianify(abs_toman)} تومان\n'
 

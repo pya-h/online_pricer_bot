@@ -6,7 +6,7 @@ from telegram.ext import CallbackContext
 from api.currency_service import CurrencyService
 from api.crypto_service import CryptoCurrencyService
 from json import dumps as jsonify
-from typing import List
+from typing import List, Dict
 from bot.post import PostMan
 
 
@@ -152,9 +152,27 @@ class BotMan:
                 buttons.append(row)
                 row = []
                 i = 0
+        if row:
+            buttons.append(row)
         if close_button:
             buttons.append([InlineKeyboardButton(self.resourceman.keyboard('close'), callback_data=jsonify(
                 {"lt": list_type.value, "bt": button_type.value, "v": "#X"}))])
+        return InlineKeyboardMarkup(buttons)
+
+    def inline_url(self, urls_data: List[Dict[str, str]]):
+        """this function creates inline url keyboard for messages"""
+        if not selected_ones:
+            selected_ones = []
+        buttons = []
+        row = []
+        i = 0
+        for btn_data in urls_data:
+            row.append(InlineKeyboardButton(self.resourceman.keyboard(btn_data['text_key']), url=btn_data['url']))
+            if i % 2 == 0:
+                buttons.append(row)
+                row = []
+        if row:
+            buttons.append(row)
         return InlineKeyboardMarkup(buttons)
 
     def keyboard_from(self, language: str, *row_keys: List[str]):
@@ -175,7 +193,7 @@ class BotMan:
                                             [InlineKeyboardButton(self.channels[-1]['username'],
                                                                   url=self.channels[-1]['url']),
                                              InlineKeyboardButton(self.channels[0]['username'],
-                                                                  url=self.channels[0]['username'])]
+                                                                  url=self.channels[0]['url'])]
                                         ]))
         return None
 
