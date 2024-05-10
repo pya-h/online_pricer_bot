@@ -1,11 +1,11 @@
-from api.crypto_service import CoinMarketCap
+from api.crypto_service import CoinMarketCapService
 from decouple import config
 from json import dumps
 
 
 api_key = config('COINMARKETCAP_API_KEY')
 
-cmc = CoinMarketCap(api_key)
+cmc = CoinMarketCapService(api_key)
 
 def save(data: dict):
     f = open('api-result.json', 'w')

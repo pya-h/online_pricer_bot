@@ -3,6 +3,7 @@ import aiohttp
 from typing import Dict
 from json import loads as json_parse
 
+
 class RequestMethod(Enum):
     Get = 1
     Post = 2
@@ -22,14 +23,14 @@ class Response:
 
         if self.response.content_type == 'application/json':
             self.__decoded = await self.response.json()
-            
+
         try:
             self.__decoded = json_parse(self.__raw)
         except:
             pass
-            
+
         return self
-    
+
     @property
     def status(self) -> int:
         return self.response.status
@@ -37,7 +38,7 @@ class Response:
     @property
     def OK(self) -> bool:
         return self.status == 200 or self.status == 201  # TODO: What about 202 to 300
-    
+
     @property
     def data(self):
         '''Decoded[if json] result of request.'''
@@ -47,17 +48,18 @@ class Response:
     def text(self):
         '''The exact string returned from request.'''
         return self.__raw
-    
-    
+
 
 class Request:
 
-    def __init__(self, url: str, payload: dict = None, headers: dict=None, method: RequestMethod=RequestMethod.Get, timeout: float = 5.0) -> None:
+    def __init__(self, url: str, payload: dict = None, headers: dict = None, method: RequestMethod = RequestMethod.Get,
+                 timeout: float = 5.0) -> None:
         self.__url = url
         self.__payload = payload
         self.__method = method
         self.__headers = headers
-        if not self.__headers and (self.__method == RequestMethod.Post or self.__method == RequestMethod.Put or self.__method == RequestMethod.Patch):
+        if not self.__headers and (
+                self.__method == RequestMethod.Post or self.__method == RequestMethod.Put or self.__method == RequestMethod.Patch):
             self.__headers = {
                 "Content-Type": "application/json"
             }
@@ -92,7 +94,6 @@ class Request:
             async with session.get(self.__url) as response:
                 r = await Response(response).read()
                 return r
-                
 
     async def post(self):
         async with aiohttp.ClientSession(trust_env=True, headers=self.__headers, timeout=self.__timeout) as session:

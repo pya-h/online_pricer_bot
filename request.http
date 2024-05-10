@@ -1,1 +1,13 @@
 GET https://sourcearena.ir/api/?token=fdd1aa10621a0bf4c89884937fb36805&currency&v2
+
+
+### nobitex
+
+POST https://api.nobitex.ir/market/stats
+Content-Type: application/json
+Authorization: Bearer e9282e56c83f93eb077043e5ad8b6cf5b3ff7568
+
+{
+    "srcCurrency":"USDT", 
+    "dstCurrency":"IRT"
+}

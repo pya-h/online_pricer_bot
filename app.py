@@ -7,7 +7,7 @@ from tools.manuwriter import log
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 
-from api.crypto_service import CoinGecko, CoinMarketCap
+from api.crypto_service import CoinGeckoService, CoinMarketCapService
 
 botman = BotMan()
 
@@ -178,7 +178,7 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
 
-    botman.crypto_serv = CoinGecko()
+    botman.crypto_serv = CoinGeckoService()
     await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
                                     reply_markup=botman.admin_keyboard)
     await notify_changes(context)
@@ -188,7 +188,7 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
     if not Account.Get(update.effective_chat.id).authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text)
 
-    botman.crypto_serv = CoinMarketCap(botman.postman.coinmarketcap_api_key)
+    botman.crypto_serv = CoinMarketCapService(botman.postman.coinmarketcap_api_key)
     await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
                                     reply_markup=botman.admin_keyboard)
     await notify_changes(context)
@@ -231,7 +231,7 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 
 
 async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
-    if not isinstance(botman.crypto_serv, CoinMarketCap):
+    if not isinstance(botman.crypto_serv, CoinMarketCapService):
         await func_send_message(
             "در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد...")
         return

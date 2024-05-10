@@ -2,10 +2,10 @@ from api.currency_service import CurrencyService, get_persian_currency_names
 from tools.exceptions import InvalidInputException
 from tools.mathematix import persianify
 from typing import Dict
-from tether_service import AbanTether
+from api.tether_service import AbanTetherService
 
 
-class SourceArena(CurrencyService):
+class SourceArenaService(CurrencyService):
     Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
     EntitiesInDollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
     CurrenciesInPersian = None
@@ -15,26 +15,26 @@ class SourceArena(CurrencyService):
 
     @staticmethod
     def LoadPersianNames():
-        SourceArena.NationalCurrenciesInPersian, SourceArena.GoldsInPersian = get_persian_currency_names()
-        SourceArena.CurrenciesInPersian = dict(SourceArena.NationalCurrenciesInPersian, **SourceArena.GoldsInPersian)
+        SourceArenaService.NationalCurrenciesInPersian, SourceArenaService.GoldsInPersian = get_persian_currency_names()
+        SourceArenaService.CurrenciesInPersian = dict(SourceArenaService.NationalCurrenciesInPersian, **SourceArenaService.GoldsInPersian)
 
     @staticmethod
     def GetPersianName(symbol: str) -> str:
-        if SourceArena.CurrenciesInPersian is None or not SourceArena.CurrenciesInPersian:
-            SourceArena.LoadPersianNames()
-        if symbol not in SourceArena.CurrenciesInPersian:
+        if SourceArenaService.CurrenciesInPersian is None or not SourceArenaService.CurrenciesInPersian:
+            SourceArenaService.LoadPersianNames()
+        if symbol not in SourceArenaService.CurrenciesInPersian:
             raise InvalidInputException('Currency Symbol/Name!')
-        return SourceArena.CurrenciesInPersian[symbol]
+        return SourceArenaService.CurrenciesInPersian[symbol]
 
     def __init__(self, token: str, aban_tether_token: str) -> None:
         super().__init__(url=f"https://sourcearena.ir/api/?token={token}&currency",
                          source="Sourcearena.ir", cache_file_name='sourcearena.json',
                          tether_service_token=aban_tether_token, token=token)
-        if not SourceArena.NationalCurrenciesInPersian or not SourceArena.GoldsInPersian or not SourceArena.CurrenciesInPersian:
-            SourceArena.LoadPersianNames()
+        if not SourceArenaService.NationalCurrenciesInPersian or not SourceArenaService.GoldsInPersian or not SourceArenaService.CurrenciesInPersian:
+            SourceArenaService.LoadPersianNames()
 
-        self.tether_service = AbanTether(aban_tether_token)
-        self.get_desired_ones = lambda desired_ones: desired_ones or SourceArena.Defaults
+        self.tether_service = AbanTetherService(aban_tether_token)
+        self.get_desired_ones = lambda desired_ones: desired_ones or SourceArenaService.Defaults
         self.direct_prices: Dict[str, float] = {}
 
     def extract_api_response(self, desired_ones: list = None, short_text: bool = True,
@@ -45,27 +45,27 @@ class SourceArena(CurrencyService):
 
         for curr in api_data:
             slug = curr['slug'].upper()
-            price = float(curr['price']) / 10 if slug not in SourceArena.EntitiesInDollars else float(curr['price'])
+            price = float(curr['price']) / 10 if slug not in SourceArenaService.EntitiesInDollars else float(curr['price'])
             self.direct_prices[slug] = price
             if slug in desired_ones:
                 # repetitive code OR using multiple conditions (?)
-                if slug not in SourceArena.EntitiesInDollars:
+                if slug not in SourceArenaService.EntitiesInDollars:
                     toman, _ = self.rounded_prices(price, False)
                     toman = persianify(toman)
-                    rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان"
+                    rows[slug] = f"{SourceArenaService.CurrenciesInPersian[slug]}: {toman} تومان"
                 else:
                     usd, toman = self.rounded_prices(price)
                     toman = persianify(toman)
-                    rows[slug] = f"{SourceArena.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
+                    rows[slug] = f"{SourceArenaService.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
 
         res_curr = ''
         res_gold = ''
         for slug in desired_ones:
 
-            if slug in SourceArena.NationalCurrenciesInPersian:
-                res_curr += f'🔸 {rows[slug]}\n' if slug in rows else f'❗️ {SourceArena.CurrenciesInPersian[slug]}: قیمت دریافت نشد.\n'
+            if slug in SourceArenaService.NationalCurrenciesInPersian:
+                res_curr += f'🔸 {rows[slug]}\n' if slug in rows else f'❗️ {SourceArenaService.CurrenciesInPersian[slug]}: قیمت دریافت نشد.\n'
             else:
-                res_gold += f'🔸 {rows[slug]}\n' if slug in rows else f'❗️ {SourceArena.CurrenciesInPersian[slug]}: قیمت دریافت نشد.\n'
+                res_gold += f'🔸 {rows[slug]}\n' if slug in rows else f'❗️ {SourceArenaService.CurrenciesInPersian[slug]}: قیمت دریافت نشد.\n'
         if res_curr:
             res_curr = f'📌 #قیمت_لحظه_ای #بازار_ارز \n{res_curr}\n'
         if res_gold:
@@ -81,7 +81,7 @@ class SourceArena(CurrencyService):
     # --------- Currency -----------
     async def get_request(self):
         await self.update_services()
-        response = await super(SourceArena, self).get_request(no_cache=True)
+        response = await super(SourceArenaService, self).get_request(no_cache=True)
         return response.data["data"] if 'data' in response.data else [], response.text
 
     async def get(self, desired_ones: list = None, short_text: bool = True) -> str:
@@ -96,21 +96,21 @@ class SourceArena(CurrencyService):
         if self.tether_service.recent_response:
             self.set_tether_tomans(self.tether_service.recent_response)
             usd_t['TETHER']['price'] = self.tether_service.recent_response
-        elif not self.TetherInTomans or self.tether_service.no_response_counts > SourceArena.MaxExtraServicesFailure:
+        elif not self.TetherInTomans or self.tether_service.no_response_counts > SourceArenaService.MaxExtraServicesFailure:
             try:
-                self.set_tether_tomans((float(usd_t['TETHER']['price']) / 10.0) or SourceArena.DefaultTetherInTomans)
+                self.set_tether_tomans((float(usd_t['TETHER']['price']) / 10.0) or SourceArenaService.DefaultTetherInTomans)
             except:
-                if not SourceArena.TetherInTomans:
-                    SourceArena.TetherInTomans = SourceArena.DefaultTetherInTomans
+                if not SourceArenaService.TetherInTomans:
+                    SourceArenaService.TetherInTomans = SourceArenaService.DefaultTetherInTomans
 
         try:
             self.set_usd_price(self.tether_service.guess_dollar_price() or (
-                        float(usd_t['USD']['price']) / 10.0) or SourceArena.DefaultUsbInTomans)
+                        float(usd_t['USD']['price']) / 10.0) or SourceArenaService.DefaultUsbInTomans)
             usd_t['USD'][
                 'price'] = self.UsdInTomans * 10.0  # in dict must be in fuckin rials; this fuckin country with its fuckin worthless currency
         except:
-            if not SourceArena.UsdInTomans:
-                SourceArena.UsdInTomans = SourceArena.DefaultUsbInTomans
+            if not SourceArenaService.UsdInTomans:
+                SourceArenaService.UsdInTomans = SourceArenaService.DefaultUsbInTomans
 
         self.cache_data(response_text)
         self.tether_service.cache_data(self.tether_service.summary(),
@@ -119,7 +119,7 @@ class SourceArena(CurrencyService):
 
     def load_cache(self) -> list | dict:
         try:
-            self.latest_data = super(SourceArena, self).load_cache()['data']
+            self.latest_data = super(SourceArenaService, self).load_cache()['data']
         except:
             self.latest_data = []
         return self.latest_data

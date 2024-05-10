@@ -1,7 +1,7 @@
 import coinmarketcapapi as cmc_api
 from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from api.currency_service import Navasan
+from api.currency_service import NavasanService
 
 
 # Parent Class
@@ -40,13 +40,13 @@ class CryptoCurrencyService(APIService):
 
 
 # --------- COINGECKO -----------
-class CoinGecko(CryptoCurrencyService):
+class CoinGeckoService(CryptoCurrencyService):
     """CoinGecko Class. The object of this class will get the cryptocurrency prices from coingecko."""
 
     def __init__(self, params=None) -> None:
 
-        super(CoinGecko, self).__init__(url='https://api.coingecko.com/api/v3/coins/list', source="CoinGecko.com",
-                                        cache_file_name="coingecko.json")
+        super(CoinGeckoService, self).__init__(url='https://api.coingecko.com/api/v3/coins/list', source="CoinGecko.com",
+                                               cache_file_name="coingecko.json")
 
     def extract_api_response(self, desired_coins=None, short_text=True, optional_api_data: list = None):
         'Construct a text string consisting of each desired coin prices of a special user.'
@@ -68,11 +68,11 @@ class CoinGecko(CryptoCurrencyService):
 
 
 # --------- COINMARKETCAP -----------
-class CoinMarketCap(CryptoCurrencyService):
+class CoinMarketCapService(CryptoCurrencyService):
     """CoinMarketCap Class. The object of this class will get the cryptocurrency prices from CoinMarketCap."""
 
     def __init__(self, api_key, price_unit='USD', params=None) -> None:
-        super(CoinMarketCap, self).__init__(
+        super(CoinMarketCapService, self).__init__(
             url='https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',
             source="CoinMarketCap.com", cache_file_name='coinmarketcap.json')
         self.api_key: str = api_key
@@ -159,7 +159,7 @@ class CoinMarketCap(CryptoCurrencyService):
             self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
 
         abs_usd, abs_toman = self.rounded_prices(absolute_amount, tether_as_unit_price=True)
-        res += f'🔸 {mathematix.persianify(abs_usd)} {Navasan.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
+        res += f'🔸 {mathematix.persianify(abs_usd)} {NavasanService.GetPersianName(BaseAPIService.DOLLAR_SYMBOL)}\n'
 
         res += f'🔸 {mathematix.persianify(abs_toman)} تومان\n'
 

@@ -1,7 +1,7 @@
 from tools.mathematix import timestamp, persianify
 from tools.manuwriter import log
-from api.crypto_service import CoinGecko, CoinMarketCap
-from api.currency_service import Navasan
+from api.crypto_service import CoinGeckoService, CoinMarketCapService
+from api.currency_service import NavasanService
 
 
 class PostMan:
@@ -11,8 +11,8 @@ class PostMan:
         self.aban_tether_api_key: str = aban_tether_api_key
         self.coinmarketcap_api_key: str = coinmarketcap_api_key
 
-        self.crypto_service: CoinGecko|CoinMarketCap = CoinMarketCap(self.coinmarketcap_api_key)  # api service object: instance of CoinGecko or CoinMarketCap
-        self.currency_service: Navasan = Navasan(self.source_arena_api_key, self.aban_tether_api_key)
+        self.crypto_service: CoinGeckoService | CoinMarketCapService = CoinMarketCapService(self.coinmarketcap_api_key)  # api service object: instance of CoinGecko or CoinMarketCap
+        self.currency_service: NavasanService = NavasanService(self.source_arena_api_key, self.aban_tether_api_key)
 
     @staticmethod
     def sign_post(post_body: str, interval: float, for_channel: bool = True) -> str:
