@@ -1,7 +1,7 @@
 from api.base import *
 import json
 from tools.exceptions import InvalidInputException
-from api.tether_service import AbanTetherService
+from api.tether_service import AbanTetherService, NobitexService
 from tools.manuwriter import log
 from tools.mathematix import persianify
 
@@ -41,7 +41,11 @@ class CurrencyService(APIService):
         super(CurrencyService, self).__init__(url=url, source=source, cache_file_name=cache_file_name)
         self.token = token
         self.tether_service_token = tether_service_token
-
+        
+        if not self.UsdInTomans:
+            self.UsdInTomans = self.DefaultUsbInTomans
+        if not self.TetherInTomans:
+            self.TetherInTomans = self.DefaultTetherInTomans
 
 class GoldService(BaseAPIService):
     EntitiesInDollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
@@ -86,6 +90,17 @@ class NavasanService(CurrencyService):
     GoldsInPersian = None
     MaxExtraServicesFailure = 5
 
+    def __init__(self, token: str, nobitex_tether_service_token: str = None, aban_tether_service_token: str = None) -> None:
+        self.tether_service = NobitexService(nobitex_tether_service_token) if nobitex_tether_service_token else AbanTetherService(aban_tether_service_token)
+        
+        super().__init__(url=f"https://sourcearena.ir/api/?token={token}&currency&v2",
+                         source="Navasan.ir", cache_file_name='Navasan.json',
+                         tether_service_token=self.tether_service_token, token=token)
+        self.get_desired_ones = lambda desired_ones: desired_ones or NavasanService.Defaults
+        self.gold_service: GoldService = GoldService(self.token)
+        if not NavasanService.NationalCurrenciesInPersian or not NavasanService.GoldsInPersian or not NavasanService.CurrenciesInPersian:
+            NavasanService.LoadPersianNames()
+        
     @staticmethod
     def LoadPersianNames():
         NavasanService.NationalCurrenciesInPersian, NavasanService.GoldsInPersian = get_persian_currency_names()
@@ -99,16 +114,6 @@ class NavasanService(CurrencyService):
         if symbol not in NavasanService.CurrenciesInPersian:
             raise InvalidInputException('Currency Symbol/Name!')
         return NavasanService.CurrenciesInPersian[symbol]
-
-    def __init__(self, token: str, aban_tether_token: str) -> None:
-        super().__init__(url=f"https://sourcearena.ir/api/?token={token}&currency&v2",
-                         source="Navasan.ir", cache_file_name='Navasan.json',
-                         tether_service_token=aban_tether_token, token=token)
-        self.tether_service = AbanTetherService(aban_tether_token)
-        self.get_desired_ones = lambda desired_ones: desired_ones or NavasanService.Defaults
-        self.gold_service: GoldService = GoldService(self.token)
-        if not NavasanService.NationalCurrenciesInPersian or not NavasanService.GoldsInPersian or not NavasanService.CurrenciesInPersian:
-            NavasanService.LoadPersianNames()
 
     def extract_api_response(self, desired_ones: list = None, short_text: bool = True,
                              optional_api_data: list = None) -> str:
@@ -148,8 +153,8 @@ class NavasanService(CurrencyService):
     async def update_services(self):
         try:
             await self.tether_service.get()
-        except:
-            pass
+        except Exception as ex:
+            log('USDT(Tether) Update Failure', ex, 'USD_T')
 
     # --------- Currency -----------
     async def get_request(self):
@@ -162,25 +167,17 @@ class NavasanService(CurrencyService):
         try:
             await self.gold_service.append_gold_prices(self.latest_data)
         except Exception as ex:
-            log('Cant get source arena gold prices', ex, 'SourceArenaGolds')
-        if self.tether_service.recent_response:
-            self.set_tether_tomans(self.tether_service.recent_response)
-        elif not self.TetherInTomans or self.tether_service.no_response_counts > NavasanService.MaxExtraServicesFailure:
-            try:
-                '''second tether service'''
-            except:
-                if not NavasanService.TetherInTomans:
-                    NavasanService.TetherInTomans = NavasanService.DefaultTetherInTomans
+            log('Gold Price Update Failure', ex, 'SourceArenaGolds')
+
+        if self.tether_service.recent_value:
+            self.set_tether_tomans(self.tether_service.recent_value)
 
         try:
             self.set_usd_price(self.latest_data['usd']['value'])
-        except:
-            if not NavasanService.UsdInTomans:
-                NavasanService.UsdInTomans = NavasanService.DefaultUsbInTomans
+        except Exception as ex:
+            log('USD(Dollar) Update Failure', ex, 'USD_T')
 
         self.cache_data(json.dumps(self.latest_data))
-        self.tether_service.cache_data(self.tether_service.summary(),
-                                       custom_file_name='tether')
         return self.extract_api_response(desired_ones, short_text=short_text)
 
     def load_cache(self) -> list | dict:

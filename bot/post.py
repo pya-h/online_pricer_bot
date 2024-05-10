@@ -6,13 +6,15 @@ from api.currency_service import NavasanService
 
 class PostMan:
     '''This class wraps all necessary api services and make them work together, and constructs posts.'''
-    def __init__(self, source_arena_api_key: str, aban_tether_api_key:str, coinmarketcap_api_key: str) -> None:
+    def __init__(self, source_arena_api_key: str, coinmarketcap_api_key: str, nobitex_api_token: str, aban_tether_api_token: str | None = None) -> None:
         self.source_arena_api_key: str = source_arena_api_key
-        self.aban_tether_api_key: str = aban_tether_api_key
+        self.nobitex_api_token: str = nobitex_api_token
+        self.aban_tether_api_token: str = aban_tether_api_token
+
         self.coinmarketcap_api_key: str = coinmarketcap_api_key
 
         self.crypto_service: CoinGeckoService | CoinMarketCapService = CoinMarketCapService(self.coinmarketcap_api_key)  # api service object: instance of CoinGecko or CoinMarketCap
-        self.currency_service: NavasanService = NavasanService(self.source_arena_api_key, self.aban_tether_api_key)
+        self.currency_service: NavasanService = NavasanService(self.source_arena_api_key, self.nobitex_api_token)
 
     @staticmethod
     def sign_post(post_body: str, interval: float, for_channel: bool = True) -> str:

@@ -2,7 +2,6 @@ import re
 from typing import Dict, List
 import persiantools.digits as persian_digits
 import requests
-import asyncio
 from time import sleep
 import api.api_async as api
 
@@ -41,7 +40,7 @@ class PriceSeek:
         self.price_pattern, self.pattern_left_hand, self.pattern_right_hand = PriceSeek.GetPattern(self.price_key, self.parent_html_tag)
         self.url: str = f'https://{url}' if 'https://' not in url else url
         self.timeout: timeout = timeout
-        self.recent_response: float|None = None
+        self.recent_value: float|None = None
         self.no_response_counts = 0
 
     def get_index_sync(self) -> str:
@@ -62,26 +61,20 @@ class PriceSeek:
 
     async def get(self) -> Dict[str, str|int|float]:
         self.no_response_counts += 1
-        self.recent_response = None
+        self.recent_value = None
         response = (await self.get_all())[0]
-        self.recent_response = response['value']
+        self.recent_value = response['value']
         self.no_response_counts = 0
         return response
 
     async def get_value(self) -> Dict[str, str|int|float]:
         await self.get()
-        return self.recent_response
+        return self.recent_value
 
     async def list_currency_ids(self):
         '''Search though code and find all possible ids'''
         # TODO: write this methid
         pass
-
-
-def run_async(method):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(method())
-    loop.close()
 
 
 if __name__ == '__main__':
@@ -92,4 +85,4 @@ if __name__ == '__main__':
                 sleep(10)
             except:
                 pass
-    run_async(run)
+    api.run_async(run)

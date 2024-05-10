@@ -2,6 +2,13 @@ from enum import Enum
 import aiohttp
 from typing import Dict
 from json import loads as json_parse
+import asyncio
+
+
+def run_async(method):
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(method())
+    loop.close()
 
 
 class RequestMethod(Enum):

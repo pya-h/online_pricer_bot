@@ -61,9 +61,10 @@ class BotMan:
 
         CMC_API_KEY = config('COINMARKETCAP_API_KEY')
         CURRENCY_TOKEN = config('CURRENCY_TOKEN')
+        NOBITEX_TOKEN = config('NOBITEX_TOKEN')
         ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
 
-        self.postman = PostMan(CURRENCY_TOKEN, ABAN_TETHER_TOKEN, CMC_API_KEY)
+        self.postman = PostMan(CURRENCY_TOKEN, CMC_API_KEY, aban_tether_api_token=ABAN_TETHER_TOKEN, nobitex_api_token=NOBITEX_TOKEN)
 
         self.channels = [
             {'id': config('CHANNEL_ID'), 'url': config('CHANNEL_URL')},
