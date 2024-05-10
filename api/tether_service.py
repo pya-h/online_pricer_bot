@@ -56,7 +56,7 @@ class AbanTetherService(TetherService):
     def __init__(self, token: str) -> None:
         super(AbanTetherService, self).__init__(
             url=f'https://abantether.com/api/v1/otc/coin-price?coin={AbanTetherService.TetherSymbol}',
-            token=token, source="Abantether.com", cache_name="AbanTether")
+            token=token, source="Abantether.com", cache_name="AbanTether.json")
         self.headers = {'Authorization': f'Token {self.token}'}
 
     def mid(self) -> float | None:
@@ -88,7 +88,7 @@ class NobitexService(TetherService):
 
     def __init__(self, token: str) -> None:
         super(NobitexService, self).__init__(url='https://api.nobitex.ir/market/stats', token=token,
-                                             source="Nobitex.ir", cache_name="Nobitex")
+                                             source="Nobitex.ir", cache_name="Nobitex.json")
         self.headers = {'Authorization': f'Bearer {self.token}'}
 
     def mid(self) -> float | None:

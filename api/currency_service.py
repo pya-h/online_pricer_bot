@@ -95,7 +95,7 @@ class NavasanService(CurrencyService):
         
         super().__init__(url=f"https://sourcearena.ir/api/?token={token}&currency&v2",
                          source="Navasan.ir", cache_file_name='Navasan.json',
-                         tether_service_token=self.tether_service_token, token=token)
+                         tether_service_token=self.tether_service.token, token=token)
         self.get_desired_ones = lambda desired_ones: desired_ones or NavasanService.Defaults
         self.gold_service: GoldService = GoldService(self.token)
         if not NavasanService.NationalCurrenciesInPersian or not NavasanService.GoldsInPersian or not NavasanService.CurrenciesInPersian:
@@ -119,26 +119,29 @@ class NavasanService(CurrencyService):
                              optional_api_data: list = None) -> str:
         desired_ones = self.get_desired_ones(desired_ones)
         api_data = optional_api_data or self.latest_data
-        rows = {}
 
         res_curr = ''
         res_gold = ''
         
         for slug in desired_ones:
             slug_l = slug.lower()
-            curr = api_data[slug_l]
-            price = float(curr['value'])
-            toman: float = 0.0
-            usd: float | None = None
-            
-            if 'usd' not in curr or not curr['usd']:
-                toman, _ = self.rounded_prices(price, False)
+            row: str
+            if slug_l in api_data and 'value' in api_data[slug_l]:
+                curr = api_data[slug_l]
+                price = float(curr['value']) 
+                toman: float = 0.0
+                usd: float | None = None
+                
+                if 'usd' not in curr or not curr['usd']:
+                    toman, _ = self.rounded_prices(price, False)
+                else:
+                    usd, toman = self.rounded_prices(price)
+
+                toman = persianify(toman)
+                row = f"{NavasanService.CurrenciesInPersian[slug]}: {toman} تومان" + (f" / {usd}$" if usd else '')
             else:
-                usd, toman = self.rounded_prices(price)
-
-            toman = persianify(toman)
-            row = f"{NavasanService.CurrenciesInPersian[slug]}: {toman} تومان" + (f" / {usd}$" if usd else '')
-
+                row = f'{NavasanService.CurrenciesInPersian[slug]}: ❗️ قیمت دریافت نشد.'
+                
             if slug in NavasanService.NationalCurrenciesInPersian:
                 res_curr += f'🔸 {row}\n'
             else:

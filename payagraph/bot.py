@@ -154,7 +154,6 @@ class TelegramBot(TelegramBotCore):
     def ticktock(self) -> int:
         '''Runs every 1 minutes, and checks if there's any parallel jobs and is it time to perform them by interval or not'''
         now = time() // 60
-        print('tick tocked')
 
         for job in self.parallels:
             if (job.running) and (now - job.last_call_time >= job.interval):

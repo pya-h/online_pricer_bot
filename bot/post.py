@@ -28,7 +28,7 @@ class PostMan:
                           desired_currencies: list = None, exactly_right_now: bool = True,
                           short_text: bool = True, for_channel: bool = True, interval: float = 10) -> str:
         currencies = cryptos = ''
-        print(exactly_right_now)
+
         try:
             if desired_currencies or (not desired_coins and not desired_currencies):
                 # this condition is for preventing default values, when user has selected just cryptos
