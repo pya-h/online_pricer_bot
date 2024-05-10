@@ -10,13 +10,13 @@ class DatabaseInterface:
     _instance = None
     TABLE_ACCOUNTS = "accounts"
     DATE_FORMAT = '%Y-%m-%d'
-    ACCOUNT_COLUMNS = (ACCOUNT_ID, ACCOUNT_CURRENCIES, ACCOUNT_CRYPTOS, ACCOUNT_CALC_CURRENCIES, ACCOUNT_CALC_CRYPTOS, ACCOUNT_NOTIFICATION_CURRENCIES, ACCOUNT_NOTIFICATION_CRYPTOS, ACCOUNT_LAST_INTERACTION, ACCOUNT_PLUS_END_DATE,
+    ACCOUNT_COLUMNS = (ACCOUNT_ID, ACCOUNT_CURRENCIES, ACCOUNT_CRYPTOS, ACCOUNT_CALC_CURRENCIES, ACCOUNT_CALC_CRYPTOS, ACCOUNT_LAST_INTERACTION, ACCOUNT_PLUS_END_DATE,
                        ACCOUNT_PLUS_PLAN_ID, ACCOUNT_STATE, ACCOUNT_CACHE, ACCOUNT_IS_ADMIN, ACCOUNT_LANGUAGE) = \
-        ('id', 'currencies', 'cryptos', 'calc_cryptos', 'calc_currencies', 'notification_cryptos', 'notification_currencies', 'last_interaction', 'plus_end_date', 'plus_plan_id', 'state', 'cache', 'admin',
+        ('id', 'currencies', 'cryptos', 'calc_cryptos', 'calc_currencies', 'last_interaction', 'plus_end_date', 'plus_plan_id', 'state', 'cache', 'admin',
          'language')
 
     TABLE_CHANNELS = "channels"  # channels to be scheduled
-    CHANNELS_COLUMNS = (
+    CHANNELS_COLUMNS = ( # TODO: Add cryptos/currencies list to this too. for configing what price data must be sent to channel
         CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_OWNER_ID, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME) = \
         ("id", "name", "title", "owner_id", "interval", "last_post_time")
 
@@ -64,8 +64,7 @@ class DatabaseInterface:
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_ACCOUNTS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} INTEGER PRIMARY KEY," + \
                         f"{self.ACCOUNT_CURRENCIES} TEXT, {self.ACCOUNT_CRYPTOS} TEXT, {self.ACCOUNT_CALC_CURRENCIES} TEXT, {self.ACCOUNT_CALC_CRYPTOS} TEXT," + \
-                        f"{self.ACCOUNT_NOTIFICATION_CURRENCIES} TEXT, {self.ACCOUNT_NOTIFICATION_CRYPTOS} TEXT, {self.ACCOUNT_LAST_INTERACTION} DATE, " + \
-                        f"{self.ACCOUNT_PLUS_END_DATE} DATE, {self.ACCOUNT_PLUS_PLAN_ID} INTEGER," + \
+                        f"{self.ACCOUNT_LAST_INTERACTION} DATE, {self.ACCOUNT_PLUS_END_DATE} DATE, {self.ACCOUNT_PLUS_PLAN_ID} INTEGER," + \
                         f"{self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} TEXT DEFAULT NULL, " + \
                         f"{self.ACCOUNT_IS_ADMIN} INTEGER DEFAULT 0, {self.ACCOUNT_LANGUAGE} TEXT, " + \
                         f"FOREIGN KEY({self.ACCOUNT_PLUS_PLAN_ID}) REFERENCES {self.TABLE_PLUS_PLANS}({self.PLUS_PLAN_ID}))"
@@ -111,10 +110,9 @@ class DatabaseInterface:
             raise Exception("You must provide an Account to save")
         try:
             columns = ', '.join(self.ACCOUNT_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             self.execute(False, query, account.chat_id, account.str_desired_currencies(), account.str_desired_cryptos(), account.str_calc_currencies(),
-                         account.str_calc_cryptos(), account.str_notification_currencies(), account.str_notification_cryptos(),
-                         account.last_interaction.strftime(self.DATE_FORMAT), account.plus_end_date, account.plus_plan_id,
+                         account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT), account.plus_end_date, account.plus_plan_id,
                          account.state.value, account.cache, account.is_admin, account.language)
             log(f"New account: {account} saved into plus database successfully.", category_name=f'plus_info')
         except Exception as ex:
@@ -140,16 +138,14 @@ class DatabaseInterface:
 
             cursor.execute(f'UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=?',
                            (account.str_desired_currencies(), account.str_desired_cryptos(), account.str_calc_currencies(),
-                            account.str_calc_cryptos(), account.str_notification_currencies(), account.str_notification_cryptos(),
-                            account.last_interaction.strftime(self.DATE_FORMAT),
+                            account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT),
                             account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                             account.plus_plan_id, account.state.value, account.cache, account.is_admin, account.language, account.chat_id))
         else:
             columns = ', '.join(self.ACCOUNT_COLUMNS)
-            cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                            (account.chat_id, account.str_desired_currencies(), account.str_desired_cryptos(), account.str_calc_currencies(),
-                            account.str_calc_cryptos(), account.str_notification_currencies(), account.str_notification_cryptos(),
-                            account.last_interaction.strftime(self.DATE_FORMAT),
+                            account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT),
                             account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                             account.plus_plan_id, account.state.value, account.cache, account.is_admin, account.language))
             log("New account started using this bot with chat_id=: " + account.__str__(), category_name=f'plus_info')

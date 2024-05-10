@@ -67,8 +67,7 @@ class Account:
         Account.Instances[self.chat_id] = self
 
     def __init__(self, chat_id, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None, calc_currencies: List[str] = None,
-                 notification_cryptos: List[str] = None, notification_currencies: List[str] = None, language: str = 'fa',
-                 plus_end_date: datetime = None, plus_plan_id: int = 0, state: States = States.NONE, cache=None,
+                 language: str = 'fa', plus_end_date: datetime = None, plus_plan_id: int = 0, state: States = States.NONE, cache=None,
                  is_admin: bool = False) -> None:
         self.is_admin: bool = False
         self.chat_id: int = chat_id
@@ -78,9 +77,6 @@ class Account:
 
         self.calc_cryptos: list = calc_cryptos if calc_cryptos else []
         self.calc_currencies: list = calc_currencies if calc_currencies else []
-
-        self.notification_cryptos: list = notification_cryptos if notification_cryptos else []
-        self.notification_currencies: list = notification_currencies if notification_currencies else []
 
         self.last_interaction: datetime = tz_today()
         self.language: str = language
@@ -125,12 +121,6 @@ class Account:
     def str_calc_currencies(self):
         return ';'.join(self.calc_currencies)
 
-    def str_notification_cryptos(self):
-        return ';'.join(self.notification_cryptos)
-
-    def str_notification_currencies(self):
-        return ';'.join(self.notification_currencies)
-
     @staticmethod
     def str2list(string: str):
         return string.split(';') if string else None
@@ -166,8 +156,6 @@ class Account:
             cryptos = xstr(row[2])
             calc_currs = xstr(row[3])
             calc_cryptos = xstr(row[4])
-            notif_currs = xstr(row[5])
-            notif_cryptos = xstr(row[6])
             # add new rows here
 
             plus_end_date = datetime.strptime(row[-6], DatabaseInterface.DATE_FORMAT) if row[-6] else None
@@ -180,7 +168,7 @@ class Account:
             is_admin = row[-2]
             language = row[-1]
             return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos),
-                           plus_end_date=plus_end_date, calc_currencies=calc_currs, calc_cryptos=calc_cryptos, notification_currencies=notif_currs, notification_cryptos=notif_cryptos,
+                           plus_end_date=plus_end_date, calc_currencies=calc_currs, calc_cryptos=calc_cryptos, is_admin=is_admin,
                            plus_plan_id=plus_plan_id, language=language, state=state, cache=cache)
 
         return Account(chat_id=chat_id).save()
