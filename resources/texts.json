@@ -30,22 +30,6 @@
         "settings": {
             "fa": "⚙️ تنظیمات",
             "en": "⚙️ Settings"
-        },
-        "admin_notices": {
-            "fa": "⚠️ اطلاع رسانی",
-            "en": "⚠️ Notices"
-        },
-        "admin_statistics": {
-            "fa": "📊 آمار",
-            "en": "📊 Statistics"
-        },
-        "admin_plan_channel": {
-            "fa": "زمان بندی",
-            "en": "Plan Channel"
-        },
-        "admin_stop_channel_plan": {
-            "fa": "توقف زمان بندی",
-            "en": "Stop Channel Plan"
         }
     },
     "keyboard": {
@@ -76,6 +60,22 @@
         "premium": {
             "fa": "💎 پریمیوم",
             "en": "💎 Premium"
+        },
+        "admin_notices": {
+            "fa": "⚠️ اطلاع رسانی",
+            "en": "⚠️ Notices"
+        },
+        "admin_statistics": {
+            "fa": "📊 آمار",
+            "en": "📊 Statistics"
+        },
+        "admin_plan_channel": {
+            "fa": "زمان بندی",
+            "en": "Plan Channel"
+        },
+        "admin_stop_channel_plan": {
+            "fa": "توقف زمان بندی",
+            "en": "Stop Channel Plan"
         }
     },
     "config_which_market": {

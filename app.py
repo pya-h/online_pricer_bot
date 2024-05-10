@@ -87,7 +87,7 @@ async def cmd_welcome(update: Update, context: CallbackContext):
 
 اگر برای اولین بار است که میخواهید از این ربات استفاده کنید توصیه میکنیم از طریق لینک زیر آموزش ویدیوئی ربات را مشاهده کنید:
 🎥 https://t.me/Online_pricer/3443''', disable_web_page_preview=True,
-                                    reply_markup=botman.mainkeyboard(acc.is_admin))
+                                    reply_markup=botman.mainkeyboard(acc))
 
 
 async def cmd_get_prices(update: Update, context: CallbackContext):
@@ -101,7 +101,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
                                                desired_currencies=account.desired_currencies, for_channel=False,
                                                exactly_right_now=not is_latest_data_valid)
 
-    await update.message.reply_text(message, reply_markup=botman.mainkeyboard(account.is_admin))
+    await update.message.reply_text(message, reply_markup=botman.mainkeyboard(account))
 
 
 async def cmd_equalizer(update: Update, context: CallbackContext):
@@ -116,7 +116,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 
 '''
     await update.message.reply_text(botman.text('calculator_hint', account.language) + hint_examples + \
-                                    botman.text('calculator_hint_footer', account.language),reply_markup=botman.mainkeyboard(account.is_admin))
+                                    botman.text('calculator_hint_footer', account.language),reply_markup=botman.mainkeyboard(account))
 
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
@@ -249,7 +249,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 await select_currency_menu(update, context)
             case BotMan.Commands.GOLDS_FA.value | BotMan.Commands.GOLDS_EN.value:
                 await select_gold_menu(update, context)
-            case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_POST_EN.value:
+            case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
                 await cmd_send_post(update, context)
             case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
                 await cmd_schedule_channel_update(update, context)
@@ -266,7 +266,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 if msg == BotMan.Commands.CANCEL_FA.value or msg == BotMan.Commands.CANCEL_EN.value:
                     account.change_state()  # reset .state and .state_data
                     await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
-                                                    reply_markup=botman.mainkeyboard(account.is_admin))
+                                                    reply_markup=botman.mainkeyboard(account))
 
                 else:
                     match account.state:
@@ -290,7 +290,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             if not amounts:
                                 await update.message.reply_text(
                                     "مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
-                                    reply_markup=botman.mainkeyboard(account.is_admin))
+                                    reply_markup=botman.mainkeyboard(account))
                                 return
 
                             # start extracting units
@@ -306,7 +306,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             if invalid_units:
                                 await update.message.reply_text(
                                     f'هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند: \n {", ".join(invalid_units)}',
-                                    reply_markup=botman.mainkeyboard(account.is_admin),
+                                    reply_markup=botman.mainkeyboard(account),
                                     reply_to_message_id=update.message.message_id)
                             if not units:
                                 # Open select unit reply_markup list
@@ -359,7 +359,7 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                         case _:
                             await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
-                                                            reply_markup=botman.mainkeyboard(account.is_admin))
+                                                            reply_markup=botman.mainkeyboard(account))
 
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
