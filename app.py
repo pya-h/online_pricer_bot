@@ -15,7 +15,7 @@ async def show_market_types(update: Update, next_state: Account.States):
     account = Account.Get(update.effective_chat.id)
     account.change_state(next_state)
     await update.message.reply_text(botman.text('config_which_market', account.language),
-                                    reply_markup=botman.markets_menu)
+                                    reply_markup=botman.markets_menu(account.language))
 
 
 async def prepare_market_selection_menu(update: Update, context: CallbackContext, market: MarketOptions):
@@ -62,8 +62,8 @@ async def select_gold_menu(update: Update, context: CallbackContext):
         pass
 
 
-async def say_youre_not_allowed(reply):
-    await reply('شما مجاز به انجام چنین کاری نیستید!', reply_markup=botman.menu_main)
+async def say_youre_not_allowed(reply, language: str = 'fa'):
+    await reply(botman.error('not_allowed', language), reply_markup=botman.menu_main(language))
     return None
 
 
@@ -120,8 +120,9 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
-    if not Account.Get(update.effective_chat.id).authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text)
+    account = Account.Get(update.effective_chat.id)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     botman.main_plan_interval = 10
     try:
@@ -136,19 +137,20 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
 
     if botman.is_main_plan_on:
         await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.",
-                                        reply_markup=botman.admin_keyboard)
+                                        reply_markup=botman.admin_keyboard(account.language))
         return
 
     botman.is_main_plan_on = True
     context.job_queue.run_repeating(announce_prices, interval=botman.main_plan_interval * 60, first=1,
                                     name=botman.main_queue_id)
     await update.message.reply_text(f'زمان بندی {botman.main_plan_interval} دقیقه ای با موفقیت انجام شد.',
-                                    reply_markup=botman.admin_keyboard)
+                                    reply_markup=botman.admin_keyboard(account.language))
 
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
-    if not Account.Get(update.effective_chat.id).authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text)
+    account = Account.Get(update.effective_chat.id)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     current_jobs = context.job_queue.get_jobs_by_name(botman.main_queue_id)
     for job in current_jobs:
@@ -156,26 +158,28 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
     botman.is_main_plan_on = False
     botman.crypto_serv.latest_prices = ''
     await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.',
-                                    reply_markup=botman.admin_keyboard)
+                                    reply_markup=botman.admin_keyboard(account.language))
 
 
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
-    if not Account.Get(update.effective_chat.id).authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text)
+    account = Account.Get(update.effective_chat.id)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     botman.crypto_serv = CoinGeckoService()
     await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
-                                    reply_markup=botman.admin_keyboard)
+                                    reply_markup=botman.admin_keyboard(account.language))
     await notify_changes(context)
 
 
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
-    if not Account.Get(update.effective_chat.id).authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text)
+    account = Account.Get(update.effective_chat.id)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     botman.crypto_serv = CoinMarketCapService(botman.postman.coinmarketcap_api_key)
     await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
-                                    reply_markup=botman.admin_keyboard)
+                                    reply_markup=botman.admin_keyboard(account.language))
     await notify_changes(context)
 
 
@@ -184,26 +188,27 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
     if not await botman.has_subscribed_us(account.chat_id, context):
         return await botman.ask_for_subscription(update, account.language)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text)
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     await update.message.reply_text(
         'اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.',
-        reply_markup=botman.admin_keyboard)
+        reply_markup=botman.admin_keyboard(account.language))
 
 
 async def cmd_send_post(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text)
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     account.change_state(Account.States.SEND_POST)
     await update.message.reply_text('''🔹 پست خود را ارسال کنید:
-(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''', reply_markup=botman.cancel_menu)
+(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''', reply_markup=botman.cancel_menu[account.language])
 
 
 async def cmd_report_statistics(update: Update, context: CallbackContext):
-    if not Account.Get(update.effective_chat.id).authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text)
+    account = Account.Get(update.effective_chat.id)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     stats = Account.Statistics()
     await update.message.reply_text(f'''🔷 تعداد کاربران فعال ربات:
@@ -212,7 +217,7 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 🔹 دیروز: {stats['yesterday']}
 🔹 هفته اخیر: {stats['weekly']}
 🔹 ماه اخیر: {stats['monthly']}
-🔹 تعداد کل کاربران ربات: {stats['all']}''', reply_markup=botman.admin_keyboard)
+🔹 تعداد کل کاربران ربات: {stats['all']}''', reply_markup=botman.admin_keyboard(account.language))
 
 
 async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
@@ -232,33 +237,33 @@ async def handle_messages(update: Update, context: CallbackContext):
     if update and update.message:
 
         match update.message.text:
-            case BotMan.Commands.GET_FA.value:
+            case BotMan.Commands.GET_FA.value | BotMan.Commands.GET_EN.value:
                 await cmd_get_prices(update, context)
-            case BotMan.Commands.CONFIG_PRICE_LIST_FA.value:
+            case BotMan.Commands.CONFIG_PRICE_LIST_FA.value | BotMan.Commands.CONFIG_PRICE_LIST_EN.value:
                 await show_market_types(update, Account.States.CONFIG_MARKETS)
-            case BotMan.Commands.CONFIG_CALCULATOR_FA.value:
+            case BotMan.Commands.CONFIG_CALCULATOR_FA.value | BotMan.Commands.CONFIG_CALCULATOR_EN.value:
                 await show_market_types(update, Account.States.CONFIG_CALCULATOR_LIST)
-            case BotMan.Commands.CRYPTOS_FA.value:
+            case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
                 await select_coin_menu(update, context)
-            case BotMan.Commands.NATIONAL_CURRENCIES_FA.value:
+            case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
                 await select_currency_menu(update, context)
-            case BotMan.Commands.GOLDS_FA.value:
+            case BotMan.Commands.GOLDS_FA.value | BotMan.Commands.GOLDS_EN.value:
                 await select_gold_menu(update, context)
-            case BotMan.Commands.ADMIN_POST_FA.value:
+            case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_POST_EN.value:
                 await cmd_send_post(update, context)
-            case BotMan.Commands.ADMIN_START_SCHEDULE_FA.value:
+            case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
                 await cmd_schedule_channel_update(update, context)
-            case BotMan.Commands.ADMIN_STOP_SCHEDULE_FA.value:
+            case BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value | BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value:
                 await cmd_stop_schedule(update, context)
-            case BotMan.Commands.ADMIN_STATISTICS_FA.value:
+            case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
                 await cmd_report_statistics(update, context)
-            case BotMan.Commands.CALCULATOR_FA.value:
+            case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
                 await cmd_equalizer(update, context)
             case _:
                 # check account state first, to see if he/she is in input state
                 account = Account.Get(update.effective_chat.id)
                 msg = update.message.text
-                if msg == BotMan.Commands.CANCEL_FA.value:
+                if msg == BotMan.Commands.CANCEL_FA.value or msg == BotMan.Commands.CANCEL_EN.value:
                     account.change_state()  # reset .state and .state_data
                     await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
                                                     reply_markup=botman.mainkeyboard(account.is_admin))
@@ -318,7 +323,7 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                         case Account.States.SEND_POST:
                             if not account.authorization(context.args):
-                                await update.message.reply_text('شما مجاز به انجام چنین کاری نیستید.', botman.menu_main)
+                                await say_youre_not_allowed(update.message.reply_text, account.language)
                                 return
 
                             # admin is trying to send post
@@ -349,7 +354,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
                             await update.message.reply_text(
                                 f'✅ پیام شما با موفقیت برای تمامی کاربران ربات ({len(all_accounts)} نفر) ارسال شد.',
-                                reply_markup=botman.admin_keyboard)
+                                reply_markup=botman.admin_keyboard(account.language))
                             account.change_state()  # reset .state and .state_data
 
                         case _:
@@ -416,6 +421,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 async def cmd_switch_language(update: Update, context: CallbackContext):
     acc = Account.Get(update.effective_chat.id)
     acc.language = "en" if acc.language.lower() == 'fa' else 'fa'
+    
     acc.save()
 
 

@@ -8,6 +8,7 @@ from api.crypto_service import CryptoCurrencyService
 from json import dumps as jsonify
 from typing import List, Dict
 from bot.post import PostMan
+from models.account import Account
 
 
 class ResourceManager:
@@ -35,21 +36,38 @@ class BotMan:
     """This class is defined to collect all common and handy options, fields and features of online pricer bot"""
 
     class Commands(Enum):
-        GET_FA = resourceman.mainkeyboard('get_prices')
+        GET_FA = resourceman.mainkeyboard('get_prices', 'fa')
         CONFIG_PRICE_LIST_FA = resourceman.mainkeyboard('config_lists')
-        CALCULATOR_FA = resourceman.mainkeyboard('calculator')
-        CRYPTOS_FA = resourceman.keyboard('crypto')
-        NATIONAL_CURRENCIES_FA = resourceman.keyboard('currency')
-        GOLDS_FA = resourceman.keyboard('gold')
-        CANCEL_FA = resourceman.keyboard('return')
-        CONFIG_CALCULATOR_FA = resourceman.mainkeyboard('config_calculator')
+        CALCULATOR_FA = resourceman.mainkeyboard('calculator', 'fa')
+        CRYPTOS_FA = resourceman.keyboard('crypto', 'fa')
+        NATIONAL_CURRENCIES_FA = resourceman.keyboard('currency', 'fa')
+        GOLDS_FA = resourceman.keyboard('gold', 'fa')
+        CANCEL_FA = resourceman.keyboard('cancel', 'fa')
+        CONFIG_CALCULATOR_FA = resourceman.mainkeyboard('config_calculator', 'fa')
+        RETURN_FA = resourceman.keyboard('return', 'fa')
 
-        ADMIN_POST_FA = 'اطلاع رسانی'
-        ADMIN_START_SCHEDULE_FA = 'زمانبندی کانال'
-        ADMIN_STOP_SCHEDULE_FA = 'توقف زمانبندی'
-        ADMIN_STATISTICS_FA = 'آمار'
+        GET_EN = resourceman.mainkeyboard('get_prices', 'en')
+        CONFIG_PRICE_LIST_EN = resourceman.mainkeyboard('config_lists', 'en')
+        CALCULATOR_EN = resourceman.mainkeyboard('calculator', 'en')
+        CRYPTOS_EN = resourceman.keyboard('crypto', 'en')
+        NATIONAL_CURRENCIES_EN = resourceman.keyboard('currency', 'en')
+        GOLDS_EN = resourceman.keyboard('gold', 'en')
+        CANCEL_EN = resourceman.keyboard('cancel', 'en')
+        CONFIG_CALCULATOR_EN = resourceman.mainkeyboard('config_calculator', 'en')
+        RETURN_EN = resourceman.keyboard('return', 'en')
 
-        RETURN_FA = resourceman.keyboard('return')
+        ADMIN_NOTICES_FA = resourceman.keyboard('admin_notices', 'fa')
+        ADMIN_NOTICES_EN = resourceman.keyboard('admin_notices', 'en')
+
+        ADMIN_PLAN_CHANNEL_FA = resourceman.keyboard('admin_plan_channel', 'fa')
+        ADMIN_PLAN_CHANNEL_EN = resourceman.keyboard('admin_plan_channel', 'en')
+
+        ADMIN_STOP_CHANNEL_PLAN_FA = resourceman.keyboard('admin_stop_channel_plan', 'fa')
+        ADMIN_STOP_CHANNEL_PLAN_EN = resourceman.keyboard('admin_stop_channel_plan', 'en')
+
+        ADMIN_STATISTICS_FA = resourceman.keyboard('admin_statistics', 'fa')
+        ADMIN_STATISTICS_EN = resourceman.keyboard('admin_statistics', 'en')
+
 
     def __init__(self) -> None:
         self.resourceman = resourceman
@@ -84,54 +102,78 @@ class BotMan:
         self.error = self.resourceman.error
 
         # TODO: Update these to be dynamic with languages.
-        self.menu_main_keys = []
-        self.menu_main: ReplyKeyboardMarkup | None = None
-        self.admin_keyboard: ReplyKeyboardMarkup | None = None
-        self.cancel_menu_key = []
-        self.cancel_menu: ReplyKeyboardMarkup | None = None
-        self.return_key = []
-        self.markets_menu: ReplyKeyboardMarkup | None = None
+        self.menu_main_keys = None
+        self.menu_main = None
+        self.admin_keyboard = None
+        self.cancel_menu_key = None
+        self.cancel_menu = None
+        self.return_key = None
+        self.markets_menu = None
 
         self.setup_main_keyboards()
         self.is_main_plan_on: bool = False
 
     def setup_main_keyboards(self):
         # TODO: Update these to be dynamic with languages.
-        self.menu_main_keys = [
-            [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
-            [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value),
-             KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)]
-        ]
-        self.menu_main: ReplyKeyboardMarkup = ReplyKeyboardMarkup(self.menu_main_keys, resize_keyboard=True)
+            menu_main_keys = [
+                [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
+                [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value),
+                KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)]
+            ]
+            menu_main_keys_en = [
+                [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.GET_EN.value)],
+                [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_EN.value),
+                KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)]
+            ]
+            self.menu_main = lambda lang: ReplyKeyboardMarkup(menu_main_keys if lang.lower() == 'fa' else menu_main_keys_en, resize_keyboard=True)
 
-        self.admin_keyboard: ReplyKeyboardMarkup = ReplyKeyboardMarkup([*self.menu_main_keys,
-                                                                        [KeyboardButton(
-                                                                            BotMan.Commands.ADMIN_POST_FA.value),
-                                                                            KeyboardButton(
-                                                                                BotMan.Commands.ADMIN_STATISTICS_FA.value)],
-                                                                        [KeyboardButton(
-                                                                            BotMan.Commands.ADMIN_START_SCHEDULE_FA.value),
-                                                                            KeyboardButton(
-                                                                                BotMan.Commands.ADMIN_STOP_SCHEDULE_FA.value)],
-                                                                        ], resize_keyboard=True)
+            self.admin_keyboard: ReplyKeyboardMarkup = lambda lang: ReplyKeyboardMarkup([*menu_main_keys,
+                                                    [KeyboardButton(
+                                                        BotMan.Commands.ADMIN_NOTICES_FA.value),
+                                                        KeyboardButton(
+                                                            BotMan.Commands.ADMIN_STATISTICS_FA.value)],
+                                                    [KeyboardButton(
+                                                        BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value),
+                                                        KeyboardButton(
+                                                            BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value)],
+                                                    ], resize_keyboard=True) if lang.lower() == 'fa' else \
+                                                        ReplyKeyboardMarkup([*menu_main_keys_en,
+                                                    
+                                                            [KeyboardButton(
+                                                                BotMan.Commands.ADMIN_NOTICES_EN.value),
+                                                                KeyboardButton(
+                                                                    BotMan.Commands.ADMIN_STATISTICS_EN.value)],
+                                                            [KeyboardButton(
+                                                                BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value),
+                                                                KeyboardButton(
+                                                                    BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value)],
+                                                            ], resize_keyboard=True)
 
-        self.cancel_menu_key = [
-            [KeyboardButton(BotMan.Commands.CANCEL_FA.value)],
-        ]
-        self.cancel_menu: ReplyKeyboardMarkup = ReplyKeyboardMarkup(self.cancel_menu_key, resize_keyboard=True)
+            self.cancel_menu_key = {'fa': [
+                [KeyboardButton(BotMan.Commands.CANCEL_FA.value)],
+            ], 'en': [
+                [KeyboardButton(BotMan.Commands.CANCEL_EN.value)],
+            ]}
+            self.cancel_menu = lambda lang: ReplyKeyboardMarkup(self.cancel_menu_key[lang], resize_keyboard=True)
 
-        self.return_key = [
-            [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
-        ]
+            self.return_key = {'fa': [
+                [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
+            ], 'en': [
+                [KeyboardButton(BotMan.Commands.RETURN_EN.value)],
+            ]}
 
-        self.markets_menu = ReplyKeyboardMarkup([
-            [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_FA.value)],
-            [KeyboardButton(BotMan.Commands.GOLDS_FA.value)],
-            [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)], *self.return_key
-        ], resize_keyboard=True)
+            self.markets_menu = lambda lang: ReplyKeyboardMarkup([
+                [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_FA.value)],
+                [KeyboardButton(BotMan.Commands.GOLDS_FA.value)],
+                [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)], *self.return_key['fa']
+            ] if lang.lower() == 'fa' else [
+                [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_EN.value)],
+                [KeyboardButton(BotMan.Commands.GOLDS_EN.value)],
+                [KeyboardButton(BotMan.Commands.CRYPTOS_EN.value)], *self.return_key['en']
+            ], resize_keyboard=True)
 
-    def mainkeyboard(self, is_admin: bool) -> ReplyKeyboardMarkup:
-        return self.menu_main if not is_admin else self.admin_keyboard
+    def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
+        return self.menu_main(account.language) if not account.is_admin else self.admin_keyboard(account.language)
 
     def inline_keyboard(self, list_type: Enum, button_type: Enum, all_choices: dict, selected_ones: list = None,
                         full_names: bool = False, close_button: bool = False):
