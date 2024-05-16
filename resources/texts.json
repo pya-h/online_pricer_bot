@@ -76,6 +76,10 @@
         "admin_stop_channel_plan": {
             "fa": "توقف زمان بندی",
             "en": "Stop Channel Plan"
+        },
+        "list_indices": {
+            "fa": "لیست",
+            "en": "List"
         }
     },
     "config_which_market": {
