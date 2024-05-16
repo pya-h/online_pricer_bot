@@ -178,12 +178,12 @@ class NavasanService(CurrencyService):
 
         if self.tether_service.recent_value:
             self.set_tether_tomans(self.tether_service.recent_value)
-
         try:
             self.set_usd_price(self.latest_data['usd']['value'])
         except Exception as ex:
             log('USD(Dollar) Update Failure', ex, 'USD_T')
 
+        self.latest_data[self.TOMAN_SYMBOL.lower()] = {'value': 1 / self.UsdInTomans}
         self.cache_data(json.dumps(self.latest_data))
         return self.extract_api_response(desired_ones, short_text=short_text)
 
@@ -204,7 +204,7 @@ class NavasanService(CurrencyService):
         for slug in currencies:
             if slug == source_unit_slug:
                 continue
-            slug_equalized_price = absolute_amount / float(self.latest_data[slug.lower()]['value'])
+            slug_equalized_price = absolute_amount / float(self.latest_data[slug.lower()]['value']) if slug != self.TOMAN_SYMBOL else absolute_amount
             slug_equalized_price = mathematix.persianify(mathematix.cut_and_separate(slug_equalized_price))
             if slug in NavasanService.NationalCurrenciesInPersian:
                 res_curr += f'🔸 {slug_equalized_price} {NavasanService.CurrenciesInPersian[slug]}\n'
@@ -232,6 +232,5 @@ class NavasanService(CurrencyService):
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(
             self.latest_data[source_unit_symbol.lower()]['value'])
-
 
         return  header, self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies), self.irt_to_usd(absolute_amount), absolute_amount

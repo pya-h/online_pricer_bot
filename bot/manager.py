@@ -3,13 +3,15 @@ from tools.manuwriter import load_json
 from decouple import config
 from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, Update
 from telegram.ext import CallbackContext
+from telegram.error import BadRequest
+
 from api.currency_service import CurrencyService
 from api.crypto_service import CryptoCurrencyService
 from json import dumps as jsonify
 from typing import List, Dict
 from bot.post import PostMan
 from models.account import Account
-
+from tools.manuwriter import log
 
 class ResourceManager:
 
@@ -222,9 +224,22 @@ class BotMan:
         return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
     async def has_subscribed_us(self, chat_id: int, context: CallbackContext) -> bool:
-        chat1 = await context.bot.get_chat_member(self.channels[0]['id'], chat_id)
-        chat2 = await context.bot.get_chat_member(self.channels[-1]['id'], chat_id)
+        try:
+            chat1 = await context.bot.get_chat_member(self.channels[0]['id'], chat_id)
+            chat2 = await context.bot.get_chat_member(self.channels[-1]['id'], chat_id)
+        except BadRequest as ex:
+            log('Can not determine channel membership, seems the bot is not an admin in specified channels.', ex)
+            await self.inform_admins('bot_not_channel_admin', context, is_error=True)
+            return False
         return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
+
+    async def inform_admins(self, message_key: str, context: CallbackContext, is_error: bool = False):
+        message_text = self.error if is_error else self.text
+        for admin in Account.GetAdmins(just_hardcode_admin=False):
+            try:
+                await context.bot.send_message(chat_id=admin.chat_id, text=message_text(message_key, admin.language))
+            except:
+                pass
 
     async def ask_for_subscription(self, update: Update, language: str = 'fa'):
         await update.message.reply_text(self.resourceman.text('ask_subscription_message', language) % (

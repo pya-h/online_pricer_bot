@@ -239,132 +239,132 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
 
 
 async def handle_messages(update: Update, context: CallbackContext):
-    if update and update.message:
+    if not update or not update.message:
+        return
+    match update.message.text:
+        case BotMan.Commands.GET_FA.value | BotMan.Commands.GET_EN.value:
+            await cmd_get_prices(update, context)
+        case BotMan.Commands.CONFIG_PRICE_LIST_FA.value | BotMan.Commands.CONFIG_PRICE_LIST_EN.value:
+            await show_market_types(update, Account.States.CONFIG_MARKETS)
+        case BotMan.Commands.CONFIG_CALCULATOR_FA.value | BotMan.Commands.CONFIG_CALCULATOR_EN.value:
+            await show_market_types(update, Account.States.CONFIG_CALCULATOR_LIST)
+        case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
+            await select_coin_menu(update, context)
+        case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
+            await select_currency_menu(update, context)
+        case BotMan.Commands.GOLDS_FA.value | BotMan.Commands.GOLDS_EN.value:
+            await select_gold_menu(update, context)
+        case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
+            await cmd_send_post(update, context)
+        case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
+            await cmd_schedule_channel_update(update, context)
+        case BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value | BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value:
+            await cmd_stop_schedule(update, context)
+        case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
+            await cmd_report_statistics(update, context)
+        case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
+            await cmd_equalizer(update, context)
+        case _:
+            # check account state first, to see if he/she is in input state
+            account = Account.Get(update.effective_chat.id)
+            msg = update.message.text
+            if msg == BotMan.Commands.CANCEL_FA.value or msg == BotMan.Commands.CANCEL_EN.value:
+                account.change_state()  # reset .state and .state_data
+                await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
+                                                reply_markup=botman.mainkeyboard(account))
 
-        match update.message.text:
-            case BotMan.Commands.GET_FA.value | BotMan.Commands.GET_EN.value:
-                await cmd_get_prices(update, context)
-            case BotMan.Commands.CONFIG_PRICE_LIST_FA.value | BotMan.Commands.CONFIG_PRICE_LIST_EN.value:
-                await show_market_types(update, Account.States.CONFIG_MARKETS)
-            case BotMan.Commands.CONFIG_CALCULATOR_FA.value | BotMan.Commands.CONFIG_CALCULATOR_EN.value:
-                await show_market_types(update, Account.States.CONFIG_CALCULATOR_LIST)
-            case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
-                await select_coin_menu(update, context)
-            case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
-                await select_currency_menu(update, context)
-            case BotMan.Commands.GOLDS_FA.value | BotMan.Commands.GOLDS_EN.value:
-                await select_gold_menu(update, context)
-            case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
-                await cmd_send_post(update, context)
-            case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
-                await cmd_schedule_channel_update(update, context)
-            case BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value | BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value:
-                await cmd_stop_schedule(update, context)
-            case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
-                await cmd_report_statistics(update, context)
-            case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
-                await cmd_equalizer(update, context)
-            case _:
-                # check account state first, to see if he/she is in input state
-                account = Account.Get(update.effective_chat.id)
-                msg = update.message.text
-                if msg == BotMan.Commands.CANCEL_FA.value or msg == BotMan.Commands.CANCEL_EN.value:
-                    account.change_state()  # reset .state and .state_data
-                    await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
-                                                    reply_markup=botman.mainkeyboard(account))
-
-                else:
-                    match account.state:
-                        case Account.States.INPUT_EQUALIZER_AMOUNT:
-                            params = msg.split()
-                            count_of_params = len(params)
-                            # extract parameters and categorize them into units and amounts
-                            amounts = []
-                            units = [] if not account.cache else account.cache
-                            invalid_units = []
-                            index = 0
-                            # extract amounts from params
-                            try:
-                                while index < count_of_params:
-                                    amount = float(params[index])
-                                    amounts.append(amount)
-                                    index += 1
-                            except:
-                                pass
-
-                            if not amounts:
-                                await update.message.reply_text(
-                                    "مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
-                                    reply_markup=botman.mainkeyboard(account))
-                                return
-
-                            # start extracting units
+            else:
+                match account.state:
+                    case Account.States.INPUT_EQUALIZER_AMOUNT:
+                        params = msg.split()
+                        count_of_params = len(params)
+                        # extract parameters and categorize them into units and amounts
+                        amounts = []
+                        units = [] if not account.cache else account.cache
+                        invalid_units = []
+                        index = 0
+                        # extract amounts from params
+                        try:
                             while index < count_of_params:
-                                source_symbol = params[index].upper()
-                                if source_symbol in botman.crypto_serv.CoinsInPersian or source_symbol in botman.currency_serv.CurrenciesInPersian:
-                                    units.append(source_symbol)
-                                else:
-                                    invalid_units.append(source_symbol)
-
+                                amount = float(params[index])
+                                amounts.append(amount)
                                 index += 1
+                        except:
+                            pass
 
-                            if invalid_units:
-                                await update.message.reply_text(
-                                    f'هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند: \n {", ".join(invalid_units)}',
-                                    reply_markup=botman.mainkeyboard(account),
-                                    reply_to_message_id=update.message.message_id)
-                            if not units:
-                                # Open select unit reply_markup list
-                                account.state = Account.States.INPUT_EQUALIZER_UNIT
-                                account.change_state(Account.States.INPUT_EQUALIZER_UNIT, amounts)
-                                await update.message.reply_text(
-                                    f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
-                                    reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(), MarketOptions.CRYPTO,
-                                                                        botman.crypto_serv.CoinsInPersian,
-                                                                        close_button=True))
-                            else:
-                                await start_equalizing(update.message.reply_text, account, amounts, units)
-                                account.change_state()  # reset state
-
-                        case Account.States.SEND_POST:
-                            if not account.authorization(context.args):
-                                await say_youre_not_allowed(update.message.reply_text, account.language)
-                                return
-
-                            # admin is trying to send post
-                            all_accounts = Account.Everybody()
-                            progress_text = "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: "
-                            telegram_response = await update.message.reply_text(progress_text)
-                            message_id = None
-
-                            try:
-                                message_id = int(str(telegram_response['message_id']))
-                            except:
-                                pass
-
-                            number_of_accounts = len(all_accounts)
-                            progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
-                            for index, chat_id in enumerate(all_accounts):
-                                try:
-                                    if message_id and index % progress_update_trigger == 0:
-                                        progress = 100 * index / number_of_accounts
-                                        await context.bot.edit_message_text(chat_id=account.chat_id,
-                                                                            message_id=message_id,
-                                                                            text=f'{progress_text}{progress:.2f} %')
-                                    if chat_id != account.chat_id:
-                                        await update.message.copy(chat_id)
-                                except:
-                                    pass  # maybe remove the account from database ?
-                            if message_id:
-                                await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
+                        if not amounts:
                             await update.message.reply_text(
-                                f'✅ پیام شما با موفقیت برای تمامی کاربران ربات ({len(all_accounts)} نفر) ارسال شد.',
-                                reply_markup=botman.admin_keyboard(account.language))
-                            account.change_state()  # reset .state and .state_data
+                                "مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
+                                reply_markup=botman.mainkeyboard(account))
+                            return
 
-                        case _:
-                            await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
-                                                            reply_markup=botman.mainkeyboard(account))
+                        # start extracting units
+                        while index < count_of_params:
+                            source_symbol = params[index].upper()
+                            if source_symbol in botman.crypto_serv.CoinsInPersian or source_symbol in botman.currency_serv.CurrenciesInPersian:
+                                units.append(source_symbol)
+                            else:
+                                invalid_units.append(source_symbol)
+
+                            index += 1
+
+                        if invalid_units:
+                            await update.message.reply_text(
+                                f'هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند: \n {", ".join(invalid_units)}',
+                                reply_markup=botman.mainkeyboard(account),
+                                reply_to_message_id=update.message.message_id)
+                        if not units:
+                            # Open select unit reply_markup list
+                            account.state = Account.States.INPUT_EQUALIZER_UNIT
+                            account.change_state(Account.States.INPUT_EQUALIZER_UNIT, amounts)
+                            await update.message.reply_text(
+                                f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
+                                reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(), MarketOptions.CRYPTO,
+                                                                    botman.crypto_serv.CoinsInPersian,
+                                                                    close_button=True))
+                        else:
+                            await start_equalizing(update.message.reply_text, account, amounts, units)
+                            account.change_state()  # reset state
+
+                    case Account.States.SEND_POST:
+                        if not account.authorization(context.args):
+                            await say_youre_not_allowed(update.message.reply_text, account.language)
+                            return
+
+                        # admin is trying to send post
+                        all_accounts = Account.Everybody()
+                        progress_text = "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: "
+                        telegram_response = await update.message.reply_text(progress_text)
+                        message_id = None
+
+                        try:
+                            message_id = int(str(telegram_response['message_id']))
+                        except:
+                            pass
+
+                        number_of_accounts = len(all_accounts)
+                        progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
+                        for index, chat_id in enumerate(all_accounts):
+                            try:
+                                if message_id and index % progress_update_trigger == 0:
+                                    progress = 100 * index / number_of_accounts
+                                    await context.bot.edit_message_text(chat_id=account.chat_id,
+                                                                        message_id=message_id,
+                                                                        text=f'{progress_text}{progress:.2f} %')
+                                if chat_id != account.chat_id:
+                                    await update.message.copy(chat_id)
+                            except:
+                                pass  # maybe remove the account from database ?
+                        if message_id:
+                            await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
+                        await update.message.reply_text(
+                            f'✅ پیام شما با موفقیت برای تمامی کاربران ربات ({len(all_accounts)} نفر) ارسال شد.',
+                            reply_markup=botman.admin_keyboard(account.language))
+                        account.change_state()  # reset .state and .state_data
+
+                    case _:
+                        await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
+                                                        reply_markup=botman.mainkeyboard(account))
 
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):

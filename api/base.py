@@ -11,7 +11,8 @@ CACHE_ARCHIVE_FOLDER_PATH = 'archives'
 class BaseAPIService:
     TETHER_SYMBOL = 'USDT'
     DOLLAR_SYMBOL = 'USD'
-
+    TOMAN_SYMBOL = 'IRT'
+    
     '''The very Base class for all api services'''
 
     def __init__(self, url: str, source: str, timeout: int = 10, params: dict = None,

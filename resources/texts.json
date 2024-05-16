@@ -110,6 +110,10 @@
         "not_allowed": {
             "fa": "شما مجاز به انجام این کار نیستید.",
             "en": "You're not allowed to do this."
+        },
+        "bot_not_channel_admin": {
+            "en": "Seems that this bot is not an admin in your channels, and cannot determine other users membership. Please add the bot to these channels immediately, to fix this issue.",
+            "fa": "به نظر می رسد این ربات در کانال های اصلی تعیین شده شما ادمین نیست و قادر به تعیین وضعیت عضو بودن سایر اعضا نیست. لطفا سریعا ربات را به عنوان ادمین در کانال اضافه کنید تا این اختلال رفع شود."
         }
     },
     "select_your_set": {

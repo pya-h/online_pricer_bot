@@ -129,6 +129,9 @@ class DatabaseInterface:
             return [datetime.strptime(row[0], self.DATE_FORMAT) if row[0] else None for row in rows]
         return [row[0] for row in rows]  # just return a list of ids
 
+    def get_special_accounts(self, property: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
+        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property}=?", value)
+
     def update(self, account):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
