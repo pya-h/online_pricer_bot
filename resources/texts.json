@@ -118,6 +118,10 @@
         "bot_not_channel_admin": {
             "en": "Seems that this bot is not an admin in your channels, and cannot determine other users membership. Please add the bot to these channels immediately, to fix this issue.",
             "fa": "به نظر می رسد این ربات در کانال های اصلی تعیین شده شما ادمین نیست و قادر به تعیین وضعیت عضو بودن سایر اعضا نیست. لطفا سریعا ربات را به عنوان ادمین در کانال اضافه کنید تا این اختلال رفع شود."
+        },
+        "invalid_market_selection": {
+            "fa": "به نظر می رسد فرایند انتخاب بازار را به درستی طی نکرده اید لطفا مجددا تلاش کنید.",
+            "en": "It seems that Market Selection procedure has not gone well, Please try again."
         }
     },
     "select_your_set": {
@@ -131,5 +135,9 @@
     "calculator_hint_footer": {
         "fa": "🔹 اگر نام اختصاری مورد نظرتان را نمی دانید کافیست فقط مقدار مورد نظرتان را بنویسید:\n\nمثال:\n50",
         "en": "🔹 If you don't know the short name you want, just write the value you want:\n\nExamples:\n50"
+    },
+    "log_page_indices": {
+        "fa": "صفحه %d از %d",
+        "en": "Page %d of %d"
     }
 }

@@ -178,22 +178,26 @@ class BotMan:
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return self.menu_main(account.language) if not account.is_admin else self.admin_keyboard(account.language)
 
-    def create_callback_data(button_type: Enum, value: str | int | float | bool, list_type: Enum | None = None, is_command: bool = False):
-        return jsonify({"lt": list_type.value if list_type else None, "bt": button_type.value, "v": value if not is_command else f'#{value}'})
+    def create_callback_data(button_type: Enum | str, value: str | int | float | bool, list_type: Enum | str | None = None, is_command: bool = False):
+        return jsonify({"lt": list_type.value if isinstance(list_type, Enum) else list_type,
+                        "bt": button_type.value if isinstance(button_type, Enum) else button_type, 
+                        "v": value if not is_command else f'#{value}'})
 
     def inline_keyboard(self, list_type: Enum, button_type: Enum, choices: Dict[str, str], selected_ones: List[str] = None, page: int = 0, max_page_buttons: int = 90,
                         full_names: bool = False, close_button: bool = False, language: str = 'fa'):
         """this function creates inline keyboard for selecting/deselecting some options"""
         
-        def choice_callback_data(value: str | int | float | bool):
+        def choice_callback_data(value: str | int | float | bool | None = None, page: int = 0):
             return jsonify({"lt": list_type.value if list_type else None,
                             "bt": button_type.value,
+                            "pg": page,
                             "v": value}) #  used the create_callback_data code directly to enhance performance
         
-        def command_button_callback_data(value: str | int | float | bool):
+        def special_button_callback_data(command: str | int | float | bool, page: int = 0):
             return jsonify({"lt": list_type.value if list_type else None, 
                             "bt": button_type.value, 
-                            "v": f"#{value}"}) #  used the create_callback_data code directly to enhance performance
+                            "pg": page,
+                            "v": f"${command}"}) #  used the create_callback_data code directly to enhance performance
 
         if not selected_ones:
             selected_ones = []
@@ -206,14 +210,14 @@ class BotMan:
                 idx_last = buttons_count
             lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language.lower() == 'fa' else (idx_first + 1, idx_last)
 
-            page_count = buttons_count // max_page_buttons
-            choice_keys = choices.keys()[idx_first:idx_last]
+            pages_count = int(buttons_count / max_page_buttons)
+            choice_keys = list(choices.keys())[idx_first:idx_last]
             pagination_menu = [
-                InlineKeyboardButton('<<', callback_data=command_button_callback_data(0)), 
-                InlineKeyboardButton('<', callback_data=command_button_callback_data(page - 1 if page > 0 else 0)),
-                InlineKeyboardButton(f'({lbl_first}-{lbl_last})'),
-                InlineKeyboardButton('>', callback_data=command_button_callback_data(page_count)),
-                InlineKeyboardButton('<', callback_data=command_button_callback_data(page + 1 if page < page_count else int(page_count))),
+                InlineKeyboardButton('<<', callback_data=choice_callback_data(page=0)), 
+                InlineKeyboardButton('<', callback_data=choice_callback_data(page=page - 1 if page > 0 else 0)),
+                InlineKeyboardButton(f'({lbl_first}-{lbl_last})', callback_data=special_button_callback_data(f"#{pages_count+1}")),
+                InlineKeyboardButton('>', callback_data=choice_callback_data(page=pages_count)),
+                InlineKeyboardButton('>>', callback_data=choice_callback_data(page=page + 1 if page < pages_count else int(pages_count))),
             ]
         else:            
             choice_keys = choices
@@ -225,7 +229,7 @@ class BotMan:
             i += 1 + int(len(btn_text) / 5)
             if choice in selected_ones:
                 btn_text += "✅"
-            row.append(InlineKeyboardButton(btn_text, callback_data=choice_callback_data(choice)))
+            row.append(InlineKeyboardButton(btn_text, callback_data=choice_callback_data(choice, page)))
             if i >= 5:
                 buttons.append(row)
                 row = []
@@ -237,7 +241,7 @@ class BotMan:
             buttons.append(pagination_menu)
 
         if close_button:
-            buttons.append([InlineKeyboardButton(self.resourceman.keyboard('close'), callback_data=command_button_callback_data("X"))])
+            buttons.append([InlineKeyboardButton(self.resourceman.keyboard('close'), callback_data=choice_callback_data(page=-1))])
         return InlineKeyboardMarkup(buttons)
 
     def inline_url(self, urls_data: List[Dict[str, str]]):

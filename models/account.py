@@ -28,7 +28,7 @@ class Account:
         CONFIG_CALCULATOR_LIST = 8
 
         @staticmethod
-        def From(value: int):
+        def Which(value: int):
             values = (
                 Account.States.NONE,
                 Account.States.SEND_POST,
@@ -184,7 +184,7 @@ class Account:
             plus_plan_id = int(row[-5])
         except:
             plus_plan_id = 0
-        state = Account.States.From(row[-4])
+        state = Account.States.Which(row[-4])
         cache = row[-3]
         is_admin = row[-2]
         language = row[-1]
@@ -240,16 +240,16 @@ class Account:
         related_list: List[str]
 
         match list_type:
-            case SelectionListTypes.FOLLOWING:
-                (target_list, related_list) = (
-                    self.desired_cryptos, self.desired_currencies) if market == MarketOptions.CRYPTO else (
-                    self.desired_currencies, self.desired_cryptos)
             case SelectionListTypes.CALCULATOR:
                 (target_list, related_list) = (
                     self.calc_cryptos, self.calc_currencies) if market == MarketOptions.CRYPTO else (
                     self.calc_currencies, self.calc_cryptos)
             case _:
-                raise Exception(f'Account is in invalid state: {self.state.value}')
+                (target_list, related_list) = (
+                    self.desired_cryptos, self.desired_currencies) if market == MarketOptions.CRYPTO else (
+                    self.desired_currencies, self.desired_cryptos)
+            # case _:
+            #     raise Exception(f'Account is in invalid state: {self.state.value}')
 
         if symbol:
             if symbol.upper() not in target_list:

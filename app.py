@@ -1,6 +1,7 @@
 from telegram.ext import CallbackContext, filters, CommandHandler, ApplicationBuilder as BotApplicationBuilder, \
     MessageHandler, CallbackQueryHandler
 from telegram import Update
+from telegram.error import BadRequest
 from models.account import Account
 import json
 from tools.manuwriter import log
@@ -371,18 +372,36 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     query = update.callback_query
     account: Account = Account.Get(update.effective_chat.id)
     data = json.loads(query.data)
+    if not data:
+        return
+    
     market = MarketOptions.Which(data['bt'])
     list_type = SelectionListTypes.Which(data['lt'])
-    if data["v"].upper() == '#X':
+    page: int
+
+    try:
+        page = int(data['pg'])
+        # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
+    except:
+        page = 0
+
+    if page == -1 or data['pg'] is None:
         account.change_state()
         await query.message.edit_text(botman.text('list_updated', account.language))
+        return
+
+    if data['v'] and data['v'][0] == '$':
+        if data['v'][1] == '#':
+            pages_count = int(data["v"][2:]) + 1
+            await query.answer(text=botman.text('log_page_indices', account.language) % (page, pages_count,), show_alert=False)
         return
 
     if account.state == Account.States.INPUT_EQUALIZER_UNIT:
         if account.cache:
             unit_symbol = data['v'].upper()
             await query.message.edit_text(
-                ' '.join([str(amount) for amount in account.cache]) + f" {unit_symbol}")
+                ' '.join([str(amount) for amount in account.cache]) + f" {unit_symbol}"
+            )
             await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
                                    account, account.cache, [unit_symbol])
             account.change_state()  # reset state
@@ -394,34 +413,39 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     try:
         selection_list = account.handle_market_selection(list_type, market, data['v'])
-        if market == MarketOptions.CRYPTO:
-            await query.message.edit_reply_markup(
-                reply_markup=botman.inline_keyboard(list_type, market, botman.crypto_serv.CoinsInPersian,
-                                                    selection_list, close_button=True))
-        else:
-            await query.message.edit_reply_markup(reply_markup=botman.inline_keyboard(list_type, market,
-                                                            botman.currency_serv.NationalCurrenciesInPersian if market == MarketOptions.CURRENCY else botman.currency_serv.GoldsInPersian,
-                                                            selected_ones=selection_list,
-                                                            full_names=market != MarketOptions.CRYPTO,
-                                                            close_button=True
-                                                        )
-                                                  )
+        
+        await query.message.edit_reply_markup(
+            reply_markup=botman.inline_keyboard(
+                list_type, market, 
+                (botman.crypto_serv.CoinsInPersian, 
+                    botman.currency_serv.NationalCurrenciesInPersian, 
+                    botman.currency_serv.GoldsInPersian, 
+                )[market.value - 1], selection_list, page=page, language=account.language,
+                full_names=market != MarketOptions.CRYPTO, close_button=True
+            )
+        )
+
     except ValueError as reached_max_ex:
         max_selection = int(reached_max_ex.__str__())
-        # await query.answer(text=botman.error('max_selection', account.language) % (max_selection,), show_alert=True)
-
         if not account.is_premium_member():
             link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
-            await query.message.reply_text(text=botman.error('max_selection', account.language) % (max_selection,) \
-                                           + botman.error('get_premium', account.language), 
-                                           reply_markup=botman.inline_url([{'text_key': "premium", 'url': link}]))
+            await query.message.reply_text(
+                text=botman.error('max_selection', account.language) % (max_selection,) + botman.error('get_premium', account.language), 
+                reply_markup=botman.inline_url([{'text_key': "premium", 'url': link}])
+            )
         else:
             await query.message.reply_text(text=botman.error('max_selection', account.language) % (max_selection,))
-
+    except IndexError as ie:
+        log('Invalid market selection procedure', ie, 'general')
+        account.change_state()
+        await query.message.edit_text(text=botman.error('invalid_market_selection', account.language))
+    except BadRequest:
+        # when the message content is exactly the same
+        pass
     except Exception as selection_ex:
         log('User could\'t select coins', selection_ex, 'general')
         account.change_state()
-        await query.answer(text=botman.error('unknown', account.language), show_alert=True)
+        await query.message.edit_text(text=botman.error('unknown', account.language))
 
 async def cmd_switch_language(update: Update, context: CallbackContext):
     acc = Account.Get(update.effective_chat.id)
