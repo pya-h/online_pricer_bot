@@ -33,6 +33,12 @@ class DatabaseInterface:
         PLUS_PLAN_TITLE_EN, PLUS_PLAN_DESCRIPTION, PLUS_PLAN_DESCRIPTION_EN) = \
         ("id", "price", "price_currency", "duration", "level", "title", "title_en", "description", "description_en")
 
+    TABLE_PLUS_PLANS = "plus_plans"
+    PLUS_PLANS_COLUMNS = (
+        PLUS_PLAN_ID, PLUS_PLAN_PRICE, PLUS_PLAN_PRICE_CURRENCY, PLUS_PLAN_DURATION, PLUS_PLAN_LEVEL, PLUS_PLAN_TITLE,
+        PLUS_PLAN_TITLE_EN, PLUS_PLAN_DESCRIPTION, PLUS_PLAN_DESCRIPTION_EN) = \
+        ("id", "price", "price_currency", "duration", "level", "title", "title_en", "description", "description_en")
+
     @staticmethod
     def Get():
         if not DatabaseInterface._instance:

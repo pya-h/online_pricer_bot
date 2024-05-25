@@ -268,7 +268,6 @@ async def handle_messages(update: Update, context: CallbackContext):
                 account.change_state()  # reset .state and .state_data
                 await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
                                                 reply_markup=botman.mainkeyboard(account))
-
             else:
                 match account.state:
                     case Account.States.INPUT_EQUALIZER_AMOUNT:
