@@ -139,5 +139,9 @@
     "log_page_indices": {
         "fa": "صفحه %d از %d",
         "en": "Page %d of %d"
+    },
+    "language_switched": {
+        "fa": "✅ زبان ربات فارسی شد.",
+        "en": "✅ Language switched to English."
     }
 }

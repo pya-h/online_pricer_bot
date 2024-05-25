@@ -68,7 +68,7 @@ async def say_youre_not_allowed(reply, language: str = 'fa'):
     return None
 
 
-async def notify_changes(context: CallbackContext):
+async def notify_source_change(context: CallbackContext):
     await context.bot.send_message(chat_id=botman.channels[0]['id'],
                                    text=f"منبع قیمت ها به {botman.crypto_serv.Source} تغییر یافت.")
 
@@ -102,7 +102,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
                                                desired_currencies=account.desired_currencies, for_channel=False,
                                                exactly_right_now=not is_latest_data_valid)
 
-    await update.message.reply_text(message, reply_markup=botman.mainkeyboard(account))
+    await update.message.reply_text(message)
 
 
 async def cmd_equalizer(update: Update, context: CallbackContext):
@@ -117,7 +117,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 
 '''
     await update.message.reply_text(botman.text('calculator_hint', account.language) + hint_examples + \
-                                    botman.text('calculator_hint_footer', account.language),reply_markup=botman.mainkeyboard(account))
+                                    botman.text('calculator_hint_footer', account.language), reply_markup=botman.cancel_menu(account.language))
 
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
@@ -137,15 +137,13 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         log("Something went wrong while scheduling: ", e)
 
     if botman.is_main_plan_on:
-        await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.",
-                                        reply_markup=botman.admin_keyboard(account.language))
+        await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.")
         return
 
     botman.is_main_plan_on = True
     context.job_queue.run_repeating(announce_prices, interval=botman.main_plan_interval * 60, first=1,
                                     name=botman.main_queue_id)
-    await update.message.reply_text(f'زمان بندی {botman.main_plan_interval} دقیقه ای با موفقیت انجام شد.',
-                                    reply_markup=botman.admin_keyboard(account.language))
+    await update.message.reply_text(f'زمان بندی {botman.main_plan_interval} دقیقه ای با موفقیت انجام شد.')
 
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
@@ -158,8 +156,7 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
         job.schedule_removal()
     botman.is_main_plan_on = False
     botman.crypto_serv.latest_prices = ''
-    await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.',
-                                    reply_markup=botman.admin_keyboard(account.language))
+    await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.')
 
 
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
@@ -168,9 +165,8 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     botman.crypto_serv = CoinGeckoService()
-    await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.',
-                                    reply_markup=botman.admin_keyboard(account.language))
-    await notify_changes(context)
+    await update.message.reply_text('منبع قیمت ها به کوین گکو نغییر یافت.')
+    await notify_source_change(context)
 
 
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
@@ -179,9 +175,8 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     botman.crypto_serv = CoinMarketCapService(botman.postman.coinmarketcap_api_key)
-    await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.',
-                                    reply_markup=botman.admin_keyboard(account.language))
-    await notify_changes(context)
+    await update.message.reply_text('منبع قیمت ها به کوین مارکت کپ نغییر یافت.')
+    await notify_source_change(context)
 
 
 async def cmd_admin_login(update: Update, context: CallbackContext):
@@ -218,7 +213,7 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 🔹 دیروز: {stats['yesterday']}
 🔹 هفته اخیر: {stats['weekly']}
 🔹 ماه اخیر: {stats['monthly']}
-🔹 تعداد کل کاربران ربات: {stats['all']}''', reply_markup=botman.admin_keyboard(account.language))
+🔹 تعداد کل کاربران ربات: {stats['all']}''')
 
 
 async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
@@ -450,7 +445,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 async def cmd_switch_language(update: Update, context: CallbackContext):
     acc = Account.Get(update.effective_chat.id)
     acc.language = "en" if acc.language.lower() == 'fa' else 'fa'
-    
+    await update.message.reply_text(botman.text('language_switched', acc.language))
     acc.save()
 
 
