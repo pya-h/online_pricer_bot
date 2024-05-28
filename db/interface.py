@@ -33,11 +33,9 @@ class DatabaseInterface:
         PLUS_PLAN_TITLE_EN, PLUS_PLAN_DESCRIPTION, PLUS_PLAN_DESCRIPTION_EN) = \
         ("id", "price", "price_currency", "duration", "level", "title", "title_en", "description", "description_en")
 
-    TABLE_PLUS_PLANS = "plus_plans"
-    PLUS_PLANS_COLUMNS = (
-        PLUS_PLAN_ID, PLUS_PLAN_PRICE, PLUS_PLAN_PRICE_CURRENCY, PLUS_PLAN_DURATION, PLUS_PLAN_LEVEL, PLUS_PLAN_TITLE,
-        PLUS_PLAN_TITLE_EN, PLUS_PLAN_DESCRIPTION, PLUS_PLAN_DESCRIPTION_EN) = \
-        ("id", "price", "price_currency", "duration", "level", "title", "title_en", "description", "description_en")
+    TABLE_PRICE_ALARMS = "alarms"
+    PRICE_ALARMS_COLUMNS = (PRICE_ALARM_ID, PRICE_ALARM_TARGET_CHAT_ID, PRICE_ALARM_TARGET_CURRENCY, PRICE_ALARM_TARGET_PRICE, PRICE_ALARM_PRICE_UNIT) = \
+        ("id", "chat_id", "currency", "price", "unit")
 
     @staticmethod
     def Get():
@@ -94,6 +92,16 @@ class DatabaseInterface:
                 query = f"CREATE TABLE {self.TABLE_PAYMENTS} ({self.PAYMENT_ID} INTEGER NOT_NULL, " + \
                         f"{self.PAYMENT_ORDER_ID} INTEGER NOT_NULL, {self.PAYMENT_CHATID} INTEGER NOT_NULL, " + \
                         f"{self.PAYMENT_AMOUNT} REAL NOT_NULL, {self.PAYMENT_CURRENCY} TEXT NOT_NULL, " + \
+                        f"{self.PAYMENT_PAID_AMOUNT} REAL, {self.PAYMENT_PAID_CURRENCY} TEXT, " + \
+                        f"{self.PAYMENT_STATUS} TEXT NOT NULL, {self.PAYMENT_CREATED_ON} TEXT, {self.PAYMENT_MODIFIED_AT} TEXT," + \
+                        f"{self.PAYMENT_PLUS_PLAN_ID} INTEGER NOT NULL, " + \
+                        f"FOREIGN KEY({self.PAYMENT_CHATID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})," + \
+                        f"FOREIGN KEY({self.PAYMENT_PLUS_PLAN_ID}) REFERENCES {self.TABLE_PLUS_PLANS}({self.PLUS_PLAN_ID}))"
+                            # Table payments existence check
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_PRICE_ALARMS}'").fetchone():
+                query = f"CREATE TABLE {self.TABLE_PAYMENTS} ({self.PAYMENT_ID} INTEGER NOT_NULL, " + \
+                        f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTOINCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} INTEGER NOT_NULL, " + \
+                        f"{self.PRICE_ALARM_TARGET_PRICE} REAL NOT_NULL, {self.PRICE_ALARM_TARGET_CURRENCY} TEXT NOT_NULL, " + \
                         f"{self.PAYMENT_PAID_AMOUNT} REAL, {self.PAYMENT_PAID_CURRENCY} TEXT, " + \
                         f"{self.PAYMENT_STATUS} TEXT NOT NULL, {self.PAYMENT_CREATED_ON} TEXT, {self.PAYMENT_MODIFIED_AT} TEXT," + \
                         f"{self.PAYMENT_PLUS_PLAN_ID} INTEGER NOT NULL, " + \
@@ -255,6 +263,12 @@ class DatabaseInterface:
         connection.commit()
         cursor.close()
         connection.close()
+
+    def create_new_alarm(self, alarm):
+        fields = ', '.join(self.PRICE_ALARMS_COLUMNS[1:])  # in creation mode admin just defines persian title and description
+        # if he wants to add english texts, he should go to edit menu
+        self.execute(False, f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (?, ?, ?, ?)", \
+                        alarm.chat_id, alarm.price_currency, alarm.target_price, alarm.price_unit)
 
     def update_payment(self, payment):
         connection = sqlite3.connect(self._name)
