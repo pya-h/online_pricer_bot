@@ -16,6 +16,14 @@ class PriceAlarm:
         UP = 1
         DOWN = 2
 
+        def __str__(self) -> str:
+            match self.value:
+                case PriceAlarm.ChangeDirection.EXACT:
+                    return 'is exactly'
+                case PriceAlarm.ChangeDirection.UP:
+                    return 'is above'
+            return 'is below'
+
         @staticmethod
         def Which(direction_value: int):
             match direction_value:
@@ -25,10 +33,10 @@ class PriceAlarm:
                     return PriceAlarm.ChangeDirection.DOWN
             return PriceAlarm.ChangeDirection.UP
 
-    def __init__(self, chat_id, currency_symbol: str, target_price: int | float, change_direction: ChangeDirection | int, target_unit: str = 'IRT', id: int = 0) -> None:
+    def __init__(self, chat_id, currency: str, target_price: int | float, change_direction: ChangeDirection | int, target_unit: str = 'IRT', id: int = None) -> None:
         self.id = id
         self.chat_id = chat_id
-        self.currency_symbol = currency_symbol
+        self.currency = currency
         self.target_price = target_price
         self.target_unit = target_unit
         self.change_direction = change_direction if isinstance(change_direction, PriceAlarm.ChangeDirection) else PriceAlarm.ChangeDirection.Which(change_direction)
@@ -36,11 +44,18 @@ class PriceAlarm:
     @staticmethod
     def Get(currencies: List[str] | None = None):
         rows = PriceAlarm.Database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.Database().get_alarms()
-        
-        if channel_id in Channel.Instances:
-            return Channel.Instances[channel_id]
-        row = Channel.Database.get_channel(channel_id)
-        if row:
-            return Channel(channel_id=int(row[0]), interval=int(row[1]), last_post_time=int(row[2]), channel_name=row[3], channel_title=row[4], owner_id=int(row[-1]))
+        return list(map(lambda row: PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0]), rows))
 
-        return None
+    def disable(self):
+        self.Database().delete_alarm(self.id)
+
+    def set(self):
+        db = self.Database()
+        if self.id:
+            rows = db.get_single_alarm(self.id)
+            if rows and len(rows):
+                return
+        self.id = db.create_new_alarm(self)
+    
+    def __str__(self) -> str:
+        return f'Alarm for when {self.currency} {self.change_direction} {self.target_price} {self.target_unit}'

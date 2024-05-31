@@ -212,17 +212,19 @@ class DatabaseInterface:
 
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesnt return result such as insert or delete"""
-        rows = None
+        result = None
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
         cursor.execute(query, (*params,))
         if is_fetch_query:
-            rows = cursor.fetchall()
+            result = cursor.fetchall()
         else:
+            result = cursor.lastrowid
             connection.commit()
         cursor.close()
         connection.close()
-        return rows
+
+        return result
 
     def delete_channel(self, channel_id: int):
         """Delete channel and its planning"""
@@ -264,8 +266,11 @@ class DatabaseInterface:
     def create_new_alarm(self, alarm):
         fields = ', '.join(self.PRICE_ALARMS_COLUMNS[1:])  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
-        self.execute(False, f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (?, ?, ?, ?, ?)", \
-                        alarm.chat_id, alarm.price_currency, alarm.target_price, alarm.change_direction.value, alarm.price_unit)
+        return self.execute(False, f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (?, ?, ?, ?, ?)", \
+                        alarm.chat_id, alarm.currency, alarm.target_price, alarm.change_direction.value, alarm.target_unit)
+
+    def get_single_alarm(self, id: int):
+        return self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=?", id)
 
     def get_alarms(self, currency: str|None = None):
         return self.execute(True, f"SELECT * from {self.TABLE_PRICE_ALARMS}") if not currency else \
@@ -274,7 +279,10 @@ class DatabaseInterface:
     def get_alarms_by_currencies(self, currencies: List[str]):
         targets = 'n'.join([f"'{curr}'" for curr in currencies])
         return self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY} IN ({targets})")
-    
+
+    def delete_alarm(self, id: int):
+        self.execute(False, f'DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=?', id)
+
     def update_payment(self, payment):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
