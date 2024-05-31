@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import List, Dict
 from db.interface import DatabaseInterface
 
 class PriceAlarm:
@@ -41,6 +41,8 @@ class PriceAlarm:
         self.target_unit = target_unit
         self.change_direction = change_direction if isinstance(change_direction, PriceAlarm.ChangeDirection) else PriceAlarm.ChangeDirection.Which(change_direction)
         self.current_price: int | None = None
+        self.full_currency_name: Dict[str, str] | None = None
+
     @staticmethod
     def Get(currencies: List[str] | None = None):
         rows = PriceAlarm.Database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.Database().get_alarms()

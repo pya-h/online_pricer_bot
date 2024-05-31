@@ -12,7 +12,7 @@ from typing import List, Dict
 from bot.post import PostMan
 from models.account import Account
 from tools.manuwriter import log
-from tools.mathematix import persianify
+from tools.mathematix import persianify, cut_and_separate
 from models.alarms import PriceAlarm
 
 
@@ -314,16 +314,20 @@ class BotMan:
     async def next_post(self):
         return await self.postman.create_post(interval=self.main_plan_interval)
 
-    def check_price_alarms(self):
+    def check_price_alarms(self) -> List[PriceAlarm]:
         '''Checks all user alarms and finds alarms that has gone off'''
         alarms = PriceAlarm.Get()
         # TODO: Define a pre_latest_data, check for currencies that have changed in 10m and then get alarms by currencies
         triggered_alarms = []
         for alarm in alarms:
+            source = self.currency_serv
             alarm.current_price = self.currency_serv.get_single_price(alarm.currency, alarm.target_unit)
             if alarm.current_price is None:
                 alarm.current_price = self.crypto_serv.get_single_price(alarm.currency, alarm.target_unit)
+                source = self.crypto_serv
+
             if alarm.current_price is not None:
+                alarm.full_currency_name = {'en': alarm.currency.upper(), 'fa': source.GetPersianName(alarm.currency.upper())}
                 match alarm.change_direction:
                     case PriceAlarm.ChangeDirection.UP:
                         if alarm.current_price >= alarm.target_price:
@@ -337,3 +341,25 @@ class BotMan:
                         if alarm.current_price == alarm.target_price:
                             triggered_alarms.append(alarm)
         return triggered_alarms
+
+    async def handle_possible_alarms(self, send_message_func):
+        # start notifying users [if at least one alarm went off]
+        unit_names = {
+            'IRT': {'fa': self.currency_serv.GetPersianName('IRT'), 'en': 'IRT'},
+            'USD': {'fa': self.currency_serv.GetPersianName('USD'), 'en': 'USD'}
+        }
+        for alarm in self.check_price_alarms():
+            try:
+                account = Account.Get(alarm.chat_id, prevent_instance_arrangement=True)
+                target_price = cut_and_separate(alarm.target_price)
+                current_price = cut_and_separate(alarm.current_price)
+                currency_name, unit_name = alarm.full_currency_name[account.language], unit_names[alarm.target_unit][account.language]
+
+                if account.language == 'fa':
+                    target_price, current_price = persianify(target_price), persianify(current_price)
+                price_alarm_text = self.text('price_alarm', account.language) % (currency_name, target_price, unit_name) +\
+                    self.text('current_price_is', account.language) % (currency_name, current_price, unit_name)
+                await send_message_func(chat_id=account.chat_id, text=price_alarm_text)
+                alarm.disable()
+            except:
+                pass

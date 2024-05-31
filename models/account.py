@@ -45,7 +45,7 @@ class Account:
             except:
                 pass
             return Account.States.NONE
-        
+
     _database = None
     GarbageCollectionInterval = 30
     PreviousGarbageCollectionTime: int = now_in_minute()  # in minutes
@@ -88,7 +88,7 @@ class Account:
 
     def __init__(self, chat_id, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None, calc_currencies: List[str] = None,
                  language: str = 'fa', plus_end_date: datetime = None, plus_plan_id: int = 0, state: States = States.NONE, cache=None,
-                 is_admin: bool = False) -> None:
+                 is_admin: bool = False, prevent_instance_arrangement: bool = False,) -> None:
 
         self.chat_id: int = chat_id
 
@@ -107,8 +107,9 @@ class Account:
         self.desires_count_max = 10  # FIXME: update this with plus plan
         self.username: str | None = None
         self.firstname: str | None = None
-        self.arrange_instances()
         self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
+        if not prevent_instance_arrangement:
+            self.arrange_instances()
 
 
     def change_state(self, state: States = States.NONE, data: any = None):
@@ -147,7 +148,7 @@ class Account:
         if self.is_admin:
             return 50
         return self.desires_count_max
-    
+
     @staticmethod
     def str2list(string: str):
         return string.split(';') if string else None
@@ -169,7 +170,7 @@ class Account:
         return list(filter(lambda channel: channel.owner_id == self.chat_id, Channel.Instances.values()))
 
     @staticmethod
-    def ExtractQueryRowData(row: tuple):
+    def ExtractQueryRowData(row: tuple, prevent_instance_arrangement: bool = False):
         def xstr(r):
             return r if not r or r[-1] != ";" else r[:-1]
 
@@ -190,24 +191,23 @@ class Account:
         language = row[-1]
         return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos),
                         plus_end_date=plus_end_date, calc_currencies=Account.str2list(calc_currs), calc_cryptos=Account.str2list(calc_cryptos), is_admin=is_admin,
-                        plus_plan_id=plus_plan_id, language=language, state=state, cache=cache)
+                        plus_plan_id=plus_plan_id, language=language, state=state, cache=cache, prevent_instance_arrangement=prevent_instance_arrangement)
     @staticmethod
-    def Get(chat_id):
+    def Get(chat_id,  prevent_instance_arrangement: bool = False):
         if chat_id in Account.Instances:
             Account.Instances[chat_id].last_interaction = tz_today()
             return Account.Instances[chat_id]
-        row = Account.Database().get(chat_id)
-
+        row = Account.Database().get(chat_id, prevent_instance_arrangement=prevent_instance_arrangement)
 
         if row:
-            return Account.ExtractQueryRowData(row)
+            return Account.ExtractQueryRowData(row, prevent_instance_arrangement=prevent_instance_arrangement)
 
-        return Account(chat_id=chat_id).save()
+        return Account(chat_id=chat_id, prevent_instance_arrangement=prevent_instance_arrangement).save()
 
     @staticmethod
     def GetHardcodeAdmin():
         return {'id': HARDCODE_ADMIN_CHATID, 'username': HARDCODE_ADMIN_USERNAME, 'account': Account.Get(HARDCODE_ADMIN_CHATID)}
-    
+
     def is_premium_member(self) -> bool:
         """Check if the account has still plus subscription."""
         return self.is_admin or (self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date() and self.plus_plan_id)
@@ -312,6 +312,6 @@ class Account:
             if HARDCODE_ADMIN_CHATID:
                 admins.insert(0, Account.GetHardcodeAdmin()['account'])
             print(admins)
-            
+
             return admins
         return [Account.GetHardcodeAdmin()['account'],]

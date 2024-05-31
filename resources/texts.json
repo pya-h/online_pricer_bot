@@ -13,7 +13,7 @@
         },
         "calculator": {
             "fa": "ماشین حساب",
-            "en" : "Calculator"
+            "en": "Calculator"
         },
         "config_calculator": {
             "fa": "لیست ماشین حساب من",
@@ -46,11 +46,11 @@
             "en": "Gold"
         },
         "return": {
-            "fa": "بازگشت", 
+            "fa": "بازگشت",
             "en": "Return"
         },
         "cancel": {
-            "fa": "لغو", 
+            "fa": "لغو",
             "en": "Cancel"
         },
         "close": {
@@ -143,5 +143,13 @@
     "language_switched": {
         "fa": "✅ زبان ربات فارسی شد.",
         "en": "✅ Language switched to English."
+    },
+    "price_alarm": {
+        "fa": "هشدار قیمت %s - %s %s",
+        "en": "Price Alarm: %s - %s %s"
+    },
+    "current_price_is": {
+        "fa": "قیمت %s هم اکنون %s %s می باشد.",
+        "en": "%s price is now %s %s"
     }
 }

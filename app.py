@@ -75,12 +75,7 @@ async def notify_source_change(context: CallbackContext):
 
 async def update_markets(context: CallbackContext):
     res = await botman.next_post()
-    # start notifying users [if at least one alarm went off]
-    for alarm in botman.check_price_alarms():
-        try:
-            '''reply message'''
-        except:
-            pass
+    await botman.handle_possible_alarms(context.bot.send_message)
     await context.bot.send_message(chat_id=botman.channels[0]['id'], text=res)
 
 

@@ -63,7 +63,6 @@ def cut_and_separate(num: float|int):
     return  separate_by3(num, precision)
 
 
-
 def tz_today() -> datetime:  # today date in a specific timezone
     return datetime.now(tz=timezone)
 

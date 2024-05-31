@@ -10,7 +10,7 @@ class CryptoCurrencyService(APIService):
     CoinsInPersian = None
 
     @staticmethod
-    def get_persian_coin_names() -> dict:
+    def LoadPersianNames() -> dict:
         coins_fa = "{}"
         try:
             persian_coin_names_file = open("./api/data/coins.fa.json", "r")
@@ -24,7 +24,7 @@ class CryptoCurrencyService(APIService):
                  cache_file_name: str = None) -> None:
         super().__init__(url, source, max_desired_selection, params, cache_file_name)
         if not CryptoCurrencyService.CoinsInPersian:
-            CryptoCurrencyService.CoinsInPersian = CryptoCurrencyService.get_persian_coin_names()
+            CryptoCurrencyService.CoinsInPersian = CryptoCurrencyService.LoadPersianNames()
         self.get_desired_ones = lambda desired_ones: desired_ones or list(CryptoCurrencyService.CoinsInPersian.keys())[
                                                                      :self.max_desired_selection]
 
@@ -38,6 +38,14 @@ class CryptoCurrencyService(APIService):
         rp_toman = mathematix.persianify(rp_toman)
         return f'🔸 {CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
             else f'🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان\n'
+
+    @staticmethod
+    def GetPersianName(symbol: str) -> str:
+        if not CryptoCurrencyService.CoinsInPersian:
+            CryptoCurrencyService.LoadPersianNames()
+        if symbol not in CryptoCurrencyService.CoinsInPersian:
+            raise InvalidInputException('Crypto symbol!')
+        return CryptoCurrencyService.CoinsInPersian[symbol]
 
 
 # --------- COINGECKO -----------
