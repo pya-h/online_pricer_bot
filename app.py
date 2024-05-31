@@ -78,7 +78,7 @@ async def update_markets(context: CallbackContext):
     # start notifying users [if at least one alarm went off]
     for alarm in botman.check_price_alarms():
         try:
-            '''write message'''
+            '''reply message'''
         except:
             pass
     await context.bot.send_message(chat_id=botman.channels[0]['id'], text=res)
