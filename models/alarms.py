@@ -4,7 +4,7 @@ from db.interface import DatabaseInterface
 
 class PriceAlarm:
     _database: DatabaseInterface = None
-    
+
     @staticmethod
     def Database():
         if PriceAlarm._database is None:
@@ -27,7 +27,7 @@ class PriceAlarm:
         @staticmethod
         def Which(direction_value: int):
             match direction_value:
-                case PriceAlarm.ChangeDirection.EXACT.value: 
+                case PriceAlarm.ChangeDirection.EXACT.value:
                     return PriceAlarm.ChangeDirection.EXACT
                 case PriceAlarm.ChangeDirection.DOWN.value:
                     return PriceAlarm.ChangeDirection.DOWN
@@ -40,7 +40,7 @@ class PriceAlarm:
         self.target_price = target_price
         self.target_unit = target_unit
         self.change_direction = change_direction if isinstance(change_direction, PriceAlarm.ChangeDirection) else PriceAlarm.ChangeDirection.Which(change_direction)
-
+        self.current_price: int | None = None
     @staticmethod
     def Get(currencies: List[str] | None = None):
         rows = PriceAlarm.Database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.Database().get_alarms()
@@ -56,6 +56,6 @@ class PriceAlarm:
             if rows and len(rows):
                 return
         self.id = db.create_new_alarm(self)
-    
+
     def __str__(self) -> str:
         return f'Alarm for when {self.currency} {self.change_direction} {self.target_price} {self.target_unit}'

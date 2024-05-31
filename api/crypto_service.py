@@ -157,3 +157,12 @@ class CoinMarketCapService(CryptoCurrencyService):
             self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
 
         return header, self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos), absolute_amount, self.to_irt_exact(absolute_amount, True)
+
+    def get_single_price(self, crypto_symbol: str, price_unit: str = 'usd', tether_instead_of_dollars: bool = True):
+        coin = crypto_symbol.upper()
+        if not coin in self.latest_data:
+            return None
+        price_unit = price_unit.lower()
+        if coin == self.TETHER_SYMBOL and price_unit == 'irt':
+            return self.TetherInTomans
+        return self.to_irt_exact(self.latest_data[coin][0]['quote'][self.price_unit]['price'], tether_instead_of_dollars) if price_unit == 'irt' else self.latest_data[coin][0]['quote'][self.price_unit]['price']

@@ -73,8 +73,14 @@ async def notify_source_change(context: CallbackContext):
                                    text=f"منبع قیمت ها به {botman.crypto_serv.Source} تغییر یافت.")
 
 
-async def announce_prices(context: CallbackContext):
+async def update_markets(context: CallbackContext):
     res = await botman.next_post()
+    # start notifying users [if at least one alarm went off]
+    for alarm in botman.check_price_alarms():
+        try:
+            '''write message'''
+        except:
+            pass
     await context.bot.send_message(chat_id=botman.channels[0]['id'], text=res)
 
 
@@ -141,7 +147,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         return
 
     botman.is_main_plan_on = True
-    context.job_queue.run_repeating(announce_prices, interval=botman.main_plan_interval * 60, first=1,
+    context.job_queue.run_repeating(update_markets, interval=botman.main_plan_interval * 60, first=1,
                                     name=botman.main_queue_id)
     await update.message.reply_text(f'زمان بندی {botman.main_plan_interval} دقیقه ای با موفقیت انجام شد.')
 
@@ -368,7 +374,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     data = json.loads(query.data)
     if not data:
         return
-    
+
     market = MarketOptions.Which(data['bt'])
     list_type = SelectionListTypes.Which(data['lt'])
     page: int
@@ -407,13 +413,13 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     try:
         selection_list = account.handle_market_selection(list_type, market, data['v'])
-        
+
         await query.message.edit_reply_markup(
             reply_markup=botman.inline_keyboard(
-                list_type, market, 
-                (botman.crypto_serv.CoinsInPersian, 
-                    botman.currency_serv.NationalCurrenciesInPersian, 
-                    botman.currency_serv.GoldsInPersian, 
+                list_type, market,
+                (botman.crypto_serv.CoinsInPersian,
+                    botman.currency_serv.NationalCurrenciesInPersian,
+                    botman.currency_serv.GoldsInPersian,
                 )[market.value - 1], selection_list, page=page, language=account.language,
                 full_names=market != MarketOptions.CRYPTO, close_button=True
             )
@@ -424,7 +430,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         if not account.is_premium_member():
             link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
             await query.message.reply_text(
-                text=botman.error('max_selection', account.language) % (max_selection,) + botman.error('get_premium', account.language), 
+                text=botman.error('max_selection', account.language) % (max_selection,) + botman.error('get_premium', account.language),
                 reply_markup=botman.inline_url([{'text_key': "premium", 'url': link}])
             )
         else:

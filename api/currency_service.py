@@ -43,7 +43,7 @@ class CurrencyService(APIService):
         super(CurrencyService, self).__init__(url=url, source=source, cache_file_name=cache_file_name)
         self.token = token
         self.tether_service_token = tether_service_token
-        
+
         if not self.UsdInTomans:
             self.UsdInTomans = self.DefaultUsbInTomans
         if not self.TetherInTomans:
@@ -94,7 +94,7 @@ class NavasanService(CurrencyService):
 
     def __init__(self, token: str, nobitex_tether_service_token: str = None, aban_tether_service_token: str = None) -> None:
         self.tether_service = NobitexService(nobitex_tether_service_token) if nobitex_tether_service_token else AbanTetherService(aban_tether_service_token)
-        
+
         super().__init__(url=f"https://sourcearena.ir/api/?token={token}&currency&v2",
                          source="Navasan.ir", cache_file_name='Navasan.json',
                          tether_service_token=self.tether_service.token, token=token)
@@ -102,7 +102,7 @@ class NavasanService(CurrencyService):
         self.gold_service: GoldService = GoldService(self.token)
         if not NavasanService.NationalCurrenciesInPersian or not NavasanService.GoldsInPersian or not NavasanService.CurrenciesInPersian:
             NavasanService.LoadPersianNames()
-        
+
     @staticmethod
     def LoadPersianNames():
         NavasanService.NationalCurrenciesInPersian, NavasanService.GoldsInPersian = get_persian_currency_names()
@@ -124,13 +124,13 @@ class NavasanService(CurrencyService):
 
         res_curr = ''
         res_gold = ''
-        
+
         for slug in desired_ones:
             slug_l = slug.lower()
             row: str
             if slug_l in api_data and 'value' in api_data[slug_l]:
                 curr = api_data[slug_l]
-                price = float(curr['value']) 
+                price = float(curr['value'])
                 toman: float = 0.0
                 usd: float | None = None
                 if 'usd' not in curr or not curr['usd']:
@@ -144,12 +144,12 @@ class NavasanService(CurrencyService):
                 row = f"{NavasanService.CurrenciesInPersian[slug]}: {toman} تومان" + (f" / {usd}$" if usd else '')
             else:
                 row = f'{NavasanService.CurrenciesInPersian[slug]}: ❗️ قیمت دریافت نشد.'
-                
+
             if slug in NavasanService.NationalCurrenciesInPersian:
                 res_curr += f'🔸 {row}\n'
             else:
                 res_gold += f'🔸 {row}\n'
-                
+
         if res_curr:
             res_curr = f'📌 #قیمت_لحظه_ای #بازار_ارز \n{res_curr}\n'
         if res_gold:
@@ -193,10 +193,18 @@ class NavasanService(CurrencyService):
         except:
             self.latest_data = []
         return self.latest_data
-    
+
+    def get_single_price(self, currency_symbol: str, price_unit: str = 'usd'):
+        curr = currency_symbol.lower()
+        if not curr in self.latest_data:
+            return None
+        if curr == self.DOLLAR_SYMBOL:
+            return self.UsdInTomans
+        return self.latest_data[curr]['value'] if price_unit.lower() == 'irt' else self.irt_to_usd(self.latest_data[curr]['value'])
+
     def irt_to_usd(self, irt_price: float | int) -> float | int:
         return irt_price / self.UsdInTomans
-    
+
     def irt_to_currencies(self, absolute_amount: float | int, source_unit_slug: str, currencies: list = None) -> str:
         currencies = self.get_desired_ones(currencies)
         res_gold, res_curr = '', ''

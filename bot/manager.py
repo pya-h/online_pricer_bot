@@ -13,6 +13,8 @@ from bot.post import PostMan
 from models.account import Account
 from tools.manuwriter import log
 from tools.mathematix import persianify
+from models.alarms import PriceAlarm
+
 
 class ResourceManager:
 
@@ -141,7 +143,7 @@ class BotMan:
                                                             BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value)],
                                                     ], resize_keyboard=True) if lang.lower() == 'fa' else \
                                                         ReplyKeyboardMarkup([*menu_main_keys_en,
-                                                    
+
                                                             [KeyboardButton(
                                                                 BotMan.Commands.ADMIN_NOTICES_EN.value),
                                                                 KeyboardButton(
@@ -180,22 +182,22 @@ class BotMan:
 
     def create_callback_data(button_type: Enum | str, value: str | int | float | bool, list_type: Enum | str | None = None, is_command: bool = False):
         return jsonify({"lt": list_type.value if isinstance(list_type, Enum) else list_type,
-                        "bt": button_type.value if isinstance(button_type, Enum) else button_type, 
+                        "bt": button_type.value if isinstance(button_type, Enum) else button_type,
                         "v": value if not is_command else f'#{value}'})
 
     def inline_keyboard(self, list_type: Enum, button_type: Enum, choices: Dict[str, str], selected_ones: List[str] = None, page: int = 0, max_page_buttons: int = 90,
                         full_names: bool = False, close_button: bool = False, language: str = 'fa'):
         """this function creates inline keyboard for selecting/deselecting some options"""
-        
+
         def choice_callback_data(value: str | int | float | bool | None = None, page: int = 0):
             return jsonify({"lt": list_type.value if list_type else None,
                             "bt": button_type.value,
                             "pg": page,
                             "v": value}) #  used the create_callback_data code directly to enhance performance
-        
+
         def special_button_callback_data(command: str | int | float | bool, page: int = 0):
-            return jsonify({"lt": list_type.value if list_type else None, 
-                            "bt": button_type.value, 
+            return jsonify({"lt": list_type.value if list_type else None,
+                            "bt": button_type.value,
                             "pg": page,
                             "v": f"${command}"}) #  used the create_callback_data code directly to enhance performance
 
@@ -213,13 +215,13 @@ class BotMan:
             pages_count = int(buttons_count / max_page_buttons)
             choice_keys = list(choices.keys())[idx_first:idx_last]
             pagination_menu = [
-                InlineKeyboardButton('<<', callback_data=choice_callback_data(page=0)), 
+                InlineKeyboardButton('<<', callback_data=choice_callback_data(page=0)),
                 InlineKeyboardButton('<', callback_data=choice_callback_data(page=page - 1 if page > 0 else 0)),
                 InlineKeyboardButton(f'({lbl_first}-{lbl_last})', callback_data=special_button_callback_data(f"#{pages_count+1}")),
                 InlineKeyboardButton('>', callback_data=choice_callback_data(page=pages_count)),
                 InlineKeyboardButton('>>', callback_data=choice_callback_data(page=page + 1 if page < pages_count else int(pages_count))),
             ]
-        else:            
+        else:
             choice_keys = choices
 
         i: int = 0
@@ -236,7 +238,7 @@ class BotMan:
                 i = 0
         if row:
             buttons.append(row)
-            
+
         if pagination_menu:
             buttons.append(pagination_menu)
 
@@ -311,3 +313,27 @@ class BotMan:
 
     async def next_post(self):
         return await self.postman.create_post(interval=self.main_plan_interval)
+
+    def check_price_alarms(self):
+        '''Checks all user alarms and finds alarms that has gone off'''
+        alarms = PriceAlarm.Get()
+        # TODO: Define a pre_latest_data, check for currencies that have changed in 10m and then get alarms by currencies
+        triggered_alarms = []
+        for alarm in alarms:
+            alarm.current_price = self.currency_serv.get_single_price(alarm.currency, alarm.target_unit)
+            if alarm.current_price is None:
+                alarm.current_price = self.crypto_serv.get_single_price(alarm.currency, alarm.target_unit)
+            if alarm.current_price is not None:
+                match alarm.change_direction:
+                    case PriceAlarm.ChangeDirection.UP:
+                        if alarm.current_price >= alarm.target_price:
+                            triggered_alarms.append(alarm)
+
+                    case PriceAlarm.ChangeDirection.DOWN:
+                        if alarm.current_price <= alarm.target_price:
+                            triggered_alarms.append(alarm)
+
+                    case _:
+                        if alarm.current_price == alarm.target_price:
+                            triggered_alarms.append(alarm)
+        return triggered_alarms
