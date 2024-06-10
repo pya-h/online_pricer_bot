@@ -12,8 +12,11 @@ from api.crypto_service import CoinGeckoService, CoinMarketCapService
 botman = BotMan()
 
 
-async def show_market_types(update: Update, next_state: Account.States):
+async def show_market_types(update: Update, context: CallbackContext, next_state: Account.States):
     account = Account.Get(update.effective_chat.id)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        await botman.ask_for_subscription(update, account.language)
+        return
     account.change_state(next_state)
     await update.message.reply_text(botman.text('config_which_market', account.language),
                                     reply_markup=botman.markets_menu(account.language))
@@ -242,9 +245,9 @@ async def handle_messages(update: Update, context: CallbackContext):
         case BotMan.Commands.GET_FA.value | BotMan.Commands.GET_EN.value:
             await cmd_get_prices(update, context)
         case BotMan.Commands.CONFIG_PRICE_LIST_FA.value | BotMan.Commands.CONFIG_PRICE_LIST_EN.value:
-            await show_market_types(update, Account.States.CONFIG_MARKETS)
+            await show_market_types(update, context, Account.States.CONFIG_MARKETS)
         case BotMan.Commands.CONFIG_CALCULATOR_FA.value | BotMan.Commands.CONFIG_CALCULATOR_EN.value:
-            await show_market_types(update, Account.States.CONFIG_CALCULATOR_LIST)
+            await show_market_types(update, context, Account.States.CONFIG_CALCULATOR_LIST)
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
             await select_coin_menu(update, context)
         case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
@@ -364,6 +367,7 @@ async def handle_messages(update: Update, context: CallbackContext):
 
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
+    # FIXME: clicking return on market selection page, will say 'did not understand'
     query = update.callback_query
     account: Account = Account.Get(update.effective_chat.id)
     data = json.loads(query.data)
@@ -385,6 +389,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         await query.message.edit_text(botman.text('list_updated', account.language))
         return
 
+    # FIXME: Page index log is showing 0 only
     if data['v'] and data['v'][0] == '$':
         if data['v'][1] == '#':
             pages_count = int(data["v"][2:]) + 1

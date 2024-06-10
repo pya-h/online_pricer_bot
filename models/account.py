@@ -197,7 +197,7 @@ class Account:
         if chat_id in Account.Instances:
             Account.Instances[chat_id].last_interaction = tz_today()
             return Account.Instances[chat_id]
-        row = Account.Database().get(chat_id, prevent_instance_arrangement=prevent_instance_arrangement)
+        row = Account.Database().get(chat_id)
 
         if row:
             return Account.ExtractQueryRowData(row, prevent_instance_arrangement=prevent_instance_arrangement)

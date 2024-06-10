@@ -101,10 +101,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService childs"""
         latest_cap = None
         try:
-            latest_cap = self.cmc_api.cryptocurrency_quotes_latest(
-                symbol=self.symbols_list if not custom_symbol_list else ','.join(custom_symbol_list),
-                convert=self.price_unit
-            )
+            latest_cap = self.cmc_api.cryptocurrency_listings_latest()
             self.cache_data(
                 json.dumps(latest_cap.data)
             )
@@ -123,12 +120,14 @@ class CoinMarketCapService(CryptoCurrencyService):
             raise NoLatestDataException('Use for announcing prices!')
 
         res = ''
-        for coin in desired_coins:
-            if not api_data[coin]:
-                res += f'❗️ {CryptoCurrencyService.CoinsInPersian[coin]}: قیمت دریافت نشد.'
-            price = api_data[coin][0]['quote'][self.price_unit]['price']
-            name = api_data[coin][0]['name'] if coin != BaseAPIService.TETHER_SYMBOL else 'Tether'
-            res += self.crypto_description_row(name, coin, price, short_text=short_text)
+        for coin in api_data:
+            symbol = coin['symbol'].upper()
+            if symbol in desired_coins:
+                # if not api_data[coin]:
+                #     res += f'❗️ {CryptoCurrencyService.CoinsInPersian[coin]}: قیمت دریافت نشد.'
+                price = coin['quote'][self.price_unit]['price']
+                name = coin['name'] if symbol != BaseAPIService.TETHER_SYMBOL else 'Tether'
+                res += self.crypto_description_row(name, symbol, price, short_text=short_text)
 
         if res:
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}'

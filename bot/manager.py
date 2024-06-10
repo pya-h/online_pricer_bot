@@ -218,8 +218,8 @@ class BotMan:
                 InlineKeyboardButton('<<', callback_data=choice_callback_data(page=0)),
                 InlineKeyboardButton('<', callback_data=choice_callback_data(page=page - 1 if page > 0 else 0)),
                 InlineKeyboardButton(f'({lbl_first}-{lbl_last})', callback_data=special_button_callback_data(f"#{pages_count+1}")),
-                InlineKeyboardButton('>', callback_data=choice_callback_data(page=pages_count)),
-                InlineKeyboardButton('>>', callback_data=choice_callback_data(page=page + 1 if page < pages_count else int(pages_count))),
+                InlineKeyboardButton('>', callback_data=choice_callback_data(page=page + 1 if page < pages_count else int(pages_count))),
+                InlineKeyboardButton('>>', callback_data=choice_callback_data(page=pages_count)),
             ]
         else:
             choice_keys = choices
