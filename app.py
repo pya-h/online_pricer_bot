@@ -376,8 +376,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     if not data:
         return
 
-    market = MarketOptions.Which(data['bt'])
-    list_type = SelectionListTypes.Which(data['lt'])
+    # check if user is changing list page:
     page: int
 
     try:
@@ -398,21 +397,29 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             await query.answer(text=botman.text('log_page_indices', account.language) % (page, pages_count,), show_alert=False)
         return
 
-    if account.state == Account.States.INPUT_EQUALIZER_UNIT:
-        if account.cache:
-            unit_symbol = data['v'].upper()
-            await query.message.edit_text(
-                ' '.join([str(amount) for amount in account.cache]) + f" {unit_symbol}"
-            )
-            await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
-                                   account, account.cache, [unit_symbol])
-            account.change_state()  # reset state
-        else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
-            # condition possible(or not.!)
-            await query.message.edit_text('حالا مبلغ مربوط به این واحد ارزی را وارد کنید:')
-            account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, data['v'].upper())
-        return
+    match account.state:
+        case  Account.States.INPUT_EQUALIZER_UNIT:
+            if account.cache:
+                unit_symbol = data['v'].upper()
+                await query.message.edit_text(
+                    ' '.join([str(amount) for amount in account.cache]) + f" {unit_symbol}"
+                )
+                await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
+                                    account, account.cache, [unit_symbol])
+                account.change_state()  # reset state
+            else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
+                # condition possible(or not.!)
+                await query.message.edit_text('حالا مبلغ مربوط به این واحد ارزی را وارد کنید:')
+                account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, data['v'].upper())
+            return
+        case Account.States.CREATE_ALARM:
 
+            return
+
+
+    # if the user is configuring a list:
+    market = MarketOptions.Which(data['bt'])
+    list_type = SelectionListTypes.Which(data['lt'])
     try:
         selection_list = account.handle_market_selection(list_type, market, data['v'])
 

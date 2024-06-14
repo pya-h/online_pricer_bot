@@ -6,6 +6,7 @@ from tools.mathematix import after_n_months
 from time import time
 from typing import List
 
+
 class DatabaseInterface:
     _instance = None
     TABLE_ACCOUNTS = "accounts"
@@ -24,8 +25,7 @@ class DatabaseInterface:
     PAYMENT_COLUMNS = (PAYMENT_ID, PAYMENT_CHATID, PAYMENT_ORDER_ID, PAYMENT_STATUS, PAYMENT_AMOUNT, PAYMENT_CURRENCY,
                        PAYMENT_PAID_AMOUNT, PAYMENT_PAID_CURRENCY, PAYMENT_PLUS_PLAN_ID, PAYMENT_CREATED_ON,
                        PAYMENT_MODIFIED_AT) = \
-        ("order_id", "chat_id", "id", "status", "amount", "currency", "paid_amount", "paid_currency", "plus_plan_id",
-         "created", "modified")
+        ("order_id", "chat_id", "id", "status", "amount", "currency", "paid_amount", "paid_currency", "plus_plan_id", "created", "modified")
 
     TABLE_PLUS_PLANS = "plus_plans"
     PLUS_PLANS_COLUMNS = (
@@ -43,9 +43,11 @@ class DatabaseInterface:
             DatabaseInterface._instance = DatabaseInterface()
         return DatabaseInterface._instance
 
-    def sync(self):
-        """cursor.execute(f'ALTER TABLE {self.TABLE_ACCOUNTS} ADD {self.ACCOUNT_LAST_INTERACTION} DATE')
-        connection.commit()"""
+    def migrate(self):
+        '''This method is like a migration thing, after any major update, this must be called to perform any required structural change in db'''
+        return
+        # cursor.execute(f'ALTER TABLE {self.TABLE_ACCOUNTS} ADD {self.ACCOUNT_LAST_INTERACTION} DATE')
+        # connection.commit()
 
     def setup(self):
         connection = None
@@ -75,8 +77,9 @@ class DatabaseInterface:
                 # create table account
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_ACCOUNTS} table created successfully.", category_name='plus_info')
-            else:  # TEMP-*****
-                self.sync()
+            else:
+                # write any migration needed in the function called below
+                self.migrate()
 
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_CHANNELS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} INTEGER PRIMARY KEY, " + \
@@ -86,6 +89,16 @@ class DatabaseInterface:
                 # create table account
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_CHANNELS} table created successfuly.", category_name='plus_info')
+
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_PRICE_ALARMS}'").fetchone():
+                query = f"CREATE TABLE {self.TABLE_PRICE_ALARMS} (" + \
+                        f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTOINCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} INTEGER NOT_NULL, " + \
+                        f"{self.PRICE_ALARM_TARGET_PRICE} REAL NOT_NULL, {self.PRICE_ALARM_TARGET_CURRENCY} TEXT NOT_NULL, " + \
+                        f"{self.PRICE_ALARM_CHANGE_DIRECTION} INTEGER, {self.PRICE_ALARM_PRICE_UNIT} TEXT NOT_NULL, " + \
+                        f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
+
+                cursor.execute(query)
+                log(f"plus Database {self.TABLE_PRICE_ALARMS} table created successfuly.", category_name='plus_info')
 
             # Table payments existence check
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_PAYMENTS}'").fetchone():
@@ -97,16 +110,7 @@ class DatabaseInterface:
                         f"{self.PAYMENT_PLUS_PLAN_ID} INTEGER NOT NULL, " + \
                         f"FOREIGN KEY({self.PAYMENT_CHATID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})," + \
                         f"FOREIGN KEY({self.PAYMENT_PLUS_PLAN_ID}) REFERENCES {self.TABLE_PLUS_PLANS}({self.PLUS_PLAN_ID}))"
-                            # Table payments existence check
-            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_PRICE_ALARMS}'").fetchone():
-                query = f"CREATE TABLE {self.TABLE_PRICE_ALARMS} (" + \
-                        f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTOINCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} INTEGER NOT_NULL, " + \
-                        f"{self.PRICE_ALARM_TARGET_PRICE} REAL NOT_NULL, {self.PRICE_ALARM_TARGET_CURRENCY} TEXT NOT_NULL, " + \
-                        f"{self.PRICE_ALARM_CHANGE_DIRECTION} INTEGER, {self.PRICE_ALARM_PRICE_UNIT} TEXT NOT_NULL, " + \
-                        f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
-                # create table account
                 cursor.execute(query)
-                log(f"plus Database {self.TABLE_PAYMENTS} table created successfuly.", category_name='plus_info')
 
             log("plus Database setup completed.", category_name='plus_info')
             cursor.close()
