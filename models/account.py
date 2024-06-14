@@ -5,7 +5,6 @@ from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from tools.manuwriter import log
 from enum import Enum
 from models.channel import Channel
-from models.plusplan import PlusPlan
 from typing import List
 from bot.types import SelectionListTypes, MarketOptions
 
@@ -13,6 +12,7 @@ ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
 HARDCODE_ADMIN_USERNAME = config('HARDCODE_ADMIN_USERNAME', 'pya_h')
 HARDCODE_ADMIN_CHATID = int(config('HARDCODE_ADMIN_CHATID', 0))
+
 
 class Account:
     # states:
@@ -88,31 +88,28 @@ class Account:
         Account.GarbageCollect()
         Account.Instances[self.chat_id] = self
 
-    def __init__(self, chat_id, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None, calc_currencies: List[str] = None,
-                 language: str = 'fa', plus_end_date: datetime = None, plus_plan_id: int = 0, state: States = States.NONE, cache=None,
-                 is_admin: bool = False, prevent_instance_arrangement: bool = False,) -> None:
+    def __init__(self, chat_id, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None,
+                 calc_currencies: List[str] = None, language: str = 'fa', plus_end_date: datetime = None,
+                 state: States = States.NONE, cache=None, is_admin: bool = False,
+                 prevent_instance_arrangement: bool = False, ) -> None:
 
         self.chat_id: int = chat_id
-
         self.desired_cryptos: list = cryptos if cryptos else []
         self.desired_currencies: list = currencies if currencies else []
-
         self.calc_cryptos: list = calc_cryptos if calc_cryptos else []
         self.calc_currencies: list = calc_currencies if calc_currencies else []
-
         self.last_interaction: datetime = tz_today()
         self.language: str = language
         self.state: Account.States = state
         self.cache = cache
         self.plus_end_date = plus_end_date
-        self.plus_plan_id = plus_plan_id
-        self.desires_count_max = 10  # FIXME: update this with plus plan
+        self.desires_count_max = 10
+        self.alarms_count_max = 3
         self.username: str | None = None
         self.firstname: str | None = None
         self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
         if not prevent_instance_arrangement:
             self.arrange_instances()
-
 
     def change_state(self, state: States = States.NONE, data: any = None):
         self.state = state
@@ -165,7 +162,6 @@ class Account:
         self.username = username
 
     def max_channel_plans(self):
-        # decide with plus_plan_id
         return 3
 
     def my_channel_plans(self) -> list[Channel]:
@@ -182,20 +178,18 @@ class Account:
         calc_cryptos = xstr(row[4])
         # add new rows here
 
-        plus_end_date = datetime.strptime(row[-6], DatabaseInterface.DATE_FORMAT) if row[-6] else None
-        try:
-            plus_plan_id = int(row[-5])
-        except:
-            plus_plan_id = 0
+        plus_end_date = datetime.strptime(row[-5], DatabaseInterface.DATE_FORMAT) if row[-5] else None
         state = Account.States.Which(row[-4])
         cache = row[-3]
         is_admin = row[-2]
         language = row[-1]
         return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos),
-                        plus_end_date=plus_end_date, calc_currencies=Account.str2list(calc_currs), calc_cryptos=Account.str2list(calc_cryptos), is_admin=is_admin,
-                        plus_plan_id=plus_plan_id, language=language, state=state, cache=cache, prevent_instance_arrangement=prevent_instance_arrangement)
+                       plus_end_date=plus_end_date, calc_currencies=Account.str2list(calc_currs),
+                       calc_cryptos=Account.str2list(calc_cryptos), is_admin=is_admin,
+                       language=language, state=state, cache=cache, prevent_instance_arrangement=prevent_instance_arrangement)
+
     @staticmethod
-    def Get(chat_id,  prevent_instance_arrangement: bool = False):
+    def Get(chat_id, prevent_instance_arrangement: bool = False):
         if chat_id in Account.Instances:
             Account.Instances[chat_id].last_interaction = tz_today()
             return Account.Instances[chat_id]
@@ -208,11 +202,13 @@ class Account:
 
     @staticmethod
     def GetHardcodeAdmin():
-        return {'id': HARDCODE_ADMIN_CHATID, 'username': HARDCODE_ADMIN_USERNAME, 'account': Account.Get(HARDCODE_ADMIN_CHATID)}
+        return {'id': HARDCODE_ADMIN_CHATID, 'username': HARDCODE_ADMIN_USERNAME,
+                'account': Account.Get(HARDCODE_ADMIN_CHATID)}
 
     def is_premium_member(self) -> bool:
         """Check if the account has still plus subscription."""
-        return self.is_admin or (self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date() and self.plus_plan_id)
+        return self.is_admin or (
+                    self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date())
 
     def plan_new_channel(self, channel_id: int, interval: int, channel_name: str,
                          channel_title: str = None) -> Channel | None:
@@ -222,9 +218,8 @@ class Account:
             return channel
         return None
 
-    def upgrade(self, plus_plan_id):
-        plus_plan = PlusPlan.Get(plus_plan_id)
-        Account.Database().upgrade_account(self, plus_plan=plus_plan)
+    def upgrade(self, duration_in_months: int):
+        Account.Database().upgrade_account(self, duration_in_months)
 
     @staticmethod
     def Everybody():
@@ -312,8 +307,9 @@ class Account:
     @staticmethod
     def GetAdmins(just_hardcode_admin: bool = True):
         if not just_hardcode_admin:
-            admins = list(map(lambda data: Account.ExtractQueryRowData(data), Account.Database().get_special_accounts()))
+            admins = list(
+                map(lambda data: Account.ExtractQueryRowData(data), Account.Database().get_special_accounts()))
             if HARDCODE_ADMIN_CHATID:
                 admins.insert(0, Account.GetHardcodeAdmin()['account'])
             return admins
-        return [Account.GetHardcodeAdmin()['account'],]
+        return [Account.GetHardcodeAdmin()['account'], ]
