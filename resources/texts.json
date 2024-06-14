@@ -19,11 +19,11 @@
             "fa": "لیست ماشین حساب من",
             "en": "My Calculator List"
         },
-        "price_notification": {
+        "create_alarm": {
             "fa": "ایجاد هشدار قیمت",
             "en": "Create a Price Alert"
         },
-        "config_notification": {
+        "config_alarms": {
             "fa": "لیست هشدار قیمت من",
             "en": "My Price Alert List"
         },
@@ -82,7 +82,7 @@
             "en": "List"
         }
     },
-    "config_which_market": {
+    "which_market": {
         "fa": "🔹 واحد مدنظرتان در کدام بازار قرار دارد؟",
         "en": "🔹 In which market is your desired unit located?"
     },

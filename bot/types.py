@@ -20,11 +20,12 @@ class SelectionListTypes(Enum):
     CHANNEL = 3
     NOTIFICATION = 4
     EQUALIZER_UNIT = 5
-
+    ALARM = 6
+    
     @staticmethod
     def Which(value: int):
         for option in (SelectionListTypes.FOLLOWING, SelectionListTypes.CALCULATOR, SelectionListTypes.CHANNEL,
-                       SelectionListTypes.NOTIFICATION, SelectionListTypes.EQUALIZER_UNIT):
+                       SelectionListTypes.NOTIFICATION, SelectionListTypes.EQUALIZER_UNIT, SelectionListTypes.ALARM):
             if option.value == value:
                 return option
         return None

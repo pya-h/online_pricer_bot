@@ -42,23 +42,27 @@ class BotMan:
     MAXIMUM_ALLOWED_NUMBER_OF_INLINE_BUTTONS = 100
     class Commands(Enum):
         GET_FA = resourceman.mainkeyboard('get_prices', 'fa')
-        CONFIG_PRICE_LIST_FA = resourceman.mainkeyboard('config_lists')
         CALCULATOR_FA = resourceman.mainkeyboard('calculator', 'fa')
         CRYPTOS_FA = resourceman.keyboard('crypto', 'fa')
         NATIONAL_CURRENCIES_FA = resourceman.keyboard('currency', 'fa')
         GOLDS_FA = resourceman.keyboard('gold', 'fa')
+        CREATE_ALARM_FA = resourceman.mainkeyboard('create_alarm', 'fa')
         CANCEL_FA = resourceman.keyboard('cancel', 'fa')
+        CONFIG_PRICE_LIST_FA = resourceman.mainkeyboard('config_lists')
         CONFIG_CALCULATOR_FA = resourceman.mainkeyboard('config_calculator', 'fa')
+        CONFIG_ALARMS_FA = resourceman.mainkeyboard('config_alarms', 'fa')
         RETURN_FA = resourceman.keyboard('return', 'fa')
 
         GET_EN = resourceman.mainkeyboard('get_prices', 'en')
-        CONFIG_PRICE_LIST_EN = resourceman.mainkeyboard('config_lists', 'en')
         CALCULATOR_EN = resourceman.mainkeyboard('calculator', 'en')
         CRYPTOS_EN = resourceman.keyboard('crypto', 'en')
         NATIONAL_CURRENCIES_EN = resourceman.keyboard('currency', 'en')
         GOLDS_EN = resourceman.keyboard('gold', 'en')
         CANCEL_EN = resourceman.keyboard('cancel', 'en')
+        CREATE_ALARM_EN = resourceman.mainkeyboard('create_alarm', 'en')
+        CONFIG_PRICE_LIST_EN = resourceman.mainkeyboard('config_lists', 'en')
         CONFIG_CALCULATOR_EN = resourceman.mainkeyboard('config_calculator', 'en')
+        CONFIG_ALARMS_EN = resourceman.mainkeyboard('config_alarms', 'en')
         RETURN_EN = resourceman.keyboard('return', 'en')
 
         ADMIN_NOTICES_FA = resourceman.keyboard('admin_notices', 'fa')
@@ -122,13 +126,13 @@ class BotMan:
         # TODO: Update these to be dynamic with languages.
             menu_main_keys = [
                 [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
-                [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value),
-                KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)]
+                [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value), KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)]
+                [KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value), KeyboardButton(BotMan.Commands.CONFIG_ALARMS_FA.value)]
             ]
             menu_main_keys_en = [
                 [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.GET_EN.value)],
-                [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_EN.value),
-                KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)]
+                [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_EN.value), KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)]
+                [KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value), KeyboardButton(BotMan.Commands.CONFIG_ALARMS_EN.value)]
             ]
             self.menu_main = lambda lang: ReplyKeyboardMarkup(menu_main_keys if lang.lower() == 'fa' else menu_main_keys_en, resize_keyboard=True)
 

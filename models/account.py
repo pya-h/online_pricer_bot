@@ -26,6 +26,7 @@ class Account:
         SELECT_LANGUAGE = 6
         CONFIG_MARKETS = 7
         CONFIG_CALCULATOR_LIST = 8
+        CREATE_ALARM = 9
 
         @staticmethod
         def Which(value: int):
@@ -38,7 +39,8 @@ class Account:
                 Account.States.SELECT_INTERVAL,
                 Account.States.SELECT_LANGUAGE,
                 Account.States.CONFIG_MARKETS,
-                Account.States.CONFIG_CALCULATOR_LIST
+                Account.States.CONFIG_CALCULATOR_LIST,
+                Account.States.CREATE_ALARM,
             )
             try:
                 return values[int(value)]
@@ -303,6 +305,8 @@ class Account:
                 return SelectionListTypes.EQUALIZER_UNIT
             case Account.States.CONFIG_CALCULATOR_LIST:
                 return SelectionListTypes.CALCULATOR
+            case Account.States.CREATE_ALARM:
+                return SelectionListTypes.ALARM
         return None
 
     @staticmethod
@@ -311,7 +315,5 @@ class Account:
             admins = list(map(lambda data: Account.ExtractQueryRowData(data), Account.Database().get_special_accounts()))
             if HARDCODE_ADMIN_CHATID:
                 admins.insert(0, Account.GetHardcodeAdmin()['account'])
-            print(admins)
-
             return admins
         return [Account.GetHardcodeAdmin()['account'],]

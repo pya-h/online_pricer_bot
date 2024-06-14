@@ -18,7 +18,7 @@ async def show_market_types(update: Update, context: CallbackContext, next_state
         await botman.ask_for_subscription(update, account.language)
         return
     account.change_state(next_state)
-    await update.message.reply_text(botman.text('config_which_market', account.language),
+    await update.message.reply_text(botman.text('which_market', account.language),
                                     reply_markup=botman.markets_menu(account.language))
 
 
@@ -248,12 +248,16 @@ async def handle_messages(update: Update, context: CallbackContext):
             await show_market_types(update, context, Account.States.CONFIG_MARKETS)
         case BotMan.Commands.CONFIG_CALCULATOR_FA.value | BotMan.Commands.CONFIG_CALCULATOR_EN.value:
             await show_market_types(update, context, Account.States.CONFIG_CALCULATOR_LIST)
+        case BotMan.Commands.CREATE_ALARM_FA.value | BotMan.Commands.CREATE_ALARM_EN.value:
+            await show_market_types(update, context, Account.States.CREATE_ALARM)
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
             await select_coin_menu(update, context)
         case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
             await select_currency_menu(update, context)
         case BotMan.Commands.GOLDS_FA.value | BotMan.Commands.GOLDS_EN.value:
             await select_gold_menu(update, context)
+        case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
+            await cmd_equalizer(update, context)
         case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
             await cmd_send_post(update, context)
         case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
@@ -262,8 +266,6 @@ async def handle_messages(update: Update, context: CallbackContext):
             await cmd_stop_schedule(update, context)
         case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
             await cmd_report_statistics(update, context)
-        case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
-            await cmd_equalizer(update, context)
         case _:
             # check account state first, to see if he/she is in input state
             account = Account.Get(update.effective_chat.id)
@@ -463,6 +465,7 @@ def main():
     app.add_handler(CommandHandler("currency", select_currency_menu))
     app.add_handler(CommandHandler("gold", select_gold_menu))
     app.add_handler(CommandHandler("equalizer", cmd_equalizer))
+    # app.add_handler(CommandHandler("new_alarm", cmd_create_alarm))
 
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
