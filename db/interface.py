@@ -35,7 +35,7 @@ class DatabaseInterface:
         return DatabaseInterface._instance
 
     def migrate(self):
-        '''This method is like a migration thing, after any major update, this must be called to perform any required structural change in db'''
+        """This method is like a migration thing, after any major update, this must be called to perform any required structural change in db"""
         return
         # cursor.execute(f'ALTER TABLE {self.TABLE_ACCOUNTS} ADD {self.ACCOUNT_LAST_INTERACTION} DATE')
         # connection.commit()
@@ -91,10 +91,10 @@ class DatabaseInterface:
             raise Exception("You must provide an Account to save")
         try:
             columns = ', '.join(self.ACCOUNT_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES ()?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             self.execute(False, query, account.chat_id, account.str_desired_currencies(), account.str_desired_cryptos(),
                          account.str_calc_currencies(), account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT),
-                         account.plus_end_date, account.state.value, account.cache, account.is_admin, account.language)
+                         account.plus_end_date, account.state.value, account.cache_as_str(), account.is_admin, account.language)
             log(f"New account: {account} saved into plus database successfully.", category_name=f'plus_info')
         except Exception as ex:
             log(f"Cannot save this account:{account}", ex, category_name=f'plus_database')
@@ -124,14 +124,14 @@ class DatabaseInterface:
                            (account.str_desired_currencies(), account.str_desired_cryptos(),
                             account.str_calc_currencies(), account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT),
                             account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
-                            account.state.value, account.cache, account.is_admin, account.language, account.chat_id))
+                            account.state.value, account.cache_as_str(), account.is_admin, account.language, account.chat_id))
         else:
             columns: str = ', '.join(self.ACCOUNT_COLUMNS)
             cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                            (account.chat_id, account.str_desired_currencies(), account.str_desired_cryptos(),
                             account.str_calc_currencies(), account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT),
                             account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
-                            account.state.value, account.cache, account.is_admin, account.language))
+                            account.state.value, account.cache_as_str(), account.is_admin, account.language))
             log("New account started using this bot with chat_id=: " + account.__str__(), category_name=f'plus_info')
         connection.commit()
         cursor.close()

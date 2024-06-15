@@ -26,44 +26,29 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
     account = Account.Get(update.effective_chat.id)
     if not await botman.has_subscribed_us(account.chat_id, context):
         await botman.ask_for_subscription(update, account.language)
-        raise LookupError('User not a member')
+        return
     list_type = account.match_state_with_selection_type()
-    selection_list = account.handle_market_selection(list_type, market)
-    return list_type, selection_list
+
+    await update.message.reply_text(botman.text('select_your_set', account.language),
+                                    reply_markup=botman.inline_keyboard(list_type, market,
+                                                                        botman.crypto_serv.CoinsInPersian if market == MarketOptions.CRYPTO else (
+                                                                            botman.currency_serv.NationalCurrenciesInPersian if market == MarketOptions.CURRENCY
+                                                                            else botman.currency_serv.GoldsInPersian
+                                                                        ), account.handle_market_selection(list_type, market),
+                                                                        full_names=market != MarketOptions.CRYPTO,
+                                                                        close_button=True))
 
 
 async def select_coin_menu(update: Update, context: CallbackContext):
-    try:
-        list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CRYPTO)
-        await update.message.reply_text(botman.text('select_your_set', Account.Get(update.effective_chat.id).language),
-                                        reply_markup=botman.inline_keyboard(list_type, MarketOptions.CRYPTO, botman.crypto_serv.CoinsInPersian,
-                                                                            selection_list, close_button=True))
-    except LookupError:
-        pass
+    await prepare_market_selection_menu(update, context, MarketOptions.CRYPTO)
 
 
 async def select_currency_menu(update: Update, context: CallbackContext):
-    try:
-        list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CURRENCY)
-        await update.message.reply_text(botman.text('select_your_set', Account.Get(update.effective_chat.id).language),
-                                        reply_markup=botman.inline_keyboard(list_type, MarketOptions.CURRENCY,
-                                                                            botman.currency_serv.NationalCurrenciesInPersian,
-                                                                            selection_list, full_names=True,
-                                                                            close_button=True))
-    except LookupError:
-        pass
+    await prepare_market_selection_menu(update, context, MarketOptions.CURRENCY)
 
 
 async def select_gold_menu(update: Update, context: CallbackContext):
-    try:
-        list_type, selection_list = await prepare_market_selection_menu(update, context, MarketOptions.CURRENCY)
-        await update.message.reply_text(botman.text('select_your_set', Account.Get(update.effective_chat.id).language),
-                                        reply_markup=botman.inline_keyboard(list_type, MarketOptions.GOLD,
-                                                                            botman.currency_serv.GoldsInPersian,
-                                                                            selection_list, full_names=True,
-                                                                            close_button=True))
-    except LookupError:
-        pass
+    await prepare_market_selection_menu(update, context, MarketOptions.GOLD)
 
 
 async def say_youre_not_allowed(reply, language: str = 'fa'):
@@ -121,7 +106,8 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 
 '''
     await update.message.reply_text(botman.text('calculator_hint', account.language) + hint_examples + \
-                                    botman.text('calculator_hint_footer', account.language), reply_markup=botman.cancel_menu(account.language))
+                                    botman.text('calculator_hint_footer', account.language),
+                                    reply_markup=botman.cancel_menu(account.language))
 
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
@@ -202,7 +188,8 @@ async def cmd_send_post(update: Update, context: CallbackContext):
 
     account.change_state(Account.States.SEND_POST)
     await update.message.reply_text('''🔹 پست خود را ارسال کنید:
-(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''', reply_markup=botman.cancel_menu[account.language])
+(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)''',
+                                    reply_markup=botman.cancel_menu[account.language])
 
 
 async def cmd_report_statistics(update: Update, context: CallbackContext):
@@ -229,10 +216,11 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
     for amount in amounts:
         for unit in units:
             if unit in botman.crypto_serv.CoinsInPersian:
-                header, response, _, absoulte_irt = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos)
-                response = botman.currency_serv.irt_to_currencies(absoulte_irt, unit, account.calc_currencies) + "\n\n" + response
+                header, response, _, absolute_irt = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos)
+                response = botman.currency_serv.irt_to_currencies(absolute_irt, unit,
+                                                                  account.calc_currencies) + "\n\n" + response
             else:
-                header, response, absolute_usd, _  = botman.currency_serv.equalize(unit, amount, account.calc_currencies)
+                header, response, absolute_usd, _ = botman.currency_serv.equalize(unit, amount, account.calc_currencies)
                 response += "\n\n" + botman.crypto_serv.usd_to_cryptos(absolute_usd, unit, account.calc_cryptos)
 
             await func_send_message(header + response)
@@ -271,17 +259,20 @@ async def handle_messages(update: Update, context: CallbackContext):
             account = Account.Get(update.effective_chat.id)
             msg = update.message.text
             if msg == BotMan.Commands.CANCEL_FA.value or msg == BotMan.Commands.CANCEL_EN.value:
-                account.change_state()  # reset .state and .state_data
-                await update.message.reply_text('خب چه کاری میتونم برات انجام بدم؟',
+                account.change_state(clear_cache=True)  # reset .state and .state_data
+                await update.message.reply_text(botman.text('operation_canceled', account.language),
                                                 reply_markup=botman.mainkeyboard(account))
             else:
                 match account.state:
                     case Account.States.INPUT_EQUALIZER_AMOUNT:
                         params = msg.split()
                         count_of_params = len(params)
+                        # todo: for now input must be first price and then symbols => you could make the order dynamic
                         # extract parameters and categorize them into units and amounts
                         amounts = []
-                        units = [] if not account.cache else account.cache
+                        units = account.get_cache('input_symbols') or []
+                        if not isinstance(units, list):
+                            units = [units]
                         invalid_units = []
                         index = 0
                         # extract amounts from params
@@ -295,8 +286,7 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                         if not amounts:
                             await update.message.reply_text(
-                                "مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
-                                reply_markup=botman.mainkeyboard(account))
+                               botman.error('invalid_amount', account.language), reply_markup=botman.mainkeyboard(account))
                             return
 
                         # start extracting units
@@ -311,21 +301,21 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                         if invalid_units:
                             await update.message.reply_text(
-                                f'هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند: \n {", ".join(invalid_units)}',
+                                botman.error('unrecognized_currency_symbols', account.language) + ", ".join(invalid_units),
                                 reply_markup=botman.mainkeyboard(account),
                                 reply_to_message_id=update.message.message_id)
                         if not units:
                             # Open select unit reply_markup list
-                            account.state = Account.States.INPUT_EQUALIZER_UNIT
-                            account.change_state(Account.States.INPUT_EQUALIZER_UNIT, amounts)
+                            account.change_state(Account.States.INPUT_EQUALIZER_UNIT, 'input_amounts', amounts)
                             await update.message.reply_text(
-                                f"حال واحد ارز مربوط به این {'مبالغ' if len(amounts) > 1 else 'مبلغ'} را انتخاب کنید:",
-                                reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(), MarketOptions.CRYPTO,
+                                botman.text("select_price_currency_unit", account.language),
+                                reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(),
+                                                                    MarketOptions.CRYPTO,
                                                                     botman.crypto_serv.CoinsInPersian,
                                                                     close_button=True))
                         else:
                             await start_equalizing(update.message.reply_text, account, amounts, units)
-                            account.change_state()  # reset state
+                            account.change_state(clear_cache=True)  # reset state
 
                     case Account.States.SEND_POST:
                         if not account.authorization(context.args):
@@ -334,7 +324,7 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                         # admin is trying to send post
                         all_accounts = Account.Everybody()
-                        progress_text = "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: "
+                        progress_text = botman.text('sending_your_post', account.language)
                         telegram_response = await update.message.reply_text(progress_text)
                         message_id = None
 
@@ -359,12 +349,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                         if message_id:
                             await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
                         await update.message.reply_text(
-                            f'✅ پیام شما با موفقیت برای تمامی کاربران ربات ({len(all_accounts)} نفر) ارسال شد.',
+                            botman.text("post_successfully_sent", account.language) % (len(all_accounts), ),
                             reply_markup=botman.admin_keyboard(account.language))
-                        account.change_state()  # reset .state and .state_data
+                        account.change_state(clear_cache=True)  # reset .state and .state_data
 
                     case _:
-                        await update.message.reply_text("متوجه نشدم! دوباره تلاش کن...",
+                        await update.message.reply_text(botman.error('what_the_fuck', account.language),
                                                         reply_markup=botman.mainkeyboard(account))
 
 
@@ -386,7 +376,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         page = 0
 
     if page == -1 or data['pg'] is None:
-        account.change_state()
+        account.change_state(clear_cache=True)
         await query.message.edit_text(botman.text('list_updated', account.language))
         return
 
@@ -394,28 +384,31 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     if data['v'] and data['v'][0] == '$':
         if data['v'][1] == '#':
             pages_count = int(data["v"][2:]) + 1
-            await query.answer(text=botman.text('log_page_indices', account.language) % (page, pages_count,), show_alert=False)
+            await query.answer(text=botman.text('log_page_indices', account.language) % (page, pages_count,),
+                               show_alert=False)
         return
 
     match account.state:
-        case  Account.States.INPUT_EQUALIZER_UNIT:
-            if account.cache:
+        case Account.States.INPUT_EQUALIZER_UNIT:
+            input_amounts = account.get_cache('input_amounts')
+            if input_amounts:
                 unit_symbol = data['v'].upper()
                 await query.message.edit_text(
-                    ' '.join([str(amount) for amount in account.cache]) + f" {unit_symbol}"
+                    ' '.join([str(amount) for amount in input_amounts]) + f" {unit_symbol}"
                 )
                 await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
-                                    account, account.cache, [unit_symbol])
-                account.change_state()  # reset state
+                                       account, input_amounts, [unit_symbol])
+                account.change_state(clear_cache=True)  # reset state
             else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
                 # condition possible(or not.!)
-                await query.message.edit_text('حالا مبلغ مربوط به این واحد ارزی را وارد کنید:')
-                account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, data['v'].upper())
+                await query.message.edit_text(botman.text("enter_desired_price", account.language))
+                account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, 'input_symbols', data['v'].upper())
             return
         case Account.States.CREATE_ALARM:
+            unit_symbol = data['v'].upper()
 
+            await query.message.edit_text(botman.text("enter_desired_price", account.language))
             return
-
 
     # if the user is configuring a list:
     market = MarketOptions.Which(data['bt'])
@@ -427,9 +420,9 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             reply_markup=botman.inline_keyboard(
                 list_type, market,
                 (botman.crypto_serv.CoinsInPersian,
-                    botman.currency_serv.NationalCurrenciesInPersian,
-                    botman.currency_serv.GoldsInPersian,
-                )[market.value - 1], selection_list, page=page, language=account.language,
+                 botman.currency_serv.NationalCurrenciesInPersian,
+                 botman.currency_serv.GoldsInPersian,
+                 )[market.value - 1], selection_list, page=page, language=account.language,
                 full_names=market != MarketOptions.CRYPTO, close_button=True
             )
         )
@@ -439,22 +432,24 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         if not account.is_premium_member():
             link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
             await query.message.reply_text(
-                text=botman.error('max_selection', account.language) % (max_selection,) + botman.error('get_premium', account.language),
+                text=botman.error('max_selection', account.language) % (max_selection,) + botman.error('get_premium',
+                                                                                                       account.language),
                 reply_markup=botman.inline_url([{'text_key': "premium", 'url': link}])
             )
         else:
             await query.message.reply_text(text=botman.error('max_selection', account.language) % (max_selection,))
     except IndexError as ie:
         log('Invalid market selection procedure', ie, 'general')
-        account.change_state()
+        account.change_state(clear_cache=True)
         await query.message.edit_text(text=botman.error('invalid_market_selection', account.language))
     except BadRequest:
         # when the message content is exactly the same
         pass
     except Exception as selection_ex:
         log('User could\'t select coins', selection_ex, 'general')
-        account.change_state()
+        account.change_state(clear_cache=True)
         await query.message.edit_text(text=botman.error('unknown', account.language))
+
 
 async def cmd_switch_language(update: Update, context: CallbackContext):
     acc = Account.Get(update.effective_chat.id)

@@ -40,6 +40,7 @@ resourceman = ResourceManager('texts', 'resources')
 class BotMan:
     """This class is defined to collect all common and handy options, fields and features of online pricer bot"""
     MAXIMUM_ALLOWED_NUMBER_OF_INLINE_BUTTONS = 100
+
     class Commands(Enum):
         GET_FA = resourceman.mainkeyboard('get_prices', 'fa')
         CALCULATOR_FA = resourceman.mainkeyboard('calculator', 'fa')
@@ -77,7 +78,6 @@ class BotMan:
         ADMIN_STATISTICS_FA = resourceman.keyboard('admin_statistics', 'fa')
         ADMIN_STATISTICS_EN = resourceman.keyboard('admin_statistics', 'en')
 
-
     def __init__(self) -> None:
         self.resourceman = resourceman
         # environment values
@@ -91,7 +91,8 @@ class BotMan:
         NOBITEX_TOKEN = config('NOBITEX_TOKEN')
         ABAN_TETHER_TOKEN = config('ABAN_TETHER_TOKEN')
 
-        self.postman = PostMan(CURRENCY_TOKEN, CMC_API_KEY, aban_tether_api_token=ABAN_TETHER_TOKEN, nobitex_api_token=NOBITEX_TOKEN)
+        self.postman = PostMan(CURRENCY_TOKEN, CMC_API_KEY, aban_tether_api_token=ABAN_TETHER_TOKEN,
+                               nobitex_api_token=NOBITEX_TOKEN)
 
         self.channels = [
             {'id': config('CHANNEL_ID'), 'url': config('CHANNEL_URL')},
@@ -124,72 +125,79 @@ class BotMan:
 
     def setup_main_keyboards(self):
         # TODO: Update these to be dynamic with languages.
-            menu_main_keys = [
-                [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
-                [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value), KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)]
-                [KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value), KeyboardButton(BotMan.Commands.CONFIG_ALARMS_FA.value)]
-            ]
-            menu_main_keys_en = [
-                [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.GET_EN.value)],
-                [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_EN.value), KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)]
-                [KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value), KeyboardButton(BotMan.Commands.CONFIG_ALARMS_EN.value)]
-            ]
-            self.menu_main = lambda lang: ReplyKeyboardMarkup(menu_main_keys if lang.lower() == 'fa' else menu_main_keys_en, resize_keyboard=True)
+        menu_main_keys = [
+            [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
+            [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value), KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)],
+            [KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value), KeyboardButton(BotMan.Commands.CONFIG_ALARMS_FA.value)]
+        ]
+        menu_main_keys_en = [
+            [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.GET_EN.value)],
+            [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_EN.value), KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)],
+            [KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value), KeyboardButton(BotMan.Commands.CONFIG_ALARMS_EN.value)]
+        ]
+        self.menu_main = lambda lang: ReplyKeyboardMarkup(menu_main_keys if lang.lower() == 'fa' else menu_main_keys_en,
+                                                          resize_keyboard=True)
 
-            self.admin_keyboard: ReplyKeyboardMarkup = lambda lang: ReplyKeyboardMarkup([*menu_main_keys,
-                                                    [KeyboardButton(
-                                                        BotMan.Commands.ADMIN_NOTICES_FA.value),
-                                                        KeyboardButton(
-                                                            BotMan.Commands.ADMIN_STATISTICS_FA.value)],
-                                                    [KeyboardButton(
-                                                        BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value),
-                                                        KeyboardButton(
-                                                            BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value)],
-                                                    ], resize_keyboard=True) if lang.lower() == 'fa' else \
-                                                        ReplyKeyboardMarkup([*menu_main_keys_en,
+        self.admin_keyboard = lambda lang: \
+            ReplyKeyboardMarkup([*menu_main_keys,
+                                 [KeyboardButton(
+                                     BotMan.Commands.ADMIN_NOTICES_FA.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_STATISTICS_FA.value)],
+                                 [KeyboardButton(
+                                     BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value)],
+                                 ], resize_keyboard=True) if lang.lower() == 'fa' else \
+            ReplyKeyboardMarkup([*menu_main_keys_en,
 
-                                                            [KeyboardButton(
-                                                                BotMan.Commands.ADMIN_NOTICES_EN.value),
-                                                                KeyboardButton(
-                                                                    BotMan.Commands.ADMIN_STATISTICS_EN.value)],
-                                                            [KeyboardButton(
-                                                                BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value),
-                                                                KeyboardButton(
-                                                                    BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value)],
-                                                            ], resize_keyboard=True)
+                                 [KeyboardButton(
+                                     BotMan.Commands.ADMIN_NOTICES_EN.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_STATISTICS_EN.value)],
+                                 [KeyboardButton(
+                                     BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value)],
+                                 ], resize_keyboard=True)
 
-            self.cancel_menu_key = {'fa': [
-                [KeyboardButton(BotMan.Commands.CANCEL_FA.value)],
-            ], 'en': [
-                [KeyboardButton(BotMan.Commands.CANCEL_EN.value)],
-            ]}
-            self.cancel_menu = lambda lang: ReplyKeyboardMarkup(self.cancel_menu_key[lang], resize_keyboard=True)
+        self.cancel_menu_key = {'fa': [
+            [KeyboardButton(BotMan.Commands.CANCEL_FA.value)],
+        ], 'en': [
+            [KeyboardButton(BotMan.Commands.CANCEL_EN.value)],
+        ]}
+        self.cancel_menu = lambda lang: ReplyKeyboardMarkup(self.cancel_menu_key[lang], resize_keyboard=True)
 
-            self.return_key = {'fa': [
-                [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
-            ], 'en': [
-                [KeyboardButton(BotMan.Commands.RETURN_EN.value)],
-            ]}
+        self.return_key = {'fa': [
+            [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
+        ], 'en': [
+            [KeyboardButton(BotMan.Commands.RETURN_EN.value)],
+        ]}
 
-            self.markets_menu = lambda lang: ReplyKeyboardMarkup([
-                [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_FA.value)],
-                [KeyboardButton(BotMan.Commands.GOLDS_FA.value)],
-                [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)], *self.return_key['fa']
-            ] if lang.lower() == 'fa' else [
-                [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_EN.value)],
-                [KeyboardButton(BotMan.Commands.GOLDS_EN.value)],
-                [KeyboardButton(BotMan.Commands.CRYPTOS_EN.value)], *self.return_key['en']
-            ], resize_keyboard=True)
+        self.markets_menu = lambda lang: ReplyKeyboardMarkup([
+                                                                 [KeyboardButton(
+                                                                     BotMan.Commands.NATIONAL_CURRENCIES_FA.value)],
+                                                                 [KeyboardButton(BotMan.Commands.GOLDS_FA.value)],
+                                                                 [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)],
+                                                                 *self.return_key['fa']
+                                                             ] if lang.lower() == 'fa' else [
+            [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_EN.value)],
+            [KeyboardButton(BotMan.Commands.GOLDS_EN.value)],
+            [KeyboardButton(BotMan.Commands.CRYPTOS_EN.value)], *self.return_key['en']
+        ], resize_keyboard=True)
 
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return self.menu_main(account.language) if not account.is_admin else self.admin_keyboard(account.language)
 
-    def create_callback_data(button_type: Enum | str, value: str | int | float | bool, list_type: Enum | str | None = None, is_command: bool = False):
+    @staticmethod
+    def create_callback_data(button_type: Enum | str, value: str | int | float | bool,
+                             list_type: Enum | str | None = None, is_command: bool = False):
         return jsonify({"lt": list_type.value if isinstance(list_type, Enum) else list_type,
                         "bt": button_type.value if isinstance(button_type, Enum) else button_type,
                         "v": value if not is_command else f'#{value}'})
 
-    def inline_keyboard(self, list_type: Enum, button_type: Enum, choices: Dict[str, str], selected_ones: List[str] = None, page: int = 0, max_page_buttons: int = 90,
+    def inline_keyboard(self, list_type: Enum, button_type: Enum, choices: Dict[str, str],
+                        selected_ones: List[str] = None, page: int = 0, max_page_buttons: int = 90,
                         full_names: bool = False, close_button: bool = False, language: str = 'fa'):
         """this function creates inline keyboard for selecting/deselecting some options"""
 
@@ -197,13 +205,13 @@ class BotMan:
             return jsonify({"lt": list_type.value if list_type else None,
                             "bt": button_type.value,
                             "pg": page,
-                            "v": value}) #  used the create_callback_data code directly to enhance performance
+                            "v": value})  # used the create_callback_data code directly to enhance performance
 
         def special_button_callback_data(command: str | int | float | bool, page: int = 0):
             return jsonify({"lt": list_type.value if list_type else None,
                             "bt": button_type.value,
                             "pg": page,
-                            "v": f"${command}"}) #  used the create_callback_data code directly to enhance performance
+                            "v": f"${command}"})  # used the create_callback_data code directly to enhance performance
 
         if not selected_ones:
             selected_ones = []
@@ -214,15 +222,18 @@ class BotMan:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
             if idx_last > buttons_count:
                 idx_last = buttons_count
-            lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language.lower() == 'fa' else (idx_first + 1, idx_last)
+            lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language.lower() == 'fa' else (
+                idx_first + 1, idx_last)
 
             pages_count = int(buttons_count / max_page_buttons)
             choice_keys = list(choices.keys())[idx_first:idx_last]
             pagination_menu = [
                 InlineKeyboardButton('<<', callback_data=choice_callback_data(page=0)),
                 InlineKeyboardButton('<', callback_data=choice_callback_data(page=page - 1 if page > 0 else 0)),
-                InlineKeyboardButton(f'({lbl_first}-{lbl_last})', callback_data=special_button_callback_data(f"#{pages_count+1}")),
-                InlineKeyboardButton('>', callback_data=choice_callback_data(page=page + 1 if page < pages_count else int(pages_count))),
+                InlineKeyboardButton(f'({lbl_first}-{lbl_last})',
+                                     callback_data=special_button_callback_data(f"#{pages_count + 1}")),
+                InlineKeyboardButton('>', callback_data=choice_callback_data(
+                    page=page + 1 if page < pages_count else int(pages_count))),
                 InlineKeyboardButton('>>', callback_data=choice_callback_data(page=pages_count)),
             ]
         else:
@@ -247,7 +258,8 @@ class BotMan:
             buttons.append(pagination_menu)
 
         if close_button:
-            buttons.append([InlineKeyboardButton(self.resourceman.keyboard('close'), callback_data=choice_callback_data(page=-1))])
+            buttons.append(
+                [InlineKeyboardButton(self.resourceman.keyboard('close'), callback_data=choice_callback_data(page=-1))])
         return InlineKeyboardMarkup(buttons)
 
     def inline_url(self, urls_data: List[Dict[str, str]]):
@@ -331,7 +343,8 @@ class BotMan:
                 source = self.crypto_serv
 
             if alarm.current_price is not None:
-                alarm.full_currency_name = {'en': alarm.currency.upper(), 'fa': source.GetPersianName(alarm.currency.upper())}
+                alarm.full_currency_name = {'en': alarm.currency.upper(),
+                                            'fa': source.GetPersianName(alarm.currency.upper())}
                 match alarm.change_direction:
                     case PriceAlarm.ChangeDirection.UP:
                         if alarm.current_price >= alarm.target_price:
@@ -357,12 +370,15 @@ class BotMan:
                 account = Account.Get(alarm.chat_id, prevent_instance_arrangement=True)
                 target_price = cut_and_separate(alarm.target_price)
                 current_price = cut_and_separate(alarm.current_price)
-                currency_name, unit_name = alarm.full_currency_name[account.language], unit_names[alarm.target_unit][account.language]
+                currency_name, unit_name = alarm.full_currency_name[account.language], unit_names[alarm.target_unit][
+                    account.language]
 
                 if account.language == 'fa':
                     target_price, current_price = persianify(target_price), persianify(current_price)
-                price_alarm_text = self.text('price_alarm', account.language) % (currency_name, target_price, unit_name) +\
-                    self.text('current_price_is', account.language) % (currency_name, current_price, unit_name)
+                price_alarm_text = self.text('price_alarm', account.language) % (
+                    currency_name, target_price, unit_name) + \
+                                   self.text('current_price_is', account.language) % (
+                                       currency_name, current_price, unit_name)
                 await send_message_func(chat_id=account.chat_id, text=price_alarm_text)
                 alarm.disable()
             except:

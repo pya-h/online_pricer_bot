@@ -122,6 +122,18 @@
         "invalid_market_selection": {
             "fa": "به نظر می رسد فرایند انتخاب بازار را به درستی طی نکرده اید لطفا مجددا تلاش کنید.",
             "en": "It seems that Market Selection procedure has not gone well, Please try again."
+        },
+        "invalid_amount": {
+            "fa": "مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
+            "en": "Please enter a valid amount to proceed..."
+        },
+        "unrecognized_currency_symbols": {
+            "fa": "هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند:\n",
+            "en": "Sorry! Could not recognize the these symbols:"
+        },
+        "what_the_fuck": {
+            "fa": "متاسفانه درخواست شما شناسایی نشد!",
+            "en": "I couldn't understand your request."
         }
     },
     "select_your_set": {
@@ -151,5 +163,26 @@
     "current_price_is": {
         "fa": "قیمت %s هم اکنون %s %s می باشد.",
         "en": "%s price is now %s %s"
+    },
+    "operation_canceled": {
+        "fa": "عملیات موردنظر لغو شد.",
+        "en": "Operation canceled."
+    },
+    "sending_your_post": {
+        "fa": "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: ",
+        "en": "I'm now sending this post to our users. This may take a while...\n\nProgress:"
+    },
+    "post_successfully_sent": {
+        "fa": "✅ پیام شما با موفقیت برای تمامی کاربران ربات (%d نفر) ارسال شد.",
+        "en": "Your post has been successfully to all [%d] users."
+    },
+    "select_price_currency_unit": {
+        "fa": "حال واحد ارز مربوط به این مبلغ (ها) را انتخاب کنید:",
+        "en": "Now select the currency unit of the price(s):"
+    },
+    "enter_desired_price": {
+        "fa": "🔹 قیمت مدنظرتان را [با ارقام انگلیسی] بنویسید:",
+        "en": "Write your desired price:"
     }
+
 }

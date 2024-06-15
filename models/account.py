@@ -5,8 +5,10 @@ from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from tools.manuwriter import log
 from enum import Enum
 from models.channel import Channel
-from typing import List
+from typing import List, Dict
 from bot.types import SelectionListTypes, MarketOptions
+from json import loads as json_parse, dumps as jsonify
+
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
 ADMIN_PASSWORD = config('ADMIN_PASSWORD')
@@ -101,7 +103,7 @@ class Account:
         self.last_interaction: datetime = tz_today()
         self.language: str = language
         self.state: Account.States = state
-        self.cache = cache
+        self.cache: Dict[str, any] = cache
         self.plus_end_date = plus_end_date
         self.desires_count_max = 10
         self.alarms_count_max = 3
@@ -111,9 +113,26 @@ class Account:
         if not prevent_instance_arrangement:
             self.arrange_instances()
 
-    def change_state(self, state: States = States.NONE, data: any = None):
+    def change_state(self, state: States = States.NONE, cache_key: str = None, data: any = None, clear_cache: bool = False):
         self.state = state
-        self.cache = data
+        self.add_cache(cache_key, data, clear_cache)
+
+    def add_cache(self, cache_key: str = None, data: any = None, clear_cache: bool = False):
+        if clear_cache:
+            self.clear_cache()
+        if cache_key:
+            self.cache[cache_key] = data
+
+    def delete_specific_cache(self, **keys):
+        keys = list(keys)
+        for key in keys:
+            del self.cache[key]
+
+    def clear_cache(self):
+        self.cache = {}
+
+    def get_cache(self, cache_key: str = None):
+        return self.cache[cache_key] if cache_key in self.cache else None
 
     def __str__(self) -> str:
         return f'{self.chat_id}'
@@ -180,7 +199,7 @@ class Account:
 
         plus_end_date = datetime.strptime(row[-5], DatabaseInterface.DATE_FORMAT) if row[-5] else None
         state = Account.States.Which(row[-4])
-        cache = row[-3]
+        cache = Account.load_cache(row[-3])
         is_admin = row[-2]
         language = row[-1]
         return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos),
@@ -220,6 +239,13 @@ class Account:
 
     def upgrade(self, duration_in_months: int):
         Account.Database().upgrade_account(self, duration_in_months)
+
+    def cache_as_str(self) -> str | None:
+        return jsonify(self.cache) if self.cache else None
+
+    @staticmethod
+    def load_cache(data_string: str | None):
+        return json_parse(data_string) if data_string else {}
 
     @staticmethod
     def Everybody():
