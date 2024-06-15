@@ -252,110 +252,114 @@ async def handle_messages(update: Update, context: CallbackContext):
             await cmd_stop_schedule(update, context)
         case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
             await cmd_report_statistics(update, context)
+        case BotMan.Commands.CANCEL_FA.value | BotMan.Commands.CANCEL_EN.value:
+            account = Account.Get(update.effective_chat.id)
+            account.change_state(clear_cache=True)  # reset .state and .state_data
+            await update.message.reply_text(botman.text('operation_canceled', account.language),
+                                            reply_markup=botman.mainkeyboard(account))
         case _:
             # check account state first, to see if he/she is in input state
             account = Account.Get(update.effective_chat.id)
             msg = update.message.text
-            if msg == BotMan.Commands.CANCEL_FA.value or msg == BotMan.Commands.CANCEL_EN.value:
-                account.change_state(clear_cache=True)  # reset .state and .state_data
-                await update.message.reply_text(botman.text('operation_canceled', account.language),
-                                                reply_markup=botman.mainkeyboard(account))
-            else:
-                match account.state:
-                    case Account.States.INPUT_EQUALIZER_AMOUNT:
-                        params = msg.split()
-                        count_of_params = len(params)
-                        # todo: for now input must be first price and then symbols => you could make the order dynamic
-                        # extract parameters and categorize them into units and amounts
-                        amounts = []
-                        units = account.get_cache('input_symbols') or []
-                        if not isinstance(units, list):
-                            units = [units]
-                        invalid_units = []
-                        index = 0
-                        # extract amounts from params
-                        try:
-                            while index < count_of_params:
-                                amount = float(params[index])
-                                amounts.append(amount)
-                                index += 1
-                        except:
-                            pass
 
-                        if not amounts:
-                            await update.message.reply_text(
-                                botman.error('invalid_amount', account.language),
-                                reply_markup=botman.mainkeyboard(account))
-                            return
-
-                        # start extracting units
+            match account.state:
+                case Account.States.INPUT_EQUALIZER_AMOUNT:
+                    params = msg.split()
+                    count_of_params = len(params)
+                    # todo: for now input must be first price and then symbols => you could make the order dynamic
+                    # extract parameters and categorize them into units and amounts
+                    amounts = []
+                    units = account.get_cache('input_symbols') or []
+                    if not isinstance(units, list):
+                        units = [units]
+                    invalid_units = []
+                    index = 0
+                    # extract amounts from params
+                    try:
                         while index < count_of_params:
-                            source_symbol = params[index].upper()
-                            if source_symbol in botman.crypto_serv.CoinsInPersian or source_symbol in botman.currency_serv.CurrenciesInPersian:
-                                units.append(source_symbol)
-                            else:
-                                invalid_units.append(source_symbol)
-
+                            amount = float(params[index])
+                            amounts.append(amount)
                             index += 1
+                    except:
+                        pass
 
-                        if invalid_units:
-                            await update.message.reply_text(
-                                botman.error('unrecognized_currency_symbols', account.language) + ", ".join(
-                                    invalid_units),
-                                reply_markup=botman.mainkeyboard(account),
-                                reply_to_message_id=update.message.message_id)
-                        if not units:
-                            # Open select unit reply_markup list
-                            account.change_state(Account.States.INPUT_EQUALIZER_UNIT, 'input_amounts', amounts)
-                            await update.message.reply_text(
-                                botman.text("select_price_currency_unit", account.language),
-                                reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(),
-                                                                    MarketOptions.CRYPTO,
-                                                                    botman.crypto_serv.CoinsInPersian,
-                                                                    close_button=True))
-                        else:
-                            await start_equalizing(update.message.reply_text, account, amounts, units)
-                            account.change_state(clear_cache=True)  # reset state
-
-                    case Account.States.SEND_POST:
-                        if not account.authorization(context.args):
-                            await say_youre_not_allowed(update.message.reply_text, account.language)
-                            return
-
-                        # admin is trying to send post
-                        all_accounts = Account.Everybody()
-                        progress_text = botman.text('sending_your_post', account.language)
-                        telegram_response = await update.message.reply_text(progress_text)
-                        message_id = None
-
-                        try:
-                            message_id = int(str(telegram_response['message_id']))
-                        except:
-                            pass
-
-                        number_of_accounts = len(all_accounts)
-                        progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
-                        for index, chat_id in enumerate(all_accounts):
-                            try:
-                                if message_id and index % progress_update_trigger == 0:
-                                    progress = 100 * index / number_of_accounts
-                                    await context.bot.edit_message_text(chat_id=account.chat_id,
-                                                                        message_id=message_id,
-                                                                        text=f'{progress_text}{progress:.2f} %')
-                                if chat_id != account.chat_id:
-                                    await update.message.copy(chat_id)
-                            except:
-                                pass  # maybe remove the account from database ?
-                        if message_id:
-                            await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
+                    if not amounts:
                         await update.message.reply_text(
-                            botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
-                            reply_markup=botman.admin_keyboard(account.language))
-                        account.change_state(clear_cache=True)  # reset .state and .state_data
+                            botman.error('invalid_amount', account.language),
+                            reply_markup=botman.mainkeyboard(account))
+                        return
 
-                    case _:
-                        await update.message.reply_text(botman.error('what_the_fuck', account.language),
-                                                        reply_markup=botman.mainkeyboard(account))
+                    # start extracting units
+                    while index < count_of_params:
+                        source_symbol = params[index].upper()
+                        if source_symbol in botman.crypto_serv.CoinsInPersian or source_symbol in botman.currency_serv.CurrenciesInPersian:
+                            units.append(source_symbol)
+                        else:
+                            invalid_units.append(source_symbol)
+
+                        index += 1
+
+                    if invalid_units:
+                        await update.message.reply_text(
+                            botman.error('unrecognized_currency_symbols', account.language) + ", ".join(
+                                invalid_units),
+                            reply_markup=botman.mainkeyboard(account),
+                            reply_to_message_id=update.message.message_id)
+                    if not units:
+                        # Open select unit reply_markup list
+                        account.change_state(Account.States.INPUT_EQUALIZER_UNIT, 'input_amounts', amounts)
+                        await update.message.reply_text(
+                            botman.text("select_price_currency_unit", account.language),
+                            reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(),
+                                                                MarketOptions.CRYPTO,
+                                                                botman.crypto_serv.CoinsInPersian,
+                                                                close_button=True))
+                    else:
+                        await start_equalizing(update.message.reply_text, account, amounts, units)
+                        account.change_state(clear_cache=True)  # reset state
+
+                case Account.States.SEND_POST:
+                    if not account.authorization(context.args):
+                        await say_youre_not_allowed(update.message.reply_text, account.language)
+                        return
+
+                    # admin is trying to send post
+                    all_accounts = Account.Everybody()
+                    progress_text = botman.text('sending_your_post', account.language)
+                    telegram_response = await update.message.reply_text(progress_text)
+                    message_id = None
+
+                    try:
+                        message_id = int(str(telegram_response['message_id']))
+                    except:
+                        pass
+
+                    number_of_accounts = len(all_accounts)
+                    progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
+                    for index, chat_id in enumerate(all_accounts):
+                        try:
+                            if message_id and index % progress_update_trigger == 0:
+                                progress = 100 * index / number_of_accounts
+                                await context.bot.edit_message_text(chat_id=account.chat_id,
+                                                                    message_id=message_id,
+                                                                    text=f'{progress_text}{progress:.2f} %')
+                            if chat_id != account.chat_id:
+                                await update.message.copy(chat_id)
+                        except:
+                            pass  # maybe remove the account from database ?
+                    if message_id:
+                        await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
+                    await update.message.reply_text(
+                        botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
+                        reply_markup=botman.admin_keyboard(account.language))
+                    account.change_state(clear_cache=True)  # reset .state and .state_data
+                case Account.States.CREATE_ALARM:
+                    target_symbol = account.get_cache('alarm_target_symbol')
+                    target_price = float(msg)
+                    
+                case _:
+                    await update.message.reply_text(botman.error('what_the_fuck', account.language),
+                                                    reply_markup=botman.mainkeyboard(account))
 
 
 async def handle_action_queries(query: CallbackQuery, account: Account, callback_data: dict | None = None):
@@ -411,8 +415,11 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                                show_alert=False)
         return
 
-    match account.state:
-        case Account.States.INPUT_EQUALIZER_UNIT:
+    market = MarketOptions.Which(data['bt'])
+    list_type = SelectionListTypes.Which(data['lt'])
+
+    match list_type:
+        case SelectionListTypes.EQUALIZER_UNIT:
             input_amounts = account.get_cache('input_amounts')
             if input_amounts:
                 unit_symbol = data['v'].upper()
@@ -427,15 +434,13 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 await query.message.edit_text(botman.text("enter_desired_price", account.language))
                 account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, 'input_symbols', data['v'].upper())
             return
-        case Account.States.CREATE_ALARM:
-            unit_symbol = data['v'].upper()
-
+        case SelectionListTypes.ALARM:
+            account.change_state(Account.States.CREATE_ALARM, 'alarm_target_symbol',  data['v'].upper())
             await query.message.edit_text(botman.text("enter_desired_price", account.language))
             return
 
     # if the user is configuring a list:
-    market = MarketOptions.Which(data['bt'])
-    list_type = SelectionListTypes.Which(data['lt'])
+
     try:
         selection_list = account.handle_market_selection(list_type, market, data['v'])
 
