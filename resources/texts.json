@@ -1,7 +1,4 @@
 {
-    "not_allowed": {
-
-    },
     "main_keyboard": {
         "get_prices": {
             "fa": "مشاهده قیمت ها",
@@ -80,6 +77,14 @@
         "list_indices": {
             "fa": "لیست",
             "en": "List"
+        },
+        "language_english": {
+            "fa": "🇬🇧 انگلیسی",
+            "en": "🇬🇧 English"
+        },
+        "language_persian": {
+            "fa": "🇮🇷 فارسی",
+            "en": "🇮🇷 Persian"
         }
     },
     "which_market": {
@@ -134,6 +139,10 @@
         "what_the_fuck": {
             "fa": "متاسفانه درخواست شما شناسایی نشد!",
             "en": "I couldn't understand your request."
+        },
+        "invalid_language": {
+            "fa": "زبان انتخاب شده نامعلوم است!",
+            "en": "Selected language is invalid!"
         }
     },
     "select_your_set": {
@@ -183,6 +192,14 @@
     "enter_desired_price": {
         "fa": "🔹 قیمت مدنظرتان را [با ارقام انگلیسی] بنویسید:",
         "en": "Write your desired price:"
+    },
+    "channel_plan_already_started":  {
+        "fa": "فرآیند به روزرسانی قبلا شروع شده است.",
+        "en": "Planning process is already started."
+    },
+    "welcome_choose_language": {
+        "fa": "کاربر %s\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏\n\n🔹 زبان ربات را تعیین کنید:",
+        "en": "User %s\nWelcome to the [ Online pricer ] bot 🌷🙏\n\n🔹 Set the language of bot:"
     }
 
 }

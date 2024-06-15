@@ -1,6 +1,6 @@
 from telegram.ext import CallbackContext, filters, CommandHandler, ApplicationBuilder as BotApplicationBuilder, \
     MessageHandler, CallbackQueryHandler
-from telegram import Update
+from telegram import Update, CallbackQuery
 from telegram.error import BadRequest
 from models.account import Account
 import json
@@ -8,6 +8,7 @@ from tools.manuwriter import log
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
+
 
 botman = BotMan()
 
@@ -34,7 +35,8 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
                                                                         botman.crypto_serv.CoinsInPersian if market == MarketOptions.CRYPTO else (
                                                                             botman.currency_serv.NationalCurrenciesInPersian if market == MarketOptions.CURRENCY
                                                                             else botman.currency_serv.GoldsInPersian
-                                                                        ), account.handle_market_selection(list_type, market),
+                                                                        ), account.handle_market_selection(list_type,
+                                                                                                           market),
                                                                         full_names=market != MarketOptions.CRYPTO,
                                                                         close_button=True))
 
@@ -72,12 +74,8 @@ async def cmd_welcome(update: Update, context: CallbackContext):
     # get old or create new account => automatically will be added to Account.Instances
     if not await botman.has_subscribed_us(acc.chat_id, context):
         return await botman.ask_for_subscription(update, acc.language)
-
-    await update.message.reply_text(f'''کاربر {update.message.chat.first_name}\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏
-
-اگر برای اولین بار است که میخواهید از این ربات استفاده کنید توصیه میکنیم از طریق لینک زیر آموزش ویدیوئی ربات را مشاهده کنید:
-🎥 https://t.me/Online_pricer/3443''', disable_web_page_preview=True,
-                                    reply_markup=botman.mainkeyboard(acc))
+    await update.message.reply_text(botman.text('welcome_choose_language', acc.language) % (update.message.chat.first_name,),
+                                    reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.CHOOSE_LANGUAGE, {'fa': 'language_persian', 'en': 'language_english'}, language=acc.language))
 
 
 async def cmd_get_prices(update: Update, context: CallbackContext):
@@ -127,7 +125,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         log("Something went wrong while scheduling: ", e)
 
     if botman.is_main_plan_on:
-        await update.message.reply_text("فرآیند به روزرسانی قبلا شروع شده است.")
+        await update.message.reply_text()
         return
 
     botman.is_main_plan_on = True
@@ -286,7 +284,8 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                         if not amounts:
                             await update.message.reply_text(
-                               botman.error('invalid_amount', account.language), reply_markup=botman.mainkeyboard(account))
+                                botman.error('invalid_amount', account.language),
+                                reply_markup=botman.mainkeyboard(account))
                             return
 
                         # start extracting units
@@ -301,7 +300,8 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                         if invalid_units:
                             await update.message.reply_text(
-                                botman.error('unrecognized_currency_symbols', account.language) + ", ".join(invalid_units),
+                                botman.error('unrecognized_currency_symbols', account.language) + ", ".join(
+                                    invalid_units),
                                 reply_markup=botman.mainkeyboard(account),
                                 reply_to_message_id=update.message.message_id)
                         if not units:
@@ -349,7 +349,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                         if message_id:
                             await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
                         await update.message.reply_text(
-                            botman.text("post_successfully_sent", account.language) % (len(all_accounts), ),
+                            botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
                             reply_markup=botman.admin_keyboard(account.language))
                         account.change_state(clear_cache=True)  # reset .state and .state_data
 
@@ -358,13 +358,36 @@ async def handle_messages(update: Update, context: CallbackContext):
                                                         reply_markup=botman.mainkeyboard(account))
 
 
+async def handle_action_queries(query: CallbackQuery, account: Account, callback_data: dict | None = None):
+    if callback_data:
+        callback_data = json.loads(query.data)
+
+    match callback_data['act']:
+        case BotMan.QueryActions.CHOOSE_LANGUAGE:
+            lang = callback_data['v'].lower()
+            if lang != 'fa' and lang != 'en':
+                await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
+                return
+            account.language = lang
+            account.save()
+            await query.message.edit_text(botman.text('language_switched', account.language))
+
+
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
     # FIXME: clicking return on market selection page, will say 'did not understand'
     query = update.callback_query
-    account: Account = Account.Get(update.effective_chat.id)
-    data = json.loads(query.data)
-    if not data:
+    if not query.data:
         return
+
+    data = json.loads(query.data)
+    account: Account = Account.Get(update.effective_chat.id)
+    # first check query type
+    if 'act' in data:
+        # action queries are handled here
+        await handle_action_queries(query, account, data)
+        return
+
+    # list queries are handled below
 
     # check if user is changing list page:
     page: int
