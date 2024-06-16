@@ -129,19 +129,7 @@ class NavasanService(CurrencyService):
             slug_l = slug.lower()
             row: str
             if slug_l in api_data and 'value' in api_data[slug_l]:
-                curr = api_data[slug_l]
-                price = float(curr['value'])
-                toman: float = 0.0
-                usd: float | None = None
-                if 'usd' not in curr or not curr['usd']:
-                    toman, _ = self.rounded_prices(price, False)
-                else:
-                    usd, toman = self.rounded_prices(price)
-
-                toman = persianify(toman)
-                if price < 0:
-                    toman = f"{toman[1:]}-"
-                row = f"{NavasanService.CurrenciesInPersian[slug]}: {toman} تومان" + (f" / {usd}$" if usd else '')
+                row = self.new_price_text_row(slug_l, api_data)
             else:
                 row = f'{NavasanService.CurrenciesInPersian[slug]}: ❗️ قیمت دریافت نشد.'
 
@@ -194,14 +182,6 @@ class NavasanService(CurrencyService):
             self.latest_data = []
         return self.latest_data
 
-    def get_single_price(self, currency_symbol: str, price_unit: str = 'usd'):
-        curr = currency_symbol.lower()
-        if not curr in self.latest_data:
-            return None
-        if curr == self.DOLLAR_SYMBOL:
-            return self.UsdInTomans
-        return self.latest_data[curr]['value'] if price_unit.lower() == 'irt' else self.irt_to_usd(self.latest_data[curr]['value'])
-
     def irt_to_usd(self, irt_price: float | int) -> float | int:
         return irt_price / self.UsdInTomans
 
@@ -242,3 +222,32 @@ class NavasanService(CurrencyService):
             self.latest_data[source_unit_symbol.lower()]['value'])
 
         return  header, self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies), self.irt_to_usd(absolute_amount), absolute_amount
+
+    def get_single_price(self, currency_symbol: str, price_unit: str = 'usd'):
+        curr = currency_symbol.lower()
+        if not self.latest_data or not isinstance(self.latest_data, dict) or \
+                not isinstance(self.latest_data, list) or not curr in self.latest_data or not 'value' in self.latest_data[curr]:
+            return None
+        if curr == self.DOLLAR_SYMBOL:
+            return self.UsdInTomans
+        return self.latest_data[curr]['value'] if price_unit.lower() == 'irt' else self.irt_to_usd(self.latest_data[curr]['value'])
+
+    def new_price_text_row(self, symbol: str, latest_api_response: Dict[str, float | int | bool | str], short_text: bool = True) -> str:
+        price: float
+        currency_data: Dict[str, float | int | bool | str]
+        try:
+            currency_data = latest_api_response[symbol.lower()]
+            price = float(currency_data['value'])
+        except:
+            return None
+        toman: float = 0.0
+        usd: float | None = None
+        if 'usd' not in currency_data or not currency_data['usd']:
+            toman, _ = self.rounded_prices(price, False)
+        else:
+            usd, toman = self.rounded_prices(price)
+
+        toman = persianify(toman)
+        if price < 0:
+            toman = f"{toman[1:]}-"
+        return f"{NavasanService.CurrenciesInPersian[symbol.upper()]}: {toman} تومان" + (f" / {usd}$" if usd else '')

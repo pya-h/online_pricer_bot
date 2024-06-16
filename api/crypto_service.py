@@ -28,7 +28,9 @@ class CryptoCurrencyService(APIService):
         self.get_desired_ones = lambda desired_ones: desired_ones or list(CryptoCurrencyService.CoinsInPersian.keys())[
                                                                      :self.max_desired_selection]
 
-    def crypto_description_row(self, name: str, symbol: str, price: float | int | str, short_text: bool = True):
+    def new_price_text_row(self, name: str, symbol: str, latest_api_response: Dict[str, any], short_text: bool = True) -> str:
+        price = coin['quote'][self.price_unit]['price']
+        name = coin['name'] if symbol != BaseAPIService.TETHER_SYMBOL else 'Tether'
         if isinstance(price, str):
             price = float(price)
         if symbol != 'USDT':
@@ -67,7 +69,7 @@ class CoinGeckoService(CryptoCurrencyService):
             name = coin['name'] if symbol != self.TETHER_SYMBOLTETHER_SYMBOL else 'Tether'
             if symbol in desired_coins:
                 price = coin['market_data']['current_price'][self.DOLLAR_SYMBOL.lower()]
-                res += self.crypto_description_row(name, symbol, price)
+                res += self.new_price_text_row(name, symbol, price)
 
         if res:
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}'
@@ -127,7 +129,7 @@ class CoinMarketCapService(CryptoCurrencyService):
                 #     res += f'❗️ {CryptoCurrencyService.CoinsInPersian[coin]}: قیمت دریافت نشد.'
                 price = coin['quote'][self.price_unit]['price']
                 name = coin['name'] if symbol != BaseAPIService.TETHER_SYMBOL else 'Tether'
-                res += self.crypto_description_row(name, symbol, price, short_text=short_text)
+                res += self.new_price_text_row(name, symbol, price, short_text=short_text)
 
         if res:
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}'
@@ -166,10 +168,17 @@ class CoinMarketCapService(CryptoCurrencyService):
         return header, self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos), absolute_amount, self.to_irt_exact(absolute_amount, True)
 
     def get_single_price(self, crypto_symbol: str, price_unit: str = 'usd', tether_instead_of_dollars: bool = True):
-        coin = crypto_symbol.upper()
-        if not coin in self.latest_data:
+        if not self.latest_data or not isinstance(self.latest_data, list) or not isinstance(self.latest_data, dict):
             return None
+        coin = crypto_symbol.upper()
         price_unit = price_unit.lower()
         if coin == self.TETHER_SYMBOL and price_unit == 'irt':
             return self.TetherInTomans
-        return self.to_irt_exact(self.latest_data[coin][0]['quote'][self.price_unit]['price'], tether_instead_of_dollars) if price_unit == 'irt' else self.latest_data[coin][0]['quote'][self.price_unit]['price']
+        finder = lambda item: 'symbol' in item and item['symbol'].upper() == coin
+        data = [item for item in self.latest_data if finder(item)]
+
+        if not data:
+            return None
+
+        return self.to_irt_exact(data[0]['quote'][self.price_unit]['price'], tether_instead_of_dollars) \
+            if price_unit == 'irt' else data[0]['quote'][self.price_unit]['price']

@@ -317,7 +317,11 @@ async def handle_messages(update: Update, context: CallbackContext):
                     else:
                         await start_equalizing(update.message.reply_text, account, amounts, units)
                         account.change_state(clear_cache=True)  # reset state
-
+                        
+                case Account.States.CREATE_ALARM:
+                    target_symbol = account.get_cache('alarm_target_symbol')
+                    target_price = float(msg)
+                    
                 case Account.States.SEND_POST:
                     if not account.authorization(context.args):
                         await say_youre_not_allowed(update.message.reply_text, account.language)
@@ -353,10 +357,6 @@ async def handle_messages(update: Update, context: CallbackContext):
                         botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
                         reply_markup=botman.admin_keyboard(account.language))
                     account.change_state(clear_cache=True)  # reset .state and .state_data
-                case Account.States.CREATE_ALARM:
-                    target_symbol = account.get_cache('alarm_target_symbol')
-                    target_price = float(msg)
-                    
                 case _:
                     await update.message.reply_text(botman.error('what_the_fuck', account.language),
                                                     reply_markup=botman.mainkeyboard(account))
