@@ -232,7 +232,9 @@ class NavasanService(CurrencyService):
             return self.UsdInTomans
         return self.latest_data[curr]['value'] if price_unit.lower() == 'irt' else self.irt_to_usd(self.latest_data[curr]['value'])
 
-    def new_price_text_row(self, symbol: str, latest_api_response: Dict[str, float | int | bool | str], short_text: bool = True) -> str:
+    def new_price_text_row(self, symbol: str, latest_api_response: Dict[str, float | int | bool | str] | None = None, short_text: bool = True) -> str:
+        if not latest_api_response:
+            latest_api_response = self.latest_data
         price: float
         currency_data: Dict[str, float | int | bool | str]
         try:
