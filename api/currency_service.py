@@ -129,7 +129,7 @@ class NavasanService(CurrencyService):
             slug_l = slug.lower()
             row: str
             if slug_l in api_data and 'value' in api_data[slug_l]:
-                row = self.new_price_text_row(slug_l, api_data)
+                row = self.new_price_text_row(slug_l, api_data, short_text)
             else:
                 row = f'{NavasanService.CurrenciesInPersian[slug]}: ❗️ قیمت دریافت نشد.'
 

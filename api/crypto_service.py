@@ -1,7 +1,6 @@
 import coinmarketcapapi as cmc_api
 from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from api.currency_service import NavasanService
 from typing import Union
 
 
@@ -27,19 +26,6 @@ class CryptoCurrencyService(APIService):
             CryptoCurrencyService.CoinsInPersian = CryptoCurrencyService.LoadPersianNames()
         self.get_desired_ones = lambda desired_ones: desired_ones or list(CryptoCurrencyService.CoinsInPersian.keys())[
                                                                      :self.max_desired_selection]
-
-    def new_price_text_row(self, name: str, symbol: str, latest_api_response: Dict[str, any], short_text: bool = True) -> str:
-        price = coin['quote'][self.price_unit]['price']
-        name = coin['name'] if symbol != BaseAPIService.TETHER_SYMBOL else 'Tether'
-        if isinstance(price, str):
-            price = float(price)
-        if symbol != 'USDT':
-            rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
-        else:
-            rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.TetherInTomans)
-        rp_toman = mathematix.persianify(rp_toman)
-        return f'🔸 {CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
-            else f'🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان\n'
 
     @staticmethod
     def GetPersianName(symbol: str) -> str:
@@ -99,17 +85,30 @@ class CoinMarketCapService(CryptoCurrencyService):
     def set_price_unit(self, pu):
         self.price_unit = pu
 
-    async def get_request(self, custom_symbol_list: list = None):
+    @staticmethod
+    def ListToDict(source_list: list, key_as: str = 'symbol'):
+        result = {}
+
+        for item in source_list:
+            try:
+                result[item[key_as]] = item
+            except:
+                pass
+        return result
+    
+    async def get_request(self):
         """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService childs"""
         latest_cap = None
+        result: dict = {}
         try:
-            latest_cap = self.cmc_api.cryptocurrency_listings_latest()
+            latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=5000)
+            if latest_cap and latest_cap.data:
+                result = self.ListToDict(latest_cap.data)
             self.cache_data(
-                json.dumps(latest_cap.data)
+                json.dumps(result)
             )
         except Exception as ex:
             manuwriter.log("CoinMarketCap Api Failure", exception=ex, category_name="CoinMarketCapFailure")
-        result = latest_cap.data if latest_cap else []
         return result
 
     def extract_api_response(self, desired_coins: list = None, short_text: bool = True, optional_api_data: list = None):
@@ -122,14 +121,11 @@ class CoinMarketCapService(CryptoCurrencyService):
             raise NoLatestDataException('Use for announcing prices!')
 
         res = ''
-        for coin in api_data:
-            symbol = coin['symbol'].upper()
-            if symbol in desired_coins:
-                # if not api_data[coin]:
-                #     res += f'❗️ {CryptoCurrencyService.CoinsInPersian[coin]}: قیمت دریافت نشد.'
-                price = coin['quote'][self.price_unit]['price']
-                name = coin['name'] if symbol != BaseAPIService.TETHER_SYMBOL else 'Tether'
-                res += self.new_price_text_row(name, symbol, price, short_text=short_text)
+        for coin in desired_coins:
+            symbol = coin.upper()
+            if symbol in api_data:
+                row = self.new_price_text_row(symbol, api_data, short_text=short_text)
+                res += row if row else f'❗️ {CryptoCurrencyService.CoinsInPersian[coin]}: قیمت دریافت نشد.'
 
         if res:
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}'
@@ -168,17 +164,40 @@ class CoinMarketCapService(CryptoCurrencyService):
         return header, self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos), absolute_amount, self.to_irt_exact(absolute_amount, True)
 
     def get_single_price(self, crypto_symbol: str, price_unit: str = 'usd', tether_instead_of_dollars: bool = True):
-        if not self.latest_data or not isinstance(self.latest_data, list) or not isinstance(self.latest_data, dict):
+        if not self.latest_data or not isinstance(self.latest_data, dict):
             return None
         coin = crypto_symbol.upper()
         price_unit = price_unit.lower()
         if coin == self.TETHER_SYMBOL and price_unit == 'irt':
             return self.TetherInTomans
-        finder = lambda item: 'symbol' in item and item['symbol'].upper() == coin
-        data = [item for item in self.latest_data if finder(item)]
+
+        data = self.latest_data[coin] if coin in self.latest_data else None
 
         if not data:
             return None
 
-        return self.to_irt_exact(data[0]['quote'][self.price_unit]['price'], tether_instead_of_dollars) \
-            if price_unit == 'irt' else data[0]['quote'][self.price_unit]['price']
+        return self.to_irt_exact(data['quote'][self.price_unit]['price'], tether_instead_of_dollars) \
+            if price_unit == 'irt' else data['quote'][self.price_unit]['price']
+
+    def new_price_text_row(self, symbol: str, source_data: Dict[str, any] | None = None, short_text: bool = True) -> str:
+        api_data = source_data if source_data else self.latest_data
+        price: float
+        name: str
+        try:
+            price = api_data[symbol]['quote'][self.price_unit]['price']
+            name = api_data[symbol]['name'] if symbol != BaseAPIService.TETHER_SYMBOL else 'Tether'
+        except:
+            return None
+        
+        if isinstance(price, str):
+            price = float(price)
+
+        if symbol != 'USDT':
+            rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
+        else:
+            rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.TetherInTomans)
+
+        rp_toman = mathematix.persianify(rp_toman)
+        
+        return f'🔸 {CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n' if short_text \
+            else f'🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان\n'
