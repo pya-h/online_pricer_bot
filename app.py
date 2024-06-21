@@ -319,9 +319,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                         account.change_state(clear_cache=True)  # reset state
                         
                 case Account.States.CREATE_ALARM:
-                    target_symbol = account.get_cache('alarm_target_symbol')
-                    target_price = float(msg)
-                    
+                    props = account.get_cache('create_alarm_props')
+                    props['price'] = float(msg)
+                    account.add_cache('create_alarm_props', props)
+                    await update.message.reply_text(botman.text('whats_price_unit', account.language), 
+                                                    botman.action_inline_keyboard(BotMan.QueryActions.SELECT_PRICE_UNIT, {'irt': 'price_unit_irt', 'usd': 'price_unit_usd'}))
+
                 case Account.States.SEND_POST:
                     if not account.authorization(context.args):
                         await say_youre_not_allowed(update.message.reply_text, account.language)
@@ -362,21 +365,23 @@ async def handle_messages(update: Update, context: CallbackContext):
                                                     reply_markup=botman.mainkeyboard(account))
 
 
-async def handle_action_queries(query: CallbackQuery, account: Account, callback_data: dict | None = None):
+async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
     if callback_data:
         callback_data = json.loads(query.data)
 
     match callback_data['act']:
-        case BotMan.QueryActions.CHOOSE_LANGUAGE:
+        case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
             lang = callback_data['v'].lower()
             if lang != 'fa' and lang != 'en':
                 await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
                 return
             account.language = lang
             account.save()
-            await query.message.edit_text(botman.text('language_switched', account.language))
-
-
+            await context.bot.send_message(text=botman.text('language_switched', account.language), chat_id=account.chat_id, reply_markup=botman.mainkeyboard(account))
+            await query.answer()
+        case BotMan.QueryActions.SELECT_PRICE_UNIT:
+            # TODO: Continue Here
+            pass
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
     # FIXME: clicking return on market selection page, will say 'did not understand'
     query = update.callback_query
@@ -388,7 +393,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     # first check query type
     if 'act' in data:
         # action queries are handled here
-        await handle_action_queries(query, account, data)
+        await handle_action_queries(query, context, account, data)
         return
 
     # list queries are handled below
@@ -435,8 +440,16 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, 'input_symbols', data['v'].upper())
             return
         case SelectionListTypes.ALARM:
-            account.change_state(Account.States.CREATE_ALARM, 'alarm_target_symbol',  data['v'].upper())
-            await query.message.edit_text(botman.text("enter_desired_price", account.language))
+            symbol = data['v'].upper()
+            account.change_state(Account.States.CREATE_ALARM, 'create_alarm_props',  {'symbol': symbol, 'market': market})
+            
+            message_text = botman.text("enter_desired_price", account.language)
+            current_price_description = botman.crypto_serv.get_price_description_row(symbol) if market == MarketOptions.CRYPTO \
+                else botman.currency_serv.get_price_description_row(symbol)
+            
+            if current_price_description:  # TODO: update this when english language is fully implemented
+                message_text += f"\n\n{current_price_description}"
+            await query.message.edit_text(text=message_text)
             return
 
     # if the user is configuring a list:

@@ -79,6 +79,7 @@ class BotMan:
 
     class QueryActions(Enum):
         CHOOSE_LANGUAGE = 1
+        SELECT_PRICE_UNIT = 2
         NONE = 0
 
         @staticmethod
@@ -86,7 +87,8 @@ class BotMan:
             match value:
                 case 1:
                     return BotMan.QueryActions.CHOOSE_LANGUAGE
-
+                case 2:
+                    return BotMan.QueryActions.SELECT_PRICE_UNIT
             return BotMan.QueryActions.NONE
 
     def __init__(self) -> None:
@@ -296,13 +298,13 @@ class BotMan:
         keys = list(data.keys())
         buttons_count = len(keys)
         full_rows_count = int(buttons_count / columns_in_a_row)
-        buttons = [[InlineKeyboardButton(self.text(data[keys[col + row * columns_in_a_row]], language),
+        buttons = [[InlineKeyboardButton(self.resourceman.keyboard(data[keys[col + row * columns_in_a_row]], language),
                                          callback_data=self.action_callback_data(action, keys[col + row * columns_in_a_row])) for col
                     in range(columns_in_a_row)] for row in range(full_rows_count)]
         full_rows_last_index = columns_in_a_row * full_rows_count
         if full_rows_last_index < buttons_count:
             buttons.append(
-                [InlineKeyboardButton(self.text(data[keys[i]], language), callback_data=self.action_callback_data(action, keys[i]))
+                [InlineKeyboardButton(self.resourceman.keyboard(data[keys[i]], language), callback_data=self.action_callback_data(action, keys[i]))
                  for i in range(full_rows_last_index, buttons_count)])
         return InlineKeyboardMarkup(buttons)
 

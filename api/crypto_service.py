@@ -55,7 +55,7 @@ class CoinGeckoService(CryptoCurrencyService):
             name = coin['name'] if symbol != self.TETHER_SYMBOLTETHER_SYMBOL else 'Tether'
             if symbol in desired_coins:
                 price = coin['market_data']['current_price'][self.DOLLAR_SYMBOL.lower()]
-                res += self.new_price_text_row(name, symbol, price)
+                res += self.get_price_description_row(name, symbol, price)
 
         if res:
             res = f'📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}'
@@ -124,7 +124,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         for coin in desired_coins:
             symbol = coin.upper()
             if symbol in api_data:
-                row = self.new_price_text_row(symbol, api_data, short_text=short_text)
+                row = self.get_price_description_row(symbol, api_data, short_text=short_text)
                 res += row if row else f'❗️ {CryptoCurrencyService.CoinsInPersian[coin]}: قیمت دریافت نشد.'
 
         if res:
@@ -138,7 +138,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         for coin in cryptos:
             if coin == source_unit_symbol:
                 continue
-            coin_equalized_price = absolute_amount / float(self.latest_data[coin][0]['quote'][self.price_unit]['price'])
+            coin_equalized_price = absolute_amount / float(self.latest_data[coin]['quote'][self.price_unit]['price'])
             coin_equalized_price = mathematix.persianify(mathematix.cut_and_separate(coin_equalized_price))
             res += f'🔸 {coin_equalized_price} {CryptoCurrencyService.CoinsInPersian[coin]}\n'
 
@@ -159,7 +159,7 @@ class CoinMarketCapService(CryptoCurrencyService):
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         absolute_amount: float = amount * float(
-            self.latest_data[source_unit_symbol][0]['quote'][self.price_unit]['price'])
+            self.latest_data[source_unit_symbol]['quote'][self.price_unit]['price'])
 
         return header, self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos), absolute_amount, self.to_irt_exact(absolute_amount, True)
 
@@ -179,7 +179,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         return self.to_irt_exact(data['quote'][self.price_unit]['price'], tether_instead_of_dollars) \
             if price_unit == 'irt' else data['quote'][self.price_unit]['price']
 
-    def new_price_text_row(self, symbol: str, source_data: Dict[str, any] | None = None, short_text: bool = True) -> str:
+    def get_price_description_row(self, symbol: str, source_data: Dict[str, any] | None = None, short_text: bool = True) -> str:
         api_data = source_data if source_data else self.latest_data
         price: float
         name: str

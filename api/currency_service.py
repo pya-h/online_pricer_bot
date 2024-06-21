@@ -129,7 +129,7 @@ class NavasanService(CurrencyService):
             slug_l = slug.lower()
             row: str
             if slug_l in api_data and 'value' in api_data[slug_l]:
-                row = self.new_price_text_row(slug_l, api_data, short_text)
+                row = self.get_price_description_row(slug_l, api_data, short_text)
             else:
                 row = f'{NavasanService.CurrenciesInPersian[slug]}: ❗️ قیمت دریافت نشد.'
 
@@ -232,7 +232,7 @@ class NavasanService(CurrencyService):
             return self.UsdInTomans
         return self.latest_data[curr]['value'] if price_unit.lower() == 'irt' else self.irt_to_usd(self.latest_data[curr]['value'])
 
-    def new_price_text_row(self, symbol: str, latest_api_response: Dict[str, float | int | bool | str] | None = None, short_text: bool = True) -> str:
+    def get_price_description_row(self, symbol: str, latest_api_response: Dict[str, float | int | bool | str] | None = None, short_text: bool = True) -> str:
         if not latest_api_response:
             latest_api_response = self.latest_data
         price: float

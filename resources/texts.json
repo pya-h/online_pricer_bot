@@ -85,6 +85,14 @@
         "language_persian": {
             "fa": "🇮🇷 فارسی",
             "en": "🇮🇷 Persian"
+        },
+        "price_unit_irt": {
+            "fa": "تومان",
+            "en": "Tomans"
+        },
+        "price_unit_usd": {
+            "fa": "دلار",
+            "en": "Dollors"
         }
     },
     "which_market": {
@@ -200,6 +208,10 @@
     "welcome_choose_language": {
         "fa": "کاربر %s\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏\n\n🔹 زبان ربات را تعیین کنید:",
         "en": "User %s\nWelcome to the [ Online pricer ] bot 🌷🙏\n\n🔹 Set the language of bot:"
+    },
+    "whats_price_unit": {
+        "fa": "قیمت مورد نظر شما به تومان است یا دلار؟",
+        "en": "What's the price unit? Tomans or Dollors?"
     }
 
 }
