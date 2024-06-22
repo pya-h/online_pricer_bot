@@ -39,7 +39,7 @@ resourceman = ResourceManager('texts', 'resources')
 class BotMan:
     """This class is defined to collect all common and handy options, fields and features of online pricer bot"""
     MAXIMUM_ALLOWED_NUMBER_OF_INLINE_BUTTONS = 100
-
+    CALLBACK_DATA_JOINER = '&'
     class Commands(Enum):
         GET_FA = resourceman.mainkeyboard('get_prices', 'fa')
         CALCULATOR_FA = resourceman.mainkeyboard('calculator', 'fa')
@@ -282,13 +282,13 @@ class BotMan:
         full_rows_count = int(buttons_count / columns_in_a_row)
         buttons = [[InlineKeyboardButton(
             self.resourceman.keyboard(urls_data[col + row * columns_in_a_row]['text_key'], language),
-            url=self.resourceman.keyboard(urls_data[col + row * columns_in_a_row]['url'])) for col
+            url=urls_data[col + row * columns_in_a_row]['url']) for col
                     in range(columns_in_a_row)] for row in range(full_rows_count)]
         full_rows_last_index = columns_in_a_row * full_rows_count
         if full_rows_last_index < buttons_count:
             buttons.append(
                 [InlineKeyboardButton(self.resourceman.keyboard(urls_data[i]['text_key'], language),
-                                      url=self.resourceman.keyboard(urls_data[i]['url']))
+                                      url=urls_data[i]['url'])
                  for i in range(full_rows_last_index, buttons_count)])
         return InlineKeyboardMarkup(buttons)
 

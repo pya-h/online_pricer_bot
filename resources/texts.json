@@ -88,11 +88,11 @@
         },
         "price_unit_irt": {
             "fa": "تومان",
-            "en": "Tomans"
+            "en": "Toman(s)"
         },
         "price_unit_usd": {
             "fa": "دلار",
-            "en": "Dollors"
+            "en": "Dollor(s)"
         }
     },
     "which_market": {
@@ -151,7 +151,15 @@
         "invalid_language": {
             "fa": "زبان انتخاب شده نامعلوم است!",
             "en": "Selected language is invalid!"
+        },
+        "invalid_price": {
+            "fa": "ورودی شما متاسفانه معتبر نیست. ورودی قیمت باید عددی معین باشد.\n\nدرصورتی که تمایل به ادامه این عملیات ندارید می توانید از دکمه لغو استفاده کنید.",
+            "en": "Unfortunately your input is not a valid one! Price input must be a standard numeric value.\n\nIn case you do't want to continue this operation, you can simply use Cancel button."
         }
+    },
+    "what_can_i_do": {
+        "fa": "خب! چه کمکی از دستم بر میاد؟",
+        "en": "Well, what can i do for you?"
     },
     "select_your_set": {
         "fa": "🔹 بر روی گزینه های مدنظرتان کلیک کنید تا در لیستتان اضافه شوند:",
@@ -212,6 +220,18 @@
     "whats_price_unit": {
         "fa": "قیمت مورد نظر شما به تومان است یا دلار؟",
         "en": "What's the price unit? Tomans or Dollors?"
+    },
+    "alarm_set": {
+        "fa": "✅ هشدار قیمت شما با ثبت شد.\n\n🚨 زمانی که قیمت %s به %s %s رسید این ربات به شما اطلاع خواهد داد.",
+        "en": "✅ Your price alarm has been registered.\n\n🚨 This bot will notify you when %s reaches %s %s."
+    },
+    "price_unit_irt": {
+        "fa": "تومان",
+        "en": "Toman(s)"
+    },
+    "price_unit_usd": {
+        "fa": "دلار",
+        "en": "Dollor(s)"
     }
 
 }

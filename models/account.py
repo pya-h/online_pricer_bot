@@ -103,7 +103,7 @@ class Account:
         self.last_interaction: datetime = tz_today()
         self.language: str = language
         self.state: Account.States = state
-        self.cache: Dict[str, any] = cache
+        self.cache: Dict[str, any] = cache or {}
         self.plus_end_date = plus_end_date
         self.desires_count_max = 10
         self.alarms_count_max = 3
@@ -123,7 +123,7 @@ class Account:
         if cache_key:
             self.cache[cache_key] = data
 
-    def delete_specific_cache(self, **keys):
+    def delete_specific_cache(self, *keys):
         keys = list(keys)
         for key in keys:
             del self.cache[key]
@@ -267,12 +267,14 @@ class Account:
                 (target_list, related_list) = (
                     self.calc_cryptos, self.calc_currencies) if market == MarketOptions.CRYPTO else (
                     self.calc_currencies, self.calc_cryptos)
-            case _:
+            case SelectionListTypes.ALARM:
+                return None
+            case SelectionListTypes.FOLLOWING:
                 (target_list, related_list) = (
                     self.desired_cryptos, self.desired_currencies) if market == MarketOptions.CRYPTO else (
                     self.desired_currencies, self.desired_cryptos)
-            # case _:
-            #     raise Exception(f'Account is in invalid state: {self.state.value}')
+            case _:
+                raise ValueError(f'Invalid list type selected by: {self.state.value}')
 
         if symbol:
             if symbol.upper() not in target_list:

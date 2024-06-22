@@ -146,7 +146,11 @@ class APIService(BaseAPIService):
         return self.extract_api_response(desired_ones, short_text=short_text, optional_api_data=self.latest_data)
 
     def to_irt_exact(self, price: float | int, tether_as_unit_price: bool = False) -> float | int:
-        return price * (self.TetherInTomans if tether_as_unit_price else self.UsdInTomans)
+        try:
+            return price * (self.TetherInTomans if tether_as_unit_price and self.TetherInTomans else self.UsdInTomans)
+        except:
+            pass
+        return 0
     
     def rounded_prices(self, price: float | int, convert: bool = True, tether_as_unit_price: bool = False):
         if convert:

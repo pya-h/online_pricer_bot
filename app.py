@@ -5,9 +5,11 @@ from telegram.error import BadRequest
 from models.account import Account
 import json
 from tools.manuwriter import log
+from tools.mathematix import cut_and_separate, persianify
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
+from models.alarms import PriceAlarm
 
 
 botman = BotMan()
@@ -320,10 +322,24 @@ async def handle_messages(update: Update, context: CallbackContext):
                         
                 case Account.States.CREATE_ALARM:
                     props = account.get_cache('create_alarm_props')
-                    props['price'] = float(msg)
-                    account.add_cache('create_alarm_props', props)
+                    try:
+                        price = float(msg)
+                    except:
+                        if msg == botman.resourceman.keyboard('return', account.language):
+                            account.change_state(clear_cache=True)
+                            await update.message.reply_text(botman.text('what_can_i_do', account.language), reply_markup=botman.mainkeyboard(account))
+                        else:
+                            await update.message.reply_text(botman.error('invalid_price', account.language), reply_markup=botman.cancel_menu(account.language))
+                        return
+                    
+                    symbol = props['symbol']
+                    market = props['market']
+                    data_prefix = f'{market}{botman.CALLBACK_DATA_JOINER}{symbol}{botman.CALLBACK_DATA_JOINER}{price}'
                     await update.message.reply_text(botman.text('whats_price_unit', account.language), 
-                                                    botman.action_inline_keyboard(BotMan.QueryActions.SELECT_PRICE_UNIT, {'irt': 'price_unit_irt', 'usd': 'price_unit_usd'}))
+                                                    reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.SELECT_PRICE_UNIT,
+                                                                    {f'{data_prefix}{botman.CALLBACK_DATA_JOINER}irt': 'price_unit_irt', 
+                                                                     f'{data_prefix}{botman.CALLBACK_DATA_JOINER}usd': 'price_unit_usd'}))
+                    account.delete_specific_cache('create_alarm_props')
 
                 case Account.States.SEND_POST:
                     if not account.authorization(context.args):
@@ -366,9 +382,9 @@ async def handle_messages(update: Update, context: CallbackContext):
 
 
 async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
+
     if callback_data:
         callback_data = json.loads(query.data)
-
     match callback_data['act']:
         case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
             lang = callback_data['v'].lower()
@@ -379,9 +395,47 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             account.save()
             await context.bot.send_message(text=botman.text('language_switched', account.language), chat_id=account.chat_id, reply_markup=botman.mainkeyboard(account))
             await query.answer()
-        case BotMan.QueryActions.SELECT_PRICE_UNIT:
-            # TODO: Continue Here
-            pass
+        case BotMan.QueryActions.SELECT_PRICE_UNIT.value:
+            data: str = callback_data['v']
+            if data:
+                data = data.split(botman.CALLBACK_DATA_JOINER)
+                market = MarketOptions.Which(int(data[0]))
+                symbol = data[1]
+                target_price = float(data[2])
+                price_unit = data[3]
+                current_price: float | None = None  # FIXME: handle golds in EntitiesInDollors, deviding by usd price again
+                currency_name: str = None
+                try:
+                    match market:
+                        case MarketOptions.CRYPTO:
+                            current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
+                            currency_name = botman.crypto_serv.CoinsInPersian[symbol]
+                        case MarketOptions.GOLD | MarketOptions.CURRENCY:
+                            current_price = botman.currency_serv.get_single_price(symbol, price_unit)
+                            currency_name = botman.currency_serv.CurrenciesInPersian[symbol]
+                        case _:
+                            if symbol in botman.crypto_serv.CoinsInPersian:
+                                current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
+                                currency_name = botman.crypto_serv.CoinsInPersian[symbol]
+                            elif symbol in botman.currency_serv.CurrenciesInPersian:
+                                current_price = botman.currency_serv.get_single_price(symbol, price_unit)
+                                currency_name = botman.currency_serv.CurrenciesInPersian[symbol]
+                            else:
+                                raise ValueError("Unknown symbol and market")
+                except Exception as ex:
+                    log(f'Cannot create the alarm for user {account.chat_id}', ex)
+                print(currency_name, current_price)
+                if current_price is not None:
+                    alarm = PriceAlarm(account.chat_id, symbol, target_price=target_price, target_unit=price_unit, current_price=current_price)
+                    alarm.set()
+                    price_unit_str = botman.text(f'price_unit_{price_unit.lower()}', language=account.language)
+                    current_price = cut_and_separate(target_price)
+                    lang = account.language.lower()
+                    if lang == 'fa':
+                        current_price = persianify(current_price)
+                    await query.message.edit_text(text=botman.text('alarm_set', lang) % (currency_name if lang == 'fa' else symbol, target_price, price_unit_str))
+            await query.answer()
+
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
     # FIXME: clicking return on market selection page, will say 'did not understand'
     query = update.callback_query
@@ -441,7 +495,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             return
         case SelectionListTypes.ALARM:
             symbol = data['v'].upper()
-            account.change_state(Account.States.CREATE_ALARM, 'create_alarm_props',  {'symbol': symbol, 'market': market})
+            account.change_state(Account.States.CREATE_ALARM, 'create_alarm_props',  {'symbol': symbol, 'market': market.value})
             
             message_text = botman.text("enter_desired_price", account.language)
             current_price_description = botman.crypto_serv.get_price_description_row(symbol) if market == MarketOptions.CRYPTO \

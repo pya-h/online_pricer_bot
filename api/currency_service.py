@@ -225,8 +225,7 @@ class NavasanService(CurrencyService):
 
     def get_single_price(self, currency_symbol: str, price_unit: str = 'usd'):
         curr = currency_symbol.lower()
-        if not self.latest_data or not isinstance(self.latest_data, dict) or \
-                not isinstance(self.latest_data, list) or not curr in self.latest_data or not 'value' in self.latest_data[curr]:
+        if not self.latest_data or not isinstance(self.latest_data, dict) or not curr in self.latest_data or not 'value' in self.latest_data[curr]:
             return None
         if curr == self.DOLLAR_SYMBOL:
             return self.UsdInTomans

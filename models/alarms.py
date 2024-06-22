@@ -33,13 +33,19 @@ class PriceAlarm:
                     return PriceAlarm.ChangeDirection.DOWN
             return PriceAlarm.ChangeDirection.UP
 
-    def __init__(self, chat_id, currency: str, target_price: int | float, change_direction: ChangeDirection | int, target_unit: str = 'IRT', id: int = None) -> None:
+    def __init__(self, chat_id, currency: str, target_price: int | float, change_direction: ChangeDirection | int | None = None, target_unit: str = 'irt', id: int = None, current_price: float | int | None = None) -> None:
         self.id = id
         self.chat_id = chat_id
         self.currency = currency
         self.target_price = target_price
         self.target_unit = target_unit
-        self.change_direction = change_direction if isinstance(change_direction, PriceAlarm.ChangeDirection) else PriceAlarm.ChangeDirection.Which(change_direction)
+        if change_direction is None and current_price is not None:
+            if current_price < target_price:
+                self.change_direction = PriceAlarm.ChangeDirection.UP
+            else:
+                self.change_direction = PriceAlarm.ChangeDirection.DOWN
+        else:
+            self.change_direction = change_direction if isinstance(change_direction, PriceAlarm.ChangeDirection) else PriceAlarm.ChangeDirection.Which(change_direction)
         self.current_price: int | None = None
         self.full_currency_name: Dict[str, str] | None = None
 
