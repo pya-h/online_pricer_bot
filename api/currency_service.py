@@ -225,12 +225,22 @@ class NavasanService(CurrencyService):
 
     def get_single_price(self, currency_symbol: str, price_unit: str = 'usd'):
         curr = currency_symbol.lower()
+        price_unit = price_unit.lower()
         if not self.latest_data or not isinstance(self.latest_data, dict) or not curr in self.latest_data or not 'value' in self.latest_data[curr]:
             return None
         if curr == self.DOLLAR_SYMBOL:
-            return self.UsdInTomans
-        return self.latest_data[curr]['value'] if price_unit.lower() == 'irt' else self.irt_to_usd(self.latest_data[curr]['value'])
+            return self.UsdInTomans if price_unit != 'usd' else 1
+        
+        currency_data = self.latest_data[curr]
 
+        if 'usd' not in currency_data or not currency_data['usd']:
+            toman = currency_data['value']
+            return toman if price_unit != 'usd' else self.irt_to_usd(toman)
+
+        # if price is in $
+        usd_price = currency_data['value']
+        return self.to_irt_exact(usd_price) if price_unit != 'usd' else usd_price
+    
     def get_price_description_row(self, symbol: str, latest_api_response: Dict[str, float | int | bool | str] | None = None, short_text: bool = True) -> str:
         if not latest_api_response:
             latest_api_response = self.latest_data

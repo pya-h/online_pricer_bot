@@ -259,6 +259,10 @@ async def handle_messages(update: Update, context: CallbackContext):
             account.change_state(clear_cache=True)  # reset .state and .state_data
             await update.message.reply_text(botman.text('operation_canceled', account.language),
                                             reply_markup=botman.mainkeyboard(account))
+        case BotMan.Commands.RETURN_FA.value | BotMan.Commands.RETURN_EN.value:
+            account = Account.Get(update.effective_chat.id)
+            account.change_state(clear_cache=True)  # TODO: For now it clears; if in future there was some place that just needs turning back one step, this will ne updated.
+            await update.message.reply_text(botman.text('what_can_i_do', account.language), reply_markup=botman.mainkeyboard(account))
         case _:
             # check account state first, to see if he/she is in input state
             account = Account.Get(update.effective_chat.id)
@@ -325,11 +329,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     try:
                         price = float(msg)
                     except:
-                        if msg == botman.resourceman.keyboard('return', account.language):
-                            account.change_state(clear_cache=True)
-                            await update.message.reply_text(botman.text('what_can_i_do', account.language), reply_markup=botman.mainkeyboard(account))
-                        else:
-                            await update.message.reply_text(botman.error('invalid_price', account.language), reply_markup=botman.cancel_menu(account.language))
+                        await update.message.reply_text(botman.error('invalid_price', account.language), reply_markup=botman.cancel_menu(account.language))
                         return
                     
                     symbol = props['symbol']
@@ -437,7 +437,6 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             await query.answer()
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
-    # FIXME: clicking return on market selection page, will say 'did not understand'
     query = update.callback_query
     if not query.data:
         return
