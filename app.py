@@ -226,6 +226,179 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
             await func_send_message(header + response)
 
 
+async def list_user_alarms(update: Update, context: CallbackContext, next_state: Account.States):
+    account = Account.Get(update.effective_chat.id)
+    if not await botman.has_subscribed_us(account.chat_id, context):
+        await botman.ask_for_subscription(update, account.language)
+        return
+    # TODO: CONTINUE HERE
+
+async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
+
+    if callback_data:
+        callback_data = json.loads(query.data)
+    match callback_data['act']:
+        case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
+            lang = callback_data['v'].lower()
+            if lang != 'fa' and lang != 'en':
+                await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
+                return
+            account.language = lang
+            account.save()
+            await context.bot.send_message(text=botman.text('language_switched', account.language), chat_id=account.chat_id, reply_markup=botman.mainkeyboard(account))
+            await query.answer()
+        case BotMan.QueryActions.SELECT_PRICE_UNIT.value:
+            data: str = callback_data['v']
+            if data:
+                data = data.split(botman.CALLBACK_DATA_JOINER)
+                market = MarketOptions.Which(int(data[0]))
+                symbol = data[1]
+                target_price = float(data[2])
+                price_unit = data[3]
+                current_price: float | None = None  # FIXME: handle golds in EntitiesInDollors, deviding by usd price again
+                currency_name: str = None
+                try:
+                    match market:
+                        case MarketOptions.CRYPTO:
+                            current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
+                            currency_name = botman.crypto_serv.CoinsInPersian[symbol]
+                        case MarketOptions.GOLD | MarketOptions.CURRENCY:
+                            current_price = botman.currency_serv.get_single_price(symbol, price_unit)
+                            currency_name = botman.currency_serv.CurrenciesInPersian[symbol]
+                        case _:
+                            if symbol in botman.crypto_serv.CoinsInPersian:
+                                current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
+                                currency_name = botman.crypto_serv.CoinsInPersian[symbol]
+                            elif symbol in botman.currency_serv.CurrenciesInPersian:
+                                current_price = botman.currency_serv.get_single_price(symbol, price_unit)
+                                currency_name = botman.currency_serv.CurrenciesInPersian[symbol]
+                            else:
+                                raise ValueError("Unknown symbol and market")
+                except Exception as ex:
+                    log(f'Cannot create the alarm for user {account.chat_id}', ex)
+                print(currency_name, current_price)
+                if current_price is not None:
+                    if not account.can_create_new_alarm:
+                        botman.show_reached_max_error(query, account, account.max_alarms_count)
+                    alarm = PriceAlarm(account.chat_id, symbol, target_price=target_price, target_unit=price_unit, current_price=current_price)
+                    alarm.set()
+                    price_unit_str = botman.text(f'price_unit_{price_unit.lower()}', language=account.language)
+                    current_price = cut_and_separate(target_price)
+                    lang = account.language.lower()
+                    if lang == 'fa':
+                        current_price = persianify(current_price)
+                    await query.message.edit_text(text=botman.text('alarm_set', lang) % (currency_name if lang == 'fa' else symbol, target_price, price_unit_str))
+            await query.answer()
+
+async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
+    query = update.callback_query
+    if not query.data:
+        return
+
+    data = json.loads(query.data)
+    account: Account = Account.Get(update.effective_chat.id)
+    # first check query type
+    if 'act' in data:
+        # action queries are handled here
+        await handle_action_queries(query, context, account, data)
+        return
+
+    # list queries are handled below
+
+    # check if user is changing list page:
+    page: int
+
+    try:
+        page = int(data['pg'])
+        # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
+    except:
+        page = 0
+
+    if page == -1 or data['pg'] is None:
+        account.change_state(clear_cache=True)
+        await query.message.edit_text(botman.text('list_updated', account.language))
+        return
+
+    # FIXME: Page index log is showing 0 only
+    if data['v'] and data['v'][0] == '$':
+        if data['v'][1] == '#':
+            pages_count = int(data["v"][2:]) + 1
+            await query.answer(text=botman.text('log_page_indices', account.language) % (page, pages_count,),
+                               show_alert=False)
+        return
+
+    market = MarketOptions.Which(data['bt'])
+    list_type = SelectionListTypes.Which(data['lt'])
+
+    match list_type:
+        case SelectionListTypes.EQUALIZER_UNIT:
+            input_amounts = account.get_cache('input_amounts')
+            if input_amounts:
+                unit_symbol = data['v'].upper()
+                await query.message.edit_text(
+                    ' '.join([str(amount) for amount in input_amounts]) + f" {unit_symbol}"
+                )
+                await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
+                                       account, input_amounts, [unit_symbol])
+                account.change_state(clear_cache=True)  # reset state
+            else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
+                # condition possible(or not.!)
+                await query.message.edit_text(botman.text("enter_desired_price", account.language))
+                account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, 'input_symbols', data['v'].upper())
+            return
+        case SelectionListTypes.ALARM:
+            symbol = data['v'].upper()
+            account.change_state(Account.States.CREATE_ALARM, 'create_alarm_props',  {'symbol': symbol, 'market': market.value})
+            
+            message_text = botman.text("enter_desired_price", account.language)
+            current_price_description = botman.crypto_serv.get_price_description_row(symbol) if market == MarketOptions.CRYPTO \
+                else botman.currency_serv.get_price_description_row(symbol)
+            
+            if current_price_description:  # TODO: update this when english language is fully implemented
+                message_text += f"\n\n{current_price_description}"
+            await query.message.edit_text(text=message_text)
+            return
+
+    # if the user is configuring a list:
+
+    try:
+        selection_list = account.handle_market_selection(list_type, market, data['v'])
+
+        await query.message.edit_reply_markup(
+            reply_markup=botman.inline_keyboard(
+                list_type, market,
+                (botman.crypto_serv.CoinsInPersian,
+                 botman.currency_serv.NationalCurrenciesInPersian,
+                 botman.currency_serv.GoldsInPersian,
+                 )[market.value - 1], selection_list, page=page, language=account.language,
+                full_names=market != MarketOptions.CRYPTO, close_button=True
+            )
+        )
+
+    except ValueError as reached_max_ex:
+        max_selection = int(reached_max_ex.__str__())
+        botman.show_reached_max_error(query, account, max_selection)
+
+    except IndexError as ie:
+        log('Invalid market selection procedure', ie, 'general')
+        account.change_state(clear_cache=True)
+        await query.message.edit_text(text=botman.error('invalid_market_selection', account.language))
+    except BadRequest:
+        # when the message content is exactly the same
+        pass
+    except Exception as selection_ex:
+        log('User could\'t select coins', selection_ex, 'general')
+        account.change_state(clear_cache=True)
+        await query.message.edit_text(text=botman.error('unknown', account.language))
+
+
+async def cmd_switch_language(update: Update, context: CallbackContext):
+    acc = Account.Get(update.effective_chat.id)
+    acc.language = "en" if acc.language.lower() == 'fa' else 'fa'
+    await update.message.reply_text(botman.text('language_switched', acc.language))
+    acc.save()
+
+
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:
         return
@@ -238,6 +411,8 @@ async def handle_messages(update: Update, context: CallbackContext):
             await show_market_types(update, context, Account.States.CONFIG_CALCULATOR_LIST)
         case BotMan.Commands.CREATE_ALARM_FA.value | BotMan.Commands.CREATE_ALARM_EN.value:
             await show_market_types(update, context, Account.States.CREATE_ALARM)
+        case BotMan.Commands.LIST_ALARMS_FA.value | BotMan.Commands.LIST_ALARMS_EN.value:
+            await list_user_alarms(update, context, Account.States.CREATE_ALARM)
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
             await select_coin_menu(update, context)
         case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
@@ -379,177 +554,6 @@ async def handle_messages(update: Update, context: CallbackContext):
                 case _:
                     await update.message.reply_text(botman.error('what_the_fuck', account.language),
                                                     reply_markup=botman.mainkeyboard(account))
-
-
-async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
-
-    if callback_data:
-        callback_data = json.loads(query.data)
-    match callback_data['act']:
-        case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
-            lang = callback_data['v'].lower()
-            if lang != 'fa' and lang != 'en':
-                await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
-                return
-            account.language = lang
-            account.save()
-            await context.bot.send_message(text=botman.text('language_switched', account.language), chat_id=account.chat_id, reply_markup=botman.mainkeyboard(account))
-            await query.answer()
-        case BotMan.QueryActions.SELECT_PRICE_UNIT.value:
-            data: str = callback_data['v']
-            if data:
-                data = data.split(botman.CALLBACK_DATA_JOINER)
-                market = MarketOptions.Which(int(data[0]))
-                symbol = data[1]
-                target_price = float(data[2])
-                price_unit = data[3]
-                current_price: float | None = None  # FIXME: handle golds in EntitiesInDollors, deviding by usd price again
-                currency_name: str = None
-                try:
-                    match market:
-                        case MarketOptions.CRYPTO:
-                            current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
-                            currency_name = botman.crypto_serv.CoinsInPersian[symbol]
-                        case MarketOptions.GOLD | MarketOptions.CURRENCY:
-                            current_price = botman.currency_serv.get_single_price(symbol, price_unit)
-                            currency_name = botman.currency_serv.CurrenciesInPersian[symbol]
-                        case _:
-                            if symbol in botman.crypto_serv.CoinsInPersian:
-                                current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
-                                currency_name = botman.crypto_serv.CoinsInPersian[symbol]
-                            elif symbol in botman.currency_serv.CurrenciesInPersian:
-                                current_price = botman.currency_serv.get_single_price(symbol, price_unit)
-                                currency_name = botman.currency_serv.CurrenciesInPersian[symbol]
-                            else:
-                                raise ValueError("Unknown symbol and market")
-                except Exception as ex:
-                    log(f'Cannot create the alarm for user {account.chat_id}', ex)
-                print(currency_name, current_price)
-                if current_price is not None:
-                    alarm = PriceAlarm(account.chat_id, symbol, target_price=target_price, target_unit=price_unit, current_price=current_price)
-                    alarm.set()
-                    price_unit_str = botman.text(f'price_unit_{price_unit.lower()}', language=account.language)
-                    current_price = cut_and_separate(target_price)
-                    lang = account.language.lower()
-                    if lang == 'fa':
-                        current_price = persianify(current_price)
-                    await query.message.edit_text(text=botman.text('alarm_set', lang) % (currency_name if lang == 'fa' else symbol, target_price, price_unit_str))
-            await query.answer()
-
-async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
-    query = update.callback_query
-    if not query.data:
-        return
-
-    data = json.loads(query.data)
-    account: Account = Account.Get(update.effective_chat.id)
-    # first check query type
-    if 'act' in data:
-        # action queries are handled here
-        await handle_action_queries(query, context, account, data)
-        return
-
-    # list queries are handled below
-
-    # check if user is changing list page:
-    page: int
-
-    try:
-        page = int(data['pg'])
-        # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
-    except:
-        page = 0
-
-    if page == -1 or data['pg'] is None:
-        account.change_state(clear_cache=True)
-        await query.message.edit_text(botman.text('list_updated', account.language))
-        return
-
-    # FIXME: Page index log is showing 0 only
-    if data['v'] and data['v'][0] == '$':
-        if data['v'][1] == '#':
-            pages_count = int(data["v"][2:]) + 1
-            await query.answer(text=botman.text('log_page_indices', account.language) % (page, pages_count,),
-                               show_alert=False)
-        return
-
-    market = MarketOptions.Which(data['bt'])
-    list_type = SelectionListTypes.Which(data['lt'])
-
-    match list_type:
-        case SelectionListTypes.EQUALIZER_UNIT:
-            input_amounts = account.get_cache('input_amounts')
-            if input_amounts:
-                unit_symbol = data['v'].upper()
-                await query.message.edit_text(
-                    ' '.join([str(amount) for amount in input_amounts]) + f" {unit_symbol}"
-                )
-                await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
-                                       account, input_amounts, [unit_symbol])
-                account.change_state(clear_cache=True)  # reset state
-            else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
-                # condition possible(or not.!)
-                await query.message.edit_text(botman.text("enter_desired_price", account.language))
-                account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, 'input_symbols', data['v'].upper())
-            return
-        case SelectionListTypes.ALARM:
-            symbol = data['v'].upper()
-            account.change_state(Account.States.CREATE_ALARM, 'create_alarm_props',  {'symbol': symbol, 'market': market.value})
-            
-            message_text = botman.text("enter_desired_price", account.language)
-            current_price_description = botman.crypto_serv.get_price_description_row(symbol) if market == MarketOptions.CRYPTO \
-                else botman.currency_serv.get_price_description_row(symbol)
-            
-            if current_price_description:  # TODO: update this when english language is fully implemented
-                message_text += f"\n\n{current_price_description}"
-            await query.message.edit_text(text=message_text)
-            return
-
-    # if the user is configuring a list:
-
-    try:
-        selection_list = account.handle_market_selection(list_type, market, data['v'])
-
-        await query.message.edit_reply_markup(
-            reply_markup=botman.inline_keyboard(
-                list_type, market,
-                (botman.crypto_serv.CoinsInPersian,
-                 botman.currency_serv.NationalCurrenciesInPersian,
-                 botman.currency_serv.GoldsInPersian,
-                 )[market.value - 1], selection_list, page=page, language=account.language,
-                full_names=market != MarketOptions.CRYPTO, close_button=True
-            )
-        )
-
-    except ValueError as reached_max_ex:
-        max_selection = int(reached_max_ex.__str__())
-        if not account.is_premium_member():
-            link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
-            await query.message.reply_text(
-                text=botman.error('max_selection', account.language) % (max_selection,) + botman.error('get_premium',
-                                                                                                       account.language),
-                reply_markup=botman.inline_url([{'text_key': "premium", 'url': link}])
-            )
-        else:
-            await query.message.reply_text(text=botman.error('max_selection', account.language) % (max_selection,))
-    except IndexError as ie:
-        log('Invalid market selection procedure', ie, 'general')
-        account.change_state(clear_cache=True)
-        await query.message.edit_text(text=botman.error('invalid_market_selection', account.language))
-    except BadRequest:
-        # when the message content is exactly the same
-        pass
-    except Exception as selection_ex:
-        log('User could\'t select coins', selection_ex, 'general')
-        account.change_state(clear_cache=True)
-        await query.message.edit_text(text=botman.error('unknown', account.language))
-
-
-async def cmd_switch_language(update: Update, context: CallbackContext):
-    acc = Account.Get(update.effective_chat.id)
-    acc.language = "en" if acc.language.lower() == 'fa' else 'fa'
-    await update.message.reply_text(botman.text('language_switched', acc.language))
-    acc.save()
 
 
 def main():

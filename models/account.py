@@ -105,8 +105,6 @@ class Account:
         self.state: Account.States = state
         self.cache: Dict[str, any] = cache or {}
         self.plus_end_date = plus_end_date
-        self.desires_count_max = 10
-        self.alarms_count_max = 3
         self.username: str | None = None
         self.firstname: str | None = None
         self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
@@ -161,12 +159,7 @@ class Account:
     def str_calc_currencies(self):
         return ';'.join(self.calc_currencies)
 
-    @property
-    def max_selection_count(self):
-        if self.is_admin:
-            return 50
-        return self.desires_count_max
-
+    
     @staticmethod
     def str2list(string: str):
         return string.split(';') if string else None
@@ -179,9 +172,6 @@ class Account:
         """This extra info are just for temporary messaging purposes and won't be saved in database."""
         self.firstname = firstname
         self.username = username
-
-    def max_channel_plans(self):
-        return 3
 
     def my_channel_plans(self) -> list[Channel]:
         return list(filter(lambda channel: channel.owner_id == self.chat_id, Channel.Instances.values()))
@@ -341,3 +331,30 @@ class Account:
                 admins.insert(0, Account.GetHardcodeAdmin()['account'])
             return admins
         return [Account.GetHardcodeAdmin()['account'], ]
+
+    @property
+    def alarms_count(self):
+        return self.Database().get_number_of_user_alarms(self.chat_id)
+    
+    @property
+    def can_create_new_alarm(self):
+        return self.alarms_count < self.max_alarms_count
+    
+    # user privileges:
+    @property
+    def max_selection_count(self):
+        if self.is_premium_member():
+            return 100
+        return 10
+    
+    @property
+    def max_alarms_count(self):
+        if self.is_premium_member():
+            return 10
+        return 3
+
+    @property
+    def max_channel_plans_count(self):
+        if self.is_premium_member():
+            return 1
+        return 0

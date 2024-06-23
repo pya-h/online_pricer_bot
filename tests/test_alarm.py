@@ -1,5 +1,8 @@
 from db.interface import DatabaseInterface
 
+db = DatabaseInterface.Get()
+
+print(db.get_number_of_user_alarms(1)[0])
 from models.alarms import PriceAlarm
 
 pa = PriceAlarm(12345, 'btc', 2000, 1, id=3)

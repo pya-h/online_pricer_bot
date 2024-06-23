@@ -219,6 +219,17 @@ class DatabaseInterface:
         return self.execute(True,
                             f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY} IN ({targets})")
 
+    def get_user_alarms(self, chat_id: int):
+        return self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CHAT_ID}={chat_id}")
+
+    def get_number_of_user_alarms(self, chat_id: int) -> int:
+        result = self.execute(True, f"SELECT COUNT({self.PRICE_ALARM_ID}) FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CHAT_ID}={chat_id}")
+        try:
+            return result[0][0]
+        except:
+            pass
+        return 0
+
     def delete_alarm(self, id: int):
         self.execute(False, f'DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=?', id)
 

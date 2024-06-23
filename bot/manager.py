@@ -1,7 +1,7 @@
 from enum import Enum
 from tools.manuwriter import load_json
 from decouple import config
-from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, Update
+from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, Update, CallbackQuery
 from telegram.ext import CallbackContext
 from telegram.error import BadRequest
 from api.currency_service import CurrencyService
@@ -50,7 +50,7 @@ class BotMan:
         CANCEL_FA = resourceman.keyboard('cancel', 'fa')
         CONFIG_PRICE_LIST_FA = resourceman.mainkeyboard('config_lists')
         CONFIG_CALCULATOR_FA = resourceman.mainkeyboard('config_calculator', 'fa')
-        CONFIG_ALARMS_FA = resourceman.mainkeyboard('config_alarms', 'fa')
+        LIST_ALARMS_FA = resourceman.mainkeyboard('list_alarms', 'fa')
         RETURN_FA = resourceman.keyboard('return', 'fa')
 
         GET_EN = resourceman.mainkeyboard('get_prices', 'en')
@@ -62,7 +62,7 @@ class BotMan:
         CREATE_ALARM_EN = resourceman.mainkeyboard('create_alarm', 'en')
         CONFIG_PRICE_LIST_EN = resourceman.mainkeyboard('config_lists', 'en')
         CONFIG_CALCULATOR_EN = resourceman.mainkeyboard('config_calculator', 'en')
-        CONFIG_ALARMS_EN = resourceman.mainkeyboard('config_alarms', 'en')
+        LIST_ALARMS_EN = resourceman.mainkeyboard('list_alarms', 'en')
         RETURN_EN = resourceman.keyboard('return', 'en')
 
         ADMIN_NOTICES_FA = resourceman.keyboard('admin_notices', 'fa')
@@ -142,15 +142,15 @@ class BotMan:
             [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
             [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value),
              KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)],
-            [KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value),
-             KeyboardButton(BotMan.Commands.CONFIG_ALARMS_FA.value)]
+            [KeyboardButton(BotMan.Commands.LIST_ALARMS_FA.value),
+             KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value)]
         ]
         menu_main_keys_en = [
             [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.GET_EN.value)],
             [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_EN.value),
              KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)],
-            [KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value),
-             KeyboardButton(BotMan.Commands.CONFIG_ALARMS_EN.value)]
+            [KeyboardButton(BotMan.Commands.LIST_ALARMS_EN.value),
+             KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value)]
         ]
         self.menu_main = lambda lang: ReplyKeyboardMarkup(menu_main_keys if lang.lower() == 'fa' else menu_main_keys_en,
                                                           resize_keyboard=True)
@@ -415,3 +415,13 @@ class BotMan:
                 alarm.disable()
             except:
                 pass
+
+    async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
+        if not account.is_premium_member():
+            link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
+            await telegram_handle.message.reply_text(
+                text=self.error('max_selection', account.language) % (max_value,) + self.error('get_premium', account.language),
+                reply_markup=self.inline_url([{'text_key': "premium", 'url': link}])
+            )
+        else:
+            await telegram_handle.message.reply_text(text=self.error('max_selection', account.language) % (max_value,))

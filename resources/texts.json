@@ -20,7 +20,7 @@
             "fa": "ایجاد هشدار قیمت",
             "en": "Create a Price Alert"
         },
-        "config_alarms": {
+        "list_alarms": {
             "fa": "لیست هشدار قیمت من",
             "en": "My Price Alert List"
         },
