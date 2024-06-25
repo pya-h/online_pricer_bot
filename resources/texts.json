@@ -232,6 +232,14 @@
     "price_unit_usd": {
         "fa": "دلار",
         "en": "Dollor(s)"
-    }
+    },
+    "channel_planning_started": {
+        "fa": "زمان بندی %d دقیقه ای شروع شد.",
+        "en": "Channel planning for every %d minutes has been started."
+    },
+    "channel_planning_stopped": {
+        "fa": "به روزرسانی خودکار کانال متوقف شد.",
+        "en": "Channel planning has been stopped."
+    } 
 
 }

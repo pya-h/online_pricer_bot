@@ -8,6 +8,7 @@ from models.channel import Channel
 from typing import List, Dict
 from bot.types import SelectionListTypes, MarketOptions
 from json import loads as json_parse, dumps as jsonify
+from models.alarms import PriceAlarm
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
@@ -332,6 +333,9 @@ class Account:
             return admins
         return [Account.GetHardcodeAdmin()['account'], ]
 
+    def get_alarms(self) -> List[PriceAlarm]:
+        return PriceAlarm.GetByUser(self.chat_id)
+    
     @property
     def alarms_count(self):
         return self.Database().get_number_of_user_alarms(self.chat_id)

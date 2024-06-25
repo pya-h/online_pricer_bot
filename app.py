@@ -1,6 +1,6 @@
 from telegram.ext import CallbackContext, filters, CommandHandler, ApplicationBuilder as BotApplicationBuilder, \
     MessageHandler, CallbackQueryHandler
-from telegram import Update, CallbackQuery
+from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
 from models.account import Account
 import json
@@ -133,7 +133,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     botman.is_main_plan_on = True
     context.job_queue.run_repeating(update_markets, interval=botman.main_plan_interval * 60, first=1,
                                     name=botman.main_queue_id)
-    await update.message.reply_text(f'زمان بندی {botman.main_plan_interval} دقیقه ای با موفقیت انجام شد.')
+    await update.message.reply_text(botman.text('channel_planning_started', account.language) % (botman.main_plan_interval, ))
 
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
@@ -146,7 +146,7 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
         job.schedule_removal()
     botman.is_main_plan_on = False
     botman.crypto_serv.latest_prices = ''
-    await update.message.reply_text('به روزرسانی خودکار کانال متوقف شد.')
+    await update.message.reply_text(botman.text('channel_planning_stopped', account.language))
 
 
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
@@ -226,12 +226,13 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
             await func_send_message(header + response)
 
 
-async def list_user_alarms(update: Update, context: CallbackContext, next_state: Account.States):
+async def list_user_alarms(update: Update, context: CallbackContext):
     account = Account.Get(update.effective_chat.id)
     if not await botman.has_subscribed_us(account.chat_id, context):
         await botman.ask_for_subscription(update, account.language)
         return
-    # TODO: CONTINUE HERE
+    my_alarms = account.get_alarms()
+    return InlineKeyboardMarkup(list(map(lambda alarm: [InlineKeyboardButton(None, callback_data=None)], my_alarms)))
 
 async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
 
@@ -412,7 +413,7 @@ async def handle_messages(update: Update, context: CallbackContext):
         case BotMan.Commands.CREATE_ALARM_FA.value | BotMan.Commands.CREATE_ALARM_EN.value:
             await show_market_types(update, context, Account.States.CREATE_ALARM)
         case BotMan.Commands.LIST_ALARMS_FA.value | BotMan.Commands.LIST_ALARMS_EN.value:
-            await list_user_alarms(update, context, Account.States.CREATE_ALARM)
+            await list_user_alarms(update, context)
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
             await select_coin_menu(update, context)
         case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:

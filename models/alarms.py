@@ -49,10 +49,17 @@ class PriceAlarm:
         self.current_price: int | None = None
         self.full_currency_name: Dict[str, str] | None = None
 
+    def ExtractQueryRowData(row: tuple):
+        return PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0])
+    
+    def GetByUser(self, chat_id: int):
+        rows = self.Database().get_user_alarms(chat_id)
+        return list(map(PriceAlarm.ExtractQueryRowData, rows))
+        
     @staticmethod
     def Get(currencies: List[str] | None = None):
         rows = PriceAlarm.Database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.Database().get_alarms()
-        return list(map(lambda row: PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0]), rows))
+        return list(map(PriceAlarm.ExtractQueryRowData, rows))
 
     def disable(self):
         self.Database().delete_alarm(self.id)
