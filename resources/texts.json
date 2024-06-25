@@ -58,6 +58,26 @@
             "fa": "💎 پریمیوم",
             "en": "💎 Premium"
         },
+        "tutorials": {
+            "fa": "موزش امل ربات",
+            "en": "Tutorials"
+        }, 
+        "set_language": {
+            "fa": "💎 پریمیوم",
+            "en": "Language"
+        },
+        "factory_reset": {
+            "fa": "💎 پریمیوم",
+            "en": "Factory Reset Bot"
+        },
+        "support": {
+            "fa": "💎 پریمیوم",
+            "en": "Support"
+        },
+        "our_others": {
+            "fa": "💎 پریمیوم",
+            "en": "Our Other Collections"
+        },
         "admin_notices": {
             "fa": "⚠️ اطلاع رسانی",
             "en": "⚠️ Notices"
@@ -256,6 +276,10 @@
     "click_alarm_to_disable": {
         "fa": "❗️ روی هر کدام از موارد زیر کلیک کنید از لیست هشدار شما حذف می شود.",
         "en": "❗️ By clicking on any of the following, it will be removed from your alerms list."
+    },
+    "settings_hint": {
+        "fa": "...",
+        "en": "Here are tools which help you work better with the bot..."
     }
 
 }

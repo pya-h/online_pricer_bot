@@ -53,6 +53,13 @@ class BotMan:
         LIST_ALARMS_FA = resourceman.mainkeyboard('list_alarms', 'fa')
         RETURN_FA = resourceman.keyboard('return', 'fa')
 
+        SETTINGS_FA = resourceman.mainkeyboard('settings', 'fa')
+        TUTORIALS_FA = resourceman.mainkeyboard('tutorials', 'fa')
+        SET_BOT_LANGUAGE_FA = resourceman.mainkeyboard('set_language', 'fa')
+        FACTORY_RESET_FA = resourceman.mainkeyboard('factory_reset', 'fa')
+        SUPPORT_FA = resourceman.mainkeyboard('support', 'fa')
+        OUR_OTHERS_FA = resourceman.mainkeyboard('our_others', 'fa')
+
         GET_EN = resourceman.mainkeyboard('get_prices', 'en')
         CALCULATOR_EN = resourceman.mainkeyboard('calculator', 'en')
         CRYPTOS_EN = resourceman.keyboard('crypto', 'en')
@@ -64,6 +71,13 @@ class BotMan:
         CONFIG_CALCULATOR_EN = resourceman.mainkeyboard('config_calculator', 'en')
         LIST_ALARMS_EN = resourceman.mainkeyboard('list_alarms', 'en')
         RETURN_EN = resourceman.keyboard('return', 'en')
+
+        SETTINGS_EN = resourceman.mainkeyboard('settings', 'en')
+        TUTORIALS_EN = resourceman.mainkeyboard('tutorials', 'en')
+        SET_BOT_LANGUAGE_EN = resourceman.mainkeyboard('set_language', 'en')
+        FACTORY_RESET_EN = resourceman.mainkeyboard('factory_reset', 'en')
+        SUPPORT_EN = resourceman.mainkeyboard('support', 'en')
+        OUR_OTHERS_EN = resourceman.mainkeyboard('our_others', 'en')
 
         ADMIN_NOTICES_FA = resourceman.keyboard('admin_notices', 'fa')
         ADMIN_NOTICES_EN = resourceman.keyboard('admin_notices', 'en')
@@ -428,3 +442,13 @@ class BotMan:
             )
         else:
             await telegram_handle.message.reply_text(text=self.error('max_selection', account.language) % (max_value,))
+
+    async def show_settings_menu(self, update: Update):
+        account = Account.Get(update.effective_chat.id)
+        keyboard = ReplyKeyboardMarkup([[BotMan.Commands.TUTORIALS_FA], [BotMan.Commands.FACTORY_RESET_FA, BotMan.Commands.SET_BOT_LANGUAGE_FA],
+                                    [BotMan.Commands.OUR_OTHERS_FA, BotMan.Commands.SUPPORT_FA]] if account.language.lower() == 'fa' else \
+                                        [[BotMan.Commands.TUTORIALS_EN], [BotMan.Commands.FACTORY_RESET_EN, BotMan.Commands.SET_BOT_LANGUAGE_EN],
+                                    [BotMan.Commands.OUR_OTHERS_EN, BotMan.Commands.SUPPORT_EN]])
+        await update.message.reply_text(self.text("settings_hint", account.language), reply_markup=keyboard)
+    
+
