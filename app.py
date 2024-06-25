@@ -10,6 +10,7 @@ from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from models.alarms import PriceAlarm
+from typing import List
 
 
 botman = BotMan()
@@ -226,13 +227,42 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
             await func_send_message(header + response)
 
 
-async def list_user_alarms(update: Update, context: CallbackContext):
-    account = Account.Get(update.effective_chat.id)
+async def list_user_alarms(update: Update | CallbackQuery, context: CallbackContext):
+    account = Account.Get(update.message.chat_id)
     if not await botman.has_subscribed_us(account.chat_id, context):
         await botman.ask_for_subscription(update, account.language)
         return
     my_alarms = account.get_alarms()
-    return InlineKeyboardMarkup(list(map(lambda alarm: [InlineKeyboardButton(None, callback_data=None)], my_alarms)))
+    alarms_count = len(my_alarms)
+    desciptions: List[str | None] = [None] * alarms_count
+    buttons: List[InlineKeyboardButton | None] = [None] * alarms_count
+
+    for i, alarm in enumerate(my_alarms):
+        index = i+1
+        try:
+            curreny_title = alarm.currency.upper()
+            price = cut_and_separate(alarm.target_price)
+
+            if account.language.lower() == 'fa':
+                index = persianify(index)
+                price = persianify(price)
+                curreny_title = botman.crypto_serv.CoinsInPersian[curreny_title] if curreny_title in botman.crypto_serv.CoinsInPersian else botman.currency_serv.CurrenciesInPersian[curreny_title]
+                unit = botman.text(f'price_unit_{alarm.target_unit.lower()}', account.language)
+            desciptions[i] = f"{index}) {curreny_title}: {price} {unit}"
+        except:
+            desciptions[i] = f"{index}) " + botman.error('invalid_alarm_data', account.language)
+        buttons[i] = InlineKeyboardButton(desciptions[i], callback_data=botman.action_callback_data(BotMan.QueryActions.DISABLE_ALARM, alarm.id))
+
+    if account.language.lower() == 'fa':
+        alarms_count = persianify(alarms_count)
+    message_text = botman.text('u_have_n_alarms', account.language) % (str(alarms_count), ) \
+        + ((":\n\n" + "\n".join(desciptions) + "\n\n" + botman.text('click_alarm_to_disable', account.language)) if my_alarms else ".")
+    
+    if isinstance(update, CallbackQuery):
+        await update.message.edit_text(message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons]))
+        return
+    await update.message.reply_text(message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons]))
+
 
 async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
 
@@ -277,18 +307,30 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                                 raise ValueError("Unknown symbol and market")
                 except Exception as ex:
                     log(f'Cannot create the alarm for user {account.chat_id}', ex)
-                print(currency_name, current_price)
+
                 if current_price is not None:
-                    if not account.can_create_new_alarm:
-                        botman.show_reached_max_error(query, account, account.max_alarms_count)
-                    alarm = PriceAlarm(account.chat_id, symbol, target_price=target_price, target_unit=price_unit, current_price=current_price)
-                    alarm.set()
-                    price_unit_str = botman.text(f'price_unit_{price_unit.lower()}', language=account.language)
-                    current_price = cut_and_separate(target_price)
-                    lang = account.language.lower()
-                    if lang == 'fa':
-                        current_price = persianify(current_price)
-                    await query.message.edit_text(text=botman.text('alarm_set', lang) % (currency_name if lang == 'fa' else symbol, target_price, price_unit_str))
+                    if account.can_create_new_alarm:
+                        alarm = PriceAlarm(account.chat_id, symbol, target_price=target_price, target_unit=price_unit, current_price=current_price)
+                        alarm.set()
+                        price_unit_str = botman.text(f'price_unit_{price_unit.lower()}', language=account.language)
+                        current_price = cut_and_separate(target_price)
+                        lang = account.language.lower()
+                        if lang == 'fa':
+                            current_price = persianify(current_price)
+                        await query.message.edit_text(text=botman.text('alarm_set', lang) % (currency_name if lang == 'fa' else symbol, target_price, price_unit_str))
+                    else:
+                        await botman.show_reached_max_error(query, account, account.max_alarms_count)
+            await query.answer()
+
+        case BotMan.QueryActions.DISABLE_ALARM.value:
+            alarm_id: int | None = None
+            try:
+                alarm_id = int(callback_data['v'])
+                PriceAlarm.DisableById(alarm_id)
+                await list_user_alarms(query, context)
+            except Exception as ex:
+                await context.bot.send_message(chat_id=account.chat_id, text=botman.error('error_while_disabling_alarm', account.language))
+                log(f'Cannot disable the alarm with id={alarm_id}', ex, "Alarms")
             await query.answer()
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
@@ -378,7 +420,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     except ValueError as reached_max_ex:
         max_selection = int(reached_max_ex.__str__())
-        botman.show_reached_max_error(query, account, max_selection)
+        await botman.show_reached_max_error(query, account, max_selection)
 
     except IndexError as ie:
         log('Invalid market selection procedure', ie, 'general')

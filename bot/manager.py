@@ -80,6 +80,7 @@ class BotMan:
     class QueryActions(Enum):
         CHOOSE_LANGUAGE = 1
         SELECT_PRICE_UNIT = 2
+        DISABLE_ALARM = 3
         NONE = 0
 
         @staticmethod
@@ -89,6 +90,8 @@ class BotMan:
                     return BotMan.QueryActions.CHOOSE_LANGUAGE
                 case 2:
                     return BotMan.QueryActions.SELECT_PRICE_UNIT
+                case 3:
+                    return BotMan.QueryActions.DISABLE_ALARM
             return BotMan.QueryActions.NONE
 
     def __init__(self) -> None:

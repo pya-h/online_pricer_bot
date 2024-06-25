@@ -155,6 +155,14 @@
         "invalid_price": {
             "fa": "ورودی شما متاسفانه معتبر نیست. ورودی قیمت باید عددی معین باشد.\n\nدرصورتی که تمایل به ادامه این عملیات ندارید می توانید از دکمه لغو استفاده کنید.",
             "en": "Unfortunately your input is not a valid one! Price input must be a standard numeric value.\n\nIn case you do't want to continue this operation, you can simply use Cancel button."
+        },
+        "invalid_alarm_data": {
+            "fa": "مشکلی حین دریافت اطلاعات این هشئدار رخ داد.",
+            "en": "There was an error while getting this alarm data."
+        },
+        "error_while_disabling_alarm": {
+            "fa": "❗️ غیرفعال کردن هشدار قیمت انتخابی با مشکل نامعلوم مواجه شد. لطفا دوباره تلاش کنید.",
+            "en": "❗️ Disabling price alarm encountered with an unknown error. Please try again."
         }
     },
     "what_can_i_do": {
@@ -240,6 +248,14 @@
     "channel_planning_stopped": {
         "fa": "به روزرسانی خودکار کانال متوقف شد.",
         "en": "Channel planning has been stopped."
-    } 
+    },
+    "u_have_n_alarms": {
+        "fa": "شما %s هشدار قیمت دارید",
+        "en": "You have %s price alarms"
+    },
+    "click_alarm_to_disable": {
+        "fa": "❗️ روی هر کدام از موارد زیر کلیک کنید از لیست هشدار شما حذف می شود.",
+        "en": "❗️ By clicking on any of the following, it will be removed from your alerms list."
+    }
 
 }

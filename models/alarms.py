@@ -52,8 +52,9 @@ class PriceAlarm:
     def ExtractQueryRowData(row: tuple):
         return PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0])
     
-    def GetByUser(self, chat_id: int):
-        rows = self.Database().get_user_alarms(chat_id)
+    @staticmethod
+    def GetByUser(chat_id: int):
+        rows = PriceAlarm.Database().get_user_alarms(chat_id)
         return list(map(PriceAlarm.ExtractQueryRowData, rows))
         
     @staticmethod
@@ -64,6 +65,11 @@ class PriceAlarm:
     def disable(self):
         self.Database().delete_alarm(self.id)
 
+    @staticmethod
+    def DisableById(alarm_id):
+        '''Efficient way to disable alarms when there is just an id available'''
+        PriceAlarm.Database().delete_alarm(alarm_id)
+    
     def set(self):
         db = self.Database()
         if self.id:
