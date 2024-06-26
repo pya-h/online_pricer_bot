@@ -71,8 +71,8 @@
             "en": "Return To Default Mode"
         },
         "support": {
-            "fa": " پشتیبانی ربات",
-            "en": "Support"
+            "fa": "پشتیبانی ربات",
+            "en": "Support Group"
         },
         "our_others": {
             "fa": "دیگر مجموعه های ما",
@@ -187,6 +187,10 @@
         "factpry_reset_incomplete": {
             "fa": "❗️ فرایند بازگشت به تنظیمات پیش فرض با اختلال مواجه شد. ممکن است برخی تنظیمات هنوز بازکردانی نشده باشند. لطفا لحظاتی دیگر دوباره تلاش کنید.",
             "en": "❗️ Factory reset process was entrupted with an unknown errror. This means that there may be some of your options that are still not reset. Please try again some time later."
+        },
+        "list_type_not_specified": {
+            "fa": "❗️ متاسفانه شما مشخص نکرده اید که می خواهید کدام نوع لیست(دریافت قیمت، ماشین جساب، هشدار قیمت، کانال) را تنظیم کنید!",
+            "en": "❗️ Unfortunately you have not specified which type of list(Calculator, Price List, Price Alarm or Channels) you want to config!"
         }
     },
     "what_can_i_do": {
@@ -296,6 +300,13 @@
     "factory_reset_successful": {
         "fa": "✅ هم اکنون ربات به حالت پیشفرض برگشت.",
         "en": "✅ Now the bot is back to default mode."
+    },
+    "contact_support_hint": {
+        "fa": "🔸 جهت هرگونه انتقاد، رفع مشکل، اعلام باگ، ایده، پریمیوم کردن ربات و... می توانید با ادمین پاسخگویی مجموعه ما در ارتباط باشید:\n(۱۰ صبح الی 20 شب)\n👩‍💻 @%s",
+        "en": "🔸 For any criticism, problem solving, bug report, idea, bot premium, etc., you can contact the administrator of our collection:\n(10 am to 8 pm)\n👩‍💻 @%s"
+    },
+    "check_our_other_collections": {
+        "fa": "🔸 برای مشاهده دیگر مجموعه های ما وارد کانال زیر شوید:\n⚜️ https://t.me/Crypto_AKSA/58",
+        "en": "🔸 To view our other collections, enter the following channel:\n⚜️ https://t.me/Crypto_AKSA/58"
     }
-
 }
