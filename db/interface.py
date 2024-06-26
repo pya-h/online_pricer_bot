@@ -170,7 +170,7 @@ class DatabaseInterface:
                                 channel_id)
         return channels[0] if channels else None
 
-    def get_account_channels(self, owner_chat_id: int) -> list:
+    def get_user_channels(self, owner_chat_id: int) -> list:
         """Get all channels related to this account"""
         return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=?", owner_chat_id)
 

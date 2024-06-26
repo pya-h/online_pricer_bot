@@ -56,36 +56,10 @@ class Account:
     PreviousGarbageCollectionTime: int = now_in_minute()  # in minutes
     Instances = {}  # active accounts will cache into this; so there's no need to access database everytime
 
-    # causing a slight enhancement on performance
-
-    @staticmethod
-    def Database():
-        if Account._database is None:
-            Account._database = DatabaseInterface.Get()
-        return Account._database
 
     def no_interaction_duration(self):
         diff, _ = from_now_time_diff(self.last_interaction)
         return diff
-
-    @staticmethod
-    def GarbageCollect():
-        now = now_in_minute()
-        if now - Account.PreviousGarbageCollectionTime <= Account.GarbageCollectionInterval:
-            return
-
-        garbage = []
-        Account.PreviousGarbageCollectionTime = now
-        for chat_id in Account.Instances:
-            if Account.Instances[chat_id].no_interaction_duration() >= Account.GarbageCollectionInterval / 2:
-                garbage.append(chat_id)
-        # because changing dict size in a loop on itself causes error,
-        # we first collect redundant chat_id s and then delete them from the memory
-        cleaned_counts = len(garbage)
-        for g in garbage:
-            del Account.Instances[g]
-
-        log(f"Cleaned {cleaned_counts} accounts from my simple cache store.", category_name="account_gc")
 
     def arrange_instances(self):
         Account.GarbageCollect()
@@ -160,15 +134,6 @@ class Account:
     def str_calc_currencies(self):
         return ';'.join(self.calc_currencies)
 
-    
-    @staticmethod
-    def str2list(string: str):
-        return string.split(';') if string else None
-
-    @staticmethod
-    def list2str(lst: List[str]):
-        return ';'.join(lst)
-
     def set_extra_info(self, firstname: str, username: str = None) -> None:
         """This extra info are just for temporary messaging purposes and won't be saved in database."""
         self.firstname = firstname
@@ -176,6 +141,142 @@ class Account:
 
     def my_channel_plans(self) -> list[Channel]:
         return list(filter(lambda channel: channel.owner_id == self.chat_id, Channel.Instances.values()))
+
+    
+    def is_premium_member(self) -> bool:
+        """Check if the account has still plus subscription."""
+        return self.is_admin or (
+                    self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date())
+
+    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str,
+                         channel_title: str = None) -> Channel | None:
+        channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
+        if channel.plan():
+            # self.channels[channel_id] = channel
+            return channel
+        return None
+
+    def upgrade(self, duration_in_months: int):
+        Account.Database().upgrade_account(self, duration_in_months)
+
+    def cache_as_str(self) -> str | None:
+        return jsonify(self.cache) if self.cache else None
+
+    def save(self):
+        self.Database().update(self)
+        return self
+
+    def __del__(self):
+        self.save()
+
+    def handle_market_selection(self, list_type: SelectionListTypes, market: MarketOptions, symbol: str | None = None):
+        target_list: List[str]
+        related_list: List[str]
+
+        match list_type:
+            case SelectionListTypes.CALCULATOR:
+                (target_list, related_list) = (
+                    self.calc_cryptos, self.calc_currencies) if market == MarketOptions.CRYPTO else (
+                    self.calc_currencies, self.calc_cryptos)
+            case SelectionListTypes.ALARM:
+                return None
+            case SelectionListTypes.FOLLOWING:
+                (target_list, related_list) = (
+                    self.desired_cryptos, self.desired_currencies) if market == MarketOptions.CRYPTO else (
+                    self.desired_currencies, self.desired_cryptos)
+            case _:
+                raise ValueError(f'Invalid list type selected by: {self.state.value}')
+
+        if symbol:
+            if symbol.upper() not in target_list:
+                if len(target_list) + len(related_list) >= self.max_selection_count:
+                    raise ValueError(self.max_selection_count)
+
+                target_list.append(symbol)
+                self.save()
+            else:
+                target_list.remove(symbol)
+        return target_list
+
+    def match_state_with_selection_type(self):
+        match self.state:
+            case Account.States.CONFIG_MARKETS:
+                return SelectionListTypes.FOLLOWING
+            case Account.States.INPUT_EQUALIZER_UNIT:
+                return SelectionListTypes.EQUALIZER_UNIT
+            case Account.States.CONFIG_CALCULATOR_LIST:
+                return SelectionListTypes.CALCULATOR
+            case Account.States.CREATE_ALARM:
+                return SelectionListTypes.ALARM
+        return None
+
+    def get_alarms(self) -> List[PriceAlarm]:
+        return PriceAlarm.GetByUser(self.chat_id)
+
+    def factory_reset(self):
+        self.desired_cryptos = ''
+        self.desired_currencies = ''
+        self.calc_cryptos = ''
+        self.calc_currencies = ''
+        self.language = 'fa'
+        self.clear_cache()
+        self.state = Account.States.NONE
+        self.save()
+
+        # disable(delete) all alarms
+        for alarm in self.get_alarms():
+            alarm.disable()
+
+        # stop(delete) all planned channels
+        for channel in self.get_planned_channels():
+            channel.stop_plan()
+    
+    def get_planned_channels(self) -> List[Channel]:
+        return Channel.GetByOwner(self.chat_id)
+    
+    @property
+    def alarms_count(self):
+        return self.Database().get_number_of_user_alarms(self.chat_id)
+    
+    @property
+    def can_create_new_alarm(self):
+        return self.alarms_count < self.max_alarms_count
+    
+    # user privileges:
+    @property
+    def max_selection_count(self):
+        if self.is_premium_member():
+            return 100
+        return 10
+    
+    @property
+    def max_alarms_count(self):
+        if self.is_premium_member():
+            return 10
+        return 3
+
+    @property
+    def max_channel_plans_count(self):
+        if self.is_premium_member():
+            return 1
+        return 0
+    
+        # causing a slight enhancement on performance
+
+    @staticmethod
+    def Database():
+        if Account._database is None:
+            Account._database = DatabaseInterface.Get()
+        return Account._database
+
+
+    @staticmethod
+    def str2list(string: str):
+        return string.split(';') if string else None
+
+    @staticmethod
+    def list2str(lst: List[str]):
+        return ';'.join(lst)
 
     @staticmethod
     def ExtractQueryRowData(row: tuple, prevent_instance_arrangement: bool = False):
@@ -215,25 +316,6 @@ class Account:
         return {'id': HARDCODE_ADMIN_CHATID, 'username': HARDCODE_ADMIN_USERNAME,
                 'account': Account.Get(HARDCODE_ADMIN_CHATID)}
 
-    def is_premium_member(self) -> bool:
-        """Check if the account has still plus subscription."""
-        return self.is_admin or (
-                    self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date())
-
-    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str,
-                         channel_title: str = None) -> Channel | None:
-        channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
-        if channel.plan():
-            # self.channels[channel_id] = channel
-            return channel
-        return None
-
-    def upgrade(self, duration_in_months: int):
-        Account.Database().upgrade_account(self, duration_in_months)
-
-    def cache_as_str(self) -> str | None:
-        return jsonify(self.cache) if self.cache else None
-
     @staticmethod
     def load_cache(data_string: str | None):
         return json_parse(data_string) if data_string else {}
@@ -241,42 +323,6 @@ class Account:
     @staticmethod
     def Everybody():
         return Account.Database().get_all()
-
-    def save(self):
-        self.Database().update(self)
-        return self
-
-    def __del__(self):
-        self.save()
-
-    def handle_market_selection(self, list_type: SelectionListTypes, market: MarketOptions, symbol: str | None = None):
-        target_list: List[str]
-        related_list: List[str]
-
-        match list_type:
-            case SelectionListTypes.CALCULATOR:
-                (target_list, related_list) = (
-                    self.calc_cryptos, self.calc_currencies) if market == MarketOptions.CRYPTO else (
-                    self.calc_currencies, self.calc_cryptos)
-            case SelectionListTypes.ALARM:
-                return None
-            case SelectionListTypes.FOLLOWING:
-                (target_list, related_list) = (
-                    self.desired_cryptos, self.desired_currencies) if market == MarketOptions.CRYPTO else (
-                    self.desired_currencies, self.desired_cryptos)
-            case _:
-                raise ValueError(f'Invalid list type selected by: {self.state.value}')
-
-        if symbol:
-            if symbol.upper() not in target_list:
-                if len(target_list) + len(related_list) >= self.max_selection_count:
-                    raise ValueError(self.max_selection_count)
-
-                target_list.append(symbol)
-                self.save()
-            else:
-                target_list.remove(symbol)
-        return target_list
 
     @staticmethod
     def Statistics():
@@ -311,18 +357,6 @@ class Account:
         return {'daily': today_actives, 'yesterday': yesterday_actives, 'weekly': this_week_actives,
                 'monthly': this_month_actives, 'all': len(last_interactions)}
 
-    def match_state_with_selection_type(self):
-        match self.state:
-            case Account.States.CONFIG_MARKETS:
-                return SelectionListTypes.FOLLOWING
-            case Account.States.INPUT_EQUALIZER_UNIT:
-                return SelectionListTypes.EQUALIZER_UNIT
-            case Account.States.CONFIG_CALCULATOR_LIST:
-                return SelectionListTypes.CALCULATOR
-            case Account.States.CREATE_ALARM:
-                return SelectionListTypes.ALARM
-        return None
-
     @staticmethod
     def GetAdmins(just_hardcode_admin: bool = True):
         if not just_hardcode_admin:
@@ -333,32 +367,21 @@ class Account:
             return admins
         return [Account.GetHardcodeAdmin()['account'], ]
 
-    def get_alarms(self) -> List[PriceAlarm]:
-        return PriceAlarm.GetByUser(self.chat_id)
-    
-    @property
-    def alarms_count(self):
-        return self.Database().get_number_of_user_alarms(self.chat_id)
-    
-    @property
-    def can_create_new_alarm(self):
-        return self.alarms_count < self.max_alarms_count
-    
-    # user privileges:
-    @property
-    def max_selection_count(self):
-        if self.is_premium_member():
-            return 100
-        return 10
-    
-    @property
-    def max_alarms_count(self):
-        if self.is_premium_member():
-            return 10
-        return 3
+    @staticmethod
+    def GarbageCollect():
+        now = now_in_minute()
+        if now - Account.PreviousGarbageCollectionTime <= Account.GarbageCollectionInterval:
+            return
 
-    @property
-    def max_channel_plans_count(self):
-        if self.is_premium_member():
-            return 1
-        return 0
+        garbage = []
+        Account.PreviousGarbageCollectionTime = now
+        for chat_id in Account.Instances:
+            if Account.Instances[chat_id].no_interaction_duration() >= Account.GarbageCollectionInterval / 2:
+                garbage.append(chat_id)
+        # because changing dict size in a loop on itself causes error,
+        # we first collect redundant chat_id s and then delete them from the memory
+        cleaned_counts = len(garbage)
+        for g in garbage:
+            del Account.Instances[g]
+
+        log(f"Cleaned {cleaned_counts} accounts from my simple cache store.", category_name="account_gc")

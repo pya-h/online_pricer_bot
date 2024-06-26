@@ -22,7 +22,14 @@ class PlanInterval:
 
 class Channel:
     Instances = {}
-    Database: DatabaseInterface = DatabaseInterface.Get()
+    _database: DatabaseInterface = None
+
+
+    @staticmethod
+    def Database():
+        if Channel._database is None:
+            Channel._database = DatabaseInterface.Get()
+        return Channel._database
 
     @staticmethod
     def GetHasPlanChannels():
@@ -68,7 +75,8 @@ class Channel:
     def stop_plan(self) -> bool:
         try:
             Channel.Database.delete_channel(self.id)
-            del Channel.Instances[self.id]
+            if self.id in Channel.Instances:
+                del Channel.Instances[self.id]
         except Exception as ex:
             manuwriter.log(f'Cannot remove channel:{self.id}', ex, category_name="PLUS_FATALITY")
             return False
@@ -80,10 +88,20 @@ class Channel:
             return Channel.Instances[channel_id]
         row = Channel.Database.get_channel(channel_id)
         if row:
-            return Channel(channel_id=int(row[0]), interval=int(row[1]), last_post_time=int(row[2]),
-                           channel_name=row[3], channel_title=row[4], owner_id=int(row[-1]))
+            return Channel.ExtractQueryRowData(row)
 
         return None
 
     def __str__(self) -> str:
         return f"Username:{self.name}\nTitle: {self.title}\nId: {self.id}\nInterval: {self.interval}\nOwner Id: {self.owner_id}"
+    
+    @staticmethod
+    def ExtractQueryRowData(row: tuple):
+        return Channel(channel_id=int(row[0]), interval=int(row[1]), last_post_time=int(row[2]),
+                           channel_name=row[3], channel_title=row[4], owner_id=int(row[-1]))
+    
+    @staticmethod
+    def GetByOwner(owner_chat_id: int):
+        rows = Channel.Database().get_user_channels(owner_chat_id)
+        return list(map(Channel.ExtractQueryRowData, rows))
+        

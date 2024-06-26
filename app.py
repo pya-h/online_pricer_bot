@@ -77,7 +77,7 @@ async def cmd_welcome(update: Update, context: CallbackContext):
     # get old or create new account => automatically will be added to Account.Instances
     if not await botman.has_subscribed_us(acc.chat_id, context):
         return await botman.ask_for_subscription(update, acc.language)
-    await update.message.reply_text(botman.text('welcome_choose_language', acc.language) % (update.message.chat.first_name,),
+    await update.message.reply_text((botman.text('welcome_user', acc.language) % (update.message.chat.first_name,)) + "\n\n" + botman.text('select_bot_language', acc.language),
                                     reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.CHOOSE_LANGUAGE, {'fa': 'language_persian', 'en': 'language_english'}, language=acc.language))
 
 
@@ -272,12 +272,14 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
         case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
             lang = callback_data['v'].lower()
             if lang != 'fa' and lang != 'en':
-                await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
+                if lang == 'x':
+                    await query.message.delete()
+                else:
+                    await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
                 return
             account.language = lang
             account.save()
             await context.bot.send_message(text=botman.text('language_switched', account.language), chat_id=account.chat_id, reply_markup=botman.mainkeyboard(account))
-            await query.answer()
         case BotMan.QueryActions.SELECT_PRICE_UNIT.value:
             data: str = callback_data['v']
             if data:
@@ -320,7 +322,6 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                         await query.message.edit_text(text=botman.text('alarm_set', lang) % (currency_name if lang == 'fa' else symbol, target_price, price_unit_str))
                     else:
                         await botman.show_reached_max_error(query, account, account.max_alarms_count)
-            await query.answer()
 
         case BotMan.QueryActions.DISABLE_ALARM.value:
             alarm_id: int | None = None
@@ -331,7 +332,16 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             except Exception as ex:
                 await context.bot.send_message(chat_id=account.chat_id, text=botman.error('error_while_disabling_alarm', account.language))
                 log(f'Cannot disable the alarm with id={alarm_id}', ex, "Alarms")
-            await query.answer()
+        case BotMan.QueryActions.FACTORY_RESET.value:
+            try:
+                if callback_data['v'].lower() == 'y':
+                    account.factory_reset()
+                    await query.message.edit_text(text=botman.text('factory_reset_successful', account.language))
+            except Exception as ex:
+                await query.message.edit_text(text=botman.error('factpry_reset_incomplete', account.language))
+                log(f'User {account.chat_id} factory reset failed!', ex, 'FactoryReset')
+                print(ex)
+    await query.answer()
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -456,14 +466,34 @@ async def handle_messages(update: Update, context: CallbackContext):
             await show_market_types(update, context, Account.States.CREATE_ALARM)
         case BotMan.Commands.LIST_ALARMS_FA.value | BotMan.Commands.LIST_ALARMS_EN.value:
             await list_user_alarms(update, context)
+        case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
+            await cmd_equalizer(update, context)
+
+        # Select market sub menu
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
             await select_coin_menu(update, context)
         case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
             await select_currency_menu(update, context)
         case BotMan.Commands.GOLDS_FA.value | BotMan.Commands.GOLDS_EN.value:
             await select_gold_menu(update, context)
-        case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
-            await cmd_equalizer(update, context)
+
+        # setting section:
+        case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
+            await botman.show_settings_menu(update)
+        case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
+                account = Account.Get(update.effective_chat.id)
+                if not await botman.has_subscribed_us(account.chat_id, context):
+                    await botman.ask_for_subscription(update, account.language)
+                    return
+                await update.message.reply_text(botman.text('select_bot_language', account.language),
+                                                reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.CHOOSE_LANGUAGE, 
+                                                    {'fa': 'language_persian', 'en': 'language_english', 'x': 'close'}, language=account.language))
+        case BotMan.Commands.FACTORY_RESET_FA.value | BotMan.Commands.FACTORY_RESET_EN.value:
+            account = Account.Get(update.effective_chat.id)
+            await update.message.reply_text(botman.text('factory_reset_confirmation', account.language),
+                                reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.FACTORY_RESET, 
+                                    {'y': 'factory_reset'}, language=account.language))
+        # admin options:
         case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
             await cmd_send_post(update, context)
         case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
@@ -472,6 +502,8 @@ async def handle_messages(update: Update, context: CallbackContext):
             await cmd_stop_schedule(update, context)
         case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
             await cmd_report_statistics(update, context)
+
+        # cancel/return options
         case BotMan.Commands.CANCEL_FA.value | BotMan.Commands.CANCEL_EN.value:
             account = Account.Get(update.effective_chat.id)
             account.change_state(clear_cache=True)  # reset .state and .state_data
@@ -481,6 +513,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             account = Account.Get(update.effective_chat.id)
             account.change_state(clear_cache=True)  # TODO: For now it clears; if in future there was some place that just needs turning back one step, this will ne updated.
             await update.message.reply_text(botman.text('what_can_i_do', account.language), reply_markup=botman.mainkeyboard(account))
+        # special states
         case _:
             # check account state first, to see if he/she is in input state
             account = Account.Get(update.effective_chat.id)

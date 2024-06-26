@@ -91,7 +91,9 @@ class CoinMarketCapService(CryptoCurrencyService):
 
         for item in source_list:
             try:
-                result[item[key_as]] = item
+                symbol = item[key_as].upper()
+                if symbol in CoinMarketCapService.CoinsInPersian and symbol not in result:
+                    result[symbol] = item
             except:
                 pass
         return result

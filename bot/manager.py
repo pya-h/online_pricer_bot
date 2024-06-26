@@ -51,14 +51,16 @@ class BotMan:
         CONFIG_PRICE_LIST_FA = resourceman.mainkeyboard('config_lists')
         CONFIG_CALCULATOR_FA = resourceman.mainkeyboard('config_calculator', 'fa')
         LIST_ALARMS_FA = resourceman.mainkeyboard('list_alarms', 'fa')
-        RETURN_FA = resourceman.keyboard('return', 'fa')
-
         SETTINGS_FA = resourceman.mainkeyboard('settings', 'fa')
-        TUTORIALS_FA = resourceman.mainkeyboard('tutorials', 'fa')
-        SET_BOT_LANGUAGE_FA = resourceman.mainkeyboard('set_language', 'fa')
-        FACTORY_RESET_FA = resourceman.mainkeyboard('factory_reset', 'fa')
-        SUPPORT_FA = resourceman.mainkeyboard('support', 'fa')
-        OUR_OTHERS_FA = resourceman.mainkeyboard('our_others', 'fa')
+        GO_PREMIUM_FA = resourceman.keyboard('premium', 'fa')
+
+        TUTORIALS_FA = resourceman.keyboard('tutorials', 'fa')
+        SET_BOT_LANGUAGE_FA = resourceman.keyboard('set_language', 'fa')
+        FACTORY_RESET_FA = resourceman.keyboard('factory_reset', 'fa')
+        SUPPORT_FA = resourceman.keyboard('support', 'fa')
+        OUR_OTHERS_FA = resourceman.keyboard('our_others', 'fa')
+
+        RETURN_FA = resourceman.keyboard('return', 'fa')
 
         GET_EN = resourceman.mainkeyboard('get_prices', 'en')
         CALCULATOR_EN = resourceman.mainkeyboard('calculator', 'en')
@@ -70,14 +72,16 @@ class BotMan:
         CONFIG_PRICE_LIST_EN = resourceman.mainkeyboard('config_lists', 'en')
         CONFIG_CALCULATOR_EN = resourceman.mainkeyboard('config_calculator', 'en')
         LIST_ALARMS_EN = resourceman.mainkeyboard('list_alarms', 'en')
-        RETURN_EN = resourceman.keyboard('return', 'en')
-
         SETTINGS_EN = resourceman.mainkeyboard('settings', 'en')
-        TUTORIALS_EN = resourceman.mainkeyboard('tutorials', 'en')
-        SET_BOT_LANGUAGE_EN = resourceman.mainkeyboard('set_language', 'en')
-        FACTORY_RESET_EN = resourceman.mainkeyboard('factory_reset', 'en')
-        SUPPORT_EN = resourceman.mainkeyboard('support', 'en')
-        OUR_OTHERS_EN = resourceman.mainkeyboard('our_others', 'en')
+        GO_PREMIUM_EN = resourceman.keyboard('premium', 'en')
+
+        TUTORIALS_EN = resourceman.keyboard('tutorials', 'en')
+        SET_BOT_LANGUAGE_EN = resourceman.keyboard('set_language', 'en')
+        FACTORY_RESET_EN = resourceman.keyboard('factory_reset', 'en')
+        SUPPORT_EN = resourceman.keyboard('support', 'en')
+        OUR_OTHERS_EN = resourceman.keyboard('our_others', 'en')
+        
+        RETURN_EN = resourceman.keyboard('return', 'en')
 
         ADMIN_NOTICES_FA = resourceman.keyboard('admin_notices', 'fa')
         ADMIN_NOTICES_EN = resourceman.keyboard('admin_notices', 'en')
@@ -95,6 +99,7 @@ class BotMan:
         CHOOSE_LANGUAGE = 1
         SELECT_PRICE_UNIT = 2
         DISABLE_ALARM = 3
+        FACTORY_RESET = 4
         NONE = 0
 
         @staticmethod
@@ -106,6 +111,8 @@ class BotMan:
                     return BotMan.QueryActions.SELECT_PRICE_UNIT
                 case 3:
                     return BotMan.QueryActions.DISABLE_ALARM
+                case 4:
+                    return BotMan.QueryActions.FACTORY_RESET
             return BotMan.QueryActions.NONE
 
     def __init__(self) -> None:
@@ -160,14 +167,16 @@ class BotMan:
             [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value),
              KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)],
             [KeyboardButton(BotMan.Commands.LIST_ALARMS_FA.value),
-             KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value)]
+             KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value)],
+            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value), KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
         ]
         menu_main_keys_en = [
             [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.GET_EN.value)],
             [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_EN.value),
              KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)],
             [KeyboardButton(BotMan.Commands.LIST_ALARMS_EN.value),
-             KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value)]
+             KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value)],
+            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value), KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
         ]
         self.menu_main = lambda lang: ReplyKeyboardMarkup(menu_main_keys if lang.lower() == 'fa' else menu_main_keys_en,
                                                           resize_keyboard=True)
@@ -381,10 +390,12 @@ class BotMan:
 
     def check_price_alarms(self) -> List[PriceAlarm]:
         """Checks all user alarms and finds alarms that has gone off"""
+        print('ALARM CHECK:')
         alarms = PriceAlarm.Get()
         # TODO: Define a pre_latest_data, check for currencies that have changed in 10m and then get alarms by currencies
         triggered_alarms = []
         for alarm in alarms:
+            print(alarm)
             source = self.currency_serv
             alarm.current_price = self.currency_serv.get_single_price(alarm.currency, alarm.target_unit)
             if alarm.current_price is None:
@@ -406,6 +417,7 @@ class BotMan:
                     case _:
                         if alarm.current_price == alarm.target_price:
                             triggered_alarms.append(alarm)
+        print(triggered_alarms)
         return triggered_alarms
 
     async def handle_possible_alarms(self, send_message_func):
@@ -445,10 +457,10 @@ class BotMan:
 
     async def show_settings_menu(self, update: Update):
         account = Account.Get(update.effective_chat.id)
-        keyboard = ReplyKeyboardMarkup([[BotMan.Commands.TUTORIALS_FA], [BotMan.Commands.FACTORY_RESET_FA, BotMan.Commands.SET_BOT_LANGUAGE_FA],
-                                    [BotMan.Commands.OUR_OTHERS_FA, BotMan.Commands.SUPPORT_FA]] if account.language.lower() == 'fa' else \
-                                        [[BotMan.Commands.TUTORIALS_EN], [BotMan.Commands.FACTORY_RESET_EN, BotMan.Commands.SET_BOT_LANGUAGE_EN],
-                                    [BotMan.Commands.OUR_OTHERS_EN, BotMan.Commands.SUPPORT_EN]])
+        keyboard = ReplyKeyboardMarkup([[KeyboardButton(BotMan.Commands.TUTORIALS_FA.value)], [KeyboardButton(BotMan.Commands.FACTORY_RESET_FA.value), KeyboardButton(BotMan.Commands.SET_BOT_LANGUAGE_FA.value)],
+                                    [KeyboardButton(BotMan.Commands.OUR_OTHERS_FA.value), KeyboardButton(BotMan.Commands.SUPPORT_FA.value)], [KeyboardButton(BotMan.Commands.RETURN_FA.value)]] if account.language.lower() == 'fa' else \
+                                        [[KeyboardButton(BotMan.Commands.TUTORIALS_EN.value)], [KeyboardButton(BotMan.Commands.FACTORY_RESET_EN.value), KeyboardButton(BotMan.Commands.SET_BOT_LANGUAGE_EN.value)],
+                                    [KeyboardButton(BotMan.Commands.OUR_OTHERS_EN.value), KeyboardButton(BotMan.Commands.SUPPORT_EN.value)], [KeyboardButton(BotMan.Commands.RETURN_EN.value)]], resize_keyboard=True)
         await update.message.reply_text(self.text("settings_hint", account.language), reply_markup=keyboard)
     
 

@@ -43,8 +43,8 @@
             "en": "Gold"
         },
         "return": {
-            "fa": "بازگشت",
-            "en": "Return"
+            "fa": "➡️ بازگشت",
+            "en": "◀️ Return"
         },
         "cancel": {
             "fa": "لغو",
@@ -59,23 +59,23 @@
             "en": "💎 Premium"
         },
         "tutorials": {
-            "fa": "موزش امل ربات",
-            "en": "Tutorials"
+            "fa": "آموزش کامل ربات",
+            "en": "Complete Bot Tutorials"
         }, 
         "set_language": {
-            "fa": "💎 پریمیوم",
-            "en": "Language"
+            "fa": "تنظیم زبان ربات",
+            "en": "Set Bot Language"
         },
         "factory_reset": {
-            "fa": "💎 پریمیوم",
-            "en": "Factory Reset Bot"
+            "fa": "برگشت به حالت پیشفرض",
+            "en": "Return To Default Mode"
         },
         "support": {
-            "fa": "💎 پریمیوم",
+            "fa": " پشتیبانی ربات",
             "en": "Support"
         },
         "our_others": {
-            "fa": "💎 پریمیوم",
+            "fa": "دیگر مجموعه های ما",
             "en": "Our Other Collections"
         },
         "admin_notices": {
@@ -183,6 +183,10 @@
         "error_while_disabling_alarm": {
             "fa": "❗️ غیرفعال کردن هشدار قیمت انتخابی با مشکل نامعلوم مواجه شد. لطفا دوباره تلاش کنید.",
             "en": "❗️ Disabling price alarm encountered with an unknown error. Please try again."
+        },
+        "factpry_reset_incomplete": {
+            "fa": "❗️ فرایند بازگشت به تنظیمات پیش فرض با اختلال مواجه شد. ممکن است برخی تنظیمات هنوز بازکردانی نشده باشند. لطفا لحظاتی دیگر دوباره تلاش کنید.",
+            "en": "❗️ Factory reset process was entrupted with an unknown errror. This means that there may be some of your options that are still not reset. Please try again some time later."
         }
     },
     "what_can_i_do": {
@@ -241,8 +245,12 @@
         "fa": "فرآیند به روزرسانی قبلا شروع شده است.",
         "en": "Planning process is already started."
     },
-    "welcome_choose_language": {
-        "fa": "کاربر %s\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏\n\n🔹 زبان ربات را تعیین کنید:",
+    "welcome_user": {
+        "fa": "کاربر %s\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏",
+        "en": "User %s\nWelcome to the [ Online pricer ] bot 🌷🙏"
+    },
+    "select_bot_language": {
+        "fa": "🔹 زبان ربات را تعیین کنید:",
         "en": "User %s\nWelcome to the [ Online pricer ] bot 🌷🙏\n\n🔹 Set the language of bot:"
     },
     "whats_price_unit": {
@@ -280,6 +288,14 @@
     "settings_hint": {
         "fa": "...",
         "en": "Here are tools which help you work better with the bot..."
+    },
+    "factory_reset_confirmation": {
+        "fa": "🔹 آیا می خواهید ربات به حالت پیشفرض برگردد?\n\n❗️ با کلیک بر روی گزینه زیر، ربات به حالت پیشفرض برمیگردد و تمام داده های شما در این ربات حذف می شود.\n\n❗️ هیچ تغییری بر روی پریمیوم بودن اکانتتان اعمال نمی شود.",
+        "en": "🔹 Do you want the bot to go back to default mode?\n\n❗️ By clicking on the option below, the robot will return to the default mode and all your data will be deleted in this robot.\n\n❗️ No change will be applied to your premium status."
+    },
+    "factory_reset_successful": {
+        "fa": "✅ هم اکنون ربات به حالت پیشفرض برگشت.",
+        "en": "✅ Now the bot is back to default mode."
     }
 
 }
