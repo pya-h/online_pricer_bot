@@ -1,7 +1,7 @@
 from enum import Enum
 from tools.manuwriter import load_json
 from decouple import config
-from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, Update, CallbackQuery
+from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, Update, CallbackQuery, Message
 from telegram.ext import CallbackContext
 from telegram.error import BadRequest
 from api.currency_service import CurrencyService
@@ -100,6 +100,7 @@ class BotMan:
         SELECT_PRICE_UNIT = 2
         DISABLE_ALARM = 3
         FACTORY_RESET = 4
+        SELECT_TUTORIAL = 5
         NONE = 0
 
         @staticmethod
@@ -113,6 +114,8 @@ class BotMan:
                     return BotMan.QueryActions.DISABLE_ALARM
                 case 4:
                     return BotMan.QueryActions.FACTORY_RESET
+                case 5:
+                    return BotMan.QueryActions.SELECT_TUTORIAL
             return BotMan.QueryActions.NONE
 
     def __init__(self) -> None:
@@ -148,7 +151,6 @@ class BotMan:
         self.text = self.resourceman.text
         self.error = self.resourceman.error
 
-        # TODO: Update these to be dynamic with languages.
         self.menu_main_keys = None
         self.menu_main = None
         self.admin_keyboard = None
@@ -161,7 +163,6 @@ class BotMan:
         self.is_main_plan_on: bool = False
 
     def setup_main_keyboards(self):
-        # TODO: Update these to be dynamic with languages.
         menu_main_keys = [
             [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
             [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value),
@@ -319,14 +320,14 @@ class BotMan:
         return InlineKeyboardMarkup(buttons)
 
     def action_inline_keyboard(self, action: QueryActions, data: Dict[str, str], language: str = 'fa',
-                               columns_in_a_row: int = 2):
+                               columns_in_a_row: int = 2, in_main_keyboard: bool = False):
         """this function creates inline url keyboard for messages"""
         keys = list(data.keys())
         buttons_count = len(keys)
         full_rows_count = int(buttons_count / columns_in_a_row)
-        buttons = [[InlineKeyboardButton(self.resourceman.keyboard(data[keys[col + row * columns_in_a_row]], language),
-                                         callback_data=self.action_callback_data(action, keys[col + row * columns_in_a_row])) for col
-                    in range(columns_in_a_row)] for row in range(full_rows_count)]
+        buttons = [[InlineKeyboardButton((
+                self.resourceman.keyboard if not in_main_keyboard else self.resourceman.mainkeyboard)(data[keys[col + row * columns_in_a_row]], language),
+                callback_data=self.action_callback_data(action, keys[col + row * columns_in_a_row])) for col in range(columns_in_a_row)] for row in range(full_rows_count)]
         full_rows_last_index = columns_in_a_row * full_rows_count
         if full_rows_last_index < buttons_count:
             buttons.append(
@@ -460,7 +461,11 @@ class BotMan:
         keyboard = ReplyKeyboardMarkup([[KeyboardButton(BotMan.Commands.TUTORIALS_FA.value)], [KeyboardButton(BotMan.Commands.FACTORY_RESET_FA.value), KeyboardButton(BotMan.Commands.SET_BOT_LANGUAGE_FA.value)],
                                     [KeyboardButton(BotMan.Commands.OUR_OTHERS_FA.value), KeyboardButton(BotMan.Commands.SUPPORT_FA.value)], [KeyboardButton(BotMan.Commands.RETURN_FA.value)]] if account.language.lower() == 'fa' else \
                                         [[KeyboardButton(BotMan.Commands.TUTORIALS_EN.value)], [KeyboardButton(BotMan.Commands.FACTORY_RESET_EN.value), KeyboardButton(BotMan.Commands.SET_BOT_LANGUAGE_EN.value)],
-                                    [KeyboardButton(BotMan.Commands.OUR_OTHERS_EN.value), KeyboardButton(BotMan.Commands.SUPPORT_EN.value)], [KeyboardButton(BotMan.Commands.RETURN_EN.value)]], resize_keyboard=True)
-        await update.message.reply_text(self.text("settings_hint", account.language), reply_markup=keyboard)
+                                    [KeyboardButton(BotMan.Commands.OUR_OTHERS_EN.value), KeyboardButton(BotMan.Commands.SUPPORT_EN.value)], [KeyboardButton(BotMan.Commands.RETURN_EN.value)]], resize_keyboard=True, one_time_keyboard=False)
+        return await update.message.reply_text(self.resourceman.mainkeyboard('settings', account.language), reply_markup=keyboard)
     
 
+    async def clear_unwanted_menu_messages(self, update: Update, context: CallbackContext, operation_result):
+        if isinstance(operation_result, Message):
+            await context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id )
+        await update.message.delete()

@@ -1,6 +1,6 @@
 from telegram.ext import CallbackContext, filters, CommandHandler, ApplicationBuilder as BotApplicationBuilder, \
     MessageHandler, CallbackQueryHandler
-from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from telegram.error import BadRequest
 from models.account import Account
 import json
@@ -268,14 +268,24 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
 
     if callback_data:
         callback_data = json.loads(query.data)
+    
+    if isinstance(callback_data['v'], str) and callback_data['v'] and callback_data['v'][0] == '!':
+        params = callback_data['v'].split()
+        message_id: int | None = None
+        try:
+            message_id = int(params[-1])
+        except:
+            pass
+        await query.message.delete()
+
+        return await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id) if message_id else None
+        
+    
     match callback_data['act']:
         case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
             lang = callback_data['v'].lower()
             if lang != 'fa' and lang != 'en':
-                if lang == 'x':
-                    await query.message.delete()
-                else:
-                    await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
+                await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
                 return
             account.language = lang
             account.save()
@@ -288,7 +298,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                 symbol = data[1]
                 target_price = float(data[2])
                 price_unit = data[3]
-                current_price: float | None = None  # FIXME: handle golds in EntitiesInDollors, deviding by usd price again
+                current_price: float | None = None
                 currency_name: str = None
                 try:
                     match market:
@@ -336,11 +346,16 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             try:
                 if callback_data['v'].lower() == 'y':
                     account.factory_reset()
-                    await query.message.edit_text(text=botman.text('factory_reset_successful', account.language))
+                    await query.message.delete()
+                    await context.bot.send_message(chat_id=account.chat_id, text=botman.text('factory_reset_successful', account.language), reply_markup=botman.mainkeyboard(account))
             except Exception as ex:
-                await query.message.edit_text(text=botman.error('factpry_reset_incomplete', account.language))
+                await query.message.edit_text(text=botman.error('factory_reset_incomplete', account.language))
                 log(f'User {account.chat_id} factory reset failed!', ex, 'FactoryReset')
-                print(ex)
+               
+        case BotMan.QueryActions.SELECT_TUTORIAL.value:
+            import resources.longtext as long_texts
+            await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[callback_data['v']][account.language.lower()])
+
     await query.answer()
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
@@ -349,7 +364,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         return
 
     data = json.loads(query.data)
-    account: Account = Account.Get(update.message.chat_id)
+    account: Account = Account.Get(query.message.chat_id)
     # first check query type
     if 'act' in data:
         # action queries are handled here
@@ -407,7 +422,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             current_price_description = botman.crypto_serv.get_price_description_row(symbol) if market == MarketOptions.CRYPTO \
                 else botman.currency_serv.get_price_description_row(symbol)
             
-            if current_price_description:  # TODO: update this when english language is fully implemented
+            if current_price_description:
                 message_text += f"\n\n{current_price_description}"
             await query.message.edit_text(text=message_text)
             return
@@ -453,10 +468,11 @@ async def cmd_switch_language(update: Update, context: CallbackContext):
 
 async def list_type_is_selected(update: Update):
     account = Account.Get(update.message.chat_id)
-    if account.state not in [Account.States.CONFIG_CALCULATOR_LIST, Account.States.INPUT_EQUALIZER_UNIT, Account.States.CONFIG_MARKETS]:
+    if account.state not in [Account.States.CONFIG_CALCULATOR_LIST, Account.States.INPUT_EQUALIZER_UNIT, Account.States.CONFIG_MARKETS, Account.States.CREATE_ALARM]:
         await update.message.reply_text(botman.error('list_type_not_specified', account.language), reply_markup=botman.mainkeyboard(account))
         return False
     return True
+
 
 
 async def handle_messages(update: Update, context: CallbackContext):
@@ -478,17 +494,18 @@ async def handle_messages(update: Update, context: CallbackContext):
 
         # Select market sub menu
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
-            if list_type_is_selected(update):
+            if await list_type_is_selected(update):
                 await select_coin_menu(update, context)
         case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
-            if list_type_is_selected(update):
+            if await list_type_is_selected(update):
                 await select_currency_menu(update, context)
         case BotMan.Commands.GOLDS_FA.value | BotMan.Commands.GOLDS_EN.value:
-            if list_type_is_selected(update):
+            if await list_type_is_selected(update):
                 await select_gold_menu(update, context)
 
         # setting section:
         case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
+            await update.message.delete()
             await botman.show_settings_menu(update)
         case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
                 account = Account.Get(update.message.chat_id)
@@ -497,7 +514,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     return
                 await update.message.reply_text(botman.text('select_bot_language', account.language),
                                                 reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.CHOOSE_LANGUAGE, 
-                                                    {'fa': 'language_persian', 'en': 'language_english', 'x': 'close'}, language=account.language))
+                                                    {'fa': 'language_persian', 'en': 'language_english', 0: 'close'}, language=account.language))
         case BotMan.Commands.FACTORY_RESET_FA.value | BotMan.Commands.FACTORY_RESET_EN.value:
             account = Account.Get(update.message.chat_id)
             await update.message.reply_text(botman.text('factory_reset_confirmation', account.language),
@@ -508,6 +525,20 @@ async def handle_messages(update: Update, context: CallbackContext):
             await update.message.reply_text(botman.text('contact_support_hint') % (Account.GetHardcodeAdmin()['username']))
         case BotMan.Commands.OUR_OTHERS_FA.value | BotMan.Commands.OUR_OTHERS_EN.value:
             await update.message.reply_text(botman.text('check_our_other_collections'))
+        case BotMan.Commands.TUTORIALS_FA.value | BotMan.Commands.TUTORIALS_EN.value:
+            account = Account.Get(update.message.chat_id)
+            await update.message.reply_text(botman.text('click_tutorial_u_need', account.language),
+                                            reply_markup=botman.action_inline_keyboard(botman.QueryActions.SELECT_TUTORIAL, {
+                                                'config_lists': 'config_lists',
+                                                'get_prices': "get_prices",
+                                                'config_calculator': 'config_calculator',
+                                                'calculator': 'calculator',
+                                                'list_alarms': 'list_alarms',
+                                                'create_alarm': 'create_alarm',
+                                                'connect_to_group': 'connect_to_group',
+                                                'connect_to_channel': 'connect_to_channel',
+                                                f'! {update.message.message_id}': 'close'
+                                            }, language=account.language, in_main_keyboard=True))
 
         # admin options:
         case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
@@ -581,12 +612,13 @@ async def handle_messages(update: Update, context: CallbackContext):
                     if not units:
                         # Open select unit reply_markup list
                         account.change_state(Account.States.INPUT_EQUALIZER_UNIT, 'input_amounts', amounts)
-                        await update.message.reply_text(
-                            botman.text("select_price_currency_unit", account.language),
-                            reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(),
-                                                                MarketOptions.CRYPTO,
-                                                                botman.crypto_serv.CoinsInPersian,
-                                                                close_button=True))
+                        # await update.message.reply_text(
+                        #     botman.text("select_price_currency_unit", account.language),
+                            # reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(),
+                            #                                     MarketOptions.CRYPTO,
+                            #                                     botman.crypto_serv.CoinsInPersian,
+                            #                                     close_button=True))
+                        await show_market_types(update, context, Account.States.INPUT_EQUALIZER_UNIT)
                     else:
                         await start_equalizing(update.message.reply_text, account, amounts, units)
                         account.change_state(clear_cache=True)  # reset state

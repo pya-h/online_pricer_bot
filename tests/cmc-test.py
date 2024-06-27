@@ -16,6 +16,6 @@ res = cmc.cmc_api.cryptocurrency_listings_latest(limit=5000)
 save(res.data)
 # while True:
 #     l = input('You coin symbol list separated by spaces ["x" for using default list]')
-#     data = cmc.get_request(custom_symbol_list=l.split() if l != 'x' else None)
+#     data = cmc.get_request(custom_symbol_list=l.split() if l != 0 else None)
 #     save(data)
 #     print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n')

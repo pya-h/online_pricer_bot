@@ -44,7 +44,7 @@ class Response:
 
     @property
     def OK(self) -> bool:
-        return self.status == 200 or self.status == 201  # TODO: What about 202 to 300
+        return self.status == 200 or self.status == 201
 
     @property
     def data(self):
@@ -114,5 +114,5 @@ class Request:
                 return await self.get()
             case RequestMethod.Post:
                 return await self.post()
-        # TODO: write other cases
+
         return None

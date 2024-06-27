@@ -178,12 +178,13 @@ class Account:
                 (target_list, related_list) = (
                     self.calc_cryptos, self.calc_currencies) if market == MarketOptions.CRYPTO else (
                     self.calc_currencies, self.calc_cryptos)
-            case SelectionListTypes.ALARM:
-                return None
             case SelectionListTypes.FOLLOWING:
                 (target_list, related_list) = (
                     self.desired_cryptos, self.desired_currencies) if market == MarketOptions.CRYPTO else (
                     self.desired_currencies, self.desired_cryptos)
+            
+            case SelectionListTypes.ALARM | SelectionListTypes.EQUALIZER_UNIT:
+                return None
             case _:
                 raise ValueError(f'Invalid list type selected by: {self.state.value}')
 

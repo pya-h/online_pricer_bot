@@ -27,6 +27,14 @@
         "settings": {
             "fa": "⚙️ تنظیمات",
             "en": "⚙️ Settings"
+        },
+        "connect_to_channel": {
+            "fa": "اتصال ربات به کانال",
+            "en": "Connect To a Channel"
+        },
+        "connect_to_group": {
+            "fa": "اتصال ربات به گروه",
+            "en": "Connect To a Group"
         }
     },
     "keyboard": {
@@ -184,7 +192,7 @@
             "fa": "❗️ غیرفعال کردن هشدار قیمت انتخابی با مشکل نامعلوم مواجه شد. لطفا دوباره تلاش کنید.",
             "en": "❗️ Disabling price alarm encountered with an unknown error. Please try again."
         },
-        "factpry_reset_incomplete": {
+        "factory_reset_incomplete": {
             "fa": "❗️ فرایند بازگشت به تنظیمات پیش فرض با اختلال مواجه شد. ممکن است برخی تنظیمات هنوز بازکردانی نشده باشند. لطفا لحظاتی دیگر دوباره تلاش کنید.",
             "en": "❗️ Factory reset process was entrupted with an unknown errror. This means that there may be some of your options that are still not reset. Please try again some time later."
         },
@@ -289,10 +297,6 @@
         "fa": "❗️ روی هر کدام از موارد زیر کلیک کنید از لیست هشدار شما حذف می شود.",
         "en": "❗️ By clicking on any of the following, it will be removed from your alerms list."
     },
-    "settings_hint": {
-        "fa": "...",
-        "en": "Here are tools which help you work better with the bot..."
-    },
     "factory_reset_confirmation": {
         "fa": "🔹 آیا می خواهید ربات به حالت پیشفرض برگردد?\n\n❗️ با کلیک بر روی گزینه زیر، ربات به حالت پیشفرض برمیگردد و تمام داده های شما در این ربات حذف می شود.\n\n❗️ هیچ تغییری بر روی پریمیوم بودن اکانتتان اعمال نمی شود.",
         "en": "🔹 Do you want the bot to go back to default mode?\n\n❗️ By clicking on the option below, the robot will return to the default mode and all your data will be deleted in this robot.\n\n❗️ No change will be applied to your premium status."
@@ -308,5 +312,9 @@
     "check_our_other_collections": {
         "fa": "🔸 برای مشاهده دیگر مجموعه های ما وارد کانال زیر شوید:\n⚜️ https://t.me/Crypto_AKSA/58",
         "en": "🔸 To view our other collections, enter the following channel:\n⚜️ https://t.me/Crypto_AKSA/58"
+    },
+    "click_tutorial_u_need": {
+        "fa": "🔹 روی آموزش مورد نیازتان کلیک کنید:",
+        "en": "🔹 Click on the training you need:"
     }
 }

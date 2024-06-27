@@ -211,8 +211,7 @@ class DatabaseInterface:
 
     def get_alarms(self, currency: str | None = None):
         return self.execute(True, f"SELECT * from {self.TABLE_PRICE_ALARMS}") if not currency else \
-            self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY}=?",
-                         currency)  # TODO: does currency string needs '' ?
+            self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY}=?", currency)
 
     def get_alarms_by_currencies(self, currencies: List[str]):
         targets = 'n'.join([f"'{curr}'" for curr in currencies])

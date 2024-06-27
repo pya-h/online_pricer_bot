@@ -132,16 +132,15 @@ class APIService(BaseAPIService):
             if force_reload or not self.latest_data:
                 self.load_cache()
         except Exception as ex:
-            return None
-            # if not self.latest_data: # if there is no cache, and the no latest data eigher, to prevent craching, call the api for once
-            #     try:
-            #         manuwriter.log("Couldnt read cache; Using Direct api call to obtain data.", ex, category_name='CACHE')
-            #         self.latest_data = self.get_request()  # the condition that is happende, may be due to lack of cache file,
-            #         # This may be cause when this app is run before oneline_pricer_bot for the first time.
-            #         # sending a request will make new cache and solve this issue.
-            #     except Exception as fex:
-            #         manuwriter.log("Couldnt get cache and API both. There\'s something seriously wrong!!", ex, category_name='PLUS_FATALITY')
-            #         # TODO: send an email or notification or whatever to the admin?
+            if not self.latest_data: # if there is no cache, and the no latest data eigher, to prevent craching, call the api for once
+                try:
+                    manuwriter.log("Couldnt read cache; Using Direct api call to obtain data.", ex, category_name='CACHE')
+                    self.latest_data = self.get_request()  # the condition that is happende, may be due to lack of cache file,
+                    # This may be cause when this app is run before oneline_pricer_bot for the first time.
+                    # sending a request will make new cache and solve this issue.
+                except Exception as fex:
+                    manuwriter.log("Couldnt get cache and API both. There\'s something seriously wrong!!", ex, category_name='PLUS_FATALITY')
+                    # TODO: send an email or notification or whatever to the admin?
 
         return self.extract_api_response(desired_ones, short_text=short_text, optional_api_data=self.latest_data)
 
