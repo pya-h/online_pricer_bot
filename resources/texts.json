@@ -207,6 +207,18 @@
         "list_type_not_specified": {
             "fa": "❗️ متاسفانه شما مشخص نکرده اید که می خواهید کدام نوع لیست(دریافت قیمت، ماشین جساب، هشدار قیمت، کانال) را تنظیم کنید!",
             "en": "❗️ Unfortunately you have not specified which type of list(Calculator, Price List, Price Alarm or Channels) you want to config!"
+        },
+        "price_not_available": {
+            "fa": "متاسفانه هم اکنون قیمت %s در دسترس نیست.",
+            "en": "Unfortunately, %s price is not available right now."
+        },
+        "invalid_symbol": {
+            "fa": "متاسفانه هیچ ارز یا ارزدیجیتالی با سیمبول %s وجود ندارد.",
+            "en": "No cuurency/cryptocurrency found related to %s symbol."
+        },
+        "api_not_available": {
+            "fa": "در حال حاضر امکان ارتباط با سرویس API ما وجود ندارد. لطفا بعدا تلاش کنید.",
+            "en": "Unfortunately, our API Service is not available right now. Please try again later some time."
         }
     },
     "what_can_i_do": {
@@ -328,5 +340,9 @@
     "specify_user": {
         "fa": "...",
         "en": "Enter the chat id of the user you want to upgrade:"
+    },
+    "continues_calculator_hint": {
+        "fa": "حالا می توانید دوباره با وارد کردن ورودی جدید، محاسبات جدیدی انجام بدهید و یا با استفاده از گزینه لغو از بخش ماشین حساب خارج شوید...",
+        "en": "Now you can enter your next input to perform another calculation, or you can use Cancel button to exit calculator section..."
     }
 }

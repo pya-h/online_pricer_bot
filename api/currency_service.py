@@ -218,9 +218,11 @@ class NavasanService(CurrencyService):
                                NavasanService.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با::\n\n'
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
-        absolute_amount: float = amount * float(
-            self.latest_data[source_unit_symbol.lower()]['value'])
-
+        try:
+            absolute_amount: float = amount * float(
+                self.latest_data[source_unit_symbol.lower()]['value'])
+        except:
+            raise ValueError(f'{source_unit_symbol} has not been received from the API.')
         return  header, self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies), self.irt_to_usd(absolute_amount), absolute_amount
 
     def get_single_price(self, currency_symbol: str, price_unit: str = 'usd'):

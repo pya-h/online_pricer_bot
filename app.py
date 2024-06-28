@@ -11,6 +11,7 @@ from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from models.alarms import PriceAlarm
 from typing import List
+from tools.exceptions import NoLatestDataException, InvalidInputException
 
 
 botman = BotMan()
@@ -222,16 +223,29 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
     response: str
     for amount in amounts:
         for unit in units:
-            if unit in botman.crypto_serv.CoinsInPersian:
-                header, response, _, absolute_irt = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos)
-                response = botman.currency_serv.irt_to_currencies(absolute_irt, unit,
-                                                                  account.calc_currencies) + "\n\n" + response
-            else:
-                header, response, absolute_usd, _ = botman.currency_serv.equalize(unit, amount, account.calc_currencies)
-                response += "\n\n" + botman.crypto_serv.usd_to_cryptos(absolute_usd, unit, account.calc_cryptos)
+            name: str | None = ''
+            try:
+                if unit in botman.crypto_serv.CoinsInPersian:
+                    name = botman.crypto_serv.CoinsInPersian[unit]
+                    header, response, _, absolute_irt = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos)
+                    response = botman.currency_serv.irt_to_currencies(absolute_irt, unit,
+                                                                    account.calc_currencies) + "\n\n" + response
+                else:
+                    name = botman.currency_serv.CurrenciesInPersian[unit]
+                    header, response, absolute_usd, _ = botman.currency_serv.equalize(unit, amount, account.calc_currencies)
+                    response += "\n\n" + botman.crypto_serv.usd_to_cryptos(absolute_usd, unit, account.calc_cryptos)
+                await func_send_message(header + response)
+            except ValueError as ex:
+                log('Error while equalizing', ex, category_name='Calculator')
+                await func_send_message(botman.error('price_not_available', account.language) % (name, ))
+            except NoLatestDataException:
+                await func_send_message(botman.error('api_not_available', account.language))
+            except InvalidInputException:
+                await func_send_message(botman.error('invalid_symbol', account.language) % (unit, ))
 
-            await func_send_message(header + response)
-
+    # FIXME: Edit the func_send_message method when this function is called from inline message handler.
+    account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, clear_cache=True)  # prepare for next input
+    await func_send_message(botman.text('continues_calculator_hint', account.language), reply_markup=botman.cancel_menu(account.language))
 
 async def list_user_alarms(update: Update | CallbackQuery, context: CallbackContext):
     account = Account.Get(update.message.chat_id)
@@ -414,7 +428,6 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 )
                 await start_equalizing(lambda text: context.bot.send_message(chat_id=account.chat_id, text=text),
                                        account, input_amounts, [unit_symbol])
-                account.change_state(clear_cache=True)  # reset state
             else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
                 # condition possible(or not.!)
                 await query.message.edit_text(botman.text("enter_desired_price", account.language))
@@ -618,18 +631,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                             reply_markup=botman.mainkeyboard(account),
                             reply_to_message_id=update.message.message_id)
                     if not units:
-                        # Open select unit reply_markup list
                         account.change_state(Account.States.INPUT_EQUALIZER_UNIT, 'input_amounts', amounts)
-                        # await update.message.reply_text(
-                        #     botman.text("select_price_currency_unit", account.language),
-                            # reply_markup=botman.inline_keyboard(account.match_state_with_selection_type(),
-                            #                                     MarketOptions.CRYPTO,
-                            #                                     botman.crypto_serv.CoinsInPersian,
-                            #                                     close_button=True))
                         await show_market_types(update, context, Account.States.INPUT_EQUALIZER_UNIT)
                     else:
                         await start_equalizing(update.message.reply_text, account, amounts, units)
-                        account.change_state(clear_cache=True)  # reset state
                         
                 case Account.States.CREATE_ALARM:
                     props = account.get_cache('create_alarm_props')
