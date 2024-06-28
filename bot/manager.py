@@ -95,6 +95,12 @@ class BotMan:
         ADMIN_STATISTICS_FA = resourceman.keyboard('admin_statistics', 'fa')
         ADMIN_STATISTICS_EN = resourceman.keyboard('admin_statistics', 'en')
 
+        ADMIN_UPGRADE_TO_PREMIUM_FA = resourceman.keyboard('admin_upgrade_to_premium', 'fa')
+        ADMIN_UPGRADE_TO_PREMIUM_EN = resourceman.keyboard('admin_upgrade_to_premium', 'en')
+
+        ADMIN_DOWNGRADE_USER_FA = resourceman.keyboard('admin_downgrade_user', 'fa')
+        ADMIN_DOWNGRADE_USER_EN = resourceman.keyboard('admin_downgrade_user', 'en')
+        
     class QueryActions(Enum):
         CHOOSE_LANGUAGE = 1
         SELECT_PRICE_UNIT = 2

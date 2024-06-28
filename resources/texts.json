@@ -102,6 +102,14 @@
             "fa": "توقف زمان بندی",
             "en": "Stop Channel Plan"
         },
+        "admin_upgrade_to_premium": {
+            "fa": "...",
+            "en": "Upgrade To Premium"
+        },
+        "admin_downgrade_user": {
+            "fa": "...",
+            "en": "Downgrade User"
+        },
         "list_indices": {
             "fa": "لیست",
             "en": "List"
@@ -316,5 +324,9 @@
     "click_tutorial_u_need": {
         "fa": "🔹 روی آموزش مورد نیازتان کلیک کنید:",
         "en": "🔹 Click on the training you need:"
+    },
+    "specify_user": {
+        "fa": "...",
+        "en": "Enter the chat id of the user you want to upgrade:"
     }
 }

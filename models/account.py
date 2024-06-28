@@ -30,6 +30,7 @@ class Account:
         CONFIG_MARKETS = 7
         CONFIG_CALCULATOR_LIST = 8
         CREATE_ALARM = 9
+        UPGRADE_USER = 10
 
         @staticmethod
         def Which(value: int):
@@ -99,10 +100,11 @@ class Account:
     def delete_specific_cache(self, *keys):
         keys = list(keys)
         for key in keys:
-            del self.cache[key]
+            if key in self.cache:
+                del self.cache[key]
 
     def clear_cache(self):
-        self.cache = {}
+        self.cache.clear()
 
     def get_cache(self, cache_key: str = None):
         return self.cache[cache_key] if cache_key in self.cache else None

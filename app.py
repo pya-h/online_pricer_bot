@@ -172,13 +172,19 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
 
 async def cmd_admin_login(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat_id)
-    if not await botman.has_subscribed_us(account.chat_id, context):
-        return await botman.ask_for_subscription(update, account.language)
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     await update.message.reply_text(
         'اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.',
+        reply_markup=botman.admin_keyboard(account.language))
+
+async def cmd_upgrade_user(update: Update, context: CallbackContext):
+    account = Account.Get(update.message.chat_id)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
+    account.change_state(Account.States.UPGRADE_USER, clear_cache=True)
+    await update.message.reply_text(botman.text("specify_user", account.language),
         reply_markup=botman.admin_keyboard(account.language))
 
 
@@ -541,6 +547,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                                             }, language=account.language, in_main_keyboard=True))
 
         # admin options:
+        case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:
+            await cmd_upgrade_user(update, context)
         case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
             await cmd_send_post(update, context)
         case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
@@ -640,44 +648,62 @@ async def handle_messages(update: Update, context: CallbackContext):
                                                                      f'{data_prefix}{botman.CALLBACK_DATA_JOINER}usd': 'price_unit_usd'}))
                     account.delete_specific_cache('create_alarm_props')
 
-                case Account.States.SEND_POST:
-                    if not account.authorization(context.args):
-                        await say_youre_not_allowed(update.message.reply_text, account.language)
-                        return
-
-                    # admin is trying to send post
-                    all_accounts = Account.Everybody()
-                    progress_text = botman.text('sending_your_post', account.language)
-                    telegram_response = await update.message.reply_text(progress_text)
-                    message_id = None
-
-                    try:
-                        message_id = int(str(telegram_response['message_id']))
-                    except:
-                        pass
-
-                    number_of_accounts = len(all_accounts)
-                    progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
-                    for index, chat_id in enumerate(all_accounts):
-                        try:
-                            if message_id and index % progress_update_trigger == 0:
-                                progress = 100 * index / number_of_accounts
-                                await context.bot.edit_message_text(chat_id=account.chat_id,
-                                                                    message_id=message_id,
-                                                                    text=f'{progress_text}{progress:.2f} %')
-                            if chat_id != account.chat_id:
-                                await update.message.copy(chat_id)
-                        except:
-                            pass  # maybe remove the account from database ?
-                    if message_id:
-                        await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
-                    await update.message.reply_text(
-                        botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
-                        reply_markup=botman.admin_keyboard(account.language))
-                    account.change_state(clear_cache=True)  # reset .state and .state_data
                 case _:
-                    await update.message.reply_text(botman.error('what_the_fuck', account.language),
+                    if not account.authorization(context.args):
+                        await update.message.reply_text(botman.error('what_the_fuck', account.language),
                                                     reply_markup=botman.mainkeyboard(account))
+                        return
+                    
+                    # Admin states
+                    match account.state:
+                        case Account.States.UPGRADE_USER:
+                            detail = account.get_cache('upgrading')
+                            text = update.message.text
+                            if not detail['chat_id']:
+                                if text[0] == '@':
+                                    # send message to username and get cbatid from the response
+                                    pass
+                                else:
+                                    try:
+                                        detail['chat_id'] = int(text)
+                                    except:
+                                        pass
+                                if not detail['chat_id']:
+                                    update.message.reply_text(botman.error('invalid_user_specification', account.language))
+                                    return
+                                account.add_cache('upgrading', detail)
+                                update.message.reply_text('enter_upgrade_premium_duration', account.language)
+                        case Account.States.SEND_POST:
+                            # admin is trying to send post
+                            all_accounts = Account.Everybody()
+                            progress_text = botman.text('sending_your_post', account.language)
+                            telegram_response = await update.message.reply_text(progress_text)
+                            message_id = None
+
+                            try:
+                                message_id = int(str(telegram_response['message_id']))
+                            except:
+                                pass
+
+                            number_of_accounts = len(all_accounts)
+                            progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
+                            for index, chat_id in enumerate(all_accounts):
+                                try:
+                                    if message_id and index % progress_update_trigger == 0:
+                                        progress = 100 * index / number_of_accounts
+                                        await context.bot.edit_message_text(chat_id=account.chat_id,
+                                                                            message_id=message_id,
+                                                                            text=f'{progress_text}{progress:.2f} %')
+                                    if chat_id != account.chat_id:
+                                        await update.message.copy(chat_id)
+                                except:
+                                    pass  # maybe remove the account from database ?
+                            if message_id:
+                                await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
+                            await update.message.reply_text(
+                                botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
+                                reply_markup=botman.admin_keyboard(account.language))
+                            account.change_state(clear_cache=True)  # reset .state and .state_data
 
 
 def main():
@@ -693,6 +719,7 @@ def main():
 
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
+    app.add_handler(CommandHandler("up", cmd_upgrade_user))
     app.add_handler(CommandHandler("post", cmd_send_post))
     app.add_handler(CommandHandler("schedule", cmd_schedule_channel_update))
     app.add_handler(CommandHandler("stop", cmd_stop_schedule))
