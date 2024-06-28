@@ -657,22 +657,38 @@ async def handle_messages(update: Update, context: CallbackContext):
                     # Admin states
                     match account.state:
                         case Account.States.UPGRADE_USER:
-                            detail = account.get_cache('upgrading')
+                            upgrading_chat_id = account.get_cache('upgrading')
+
                             text = update.message.text
-                            if not detail['chat_id']:
+                            if not upgrading_chat_id:
                                 if text[0] == '@':
                                     # send message to username and get cbatid from the response
                                     pass
                                 else:
                                     try:
-                                        detail['chat_id'] = int(text)
+                                        upgrading_chat_id = int(text)
                                     except:
-                                        pass
-                                if not detail['chat_id']:
+                                        upgrading_chat_id = None
+                                if upgrading_chat_id is None:
                                     update.message.reply_text(botman.error('invalid_user_specification', account.language))
                                     return
-                                account.add_cache('upgrading', detail)
+                                account.add_cache('upgrading', upgrading_chat_id)
                                 update.message.reply_text('enter_upgrade_premium_duration', account.language)
+                            else:
+                                months: int | None = None
+                                try:
+                                    months = int(text)
+                                except:
+                                    months = None
+                                if months is None:
+                                    update.message.reply_text(botman.error('invalid_months_count', account.language))
+                                    return
+                                target = Account.Get(upgrading_chat_id)
+                                target.upgrade(months)
+                                update.message.reply_text(botman.text('youre_upgraded_premium', target.language), reply_markup=botman.mainkeyboard(target))
+
+                                update.message.reply_text(botman.text('user_upgraded_premium', account.language), reply_markup=botman.mainkeyboard(account))
+                                
                         case Account.States.SEND_POST:
                             # admin is trying to send post
                             all_accounts = Account.Everybody()
