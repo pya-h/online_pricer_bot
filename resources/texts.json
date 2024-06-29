@@ -219,6 +219,10 @@
         "api_not_available": {
             "fa": "در حال حاضر امکان ارتباط با سرویس API ما وجود ندارد. لطفا بعدا تلاش کنید.",
             "en": "Unfortunately, our API Service is not available right now. Please try again later some time."
+        },
+        "invalid_user_specification": {
+            "fa": "متاسفانه شناسایی کاربر موردنظر با مشکل مواجه شد. شما می توانید دوباره تلاش کنید و یا یک روش دیگر برای مشخص کردن کاربر موردنظر را امتحان کنید ...",
+            "en": "Unfortunately, Identifying the user was unsuccessful; You can try again, or Try another method for specifying the user ..."
         }
     },
     "what_can_i_do": {
@@ -338,11 +342,23 @@
         "en": "🔹 Click on the training you need:"
     },
     "specify_user": {
-        "fa": "...",
-        "en": "Enter the chat id of the user you want to upgrade:"
+        "fa": "لطفا کاربر موردنظر خود را از طریق یکی از روش های زیر مشخص کنید:\n۱ واردکردن آیدی عددی تلگرام\n۲ وارد کردن یوزرنیم وی\n۳ فوروارد کردن پیامی از کاربر موردنظر (درصورتی که حالت مخفی خود را فعال نکرده باشد)",
+        "en": "Specify the user being upgraded by one of these ways:\n1 Enter telegram chat id\n2 Enter username\n3 Forward message from the user [If he/she has not enabled the telegram hidden mode.]"
     },
     "continues_calculator_hint": {
-        "fa": "حالا می توانید دوباره با وارد کردن ورودی جدید، محاسبات جدیدی انجام بدهید و یا با استفاده از گزینه لغو از بخش ماشین حساب خارج شوید...",
+        "fa": "حالا می توانید دوباره با وارد کردن ورودی جدید، محاسبات جدیدی انجام بدهید و یا با استفاده از گزینه لغو از بخش ماشین حساب خارج شوید ...",
         "en": "Now you can enter your next input to perform another calculation, or you can use Cancel button to exit calculator section..."
+    },
+    "enter_upgrade_premium_duration": {
+        "fa": "اگر اطلاعات نمایش داده شده کاربر انتخابی معتبر است، تعداد ماه های پریمیوم بودن کاربر را به صورت یک عدد صحیح وارد کنید:",
+        "en": "Now if the detail provided about your selected user is correct, specify how many months this user is going to be premium:"
+    },
+    "youre_upgraded_premium": {
+        "fa": "اکانت شما به سطح کاربری پریمیوم ارتقا یافت.",
+        "en": "Your account is now upgraded to premium."
+    },
+    "user_upgraded_premium": {
+        "fa": "کاربر موردنظر طبق تعرفه تعیین شده شما به سطح پریمیوم ارتقا پیدا کرد.",
+        "en": "The user is now upgraded to premium according to your specifications."
     }
 }

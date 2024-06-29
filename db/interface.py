@@ -11,9 +11,9 @@ class DatabaseInterface:
     TABLE_ACCOUNTS = "accounts"
     DATE_FORMAT = '%Y-%m-%d'
     BACKUP_FOLDER = 'db_backups'
-    ACCOUNT_COLUMNS = (ACCOUNT_ID, ACCOUNT_CURRENCIES, ACCOUNT_CRYPTOS, ACCOUNT_CALC_CURRENCIES, ACCOUNT_CALC_CRYPTOS,
+    ACCOUNT_COLUMNS = (ACCOUNT_ID, ACCOUNT_CURRENCIES, ACCOUNT_CRYPTOS, ACCOUNT_CALC_CURRENCIES, ACCOUNT_CALC_CRYPTOS, ACCOUNT_USERNAME,
                        ACCOUNT_LAST_INTERACTION, ACCOUNT_PLUS_END_DATE, ACCOUNT_STATE, ACCOUNT_CACHE, ACCOUNT_IS_ADMIN, ACCOUNT_LANGUAGE) = \
-        ('id', 'currencies', 'cryptos', 'calc_cryptos', 'calc_currencies', 'last_interaction', 'plus_end_date',
+        ('id', 'currencies', 'cryptos', 'calc_cryptos', 'calc_currencies', 'username', 'last_interaction', 'plus_end_date',
          'state', 'cache', 'admin', 'language')
 
     TABLE_CHANNELS = "channels"  # channels to be scheduled
@@ -49,7 +49,7 @@ class DatabaseInterface:
             # check if the table accounts was created
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_ACCOUNTS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} INTEGER PRIMARY KEY," + \
-                        f"{self.ACCOUNT_CURRENCIES} TEXT, {self.ACCOUNT_CRYPTOS} TEXT, {self.ACCOUNT_CALC_CURRENCIES} TEXT, {self.ACCOUNT_CALC_CRYPTOS} TEXT," + \
+                        f"{self.ACCOUNT_CURRENCIES} TEXT, {self.ACCOUNT_CRYPTOS} TEXT, {self.ACCOUNT_CALC_CURRENCIES} TEXT, {self.ACCOUNT_CALC_CRYPTOS} TEXT, {self.ACCOUNT_USERNAME} TEXT" + \
                         f"{self.ACCOUNT_LAST_INTERACTION} DATE, {self.ACCOUNT_PLUS_END_DATE} DATE, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} TEXT DEFAULT NULL, " + \
                         f"{self.ACCOUNT_IS_ADMIN} INTEGER DEFAULT 0, {self.ACCOUNT_LANGUAGE} TEXT)"
                 # create table account
@@ -91,9 +91,9 @@ class DatabaseInterface:
             raise Exception("You must provide an Account to save")
         try:
             columns = ', '.join(self.ACCOUNT_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             self.execute(False, query, account.chat_id, account.str_desired_currencies(), account.str_desired_cryptos(),
-                         account.str_calc_currencies(), account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT),
+                         account.str_calc_currencies(), account.str_calc_cryptos(), account.username, account.last_interaction.strftime(self.DATE_FORMAT),
                          account.plus_end_date, account.state.value, account.cache_as_str(), account.is_admin, account.language)
             log(f"New account: {account} saved into plus database successfully.", category_name=f'plus_info')
         except Exception as ex:
@@ -122,14 +122,14 @@ class DatabaseInterface:
 
             cursor.execute(f'UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=?',
                            (account.str_desired_currencies(), account.str_desired_cryptos(),
-                            account.str_calc_currencies(), account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT),
-                            account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
+                            account.str_calc_currencies(), account.str_calc_cryptos(), account.username,
+                            account.last_interaction.strftime(self.DATE_FORMAT), account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                             account.state.value, account.cache_as_str(), account.is_admin, account.language, account.chat_id))
         else:
             columns: str = ', '.join(self.ACCOUNT_COLUMNS)
-            cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                            (account.chat_id, account.str_desired_currencies(), account.str_desired_cryptos(),
-                            account.str_calc_currencies(), account.str_calc_cryptos(), account.last_interaction.strftime(self.DATE_FORMAT),
+                            account.str_calc_currencies(), account.str_calc_cryptos(), account.username, account.last_interaction.strftime(self.DATE_FORMAT),
                             account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                             account.state.value, account.cache_as_str(), account.is_admin, account.language))
             log("New account started using this bot with chat_id=: " + account.__str__(), category_name=f'plus_info')
@@ -137,7 +137,11 @@ class DatabaseInterface:
         cursor.close()
         connection.close()
 
-    def upgrade_account(self, account, duration_in_months: int):  # use plus mode
+    def update_username(self, account):
+        self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_USERNAME}=? WHERE {self.ACCOUNT_ID}=?',
+                     account.username, account.chat_id)
+
+    def upgrade_account(self, account, duration_in_months: int):
         account.plus_end_date = after_n_months(duration_in_months)
         str_plus_end_date = account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None
         self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=? WHERE {self.ACCOUNT_ID}=?',

@@ -435,7 +435,7 @@ class BotMan:
         }
         for alarm in self.check_price_alarms():
             try:
-                account = Account.Get(alarm.chat_id, prevent_instance_arrangement=True)
+                account = Account.GetById(alarm.chat_id, prevent_instance_arrangement=True)
                 target_price = cut_and_separate(alarm.target_price)
                 current_price = cut_and_separate(alarm.current_price)
                 currency_name, unit_name = alarm.full_currency_name[account.language], unit_names[alarm.target_unit][
@@ -463,7 +463,7 @@ class BotMan:
             await telegram_handle.message.reply_text(text=self.error('max_selection', account.language) % (max_value,))
 
     async def show_settings_menu(self, update: Update):
-        account = Account.Get(update.message.chat_id)
+        account = Account.Get(update.message.chat)
         keyboard = ReplyKeyboardMarkup([[KeyboardButton(BotMan.Commands.TUTORIALS_FA.value)], [KeyboardButton(BotMan.Commands.FACTORY_RESET_FA.value), KeyboardButton(BotMan.Commands.SET_BOT_LANGUAGE_FA.value)],
                                     [KeyboardButton(BotMan.Commands.OUR_OTHERS_FA.value), KeyboardButton(BotMan.Commands.SUPPORT_FA.value)], [KeyboardButton(BotMan.Commands.RETURN_FA.value)]] if account.language.lower() == 'fa' else \
                                         [[KeyboardButton(BotMan.Commands.TUTORIALS_EN.value)], [KeyboardButton(BotMan.Commands.FACTORY_RESET_EN.value), KeyboardButton(BotMan.Commands.SET_BOT_LANGUAGE_EN.value)],

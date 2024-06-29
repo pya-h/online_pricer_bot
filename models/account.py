@@ -9,6 +9,7 @@ from typing import List, Dict
 from bot.types import SelectionListTypes, MarketOptions
 from json import loads as json_parse, dumps as jsonify
 from models.alarms import PriceAlarm
+from telegram import Chat
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
@@ -55,7 +56,7 @@ class Account:
     _database = None
     GarbageCollectionInterval = 30
     PreviousGarbageCollectionTime: int = now_in_minute()  # in minutes
-    Instances = {}  # active accounts will cache into this; so there's no need to access database everytime
+    Instances: dict = {}  # active accounts will cache into this; so there's no need to access database everytime
 
 
     def no_interaction_duration(self):
@@ -68,7 +69,7 @@ class Account:
 
     def __init__(self, chat_id, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None,
                  calc_currencies: List[str] = None, language: str = 'fa', plus_end_date: datetime = None,
-                 state: States = States.NONE, cache=None, is_admin: bool = False,
+                 state: States = States.NONE, cache=None, is_admin: bool = False, username: str | None = None,
                  prevent_instance_arrangement: bool = False, ) -> None:
 
         self.chat_id: int = chat_id
@@ -81,7 +82,7 @@ class Account:
         self.state: Account.States = state
         self.cache: Dict[str, any] = cache or {}
         self.plus_end_date = plus_end_date
-        self.username: str | None = None
+        self.username: str | None = username[1:] if username and (username[0] == '@') else username
         self.firstname: str | None = None
         self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
         if not prevent_instance_arrangement:
@@ -237,6 +238,16 @@ class Account:
     def get_planned_channels(self) -> List[Channel]:
         return Channel.GetByOwner(self.chat_id)
     
+    @property.setter
+    def current_username(self, username: str):
+        if not username:
+            return
+        if username[0] == '@':
+            username = username[1:]
+        if username != self.username:
+            self.username = username
+            self.Database().update_username(self)
+
     @property
     def alarms_count(self):
         return self.Database().get_number_of_user_alarms(self.chat_id)
@@ -290,6 +301,8 @@ class Account:
         cryptos = xstr(row[2])
         calc_currs = xstr(row[3])
         calc_cryptos = xstr(row[4])
+
+        username = row[5]
         # add new rows here
 
         plus_end_date = datetime.strptime(row[-5], DatabaseInterface.DATE_FORMAT) if row[-5] else None
@@ -299,25 +312,48 @@ class Account:
         language = row[-1]
         return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos),
                        plus_end_date=plus_end_date, calc_currencies=Account.str2list(calc_currs),
-                       calc_cryptos=Account.str2list(calc_cryptos), is_admin=is_admin,
+                       calc_cryptos=Account.str2list(calc_cryptos), is_admin=is_admin, username=username,
                        language=language, state=state, cache=cache, prevent_instance_arrangement=prevent_instance_arrangement)
 
     @staticmethod
-    def Get(chat_id, prevent_instance_arrangement: bool = False):
+    def Get(chat: Chat, prevent_instance_arrangement: bool = False):
+        account = Account.GetById(chat.id, prevent_instance_arrangement=prevent_instance_arrangement)
+        account.current_username = chat.username
+        return account
+    
+    @staticmethod
+    def GetById(chat_id: int, prevent_instance_arrangement: bool = False):
         if chat_id in Account.Instances:
-            Account.Instances[chat_id].last_interaction = tz_today()
-            return Account.Instances[chat_id]
+            account: Account = Account.Instances[chat_id]
+            account.last_interaction = tz_today()
+            return account
+        
         row = Account.Database().get(chat_id)
-
         if row:
-            return Account.ExtractQueryRowData(row, prevent_instance_arrangement=prevent_instance_arrangement)
+            account = Account.ExtractQueryRowData(row, prevent_instance_arrangement=prevent_instance_arrangement)
+            return account
 
         return Account(chat_id=chat_id, prevent_instance_arrangement=prevent_instance_arrangement).save()
 
     @staticmethod
+    def GetByUsername(username: str):
+        if not username:
+            return None
+        if username[0] == '@':
+            username = username[1:]
+        accounts = filter(lambda acc: acc.username == username, list(Account.Instances.values()))
+        if accounts:
+            return accounts[0]
+
+        accounts = Account.Database().get_special_accounts(DatabaseInterface.ACCOUNT_USERNAME, username)
+        if accounts:
+            return Account.ExtractQueryRowData(accounts[0])
+        return None
+
+    @staticmethod
     def GetHardcodeAdmin():
         return {'id': HARDCODE_ADMIN_CHATID, 'username': HARDCODE_ADMIN_USERNAME,
-                'account': Account.Get(HARDCODE_ADMIN_CHATID)}
+                'account': Account.GetById(HARDCODE_ADMIN_CHATID)}
 
     @staticmethod
     def load_cache(data_string: str | None):
