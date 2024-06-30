@@ -103,12 +103,12 @@
             "en": "Stop Channel Plan"
         },
         "admin_upgrade_to_premium": {
-            "fa": "...",
-            "en": "Upgrade To Premium"
+            "fa": "💎 ارتقای کاربران",
+            "en": "💎 Upgrade Users"
         },
         "admin_downgrade_user": {
-            "fa": "...",
-            "en": "Downgrade User"
+            "fa": "🔻 حذف پریمیوم",
+            "en": "🔻 Downgrade User"
         },
         "list_indices": {
             "fa": "لیست",
@@ -360,5 +360,13 @@
     "user_upgraded_premium": {
         "fa": "کاربر موردنظر طبق تعرفه تعیین شده شما به سطح پریمیوم ارتقا پیدا کرد.",
         "en": "The user is now upgraded to premium according to your specifications."
+    },
+    "select_user": {
+        "fa": "❕ کاربر مورد نظر خود را انتخاب کنید:",
+        "en": "❕ Select the user you have in mind:"
+    },
+    "no_premium_users_found": {
+        "fa": "❗️ در حال حاضر هیچ کاربر پریمیومی وجود ندارد.",
+        "en": "❗️ No premium user has been found."
     }
 }

@@ -189,6 +189,13 @@ async def cmd_upgrade_user(update: Update, context: CallbackContext):
         reply_markup=botman.admin_keyboard(account.language))
 
 
+async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
+    account = Account.Get(update.message.chat)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
+
+    await botman.list_premiums(update, BotMan.QueryActions.ADMIN_DOWNGRADE_USER)
+
 async def cmd_send_post(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat)
     if not account.authorization(context.args):
@@ -562,6 +569,8 @@ async def handle_messages(update: Update, context: CallbackContext):
         # admin options:
         case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:
             await cmd_upgrade_user(update, context)
+        case BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value | BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value:
+            await cmd_list_users_to_downgrade(update, context)
         case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
             await cmd_send_post(update, context)
         case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
@@ -689,7 +698,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     await update.message.reply_text(botman.error('invalid_user_specification', account.language))
                                     return
                                 account.add_cache('upgrading', upgrading_chat_id)
-                                user_detail = f'Telegram ID: {upgrading_chat_id}\nUsername: {user.username}'
+                                user_detail = f'Telegram ID: {upgrading_chat_id}\nUsername: {"@" + user.username if user.username else "-"}'
                                 if user.firstname:
                                     user_detail += f"\n{user.firstname}"
                                 await update.message.reply_text(user_detail)
@@ -751,18 +760,19 @@ def main():
     app.add_handler(CommandHandler("currency", select_currency_menu))
     app.add_handler(CommandHandler("gold", select_gold_menu))
     app.add_handler(CommandHandler("equalizer", cmd_equalizer))
+    app.add_handler(CommandHandler("lang", cmd_switch_language))
     # app.add_handler(CommandHandler("new_alarm", cmd_create_alarm))
 
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
     app.add_handler(CommandHandler("up", cmd_upgrade_user))
+    app.add_handler(CommandHandler("down", cmd_list_users_to_downgrade))
     app.add_handler(CommandHandler("post", cmd_send_post))
     app.add_handler(CommandHandler("schedule", cmd_schedule_channel_update))
     app.add_handler(CommandHandler("stop", cmd_stop_schedule))
     app.add_handler(CommandHandler("stats", cmd_report_statistics))
     app.add_handler(CommandHandler("gecko", cmd_change_source_to_coingecko))
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
-    app.add_handler(CommandHandler("lang", cmd_switch_language))
 
     app.add_handler(MessageHandler(filters.ALL, handle_messages))
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))

@@ -49,7 +49,7 @@ class DatabaseInterface:
             # check if the table accounts was created
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_ACCOUNTS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} INTEGER PRIMARY KEY," + \
-                        f"{self.ACCOUNT_CURRENCIES} TEXT, {self.ACCOUNT_CRYPTOS} TEXT, {self.ACCOUNT_CALC_CURRENCIES} TEXT, {self.ACCOUNT_CALC_CRYPTOS} TEXT, {self.ACCOUNT_USERNAME} TEXT" + \
+                        f"{self.ACCOUNT_CURRENCIES} TEXT, {self.ACCOUNT_CRYPTOS} TEXT, {self.ACCOUNT_CALC_CURRENCIES} TEXT, {self.ACCOUNT_CALC_CRYPTOS} TEXT, {self.ACCOUNT_USERNAME} TEXT, " + \
                         f"{self.ACCOUNT_LAST_INTERACTION} DATE, {self.ACCOUNT_PLUS_END_DATE} DATE, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} TEXT DEFAULT NULL, " + \
                         f"{self.ACCOUNT_IS_ADMIN} INTEGER DEFAULT 0, {self.ACCOUNT_LANGUAGE} TEXT)"
                 # create table account
@@ -112,6 +112,10 @@ class DatabaseInterface:
 
     def get_special_accounts(self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
         return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=?", value)
+
+    def get_premium_accounts(self, from_date: datetime | None = None) -> list:
+        from_date: str = (from_date if from_date else datetime.now()).strftime(self.DATE_FORMAT)
+        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > ?", from_date)
 
     def update(self, account):
         connection = sqlite3.connect(self._name)

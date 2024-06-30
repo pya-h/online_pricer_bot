@@ -111,7 +111,7 @@ class Account:
         return self.cache[cache_key] if cache_key in self.cache else None
 
     def __str__(self) -> str:
-        return f'{self.chat_id}'
+        return f'{self.username if self.username else self.chat_id}'
 
     def authorization(self, args):
         if self.is_admin:
@@ -238,7 +238,16 @@ class Account:
     def get_planned_channels(self) -> List[Channel]:
         return Channel.GetByOwner(self.chat_id)
     
-    @property.setter
+    @staticmethod
+    def GetPremiumUsers(from_date: datetime | None = None):
+        rows = Account.Database().get_premium_accounts(from_date if from_date else datetime.now())
+        return [Account.ExtractQueryRowData(row) for row in rows]
+
+    @property
+    def current_username(self):
+        return self.username
+    
+    @current_username.setter
     def current_username(self, username: str):
         if not username:
             return
@@ -259,21 +268,15 @@ class Account:
     # user privileges:
     @property
     def max_selection_count(self):
-        if self.is_premium_member():
-            return 100
-        return 10
+        return 100 if self.is_premium_member() else 10
     
     @property
     def max_alarms_count(self):
-        if self.is_premium_member():
-            return 10
-        return 3
+        return 10 if self.is_premium_member() else 3
 
     @property
     def max_channel_plans_count(self):
-        if self.is_premium_member():
-            return 1
-        return 0
+        return 1 if self.is_premium_member() else 0
     
         # causing a slight enhancement on performance
 
@@ -341,7 +344,7 @@ class Account:
             return None
         if username[0] == '@':
             username = username[1:]
-        accounts = filter(lambda acc: acc.username == username, list(Account.Instances.values()))
+        accounts = list(filter(lambda acc: acc.username == username, list(Account.Instances.values())))
         if accounts:
             return accounts[0]
 

@@ -107,6 +107,7 @@ class BotMan:
         DISABLE_ALARM = 3
         FACTORY_RESET = 4
         SELECT_TUTORIAL = 5
+        ADMIN_DOWNGRADE_USER = 6
         NONE = 0
 
         @staticmethod
@@ -191,6 +192,10 @@ class BotMan:
         self.admin_keyboard = lambda lang: \
             ReplyKeyboardMarkup([*menu_main_keys,
                                  [KeyboardButton(
+                                     BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value)],
+                                 [KeyboardButton(
                                      BotMan.Commands.ADMIN_NOTICES_FA.value),
                                      KeyboardButton(
                                          BotMan.Commands.ADMIN_STATISTICS_FA.value)],
@@ -200,7 +205,10 @@ class BotMan:
                                          BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value)],
                                  ], resize_keyboard=True) if lang.lower() == 'fa' else \
                 ReplyKeyboardMarkup([*menu_main_keys_en,
-
+                                 [KeyboardButton(
+                                     BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value)],
                                      [KeyboardButton(
                                          BotMan.Commands.ADMIN_NOTICES_EN.value),
                                          KeyboardButton(
@@ -331,14 +339,43 @@ class BotMan:
         keys = list(data.keys())
         buttons_count = len(keys)
         full_rows_count = int(buttons_count / columns_in_a_row)
-        buttons = [[InlineKeyboardButton((
-                self.resourceman.keyboard if not in_main_keyboard else self.resourceman.mainkeyboard)(data[keys[col + row * columns_in_a_row]], language),
-                callback_data=self.action_callback_data(action, keys[col + row * columns_in_a_row])) for col in range(columns_in_a_row)] for row in range(full_rows_count)]
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    text=(self.resourceman.keyboard if not in_main_keyboard else self.resourceman.mainkeyboard)(data[keys[col + row * columns_in_a_row]], language),
+                    callback_data=self.action_callback_data(action, keys[col + row * columns_in_a_row])) for col in range(columns_in_a_row)
+            ] for row in range(full_rows_count)
+        ]
+        
         full_rows_last_index = columns_in_a_row * full_rows_count
         if full_rows_last_index < buttons_count:
             buttons.append(
-                [InlineKeyboardButton(self.resourceman.keyboard(data[keys[i]], language), callback_data=self.action_callback_data(action, keys[i]))
-                 for i in range(full_rows_last_index, buttons_count)])
+                [
+                    InlineKeyboardButton(self.resourceman.keyboard(data[keys[i]], language), callback_data=self.action_callback_data(action, keys[i])) \
+                        for i in range(full_rows_last_index, buttons_count)
+                ]
+            )
+        return InlineKeyboardMarkup(buttons)
+
+    def users_list_menu(self, users: List[Account], list_type: QueryActions, columns_in_a_row: int = 3):
+        """this function creates inline keyboard for users data as callback data"""
+        buttons_count = len(users)
+        full_rows_count = int(buttons_count / columns_in_a_row)
+        buttons = [
+            [
+                InlineKeyboardButton(text=str(users[col + row * columns_in_a_row]),
+                            callback_data=self.action_callback_data(list_type, users[col + row * columns_in_a_row].chat_id)) for col in range(columns_in_a_row)
+            ] for row in range(full_rows_count)
+        ]
+        
+        full_rows_last_index = columns_in_a_row * full_rows_count
+        if full_rows_last_index < buttons_count:
+            buttons.append(
+                [
+                    InlineKeyboardButton(text=str(users[i]), callback_data=self.action_callback_data(list_type, users[i].chat_id)) for i in range(full_rows_last_index, buttons_count)
+                ]
+            )
+            
         return InlineKeyboardMarkup(buttons)
 
     def keyboard_from(self, language: str, *row_keys: List[str]):
@@ -475,3 +512,13 @@ class BotMan:
         if isinstance(operation_result, Message):
             await context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id )
         await update.message.delete()
+
+    async def list_premiums(self, update: Update, list_type: QueryActions) -> bool:
+        account = Account.Get(update.message.chat)
+        premiums = Account.GetPremiumUsers()
+        if not premiums:
+            await update.message.reply_text(text=self.text('no_premium_users_found', account.language), reply_markup=self.mainkeyboard(account))
+            return False
+        menu = self.users_list_menu(Account.GetPremiumUsers(), list_type, columns_in_a_row=3)
+        await update.message.reply_text(text=self.text('select_user', account.language), reply_markup=menu)
+        return True
