@@ -286,7 +286,7 @@ class BotMan:
                 InlineKeyboardButton('<<', callback_data=choice_callback_data(page=0)),
                 InlineKeyboardButton('<', callback_data=choice_callback_data(page=page - 1 if page > 0 else 0)),
                 InlineKeyboardButton(f'({lbl_first}-{lbl_last})',
-                                     callback_data=special_button_callback_data(f"#{pages_count + 1}")),
+                                     callback_data=special_button_callback_data(f"#{pages_count + 1}", page)),
                 InlineKeyboardButton('>', callback_data=choice_callback_data(
                     page=page + 1 if page < pages_count else int(pages_count))),
                 InlineKeyboardButton('>>', callback_data=choice_callback_data(page=pages_count)),
@@ -520,5 +520,7 @@ class BotMan:
             await update.message.reply_text(text=self.text('no_premium_users_found', account.language), reply_markup=self.mainkeyboard(account))
             return False
         menu = self.users_list_menu(Account.GetPremiumUsers(), list_type, columns_in_a_row=3)
+        # menu.append(
+        #         [InlineKeyboardButton(self.resourceman.keyboard('close'), callback_data=choice_callback_data(page=-1))])
         await update.message.reply_text(text=self.text('select_user', account.language), reply_markup=menu)
         return True

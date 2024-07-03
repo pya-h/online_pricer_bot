@@ -383,6 +383,17 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             import resources.longtext as long_texts
             await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[callback_data['v']][account.language.lower()])
 
+        case _:
+            if not account.authorization(context.args):
+                await query.message.edit_text(botman.error('what_the_fuck', account.language))
+                await context.bot.send_message(chat_id=account.chat_id, text=botman.text('what_can_i_do', account.language),
+                                                reply_markup=botman.mainkeyboard(account))  # to hide admin keyboard if it's shown by mistake
+                return
+            
+            # if admin:
+            match callback_data['act']:
+                case BotMan.QueryActions.ADMIN_DOWNGRADE_USER:
+                    pass
     await query.answer()
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
