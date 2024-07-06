@@ -194,6 +194,8 @@ async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
+    account.change_state(Account.States.DOWNGRADE_USER)
+    await update.message.reply_text(botman.text('specify_user', account.language) + "\n" + botman.text('downgrade_by_premiums_list', account.language), reply_markup=botman.cancel_menu(account.language))
     await botman.list_premiums(update, BotMan.QueryActions.ADMIN_DOWNGRADE_USER)
 
 async def cmd_send_post(update: Update, context: CallbackContext):
@@ -250,7 +252,6 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
             except InvalidInputException:
                 await func_send_message(botman.error('invalid_symbol', account.language) % (unit, ))
 
-    # FIXME: Edit the func_send_message method when this function is called from inline message handler.
     account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, clear_cache=True)  # prepare for next input
     await func_send_message(botman.text('continues_calculator_hint', account.language), reply_markup=botman.cancel_menu(account.language))
 
@@ -290,6 +291,15 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
         return
     await update.message.reply_text(message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons]))
 
+
+async def send_r_u_sure_to_downgrade_message(context: CallbackContext, admin_user: Account, target_user: Account):
+    await context.bot.send_message(chat_id=admin_user.chat_id, 
+                        text=target_user.user_detail + "\n\n" + botman.text('r_u_sure_to_downgrade', admin_user.language), 
+                        reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.ADMIN_DOWNGRADE_USER, {
+                            f"{target_user.chat_id}{botman.CALLBACK_DATA_JOINER}y": "yes",
+                            f"{target_user.chat_id}{botman.CALLBACK_DATA_JOINER}n": "no"
+                        }
+    ))
 
 async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
 
@@ -392,8 +402,48 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             
             # if admin:
             match callback_data['act']:
-                case BotMan.QueryActions.ADMIN_DOWNGRADE_USER:
-                    pass
+                case BotMan.QueryActions.ADMIN_DOWNGRADE_USER.value:
+                    if 'v' not in callback_data or not callback_data['v']:
+                        page: int
+
+                        try:
+                            page = int(callback_data['pg'])
+                            # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
+                            if page == -1 or callback_data['pg'] is None:
+                                account.change_state(clear_cache=True)
+                                await query.message.edit_text(botman.text('list_updated', account.language))
+                                await context.bot.send_message(chat_id=account.chat_id, text=botman.text('what_can_i_do', account.language), reply_markup=botman.mainkeyboard(account))
+                                return
+                            menu = botman.users_list_menu(Account.GetPremiumUsers(), BotMan.QueryActions.ADMIN_DOWNGRADE_USER, columns_in_a_row=3, page=page, language=account.language)
+                            await query.message.edit_reply_markup(reply_markup=menu)
+                        except:
+                            page = 0
+
+                        return
+
+                    chat_id: int | None = None
+                    values = str(callback_data['v']).split(botman.CALLBACK_DATA_JOINER)
+                    try:
+                        chat_id = int(values[0])
+                    except:
+                        pass
+                    if not chat_id:
+                        await query.message.edit_text(botman.error('invalid_user_specification', account.language))
+                        return
+                    target_user = Account.GetById(chat_id)
+                    if len(values) > 1:
+                        if values[1] == 'y':
+                            if target_user.is_premium_member():
+                                target_user.downgrade()
+                                await query.message.edit_text(botman.text('account_downgraded', account.language))
+                                return
+                            await query.message.edit_text(botman.text('not_a_premium', account.language))
+                        else:
+                            await query.message.edit_text(botman.text('operation_canceled', account.language))
+                        # downgrade user
+                    else:
+                        await send_r_u_sure_to_downgrade_message(context, account, target_user)
+
     await query.answer()
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
@@ -686,33 +736,14 @@ async def handle_messages(update: Update, context: CallbackContext):
                             text = update.message.text
                             user: Account | None = None
                             if not upgrading_chat_id:
-                                if update.message.forward_from:
-                                    upgrading_chat_id = update.message.forward_from.id
-                                    user = Account.GetById(upgrading_chat_id)
-                                    user.current_username = update.message.forward_from.username
-                                    user.firstname = update.message.forward_from.first_name
-                                elif text[0] == '@':
-                                    try:
-                                        user = Account.GetByUsername(text)
-                                        if user:
-                                            upgrading_chat_id = user.chat_id
-                                    except:
-                                        upgrading_chat_id = None
-                                else:
-                                    try:
-                                        upgrading_chat_id = int(text)
-                                        user = Account.GetById(upgrading_chat_id)
-                                    except:
-                                        upgrading_chat_id = None
+                                user = botman.identify_user(update)
 
-                                if upgrading_chat_id is None:
+                                if not user:
                                     await update.message.reply_text(botman.error('invalid_user_specification', account.language))
                                     return
-                                account.add_cache('upgrading', upgrading_chat_id)
-                                user_detail = f'Telegram ID: {upgrading_chat_id}\nUsername: {"@" + user.username if user.username else "-"}'
-                                if user.firstname:
-                                    user_detail += f"\n{user.firstname}"
-                                await update.message.reply_text(user_detail)
+                                account.add_cache('upgrading', user.chat_id)
+
+                                await update.message.reply_text(user.user_detail)
                                 await update.message.reply_text(botman.text('enter_upgrade_premium_duration', account.language))
                             else:
                                 months: int | None = None
@@ -729,6 +760,13 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                                 await update.message.reply_text(botman.text('user_upgraded_premium', account.language), reply_markup=botman.mainkeyboard(account))
                                 account.change_state(clear_cache=True)
+                        case Account.States.DOWNGRADE_USER:
+                            user = botman.identify_user(update)
+
+                            if not user:
+                                await update.message.reply_text(botman.error('invalid_user_specification', account.language))
+                                return
+                            await send_r_u_sure_to_downgrade_message(context, account, user)
                         case Account.States.SEND_POST:
                             # admin is trying to send post
                             all_accounts = Account.Everybody()

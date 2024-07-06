@@ -129,6 +129,14 @@
         "price_unit_usd": {
             "fa": "دلار",
             "en": "Dollor(s)"
+        },
+        "yes": {
+            "fa": "آره",
+            "en": "Yes"
+        },
+        "no": {
+            "fa": "نه",
+            "en": "No"
         }
     },
     "which_market": {
@@ -368,5 +376,21 @@
     "no_premium_users_found": {
         "fa": "❗️ در حال حاضر هیچ کاربر پریمیومی وجود ندارد.",
         "en": "❗️ No premium user has been found."
+    },
+    "r_u_sure_to_downgrade": {
+        "fa": "آیا مطمئنید که میخواهید این اکانت را به تعرفه عادی برگردانید؟",
+        "en": "Are you sure that you want to downgrade this user?"
+    },
+    "account_downgraded": {
+        "fa": "کاربر موردنظر به سطح کاربری عادی بازگشت.",
+        "en": "User downgraded to free user plan."
+    },
+    "downgrade_by_premiums_list": {
+        "fa": "۴ انتخاب کاربر از لیست کاربران پریمیوم 👇\n",
+        "en": "4 Select from the Premium Users list 👇\n"
+    },
+    "not_a_premium": {
+        "fa": "اکانت موردنظر شما در حال حاضر دارای تعرفه عادی است پس نیازی به این عملیات نیست!",
+        "en": "Actually this account is already a free user and there is no need to downgrade it."
     }
 }

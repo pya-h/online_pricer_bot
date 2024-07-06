@@ -248,8 +248,11 @@ class BotMan:
         return self.menu_main(account.language) if not account.is_admin else self.admin_keyboard(account.language)
 
     @staticmethod
-    def action_callback_data(action: QueryActions, value: any):
-        return jsonify({"act": action.value, "v": value})
+    def action_callback_data(action: QueryActions, value: any, page: int | None = None):
+        data = {"act": action.value, "v": value}
+        if page is not None:
+            data['pg'] = page
+        return jsonify(data)
 
     def inline_keyboard(self, list_type: Enum, button_type: Enum, choices: Dict[str, str],
                         selected_ones: List[str] = None, page: int = 0, max_page_buttons: int = 90,
@@ -357,10 +360,35 @@ class BotMan:
             )
         return InlineKeyboardMarkup(buttons)
 
-    def users_list_menu(self, users: List[Account], list_type: QueryActions, columns_in_a_row: int = 3):
+    def users_list_menu(self, users: List[Account], list_type: QueryActions, columns_in_a_row: int = 3, page: int = 0, max_page_buttons: int = 90, language: str = 'fa'):
         """this function creates inline keyboard for users data as callback data"""
         buttons_count = len(users)
+
+        pagination_menu: List[InlineKeyboardButton] | None = None
+        pagination_callback_data = lambda page: self.action_callback_data(list_type, None, page)
+
+        if buttons_count > max_page_buttons:
+            idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
+            if idx_last > buttons_count:
+                idx_last = buttons_count
+            lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language.lower() == 'fa' else (
+                idx_first + 1, idx_last)
+
+            pages_count = int(buttons_count / max_page_buttons)
+            users = list(users)[idx_first:idx_last]
+            pagination_menu = [
+                InlineKeyboardButton('<<', callback_data=pagination_callback_data(0)),
+                InlineKeyboardButton('<', callback_data=pagination_callback_data(page=page - 1 if page > 0 else 0)),
+                InlineKeyboardButton(f'({lbl_first}-{lbl_last})', callback_data=pagination_callback_data(page)),
+                InlineKeyboardButton('>', callback_data=pagination_callback_data(
+                    page=page + 1 if page < pages_count else int(pages_count))),
+                InlineKeyboardButton('>>', callback_data=pagination_callback_data(pages_count)),
+            ]
+
+            buttons_count = len(users)
+
         full_rows_count = int(buttons_count / columns_in_a_row)
+
         buttons = [
             [
                 InlineKeyboardButton(text=str(users[col + row * columns_in_a_row]),
@@ -375,7 +403,11 @@ class BotMan:
                     InlineKeyboardButton(text=str(users[i]), callback_data=self.action_callback_data(list_type, users[i].chat_id)) for i in range(full_rows_last_index, buttons_count)
                 ]
             )
-            
+        if pagination_menu:
+            buttons.append(pagination_menu)
+
+        buttons.append(
+                [InlineKeyboardButton(self.resourceman.keyboard('close'), callback_data=pagination_callback_data(-1))])
         return InlineKeyboardMarkup(buttons)
 
     def keyboard_from(self, language: str, *row_keys: List[str]):
@@ -519,8 +551,34 @@ class BotMan:
         if not premiums:
             await update.message.reply_text(text=self.text('no_premium_users_found', account.language), reply_markup=self.mainkeyboard(account))
             return False
-        menu = self.users_list_menu(Account.GetPremiumUsers(), list_type, columns_in_a_row=3)
-        # menu.append(
-        #         [InlineKeyboardButton(self.resourceman.keyboard('close'), callback_data=choice_callback_data(page=-1))])
+        menu = self.users_list_menu(premiums, list_type, columns_in_a_row=3, page=0, language=account.language)
+
         await update.message.reply_text(text=self.text('select_user', account.language), reply_markup=menu)
         return True
+    
+    def identify_user(self, update: Update) -> Account | None:
+        '''Get the user's Account object from update object by one of these methods:
+            1- providing a forwarded message from the desired user
+            2- providing the username of the user
+            3- providing the chat_id of the user.
+        '''
+        user: Account | None = None
+        if update.message.forward_from:
+            upgrading_chat_id = update.message.forward_from.id
+            user = Account.GetById(upgrading_chat_id)
+            user.current_username = update.message.forward_from.username
+            user.firstname = update.message.forward_from.first_name
+        elif update.message.text[0] == '@':
+            try:
+                user = Account.GetByUsername(update.message.text)
+                if user:
+                    upgrading_chat_id = user.chat_id
+            except:
+                upgrading_chat_id = None
+        else:
+            try:
+                upgrading_chat_id = int(update.message.text)
+                user = Account.GetById(upgrading_chat_id)
+            except:
+                upgrading_chat_id = None
+        return user

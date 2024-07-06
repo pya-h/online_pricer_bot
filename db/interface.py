@@ -152,6 +152,10 @@ class DatabaseInterface:
                      str_plus_end_date, account.chat_id)
         log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {str_plus_end_date}")
 
+    def downgrade_account(self, account):
+        self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=?', account.chat_id)
+        log(f"Account with chat_id={account.chat_id} downgraded to free user.")
+
     def plan_channel(self, owner_chat_id: int, channel_id: int, channel_name: str, interval: int, channel_title: str):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()

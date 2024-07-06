@@ -32,6 +32,7 @@ class Account:
         CONFIG_CALCULATOR_LIST = 8
         CREATE_ALARM = 9
         UPGRADE_USER = 10
+        DOWNGRADE_USER = 11
 
         @staticmethod
         def Which(value: int):
@@ -46,6 +47,8 @@ class Account:
                 Account.States.CONFIG_MARKETS,
                 Account.States.CONFIG_CALCULATOR_LIST,
                 Account.States.CREATE_ALARM,
+                Account.States.UPGRADE_USER,
+                Account.States.DOWNGRADE_USER,
             )
             try:
                 return values[int(value)]
@@ -149,7 +152,7 @@ class Account:
     def is_premium_member(self) -> bool:
         """Check if the account has still plus subscription."""
         return self.is_admin or (
-                    self.plus_end_date is not None and tz_today().date() <= self.plus_end_date.date())
+                    (self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
 
     def plan_new_channel(self, channel_id: int, interval: int, channel_name: str,
                          channel_title: str = None) -> Channel | None:
@@ -161,6 +164,9 @@ class Account:
 
     def upgrade(self, duration_in_months: int):
         Account.Database().upgrade_account(self, duration_in_months)
+
+    def downgrade(self):
+        Account.Database().downgrade_account(self)
 
     def cache_as_str(self) -> str | None:
         return jsonify(self.cache) if self.cache else None
@@ -237,6 +243,13 @@ class Account:
     
     def get_planned_channels(self) -> List[Channel]:
         return Channel.GetByOwner(self.chat_id)
+    
+    @property
+    def user_detail(self) -> str:
+        detail = f'Telegram ID: {self.chat_id}\nUsername: {"@" + self.username if self.username else "-"}'
+        if self.firstname:
+            detail += f"\n{self.firstname}"
+        return detail
     
     @staticmethod
     def GetPremiumUsers(from_date: datetime | None = None):
