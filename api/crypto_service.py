@@ -1,12 +1,12 @@
 import coinmarketcapapi as cmc_api
 from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from typing import Union
+from typing import Union, List
 
 
 # Parent Class
 class CryptoCurrencyService(APIService):
-    CoinsInPersian = None
+    CoinsInPersian: Dict[str, str] | None = None
 
     @staticmethod
     def LoadPersianNames() -> dict:
@@ -45,14 +45,14 @@ class CoinGeckoService(CryptoCurrencyService):
         super(CoinGeckoService, self).__init__(url='https://api.coingecko.com/api/v3/coins/list', source="CoinGecko.com",
                                                cache_file_name="coingecko.json")
 
-    def extract_api_response(self, desired_coins=None, short_text=True, optional_api_data: list = None):
+    def extract_api_response(self, desired_coins=None, short_text=True, optional_api_data: list | None = None):
         'Construct a text string consisting of each desired coin prices of a special user.'
-        desired_coins = self.get_desired_ones(desired_coins)
+        desired_coins: List[str] = self.get_desired_ones(desired_coins)
         api_data = optional_api_data or self.latest_data
         res = ''
         for coin in api_data:
             symbol = coin['symbol'].upper()
-            name = coin['name'] if symbol != self.TETHER_SYMBOLTETHER_SYMBOL else 'Tether'
+            name = coin['name'] if symbol != self.TETHER_SYMBOL else 'Tether'
             if symbol in desired_coins:
                 price = coin['market_data']['current_price'][self.DOLLAR_SYMBOL.lower()]
                 res += self.get_price_description_row(name, symbol, price)
@@ -74,13 +74,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             source="CoinMarketCap.com", cache_file_name='coinmarketcap.json')
         self.api_key: str = api_key
         self.price_unit: str = price_unit
-        self.symbols_list: str = None
-        self.update_symbols_list()
         self.cmc_api = cmc_api.CoinMarketCapAPI(self.api_key)
-
-    def update_symbols_list(self):
-        '''Construct the list of all cryptocurrency coin symbols'''
-        self.symbols_list = ','.join(CryptoCurrencyService.CoinsInPersian)
 
     def set_price_unit(self, pu):
         self.price_unit = pu

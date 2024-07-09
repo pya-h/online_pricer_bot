@@ -2,7 +2,7 @@ import requests, json
 from tools import mathematix, manuwriter
 from tools.exceptions import CacheFailureException
 import api.api_async as api
-from typing import Dict
+from typing import Dict, List
 
 CACHE_FOLDER_PATH = 'api.cache'
 CACHE_ARCHIVE_FOLDER_PATH = 'archives'
@@ -112,7 +112,7 @@ class APIService(BaseAPIService):
     def set_tether_tomans(value):
         APIService.TetherInTomans = float(value)
 
-    def get_desired_ones(self, desired_ones: list):
+    def get_desired_ones(self, desired_ones: list) -> List[str]:
         pass
 
     def extract_api_response(self, desired_ones: list = None, short_text: bool = True,

@@ -137,6 +137,32 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
                                     name=botman.main_queue_id)
     await update.message.reply_text(botman.text('channel_planning_started', account.language) % (botman.main_plan_interval, ))
 
+async def cmd_premium_plan(update: Update, context: CallbackContext):
+    # TODO: *** Contrinue here:
+    account = Account.Get(update.message.chat)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account.language)
+
+    botman.main_plan_interval = 10
+    try:
+        if context.args:
+            try:
+                botman.main_plan_interval = int(context.args[-1])
+            except ValueError:
+                botman.main_plan_interval = float(context.args[-1])
+
+    except Exception as e:
+        log("Something went wrong while scheduling: ", e)
+
+    if botman.is_main_plan_on:
+        await update.message.reply_text()
+        return
+
+    botman.is_main_plan_on = True
+    context.job_queue.run_repeating(update_markets, interval=botman.main_plan_interval * 60, first=1,
+                                    name=botman.main_queue_id)
+    await update.message.reply_text(botman.text('channel_planning_started', account.language) % (botman.main_plan_interval, ))
+
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat)
@@ -302,25 +328,29 @@ async def send_r_u_sure_to_downgrade_message(context: CallbackContext, admin_use
     ))
 
 async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
-
+    action = None
+    value = None
     if callback_data:
-        callback_data = json.loads(query.data)
-    
-    if isinstance(callback_data['v'], str) and callback_data['v'] and callback_data['v'][0] == '!':
-        params = callback_data['v'].split()
+        callback_data = json.loads(str(query.data))
+        action = callback_data['action'] 
+        value = callback_data['v']
+
+    if callback_data and isinstance(value, str) and value and value[0] == '!':
+        params = value.split()
         message_id: int | None = None
         try:
             message_id = int(params[-1])
         except:
             pass
-        await query.message.delete()
+        if query.message:
+            await query.message.delete()
 
         return await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id) if message_id else None
         
-    
-    match callback_data['act']:
+
+    match action:
         case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
-            lang = callback_data['v'].lower()
+            lang = value.lower()
             if lang != 'fa' and lang != 'en':
                 await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
                 return
@@ -328,13 +358,12 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             account.save()
             await context.bot.send_message(text=botman.text('language_switched', account.language), chat_id=account.chat_id, reply_markup=botman.mainkeyboard(account))
         case BotMan.QueryActions.SELECT_PRICE_UNIT.value:
-            data: str = callback_data['v']
-            if data:
-                data = data.split(botman.CALLBACK_DATA_JOINER)
-                market = MarketOptions.Which(int(data[0]))
-                symbol = data[1]
-                target_price = float(data[2])
-                price_unit = data[3]
+            if value:
+                value = value.split(botman.CALLBACK_DATA_JOINER)
+                market = MarketOptions.Which(int(value[0]))
+                symbol = value[1]
+                target_price = float(value[2])
+                price_unit = value[3]
                 current_price: float | None = None
                 currency_name: str = None
                 try:
@@ -373,7 +402,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
         case BotMan.QueryActions.DISABLE_ALARM.value:
             alarm_id: int | None = None
             try:
-                alarm_id = int(callback_data['v'])
+                alarm_id = int(value)
                 PriceAlarm.DisableById(alarm_id)
                 await list_user_alarms(query, context)
             except Exception as ex:
@@ -381,7 +410,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                 log(f'Cannot disable the alarm with id={alarm_id}', ex, "Alarms")
         case BotMan.QueryActions.FACTORY_RESET.value:
             try:
-                if callback_data['v'].lower() == 'y':
+                if value.lower() == 'y':
                     account.factory_reset()
                     await query.message.delete()
                     await context.bot.send_message(chat_id=account.chat_id, text=botman.text('factory_reset_successful', account.language), reply_markup=botman.mainkeyboard(account))
@@ -391,7 +420,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                
         case BotMan.QueryActions.SELECT_TUTORIAL.value:
             import resources.longtext as long_texts
-            await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[callback_data['v']][account.language.lower()])
+            await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language.lower()])
 
         case _:
             if not account.authorization(context.args):
@@ -401,9 +430,9 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                 return
             
             # if admin:
-            match callback_data['act']:
+            match action:
                 case BotMan.QueryActions.ADMIN_DOWNGRADE_USER.value:
-                    if 'v' not in callback_data or not callback_data['v']:
+                    if 'v' not in callback_data or not value:
                         page: int
 
                         try:
@@ -422,7 +451,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                         return
 
                     chat_id: int | None = None
-                    values = str(callback_data['v']).split(botman.CALLBACK_DATA_JOINER)
+                    values = str(value).split(botman.CALLBACK_DATA_JOINER)
                     try:
                         chat_id = int(values[0])
                     except:
