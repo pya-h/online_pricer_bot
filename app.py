@@ -116,7 +116,6 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
-    botman.main_plan_interval = 10
     try:
         if context.args:
             try:
@@ -137,7 +136,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     await update.message.reply_text(botman.text('channel_planning_started', account.language) % (botman.main_plan_interval, ))
 
 async def cmd_premium_plan(update: Update, context: CallbackContext):
-    # TODO: *** Contrinue here:
+    '''This method starts '''
     account = Account.Get(update.message.chat)
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account.language)
