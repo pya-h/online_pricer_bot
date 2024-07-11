@@ -44,7 +44,6 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
                                                                         full_names=market != MarketOptions.CRYPTO,
                                                                         close_button=True))
 
-
 async def select_coin_menu(update: Update, context: CallbackContext):
     await prepare_market_selection_menu(update, context, MarketOptions.CRYPTO)
 
@@ -143,7 +142,6 @@ async def cmd_premium_plan(update: Update, context: CallbackContext):
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
-    botman.main_plan_interval = 10
     try:
         if context.args:
             try:

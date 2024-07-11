@@ -125,7 +125,7 @@ class BotMan:
                     return BotMan.QueryActions.SELECT_TUTORIAL
             return BotMan.QueryActions.NONE
 
-    def __init__(self) -> None:
+    def __init__(self, main_plan_interval: float = 10.0, plan_manager_interval: float = 1.0) -> None:
         self.resourceman = resourceman
         # environment values
         self.token: str = config('BOT_TOKEN')
@@ -153,7 +153,8 @@ class BotMan:
             self.channels[-1]['username'] = config('SECOND_CHANNEL_USERNAME', self.channels[-1]['url'])
 
         self.main_queue_id: str = 'mainplan'
-        self.main_plan_interval: float = 10.0
+        self.main_plan_interval: float = main_plan_interval
+        self.plan_manager_interval: float = plan_manager_interval
 
         self.text = self.resourceman.text
         self.error = self.resourceman.error
