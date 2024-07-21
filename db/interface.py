@@ -23,10 +23,7 @@ class DatabaseInterface:
         ("id", "name", "title", "owner_id", "interval", "last_post_time")
 
     TABLE_PRICE_ALARMS = "alarms"
-    PRICE_ALARMS_COLUMNS = (
-        PRICE_ALARM_ID, PRICE_ALARM_TARGET_CHAT_ID, PRICE_ALARM_TARGET_CURRENCY, PRICE_ALARM_TARGET_PRICE,
-        PRICE_ALARM_CHANGE_DIRECTION, PRICE_ALARM_PRICE_UNIT) = \
-        ("id", "chat_id", "currency", "price", "change_dir", "unit")
+    PRICE_ALARMS_COLUMNS = ("id", "chat_id", "currency", "price", "change_dir", "unit")
 
     @staticmethod
     def Get():
@@ -37,7 +34,7 @@ class DatabaseInterface:
     def migrate(self):
         """This method is like a migration thing, after any major update, this must be called to perform any required structural change in db"""
         return
-        # cursor.execute(f'ALTER TABLE {self.TABLE_ACCOUNTS} ADD {self.ACCOUNT_LAST_INTERACTION} DATE')
+        # c ursor.execute(f'ALTER TABLE {self.TABLE_ACCOUNTS} ADD {self.ACCOUNT_LAST_INTERACTION} DATE')
         # connection.commit()
 
     def setup(self):

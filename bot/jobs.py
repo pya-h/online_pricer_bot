@@ -15,7 +15,6 @@ class ParallelJob:
         self.params: list[any] = params
         self.running: bool = False
 
-
     def go(self):
         '''Start running...'''
         self.last_call_time = time() // 60
@@ -46,3 +45,4 @@ class PostJob(ParallelJob):
         self.last_run_result = send_message_func(chat_id=self.channel.id, text=post_body)
         self.last_call_time = call_time
         return True
+ 
