@@ -53,12 +53,16 @@ class BotMan:
         LIST_ALARMS_FA = resourceman.mainkeyboard('list_alarms', 'fa')
         SETTINGS_FA = resourceman.mainkeyboard('settings', 'fa')
         GO_PREMIUM_FA = resourceman.keyboard('premium', 'fa')
+        MY_PREMIUM_PLAN_DURATION_FA = resourceman.keyboard('my_premium_duration', 'fa')
 
         TUTORIALS_FA = resourceman.keyboard('tutorials', 'fa')
         SET_BOT_LANGUAGE_FA = resourceman.keyboard('set_language', 'fa')
         FACTORY_RESET_FA = resourceman.keyboard('factory_reset', 'fa')
         SUPPORT_FA = resourceman.keyboard('support', 'fa')
         OUR_OTHERS_FA = resourceman.keyboard('our_others', 'fa')
+
+        USE_IN_CHANNEL_FA = resourceman.mainkeyboard('use_in_channel', 'fa')
+        USE_IN_GROUP_FA = resourceman.mainkeyboard('use_in_group', 'fa')
 
         RETURN_FA = resourceman.keyboard('return', 'fa')
 
@@ -74,6 +78,7 @@ class BotMan:
         LIST_ALARMS_EN = resourceman.mainkeyboard('list_alarms', 'en')
         SETTINGS_EN = resourceman.mainkeyboard('settings', 'en')
         GO_PREMIUM_EN = resourceman.keyboard('premium', 'en')
+        MY_PREMIUM_PLAN_DURATION_EN = resourceman.keyboard('my_premium_duration', 'en')
 
         TUTORIALS_EN = resourceman.keyboard('tutorials', 'en')
         SET_BOT_LANGUAGE_EN = resourceman.keyboard('set_language', 'en')
@@ -81,6 +86,9 @@ class BotMan:
         SUPPORT_EN = resourceman.keyboard('support', 'en')
         OUR_OTHERS_EN = resourceman.keyboard('our_others', 'en')
         
+        USE_IN_CHANNEL_EN = resourceman.mainkeyboard('use_in_channel', 'en')
+        USE_IN_GROUP_EN = resourceman.mainkeyboard('use_in_group', 'en')
+
         RETURN_EN = resourceman.keyboard('return', 'en')
 
         ADMIN_NOTICES_FA = resourceman.keyboard('admin_notices', 'fa')
@@ -171,54 +179,24 @@ class BotMan:
         self.is_main_plan_on: bool = False
 
     def setup_main_keyboards(self):
-        menu_main_keys = [
+        self.common_menu_main_keys = [
             [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.GET_FA.value)],
             [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_FA.value),
              KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)],
             [KeyboardButton(BotMan.Commands.LIST_ALARMS_FA.value),
              KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value)],
-            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value), KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
+            [KeyboardButton(BotMan.Commands.USE_IN_GROUP_FA.value),
+             KeyboardButton(BotMan.Commands.USE_IN_CHANNEL_FA.value)],
         ]
-        menu_main_keys_en = [
+        self.common_menu_main_keys_en = [
             [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.GET_EN.value)],
             [KeyboardButton(BotMan.Commands.CONFIG_CALCULATOR_EN.value),
              KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)],
             [KeyboardButton(BotMan.Commands.LIST_ALARMS_EN.value),
              KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value)],
-            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value), KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
+            [KeyboardButton(BotMan.Commands.USE_IN_GROUP_EN.value),
+             KeyboardButton(BotMan.Commands.USE_IN_CHANNEL_EN.value)],
         ]
-        self.menu_main = lambda lang: ReplyKeyboardMarkup(menu_main_keys if lang.lower() == 'fa' else menu_main_keys_en,
-                                                          resize_keyboard=True)
-
-        self.admin_keyboard = lambda lang: \
-            ReplyKeyboardMarkup([*menu_main_keys,
-                                 [KeyboardButton(
-                                     BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value),
-                                     KeyboardButton(
-                                         BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value)],
-                                 [KeyboardButton(
-                                     BotMan.Commands.ADMIN_NOTICES_FA.value),
-                                     KeyboardButton(
-                                         BotMan.Commands.ADMIN_STATISTICS_FA.value)],
-                                 [KeyboardButton(
-                                     BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value),
-                                     KeyboardButton(
-                                         BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value)],
-                                 ], resize_keyboard=True) if lang.lower() == 'fa' else \
-                ReplyKeyboardMarkup([*menu_main_keys_en,
-                                 [KeyboardButton(
-                                     BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value),
-                                     KeyboardButton(
-                                         BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value)],
-                                     [KeyboardButton(
-                                         BotMan.Commands.ADMIN_NOTICES_EN.value),
-                                         KeyboardButton(
-                                             BotMan.Commands.ADMIN_STATISTICS_EN.value)],
-                                     [KeyboardButton(
-                                         BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value),
-                                         KeyboardButton(
-                                             BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value)],
-                                     ], resize_keyboard=True)
 
         self.cancel_menu_key = {'fa': [
             [KeyboardButton(BotMan.Commands.CANCEL_FA.value)],
@@ -233,20 +211,62 @@ class BotMan:
             [KeyboardButton(BotMan.Commands.RETURN_EN.value)],
         ]}
 
-        self.markets_menu = lambda lang: ReplyKeyboardMarkup([
-                                                                 [KeyboardButton(
-                                                                     BotMan.Commands.NATIONAL_CURRENCIES_FA.value)],
-                                                                 [KeyboardButton(BotMan.Commands.GOLDS_FA.value)],
-                                                                 [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)],
-                                                                 *self.return_key['fa']
-                                                             ] if lang.lower() == 'fa' else [
-            [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_EN.value)],
-            [KeyboardButton(BotMan.Commands.GOLDS_EN.value)],
-            [KeyboardButton(BotMan.Commands.CRYPTOS_EN.value)], *self.return_key['en']
-        ], resize_keyboard=True)
+    def markets_menu(self, lang: str) -> ReplyKeyboardMarkup:
+        return ReplyKeyboardMarkup([[KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_FA.value)],
+                                        [KeyboardButton(BotMan.Commands.GOLDS_FA.value)],
+                                        [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)],
+                                        *self.return_key['fa']] \
+                            if lang.lower() == 'fa' else [
+                                [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_EN.value)],
+                                [KeyboardButton(BotMan.Commands.GOLDS_EN.value)],
+                                [KeyboardButton(BotMan.Commands.CRYPTOS_EN.value)], *self.return_key['en']
+                            ], resize_keyboard=True)
+
+
+    def get_main_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
+        return ReplyKeyboardMarkup([*self.common_menu_main_keys,
+                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value if not account.is_premium() else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA), KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
+                        ] if account.language != 'en' else [
+                            *self.common_menu_main_keys_en,
+                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value if not account.is_premium() else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN), KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
+                        ], resize_keyboard=True)
+    
+
+    def get_admin_keyboard(self, lang: str = 'fa') -> ReplyKeyboardMarkup:
+        return ReplyKeyboardMarkup([[KeyboardButton(
+                                     BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value)],
+                                 [KeyboardButton(
+                                     BotMan.Commands.ADMIN_NOTICES_FA.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_STATISTICS_FA.value)],
+                                 [KeyboardButton(
+                                     BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value)],
+
+                                    *self.common_menu_main_keys,
+                                    [KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
+                                 ], resize_keyboard=True) if lang != 'en' else \
+                ReplyKeyboardMarkup([[KeyboardButton(
+                                     BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value),
+                                     KeyboardButton(
+                                         BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value)],
+                                     [KeyboardButton(
+                                         BotMan.Commands.ADMIN_NOTICES_EN.value),
+                                         KeyboardButton(
+                                             BotMan.Commands.ADMIN_STATISTICS_EN.value)],
+                                     [KeyboardButton(
+                                         BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value),
+                                         KeyboardButton(
+                                             BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value)],
+                                    *self.common_menu_main_keys_en,
+                                    [KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]], resize_keyboard=True)
+
 
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
-        return self.menu_main(account.language) if not account.is_admin else self.admin_keyboard(account.language)
+        return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account.language)
 
     @staticmethod
     def action_callback_data(action: QueryActions, value: any, page: int | None = None):
@@ -523,7 +543,7 @@ class BotMan:
                 pass
 
     async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
-        if not account.is_premium_member():
+        if not account.is_premium():
             link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
             await telegram_handle.message.reply_text(
                 text=self.error('max_selection', account.language) % (max_value,) + self.error('get_premium', account.language),

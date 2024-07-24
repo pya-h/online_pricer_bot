@@ -149,7 +149,7 @@ class Account:
         return list(filter(lambda channel: channel.owner_id == self.chat_id, Channel.Instances.values()))
 
     
-    def is_premium_member(self) -> bool:
+    def is_premium(self) -> bool:
         """Check if the account has still plus subscription."""
         return self.is_admin or (
                     (self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
@@ -281,15 +281,15 @@ class Account:
     # user privileges:
     @property
     def max_selection_count(self):
-        return 100 if self.is_premium_member() else 10
+        return 100 if self.is_premium() else 10
     
     @property
     def max_alarms_count(self):
-        return 10 if self.is_premium_member() else 3
+        return 10 if self.is_premium() else 3
 
     @property
     def max_channel_plans_count(self):
-        return 1 if self.is_premium_member() else 0
+        return 1 if self.is_premium() else 0
     
         # causing a slight enhancement on performance
 

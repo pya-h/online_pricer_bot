@@ -459,7 +459,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                     target_user = Account.GetById(chat_id)
                     if len(values) > 1:
                         if values[1] == 'y':
-                            if target_user.is_premium_member():
+                            if target_user.is_premium():
                                 target_user.downgrade()
                                 await query.message.edit_text(botman.text('account_downgraded', account.language))
                                 return

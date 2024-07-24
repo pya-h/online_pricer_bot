@@ -28,13 +28,13 @@
             "fa": "⚙️ تنظیمات",
             "en": "⚙️ Settings"
         },
-        "connect_to_channel": {
-            "fa": "اتصال ربات به کانال",
-            "en": "Connect To a Channel"
+        "use_in_channel": {
+            "fa": "پلنر کانال",
+            "en": "Channel Planner"
         },
-        "connect_to_group": {
-            "fa": "اتصال ربات به گروه",
-            "en": "Connect To a Group"
+        "use_in_group": {
+            "fa": "قیمت گوی گروه",
+            "en": "Group Price Teller"
         }
     },
     "keyboard": {
@@ -137,6 +137,10 @@
         "no": {
             "fa": "نه",
             "en": "No"
+        },
+        "my_premium_duration": {
+            "fa": "🕒 مدت زمان اشتراک من",
+            "en": "🕒 My Plan Duration"
         }
     },
     "which_market": {
