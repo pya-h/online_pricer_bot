@@ -143,7 +143,7 @@
             "en": "🕒 My Plan Duration"
         },
         "verify": {
-            "fa": "تاییید",
+            "fa": "تایید",
             "en": "Verify"
         }
     },
@@ -406,11 +406,19 @@
         "en": "Actually this account is already a free user and there is no need to downgrade it."
     },
     "make_bot_channel_admin": {
-        "fa": "...",
-        "en": "Make bot your channel admin and send link"
+        "fa": "🔹ابتدا لازم است (حتما) ربات را در کانال موردنظر مدیر کنید. (تمام اختیارها را فعال کنید) در غیر انصورت بات قادر به تعامل با کانال نخواهد بود.\n\n🔹 سپس لینک، آدرس یا تلگرام آیدی (عددی) کانال خود را ارسال کنید و یا یک پیام از کانال را به ربات فوروارد کنید: ",
+        "en": "🔹 First you must make the bot the administrator of the channel you have in mind. (Enable nearly all the previllages). Otherwise bot won't be able to interact wioth the channel.\n\n🔹 Then send the link, address or Telegram ID of your channel or easily forward a message from it to the bot:"
     },
     "make_bot_group_admin": {
-        "fa": "...",
-        "en": "Make bot your group admin and send link"
+        "fa": "🔹ابتدا لازم است (حتما) ربات را در گروه موردنظر مدیر کنید. (تمام اختیارها را فعال کنید) در غیر انصورت بات قادر به تعامل با گروه نخواهد بود.\n\n🔹 سپس لینک، آدرس یا تلگرام آیدی (عددی) گروه را ارسال کنید: ",
+        "en": "🔹 First you must make the bot the administrator of the group you have in mind. (Enable nearly all the previllages). Otherwise I won't be able to interact wioth the channel.\n\n🔹 Then send the link, address or Telegram ID of the group:"
+    },
+    "select_time_interval": {
+        "fa": "🔹 بازه زمانی بروزرسانی شدن قیمت در کانالتان را تعیین کنید؟\n\n(مثلا اگر می خواهید هر ۵ دقیقه یک بار قیمت ها بروز شوند و در کانالتان قرار بگیرد، باید گزینه 5m را انتخاب کنید)\n\n🔹 در صورتی که بازه زمانی مدنظر شما در لیست زیر نباشد می توانید بصورت دستی بنویسید:\n\n(مثلاً اگر می خواهید بازه زمانی شما [۱۵ دقیقه] تنظیم شود باید به زبان انگلیسی بنویسید: 15m)\n\n(دقیقه: m / ساعت: h / روز: d)",
+        "en": "🔹 Determine the price update interval in your channel?\n(For example, if you want the prices to be updated every 5 minutes and placed on your channel, you should choose the 5m option)\n\n🔹 If the period you are looking for is not in the list below, you can write it manually:\n\n(For example, if you want your time period to be set to [15 minutes], you must write in English: 15m)\n\n(minute: m / hour: h / day: d)"
+    },
+    "bot_connected_to_group": {
+        "fa": "✅ ربات به گروه شما متصل شد.",
+        "en": "✅ Bot has connected to your group."
     }
 }

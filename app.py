@@ -329,7 +329,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
     value = None
     if callback_data:
         callback_data = json.loads(str(query.data))
-        action = callback_data['action'] 
+        action = callback_data['act'] 
         value = callback_data['v']
 
     if callback_data and isinstance(value, str) and value and value[0] == '!':
@@ -766,13 +766,16 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.delete_specific_cache('create_alarm_props')
 
                 case Account.States.MAKE_BOT_ADMIN:
-                    chat_type = botman.ChatType.Which(int(account.get_cache('chat_type')))
+                    chat_type = account.get_cache('chat_type')
+                    if not isinstance(chat_type, botman.ChatType):
+                        chat_type = botman.ChatType.Which(int(chat_type))
+
                     if chat_type != botman.ChatType.CHANNEL and chat_type != botman.ChatType.GROUP:
                         '''Send a message saying sth is configured run, please try again later from scratch'''
 
                     target_chat_id: int | None = None
-                    if (chat_type == botman.ChatType.CHANNEL.value) and update.message.forward_from:
-                        target_chat_id = update.message.forward_from.id
+                    if (chat_type == botman.ChatType.CHANNEL) and update.message.forward_from_chat:
+                        target_chat_id = update.message.forward_from_chat.id
                     else:
                         try:
                             target_chat_id = int(msg)
@@ -784,7 +787,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                         try:
                             response = await context.bot.send_message(chat_id=msg, text='Test')
                             target_chat_id = response.chat.id  # TODO: Print response and get chat_id and message_id
-                            await context.bot.delete_message(chat_id=target_chat_id, message_id=response.message.id)
+
+                            await context.bot.delete_message(chat_id=target_chat_id, message_id=response.message_id)
                         except:
                             '''Send a message that says bot is not made admin in target. below it is an inline button holding target chat'''
                             await update.message.reply_text(botman.error('bot_seems_not_admin', account.language), reply_markup=botman.action_inline_keyboard(botman.QueryActions.VERIFY_BOT_IS_ADMIN, {
@@ -793,10 +797,10 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                     if target_chat_id:
                         account.add_cache('target_chat_id', target_chat_id)
-                        if chat_type == botman.ChatType.CHANNEL.value:
+                        if chat_type == botman.ChatType.CHANNEL:
                             await update.message.reply_text(botman.text('select_time_interval'), reply_markup="use the one in old bot") # TODO: FIX this
                         else:
-                            await update.message.reply_text(botman.text('bot_connected_to_group'), reply_markup=botman.mainkeyboard(account)) # TODO: FIX this
+                            await update.message.reply_text(botman.text('bot_connected_to_group'), reply_markup=botman.mainkeyboard(account))
                             account.clear_cache()
                 case _:
                     if not account.authorization(context.args):
