@@ -33,7 +33,8 @@ class Account:
         CREATE_ALARM = 9
         UPGRADE_USER = 10
         DOWNGRADE_USER = 11
-
+        MAKE_BOT_ADMIN = 12
+        
         @staticmethod
         def Which(value: int):
             values = (

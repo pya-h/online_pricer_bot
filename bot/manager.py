@@ -116,6 +116,7 @@ class BotMan:
         FACTORY_RESET = 4
         SELECT_TUTORIAL = 5
         ADMIN_DOWNGRADE_USER = 6
+        VERIFY_BOT_IS_ADMIN = 7
         NONE = 0
 
         @staticmethod
@@ -131,7 +132,28 @@ class BotMan:
                     return BotMan.QueryActions.FACTORY_RESET
                 case 5:
                     return BotMan.QueryActions.SELECT_TUTORIAL
+                case 6:
+                    return BotMan.QueryActions.ADMIN_DOWNGRADE_USER
+                case 7:
+                    return BotMan.QueryActions.VERIFY_BOT_IS_ADMIN
             return BotMan.QueryActions.NONE
+
+    class ChatType(Enum):
+            USER = 1
+            CHANNEL = 2
+            GROUP = 3
+            NONE = 0
+
+            @staticmethod
+            def Which(value: int):
+                match value:
+                    case 1:
+                        return BotMan.ChatType.USER
+                    case 2:
+                        return BotMan.ChatType.CHANNEL
+                    case 3:
+                        return BotMan.ChatType.GROUP
+                return BotMan.ChatType.NONE
 
     def __init__(self, main_plan_interval: float = 10.0, plan_manager_interval: float = 1.0) -> None:
         self.resourceman = resourceman

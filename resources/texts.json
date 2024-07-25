@@ -69,7 +69,7 @@
         "tutorials": {
             "fa": "آموزش کامل ربات",
             "en": "Complete Bot Tutorials"
-        }, 
+        },
         "set_language": {
             "fa": "تنظیم زبان ربات",
             "en": "Set Bot Language"
@@ -141,6 +141,10 @@
         "my_premium_duration": {
             "fa": "🕒 مدت زمان اشتراک من",
             "en": "🕒 My Plan Duration"
+        },
+        "verify": {
+            "fa": "تاییید",
+            "en": "Verify"
         }
     },
     "which_market": {
@@ -235,6 +239,10 @@
         "invalid_user_specification": {
             "fa": "متاسفانه شناسایی کاربر موردنظر با مشکل مواجه شد. شما می توانید دوباره تلاش کنید و یا یک روش دیگر برای مشخص کردن کاربر موردنظر را امتحان کنید ...",
             "en": "Unfortunately, Identifying the user was unsuccessful; You can try again, or Try another method for specifying the user ..."
+        },
+        "bot_seems_not_admin": {
+            "fa": "به نظر می رسد ربات را ادمین نکرده اید و یا آدرس یا آیدی موردنظر اشتباه است. اکر آیدی یا آدرس اشتباه است، مقدار درست را دوباره وارد کنید، و اگر ربات را ادمین نکرده اید، آن را ادمین کرده و روی تایید کلیک کنید.",
+            "en": "It seems that bot has not been made admin or maybe the provided url or id is invalid. If the id or url is invalid, rewrite and send the correct one, and if you've forgotten to make the bot admin, make it admin and click verify.int"
         }
     },
     "what_can_i_do": {
@@ -289,7 +297,7 @@
         "fa": "🔹 قیمت مدنظرتان را [با ارقام انگلیسی] بنویسید:",
         "en": "Write your desired price:"
     },
-    "channel_plan_already_started":  {
+    "channel_plan_already_started": {
         "fa": "فرآیند به روزرسانی قبلا شروع شده است.",
         "en": "Planning process is already started."
     },
@@ -396,5 +404,13 @@
     "not_a_premium": {
         "fa": "اکانت موردنظر شما در حال حاضر دارای تعرفه عادی است پس نیازی به این عملیات نیست!",
         "en": "Actually this account is already a free user and there is no need to downgrade it."
+    },
+    "make_bot_channel_admin": {
+        "fa": "...",
+        "en": "Make bot your channel admin and send link"
+    },
+    "make_bot_group_admin": {
+        "fa": "...",
+        "en": "Make bot your group admin and send link"
     }
 }
