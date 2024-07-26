@@ -918,7 +918,13 @@ def main():
 
     print("Server is up and running...")
     app.run_polling(poll_interval=0.25, timeout=10)
-    # app.run_webhook(listen='https://494d-188-165-0-66.ngrok-free.app/', port=4040)
+
+    # Run as webhook
+    # app.run_webhook(
+    #     listen='127.0.0.1', 
+    #     port=8000, 
+    #     webhook_url='https://7490-2a05-f480-1c00-69d-5400-5ff-fe05-46a8.ngrok-free.app'
+    # )
 
 
 if __name__ == '__main__':
