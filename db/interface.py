@@ -17,10 +17,12 @@ class DatabaseInterface:
          'state', 'cache', 'admin', 'language')
 
     TABLE_CHANNELS = "channels"  # channels to be scheduled
-    CHANNELS_COLUMNS = (
-        # TODO: Add cryptos/currencies list to this too. to choose what price data must be sent to channel
-        CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_OWNER_ID, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME) = \
+    CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_OWNER_ID, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME) = \
         ("id", "name", "title", "owner_id", "interval", "last_post_time")
+    
+    TABLE_GROUPS = "group"  # group to be scheduled
+    GROUPS_COLUMNS = (GROUP_ID, GROUP_NAME, GROUP_TITLE, GROUP_OWNER_ID, GROUP_COINS, GROUP_CURRENCIES, GROUP_MESSAGE_HEADER, GROUP_MESSAGE_FOOTNOTE, GROUP_SHOW_MESSAGE_DATE, GROUP_MARKET_LABELS) = \
+        ("id", "name", "title", "owner_id", "coins", "currencies", "msg_header", "msg_footnote", "show_msg_date", "show_market_labels")
 
     TABLE_PRICE_ALARMS = "alarms"
     PRICE_ALARMS_COLUMNS = (

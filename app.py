@@ -594,14 +594,8 @@ async def list_type_is_selected(update: Update):
 # premiums:
 async def cmd_start_using_in_channel(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat)
-    account.change_state(Account.States.MAKE_BOT_ADMIN, 'chat_type', botman.ChatType.CHANNEL, clear_cache=True)
-    await update.message.reply_text(botman.text('make_bot_channel_admin', account.language), reply_markup=botman.cancel_menu(account.language))
-
-async def cmd_start_using_in_group(update: Update, context: CallbackContext):
-    account = Account.Get(update.message.chat)
-    account.change_state(Account.States.MAKE_BOT_ADMIN, 'chat_type', botman.ChatType.GROUP, clear_cache=True)
-    await update.message.reply_text(botman.text('make_bot_group_admin', account.language), reply_markup=botman.cancel_menu(account.language))
-
+    account.change_state(Account.States.MAKE_BOT_ADMIN, clear_cache=True)
+    await update.message.reply_text(botman.text('add_bot_as_channel_admin', account.language), reply_markup=botman.cancel_menu(account.language))
 
 async def check_group_messages(update: Update, context: CallbackContext):
     pass # check telegram-responses.dat file and write code
@@ -685,7 +679,8 @@ async def handle_messages(update: Update, context: CallbackContext):
         case BotMan.Commands.USE_IN_CHANNEL_FA.value | BotMan.Commands.USE_IN_CHANNEL_EN.value:
             await cmd_start_using_in_channel(update, context)
         case BotMan.Commands.USE_IN_GROUP_FA.value | BotMan.Commands.USE_IN_GROUP_EN.value:
-            await cmd_start_using_in_group(update, context)
+            await update.message.reply_text(botman.text('add_bot_as_group_admin', Account.Get(update.message.chat).language))
+
         # admin options:
         case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:
             await cmd_upgrade_user(update, context)
@@ -783,18 +778,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.delete_specific_cache('create_alarm_props')
 
                 case Account.States.MAKE_BOT_ADMIN:
-                    chat_type = account.get_cache('chat_type')
-                    if not isinstance(chat_type, botman.ChatType):
-                        chat_type = botman.ChatType.Which(int(chat_type))
-
-                    if chat_type != botman.ChatType.CHANNEL and chat_type != botman.ChatType.GROUP:
-                        '''Send a message saying sth is configured run, please try again later from scratch'''
-
                     target_chat_id: int | None = None
-
-                    print(update.message)
-                    
-                    if (chat_type == botman.ChatType.CHANNEL) and update.message.forward_from_chat:
+                    if update.message.forward_from_chat:
                         target_chat_id = update.message.forward_from_chat.id
                     else:
                         try:
@@ -816,11 +801,7 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                     if target_chat_id:
                         account.add_cache('target_chat_id', target_chat_id)
-                        if chat_type == botman.ChatType.CHANNEL:
-                            await update.message.reply_text(botman.text('select_time_interval'), reply_markup="use the one in old bot") # TODO: FIX this
-                        else:
-                            await update.message.reply_text(botman.text('bot_connected_to_group'), reply_markup=botman.mainkeyboard(account))
-                            account.clear_cache()
+                        await update.message.reply_text(botman.text('select_time_interval'), reply_markup="use the one in old bot") # TODO: FIX this
                 case _:
                     if not account.authorization(context.args):
                         await update.message.reply_text(botman.error('what_the_fuck', account.language),
@@ -909,7 +890,6 @@ def main():
     app.add_handler(CommandHandler("equalizer", cmd_equalizer))
     app.add_handler(CommandHandler("lang", cmd_switch_language))
     app.add_handler(CommandHandler("useinchannel", cmd_start_using_in_channel))
-    app.add_handler(CommandHandler("useingroup", cmd_start_using_in_group))
 
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
