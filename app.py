@@ -1,6 +1,7 @@
 from telegram.ext import CallbackContext, filters, CommandHandler, ApplicationBuilder as BotApplicationBuilder, \
     MessageHandler, CallbackQueryHandler
-from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram.constants import ChatType
+from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
 from models.account import Account
 import json
@@ -15,7 +16,6 @@ from tools.exceptions import NoLatestDataException, InvalidInputException
 
 
 botman = BotMan()
-
 
 async def show_market_types(update: Update, context: CallbackContext, next_state: Account.States):
     account = Account.Get(update.message.chat)
@@ -43,6 +43,7 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
                                                                                                            market),
                                                                         full_names=market != MarketOptions.CRYPTO,
                                                                         close_button=True))
+
 
 async def select_coin_menu(update: Update, context: CallbackContext):
     await prepare_market_selection_menu(update, context, MarketOptions.CRYPTO)
@@ -135,8 +136,8 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
                                     name=botman.main_queue_id)
     await update.message.reply_text(botman.text('channel_planning_started', account.language) % (botman.main_plan_interval, ))
 
+
 async def cmd_premium_plan(update: Update, context: CallbackContext):
-    '''This method starts '''
     account = Account.Get(update.message.chat)
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account.language)
@@ -343,7 +344,6 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             await query.message.delete()
 
         return await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id) if message_id else None
-        
 
     match action:
         case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
@@ -407,7 +407,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                 log(f'Cannot disable the alarm with id={alarm_id}', ex, "Alarms")
         case BotMan.QueryActions.FACTORY_RESET.value:
             try:
-                if value.lower() == 'y':
+                if value is not None and value.lower() == 'y':
                     account.factory_reset()
                     await query.message.delete()
                     await context.bot.send_message(chat_id=account.chat_id, text=botman.text('factory_reset_successful', account.language), reply_markup=botman.mainkeyboard(account))
@@ -599,9 +599,17 @@ async def cmd_start_using_in_group(update: Update, context: CallbackContext):
     await update.message.reply_text(botman.text('make_bot_group_admin', account.language), reply_markup=botman.cancel_menu(account.language))
 
 
+async def check_group_messages(update: Update, context: CallbackContext):
+    pass # check telegram-responses.dat file and write code
+
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:
         return
+    
+    if update.message.chat.type == ChatType.GROUP or update.message.chat.type == ChatType.SUPERGROUP:
+        await check_group_messages(update, context)
+        return
+    
     match update.message.text:
         case BotMan.Commands.GET_FA.value | BotMan.Commands.GET_EN.value:
             await cmd_get_prices(update, context)
@@ -774,6 +782,9 @@ async def handle_messages(update: Update, context: CallbackContext):
                         '''Send a message saying sth is configured run, please try again later from scratch'''
 
                     target_chat_id: int | None = None
+
+                    print(update.message)
+                    
                     if (chat_type == botman.ChatType.CHANNEL) and update.message.forward_from_chat:
                         target_chat_id = update.message.forward_from_chat.id
                     else:
@@ -790,7 +801,6 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                             await context.bot.delete_message(chat_id=target_chat_id, message_id=response.message_id)
                         except:
-                            '''Send a message that says bot is not made admin in target. below it is an inline button holding target chat'''
                             await update.message.reply_text(botman.error('bot_seems_not_admin', account.language), reply_markup=botman.action_inline_keyboard(botman.QueryActions.VERIFY_BOT_IS_ADMIN, {
                                 msg: 'verify'
                             }, in_main_keyboard=False))
@@ -831,7 +841,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 except:
                                     months = None
                                 if not months or (months < 0):
-                                    update.message.reply_text(botman.error('invalid_months_count', account.language))
+                                    await update.message.reply_text(botman.error('invalid_months_count', account.language))
                                     return
                                 target = Account.GetById(upgrading_chat_id)
                                 target.upgrade(months)

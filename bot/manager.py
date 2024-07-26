@@ -195,7 +195,6 @@ class BotMan:
         self.cancel_menu_key = None
         self.cancel_menu = None
         self.return_key = None
-        self.markets_menu = None
 
         self.setup_main_keyboards()
         self.is_main_plan_on: bool = False

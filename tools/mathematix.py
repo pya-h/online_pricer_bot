@@ -12,6 +12,8 @@ def separate_by3(number: float, precision: int=None):
 
 
 def cut(number: float|int, return_string: bool=False):
+    if not number:
+        return 0, 0
     intnum = int(number)
     if intnum == number or intnum >= 1000:
         return str(intnum) if return_string else intnum, 0
