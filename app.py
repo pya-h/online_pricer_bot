@@ -328,6 +328,7 @@ async def send_r_u_sure_to_downgrade_message(context: CallbackContext, admin_use
 async def handle_action_queries(query: CallbackQuery, context: CallbackContext, account: Account, callback_data: dict | None = None):
     action = None
     value = None
+
     if callback_data:
         callback_data = json.loads(str(query.data))
         action = callback_data['act'] 
@@ -347,7 +348,10 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
 
     match action:
         case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
-            lang = value.lower()
+            if not value:
+                await query.delete_message()
+                return
+            lang = value
             if lang != 'fa' and lang != 'en':
                 await query.answer(text=botman.error('invalid_language', account.language), show_alert=True)
                 return
@@ -418,7 +422,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
         case BotMan.QueryActions.SELECT_TUTORIAL.value:
             import resources.longtext as long_texts
             await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language.lower()])
-
+            return
         case _:
             if not account.authorization(context.args):
                 await query.message.edit_text(botman.error('what_the_fuck', account.language))
@@ -602,6 +606,11 @@ async def cmd_start_using_in_group(update: Update, context: CallbackContext):
 async def check_group_messages(update: Update, context: CallbackContext):
     pass # check telegram-responses.dat file and write code
 
+async def unknwon_command_handler(update: Update, context: CallbackContext):
+    account = Account.Get(update.message.chat)
+    await update.message.reply_text(botman.error('what_the_fuck', account.language),
+                                                    reply_markup=botman.mainkeyboard(account))
+
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:
         return
@@ -667,8 +676,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                                                 'calculator': 'calculator',
                                                 'list_alarms': 'list_alarms',
                                                 'create_alarm': 'create_alarm',
-                                                'connect_to_group': 'connect_to_group',
-                                                'connect_to_channel': 'connect_to_channel',
+                                                'use_in_channel': 'use_in_channel',
+                                                'use_in_group': 'use_in_group',
                                                 f'! {update.message.message_id}': 'close'
                                             }, language=account.language, in_main_keyboard=True))
 
@@ -913,8 +922,10 @@ def main():
     app.add_handler(CommandHandler("gecko", cmd_change_source_to_coingecko))
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
 
-    app.add_handler(MessageHandler(filters.ALL, handle_messages))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
+
+    app.add_handler(MessageHandler(filters.COMMAND, unknwon_command_handler))
 
     print("Server is up and running...")
     app.run_polling(poll_interval=0.25, timeout=10)

@@ -266,7 +266,7 @@ TUTORIALS_TEXT = {
     },
 
 
-    'connect_to_channel': {
+    'use_in_channel': {
         'fa': '''🔸 آموزش بخش [ اتصال ربات به کانال ]
 
 👈 زمانی که برای اولین بار روی گزینه [ اتصال ربات به کانال ] کلیک کنید ربات از شما می خواهد آن را در کانالتان مدیر کنید.
@@ -368,7 +368,7 @@ TUTORIALS_TEXT = {
     },
 
 
-    'connect_to_group': {
+    'use_in_group': {
         'fa': '''🔸 آموزش بخش [ اتصال ربات به گروه ]
 
 👈 زمانی که برای اولین بار روی گزینه [ اتصال ربات به گروه ] کلیک کنید ربات از شما می خواهد آن را در گروهتان مدیر کنید.
@@ -464,7 +464,7 @@ The robot sends the price of each of them in the group)
 
 👉 By clicking on this option, you can specify the text that will be placed at the beginning of bot's message.
 
-🔶 Training part [ Message last text setting ]
+🔶 Training part [ Message last text setting ]c
 
 👉 By clicking this option, you can specify the text that will be placed at the end of bot's message.
 
