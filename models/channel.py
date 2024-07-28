@@ -97,8 +97,8 @@ class Channel:
     
     @staticmethod
     def ExtractQueryRowData(row: tuple):
-        return Channel(channel_id=int(row[0]), interval=int(row[1]), last_post_time=int(row[2]),
-                           channel_name=row[3], channel_title=row[4], owner_id=int(row[-1]))
+        return Channel(channel_id=int(row[0]), channel_name=row[1], channel_title=int(row[2]),
+                           interval=int(row[3]), last_post_time=int(row[4]), owner_id=int(row[-1]))
     
     @staticmethod
     def GetByOwner(owner_chat_id: int):

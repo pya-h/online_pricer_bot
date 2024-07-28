@@ -17,12 +17,12 @@ class DatabaseInterface:
          'state', 'cache', 'admin', 'language')
 
     TABLE_CHANNELS = "channels"  # channels to be scheduled
-    CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_OWNER_ID, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME) = \
-        ("id", "name", "title", "owner_id", "interval", "last_post_time")
+    CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME, CHANNEL_OWNER_ID) = \
+        ("id", "name", "title", "interval", "last_post_time", "owner_id")
     
     TABLE_GROUPS = "group"  # group to be scheduled
-    GROUPS_COLUMNS = (GROUP_ID, GROUP_NAME, GROUP_TITLE, GROUP_OWNER_ID, GROUP_COINS, GROUP_CURRENCIES, GROUP_MESSAGE_HEADER, GROUP_MESSAGE_FOOTNOTE, GROUP_SHOW_MESSAGE_DATE, GROUP_MARKET_LABELS) = \
-        ("id", "name", "title", "owner_id", "coins", "currencies", "msg_header", "msg_footnote", "show_msg_date", "show_market_labels")
+    GROUPS_COLUMNS = (GROUP_ID, GROUP_NAME, GROUP_TITLE, GROUP_COINS, GROUP_CURRENCIES, GROUP_MESSAGE_HEADER, GROUP_MESSAGE_FOOTNOTE, GROUP_MESSAGE_SHOW_DATE, GROUP_MESSAGE_SHOW_MARKET_LABELS, GROUP_OWNER_ID) = \
+        ("id", "name", "title", "coins", "currencies", "msg_header", "msg_footnote", "msg_show_date", "msg_show_market_labels", "owner_id")
 
     TABLE_PRICE_ALARMS = "alarms"
     PRICE_ALARMS_COLUMNS = (
@@ -63,9 +63,20 @@ class DatabaseInterface:
 
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_CHANNELS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} INTEGER PRIMARY KEY, " + \
-                        f"{self.CHANNEL_INTERVAL} INTEGER NOT_NULL, {self.CHANNEL_LAST_POST_TIME} INTEGER, " + \
                         f"{self.CHANNEL_NAME} TEXT, {self.CHANNEL_TITLE} TEXT NOT_NULL," + \
+                        f"{self.CHANNEL_INTERVAL} INTEGER NOT_NULL, {self.CHANNEL_LAST_POST_TIME} INTEGER, " + \
                         f"{self.CHANNEL_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
+                # create table account
+                cursor.execute(query)
+                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='plus_info')
+
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_GROUPS}'").fetchone():
+                query = f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} INTEGER PRIMARY KEY, " + \
+                        f"{self.GROUP_NAME} TEXT, {self.GROUP_TITLE} TEXT NOT_NULL," + \
+                        f"{self.GROUP_COINS} TEXT, {self.GROUP_CURRENCIES} TEXT, " + \
+                        f"{self.GROUP_MESSAGE_HEADER} TEXT, {self.GROUP_MESSAGE_FOOTNOTE} TEXT, " + \
+                        f"{self.GROUP_MESSAGE_SHOW_DATE} INTEGER DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_LABELS} INTEGER DEFAULT 1, " + \
+                        f"{self.GROUP_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
                 # create table account
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='plus_info')
@@ -192,6 +203,15 @@ class DatabaseInterface:
         """Finds all the channels with plan interval > min_interval"""
         return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_INTERVAL} > ?",
                             min_interval)
+
+    def get_group(self, group_id: int):
+        groups = self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=? LIMIT 1",
+                                group_id)
+        return groups[0] if groups else None
+
+    def get_user_groups(self, owner_chat_id: int) -> list:
+        """Get all groups/supergroups related to this account"""
+        return self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=?", owner_chat_id)
 
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesnt return result such as insert or delete"""
