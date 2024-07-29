@@ -27,7 +27,7 @@ class Channel:
 
     @staticmethod
     def Database():
-        if Channel._database is None:
+        if not Channel._database:
             Channel._database = DatabaseInterface.Get()
         return Channel._database
 

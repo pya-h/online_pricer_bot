@@ -129,16 +129,20 @@ class Account:
 
         return False
 
-    def str_desired_cryptos(self):
+    @property
+    def desired_cryptos_as_str(self):
         return ';'.join(self.desired_cryptos)
 
-    def str_desired_currencies(self):
+    @property
+    def desired_currencies_as_str(self):
         return ';'.join(self.desired_currencies)
 
-    def str_calc_cryptos(self):
+    @property
+    def calc_cryptos_as_str(self):
         return ';'.join(self.calc_cryptos)
 
-    def str_calc_currencies(self):
+    @property
+    def calc_currencies_as_str(self):
         return ';'.join(self.calc_currencies)
 
     def set_extra_info(self, firstname: str, username: str = None) -> None:
@@ -300,24 +304,12 @@ class Account:
             Account._database = DatabaseInterface.Get()
         return Account._database
 
-
-    @staticmethod
-    def str2list(string: str):
-        return string.split(';') if string else None
-
-    @staticmethod
-    def list2str(lst: List[str]):
-        return ';'.join(lst)
-
     @staticmethod
     def ExtractQueryRowData(row: tuple, prevent_instance_arrangement: bool = False):
-        def xstr(r):
-            return r if not r or r[-1] != ";" else r[:-1]
-
-        currs = xstr(row[1])
-        cryptos = xstr(row[2])
-        calc_currs = xstr(row[3])
-        calc_cryptos = xstr(row[4])
+        currs = row[1]
+        cryptos = row[2]
+        calc_currs = row[3]
+        calc_cryptos = row[4]
 
         username = row[5]
         # add new rows here
@@ -327,9 +319,9 @@ class Account:
         cache = Account.load_cache(row[-3])
         is_admin = row[-2]
         language = row[-1]
-        return Account(chat_id=int(row[0]), currencies=Account.str2list(currs), cryptos=Account.str2list(cryptos),
-                       plus_end_date=plus_end_date, calc_currencies=Account.str2list(calc_currs),
-                       calc_cryptos=Account.str2list(calc_cryptos), is_admin=is_admin, username=username,
+        return Account(chat_id=int(row[0]), currencies=DatabaseInterface.StringToList(currs), cryptos=DatabaseInterface.StringToList(cryptos),
+                       plus_end_date=plus_end_date, calc_currencies=DatabaseInterface.StringToList(calc_currs),
+                       calc_cryptos=DatabaseInterface.StringToList(calc_cryptos), is_admin=is_admin, username=username,
                        language=language, state=state, cache=cache, prevent_instance_arrangement=prevent_instance_arrangement)
 
     @staticmethod

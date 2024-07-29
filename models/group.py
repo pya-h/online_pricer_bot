@@ -1,7 +1,6 @@
 from tools import manuwriter
 from db.interface import DatabaseInterface
-from json import dumps as jsonify
-
+from typing import List
 
 class Group:
     Instances = {}
@@ -10,7 +9,7 @@ class Group:
 
     @staticmethod
     def Database():
-        if Group._database is None:
+        if not Group._database:
             Group._database = DatabaseInterface.Get()
         return Group._database
 
@@ -26,7 +25,7 @@ class Group:
         return Group.Instances
 
     def __init__(self, owner_id: int, group_id: int, group_name: str = None, group_title: str | None = None,
-                 selected_coins: str | None = None, selected_currencies: str | None = None, message_header: str | None = None,
+                 selected_coins: List[str] | None = None, selected_currencies: List[str] | None = None, message_header: str | None = None,
                  message_footer: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True) -> None:
         self.owner_id = owner_id
         self.id = group_id
@@ -36,7 +35,6 @@ class Group:
         self.selected_currencies = selected_currencies
         self.message_header = message_header
         self.message_footer = message_footer
-        self.message_footer = message_footer
         self.message_show_date = message_show_date
         self.message_show_market_labels = message_show_market_labels
 
@@ -44,6 +42,18 @@ class Group:
         # TODO: Maybe create a MessageSetting class? to use in group/channel
         # TODO: Do the same for channels
         # TODO: write method in database to save group dara
+        
+
+    def __str__(self) -> str:
+        return f"Groupname:{self.name}\nId: {self.id}\nOwner Id: {self.owner_id}"
+
+    @property
+    def coins_as_str(self):
+        return ';'.join(self.selected_coins)
+
+    @property
+    def currencies_as_str(self):
+        return ';'.join(self.selected_currencies)
         
     @staticmethod
     def Get(group_id):
@@ -55,12 +65,9 @@ class Group:
 
         return None
 
-    def __str__(self) -> str:
-        return f"Username:{self.name}\nTitle: {self.title}\nId: {self.id}\nInterval: {self.interval}\nOwner Id: {self.owner_id}"
-    
     @staticmethod
     def ExtractQueryRowData(row: tuple):
-        return Group(group_id=int(row[0]), group_name=row[1], group_title=row[2], selected_coins=row[3], selected_currencies=row[4],
+        return Group(group_id=int(row[0]), group_name=row[1], group_title=row[2], selected_coins=DatabaseInterface.StringToList(row[3]), selected_currencies=DatabaseInterface.StringToList(row[4]),
                            message_header=row[5], message_footer=row[6], message_show_date=bool(row[7]), message_show_market_labels=bool(row[8]), owner_id=int(row[-1]))
     
     @staticmethod
@@ -68,3 +75,4 @@ class Group:
         rows = Group.Database().get_user_groups(owner_chat_id)
         return list(map(Group.ExtractQueryRowData, rows))
         
+    

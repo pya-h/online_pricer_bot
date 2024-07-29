@@ -20,7 +20,7 @@ class DatabaseInterface:
     CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME, CHANNEL_OWNER_ID) = \
         ("id", "name", "title", "interval", "last_post_time", "owner_id")
     
-    TABLE_GROUPS = "group"  # group to be scheduled
+    TABLE_GROUPS = "groups"  # group to be scheduled
     GROUPS_COLUMNS = (GROUP_ID, GROUP_NAME, GROUP_TITLE, GROUP_COINS, GROUP_CURRENCIES, GROUP_MESSAGE_HEADER, GROUP_MESSAGE_FOOTNOTE, GROUP_MESSAGE_SHOW_DATE, GROUP_MESSAGE_SHOW_MARKET_LABELS, GROUP_OWNER_ID) = \
         ("id", "name", "title", "coins", "currencies", "msg_header", "msg_footnote", "msg_show_date", "msg_show_market_labels", "owner_id")
 
@@ -36,6 +36,14 @@ class DatabaseInterface:
             DatabaseInterface._instance = DatabaseInterface()
         return DatabaseInterface._instance
 
+    @staticmethod
+    def StringToList(string: str):
+        '''Use this method to extract saved currency or cryptocurrency list strings to List again.'''
+        if not string:
+            return None
+        string = string if string[-1] != ";" else string[:-1]
+        return string.split(';')
+    
     def migrate(self):
         """This method is like a migration thing, after any major update, this must be called to perform any required structural change in db"""
         return
@@ -56,7 +64,7 @@ class DatabaseInterface:
                         f"{self.ACCOUNT_IS_ADMIN} INTEGER DEFAULT 0, {self.ACCOUNT_LANGUAGE} TEXT)"
                 # create table account
                 cursor.execute(query)
-                log(f"PLUS Database {self.TABLE_ACCOUNTS} table created successfully.", category_name='plus_info')
+                log(f"PLUS Database {self.TABLE_ACCOUNTS} table created successfully.", category_name='DatabaseInfo')
             else:
                 # write any migration needed in the function called below
                 self.migrate()
@@ -68,7 +76,7 @@ class DatabaseInterface:
                         f"{self.CHANNEL_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
                 # create table account
                 cursor.execute(query)
-                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='plus_info')
+                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
 
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_GROUPS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} INTEGER PRIMARY KEY, " + \
@@ -79,7 +87,7 @@ class DatabaseInterface:
                         f"{self.GROUP_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
                 # create table account
                 cursor.execute(query)
-                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='plus_info')
+                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
 
             if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_PRICE_ALARMS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_PRICE_ALARMS} (" + \
@@ -89,9 +97,9 @@ class DatabaseInterface:
                         f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
 
                 cursor.execute(query)
-                log(f"plus Database {self.TABLE_PRICE_ALARMS} table created successfully.", category_name='plus_info')
+                log(f"plus Database {self.TABLE_PRICE_ALARMS} table created successfully.", category_name='DatabaseInfo')
 
-            log("plus Database setup completed.", category_name='plus_info')
+            log("plus Database setup completed.", category_name='DatabaseInfo')
             cursor.close()
             connection.close()
         except Exception as ex:
@@ -104,13 +112,13 @@ class DatabaseInterface:
             raise Exception("You must provide an Account to save")
         try:
             columns = ', '.join(self.ACCOUNT_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-            self.execute(False, query, account.chat_id, account.str_desired_currencies(), account.str_desired_cryptos(),
-                         account.str_calc_currencies(), account.str_calc_cryptos(), account.username, account.last_interaction.strftime(self.DATE_FORMAT),
+            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?{', ?' * (len(self.ACCOUNT_COLUMNS) - 1)})"
+            self.execute(False, query, account.chat_id, account.desired_currencies_as_str, account.desired_cryptos_as_str,
+                         account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username, account.last_interaction.strftime(self.DATE_FORMAT),
                          account.plus_end_date, account.state.value, account.cache_as_str(), account.is_admin, account.language)
-            log(f"New account: {account} saved into plus database successfully.", category_name=f'plus_info')
+            log(f"New account: {account} saved into database successfully.", category_name='DatabaseInfo')
         except Exception as ex:
-            log(f"Cannot save this account:{account}", ex, category_name=f'plus_database')
+            log(f"Cannot save this account:{account}", ex, category_name=f'DatabaseError')
             raise ex  # custom ex needed here too
 
     def get(self, chat_id):
@@ -133,23 +141,22 @@ class DatabaseInterface:
     def update(self, account):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=? LIMIT 1", (account.chat_id,))
-        if cursor.fetchone():  # if account with his chat id has been saved before in the database
-            columns_to_set = ', '.join([f'{field}=?' for field in self.ACCOUNT_COLUMNS[1:]])
 
-            cursor.execute(f'UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=?',
-                           (account.str_desired_currencies(), account.str_desired_cryptos(),
-                            account.str_calc_currencies(), account.str_calc_cryptos(), account.username,
-                            account.last_interaction.strftime(self.DATE_FORMAT), account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
-                            account.state.value, account.cache_as_str(), account.is_admin, account.language, account.chat_id))
-        else:
+        columns_to_set = ', '.join([f'{field}=?' for field in self.ACCOUNT_COLUMNS[1:]])
+        result = cursor.execute(f'UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=?',
+                        (account.desired_currencies_as_str, account.desired_cryptos_as_str,
+                        account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username,
+                        account.last_interaction.strftime(self.DATE_FORMAT), account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
+                        account.state.value, account.cache_as_str(), account.is_admin, account.language, account.chat_id))
+
+        if not result.rowcount:
             columns: str = ', '.join(self.ACCOUNT_COLUMNS)
-            cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                           (account.chat_id, account.str_desired_currencies(), account.str_desired_cryptos(),
-                            account.str_calc_currencies(), account.str_calc_cryptos(), account.username, account.last_interaction.strftime(self.DATE_FORMAT),
+            cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?{', ?' * (len(self.ACCOUNT_COLUMNS) - 1)})",
+                           (account.chat_id, account.desired_currencies_as_str, account.desired_cryptos_as_str,
+                            account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username, account.last_interaction.strftime(self.DATE_FORMAT),
                             account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                             account.state.value, account.cache_as_str(), account.is_admin, account.language))
-            log("New account started using this bot with chat_id=: " + account.__str__(), category_name=f'plus_info')
+            log("New account started using this bot with chat_id=: " + account.__str__(), category_name='DatabaseInfo')
         connection.commit()
         cursor.close()
         connection.close()
@@ -172,20 +179,20 @@ class DatabaseInterface:
     def plan_channel(self, owner_chat_id: int, channel_id: int, channel_name: str, interval: int, channel_title: str):
         connection = sqlite3.connect(self._name)
         cursor = connection.cursor()
-        cursor.execute(f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=? LIMIT 1", (channel_id,))
         now_in_minutes = time() // 60
-        if cursor.fetchone():  # if account with his chat id has been saved before in the database
-            columns_to_set = ', '.join([f'{field}=?' for field in self.CHANNELS_COLUMNS[1:]])
-            cursor.execute(f'UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=?', \
-                           (channel_name, channel_title, owner_chat_id, interval, now_in_minutes, channel_id))
+        columns_to_set = ', '.join([f'{field}=?' for field in self.CHANNELS_COLUMNS[1:]])
+        affected = cursor.execute(f'UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=?', \
+                        (channel_name, channel_title, owner_chat_id, interval, now_in_minutes, channel_id))
+        
+        if affected.rowcount:
             log(f"Channel with the id of [{channel_id}, {channel_name}] has been RE-planned by owner_chat_id=: {owner_chat_id}",
-                category_name='plus_info')
+                        category_name='DatabaseInfo')
         else:
             columns = ', '.join(self.CHANNELS_COLUMNS)
-            cursor.execute(f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (?, ?, ?, ?, ?, ?)",
+            cursor.execute(f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (?{', ?' * (len(self.CHANNELS_COLUMNS) - 1)})",
                            (channel_id, channel_name, channel_title, owner_chat_id, interval, now_in_minutes))
             log(f"New channel with the id of [{channel_id}, {channel_name}] has benn planned by owner_chat_id=: {owner_chat_id}",
-                category_name='plus_info')
+                category_name='DatabaseInfo')
         connection.commit()
         cursor.close()
         connection.close()
@@ -203,6 +210,42 @@ class DatabaseInterface:
         """Finds all the channels with plan interval > min_interval"""
         return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_INTERVAL} > ?",
                             min_interval)
+
+    def add_group(self, group):
+        if not group:
+            raise Exception("You must provide an Group to add")
+        try:
+            columns = ', '.join(self.GROUPS_COLUMNS)
+            query = f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (?{', ?' * (len(self.GROUPS_COLUMNS) - 1)})"
+            self.execute(False, query, group.id, group.name, group.title, group.coins_as_str, group.currencies_as_str,
+                        group.message_header, group.message_footer, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id)
+            log(f"New group: {group} saved into database successfully.", category_name='DatabaseInfo')
+        except Exception as ex:
+            log(f"Cannot save this group:{group}", ex, category_name='DatabaseError')
+            raise ex  # custom ex needed here too
+
+
+    def update_group(self, group):
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
+
+        columns_to_set = ', '.join([f'{field}=?' for field in self.GROUPS_COLUMNS[1:]])
+
+        affected_groups = cursor.execute(f'UPDATE {self.TABLE_GROUPS} SET {columns_to_set} WHERE {self.GROUP_ID}=?',
+                        (group.name, group.title, group.coins_as_str, group.currencies_as_str, group.message_header,
+                        group.message_footer, int(group.message_show_date),
+                        int(group.message_show_market_labels), group.owner_id, group.id))
+
+        if not affected_groups.rowcount:
+            columns: str = ', '.join(self.GROUPS_COLUMNS)
+            cursor.execute(f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (?{', ?' * (len(self.GROUPS_COLUMNS) - 1)})",
+                           (group.id, group.name, group.title, group.coins_as_str, group.currencies_as_str,
+                             group.message_header, group.last_interaction.strftime(self.DATE_FORMAT),
+                            int(group.message_show_date), int(group.message_show_market_labels), group.owner_id))
+            log("New group started using this bot with id=: " + group.__str__(), category_name='DatabaseInfo')
+        connection.commit()
+        cursor.close()
+        connection.close()
 
     def get_group(self, group_id: int):
         groups = self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=? LIMIT 1",
@@ -236,7 +279,7 @@ class DatabaseInterface:
         fields = ', '.join(
             self.PRICE_ALARMS_COLUMNS[1:])  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
-        return self.execute(False, f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (?, ?, ?, ?, ?)",
+        return self.execute(False, f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (?{', ?' * (len(self.PRICE_ALARMS_COLUMNS) - 2)})",
                             alarm.chat_id, alarm.currency, alarm.target_price, alarm.change_direction.value,
                             alarm.target_unit)
 
