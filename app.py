@@ -13,6 +13,7 @@ from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from models.alarms import PriceAlarm
 from typing import List
 from tools.exceptions import NoLatestDataException, InvalidInputException
+from models.group import Group
 
 
 botman = BotMan()
@@ -879,6 +880,17 @@ async def handle_messages(update: Update, context: CallbackContext):
                             account.change_state(clear_cache=True)  # reset .state and .state_data
 
 
+async def handle_new_chat_members(update: Update, context: CallbackContext):
+    my_id = context.bot.id
+    for member in update.message.new_chat_members:
+        if member.id == my_id:
+            group = Group.Register(update.message.chat, update.message.from_user.id)
+            owner = Account.Get(group.owner_id)
+            if group.is_active:
+                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('group_is_active', owner.language))
+            else:
+                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('go_premium_for_group_activation', owner.language))
+            return
 def main():
     app = BotApplicationBuilder().token(botman.token).build()
 
@@ -904,8 +916,9 @@ def main():
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
-
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_chat_members))
     app.add_handler(MessageHandler(filters.COMMAND, unknwon_command_handler))
+    # app.add_error_handler() # TODO:Check this out
 
     print("Server is up and running...")
     app.run_polling(poll_interval=0.25, timeout=10)

@@ -1,6 +1,7 @@
 from tools import manuwriter
 from db.interface import DatabaseInterface
 from typing import List
+from telegram import Chat
 
 class Group:
     Instances = {}
@@ -54,7 +55,10 @@ class Group:
     @property
     def currencies_as_str(self):
         return ';'.join(self.selected_currencies)
-        
+    
+    @property
+    def is_active(self):
+        '''Check owner premium date is valid or not'''  
     @staticmethod
     def Get(group_id):
         if group_id in Group.Instances:
@@ -74,5 +78,12 @@ class Group:
     def GetByOwner(owner_chat_id: int):
         rows = Group.Database().get_user_groups(owner_chat_id)
         return list(map(Group.ExtractQueryRowData, rows))
-        
     
+    @staticmethod
+    def Register(chat: Chat, owner_id: int):
+        '''Create group model and save into database. set its active_until field same as user premium date.
+        retuen the database data if group is existing from before (just update its owner id).'''
+        #TODO: Get database to see if precious config exists
+        group = Group(owner_id=owner_id, group_id=chat.id, group_title=chat.title, group_name=chat.username) # TODO: check fields are correct
+        data = Group.Database().add_group(group)
+        return group
