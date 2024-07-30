@@ -15,3 +15,4 @@ v2/test.env
 CHECKOUTLOGS.zip
 important_logs
 telegram-responses.dat
+mysql-docker

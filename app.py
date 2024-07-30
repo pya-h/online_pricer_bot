@@ -285,7 +285,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
     if not await botman.has_subscribed_us(account.chat_id, context):
         await botman.ask_for_subscription(update, account.language)
         return
-    my_alarms = account.get_alarms()
+    my_alarms = PriceAlarm.get_alarms(account.chat_id)
     alarms_count = len(my_alarms)
     desciptions: List[str | None] = [None] * alarms_count
     buttons: List[InlineKeyboardButton | None] = [None] * alarms_count
@@ -464,7 +464,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                     target_user = Account.GetById(chat_id)
                     if len(values) > 1:
                         if values[1] == 'y':
-                            if target_user.is_premium():
+                            if target_user.is_premium:
                                 target_user.downgrade()
                                 await query.message.edit_text(botman.text('account_downgraded', account.language))
                                 return
@@ -885,12 +885,13 @@ async def handle_new_chat_members(update: Update, context: CallbackContext):
     for member in update.message.new_chat_members:
         if member.id == my_id:
             group = Group.Register(update.message.chat, update.message.from_user.id)
-            owner = Account.Get(group.owner_id)
+            owner = Account.Get(group.owner_id)  # TODO: Use Join query if account is not in cache mem
             if group.is_active:
-                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('group_is_active', owner.language))
+                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('group_is_active', owner.language) % (group.title,))
             else:
-                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('go_premium_for_group_activation', owner.language))
+                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('go_premium_for_group_activation', owner.language) % (group.title))
             return
+
 def main():
     app = BotApplicationBuilder().token(botman.token).build()
 

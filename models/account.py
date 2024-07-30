@@ -8,7 +8,6 @@ from models.channel import Channel
 from typing import List, Dict
 from bot.types import SelectionListTypes, MarketOptions
 from json import loads as json_parse, dumps as jsonify
-from models.alarms import PriceAlarm
 from telegram import Chat
 
 
@@ -153,7 +152,7 @@ class Account:
     def my_channel_plans(self) -> list[Channel]:
         return list(filter(lambda channel: channel.owner_id == self.chat_id, Channel.Instances.values()))
 
-    
+    @property
     def is_premium(self) -> bool:
         """Check if the account has still plus subscription."""
         return self.is_admin or (
@@ -225,9 +224,6 @@ class Account:
                 return SelectionListTypes.ALARM
         return None
 
-    def get_alarms(self) -> List[PriceAlarm]:
-        return PriceAlarm.GetByUser(self.chat_id)
-
     def factory_reset(self):
         self.desired_cryptos = ''
         self.desired_currencies = ''
@@ -286,15 +282,15 @@ class Account:
     # user privileges:
     @property
     def max_selection_count(self):
-        return 100 if self.is_premium() else 10
+        return 100 if self.is_premium else 10
     
     @property
     def max_alarms_count(self):
-        return 10 if self.is_premium() else 3
+        return 10 if self.is_premium else 3
 
     @property
     def max_channel_plans_count(self):
-        return 1 if self.is_premium() else 0
+        return 1 if self.is_premium else 0
     
         # causing a slight enhancement on performance
 

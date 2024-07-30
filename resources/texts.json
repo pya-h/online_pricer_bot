@@ -420,5 +420,13 @@
     "bot_connected_to_group": {
         "fa": "✅ ربات به گروه شما متصل شد.",
         "en": "✅ Bot has connected to your group."
+    },
+    "group_is_active": {
+        "fa": "تبریک! شما گروه ربات قیمت لحظه ای را وارد گروه '%s' نمودید. این ربات تا لحظه پایان اشتراک شم در گروه دستیار هوشمند شما و هم گروی هایتان خواهد بود.",
+        "en": "Congrats! You've added Online Pricer to your group called '%s'; From now until you're premium, this bot tries to be a smart assistant for you and your groupmates."
+    },
+    "go_premium_for_group_activation": {
+        "fa": "به نظر می رسد شما ربات قیمت لحظه ای را وارد گروه '%s' **کرده اید، اما چون در حال حاضر از تعرفه رایگان استفاده می کنید این ربات قادر به فعالیت در گروه نیست. **شما میتواند با تهیه اشتراک پریمیوم تهیه کنید تا ربات بصورت خودکار بعنوان دستیار هوشمند گروه مذکور فعال شود.",
+        "en": "Seems that you've added Online Pricer Bot to your group called '%s', but since you're currently using a free plan, but can not help you or your groupmates in the group. **You can upgrade your account so that Online Pricer would automatically activate as smart assistanty in so called group.**"
     }
 }

@@ -1,11 +1,9 @@
-import mysql.connector
-from mysql.connector import Error, MySQLConnection
+import sqlite3
 from datetime import datetime
 from tools.manuwriter import log, prepare_folder, fwrite_from_scratch
 from tools.mathematix import after_n_months
 from time import time
 from typing import List
-from decouple import config
 
 
 class DatabaseInterface:
@@ -52,28 +50,14 @@ class DatabaseInterface:
         # cursor.execute(f'ALTER TABLE {self.TABLE_ACCOUNTS} ADD {self.ACCOUNT_LAST_INTERACTION} DATE')
         # connection.commit()
 
-    def connect(self):
-        self.__connection_instance = mysql.connector.connect(
-            host=self.__host,
-            user=self.__username,
-            password=self.__password,
-            database=self.__name,
-        )
-
-    @property
-    def connection(self):
-        if not self.__connection_instance or not self.__connection_instance.is_connected:
-            self.connect()
-            
-        return self.__connection_instance
-    
     def setup(self):
+        connection = None
         try:
-            cursor = self.connection.cursor()
+            connection = sqlite3.connect(self._name, detect_types=sqlite3.PARSE_DECLTYPES)
+            cursor = connection.cursor()
 
             # check if the table accounts was created
-            cursor.execute(f"SELECT table_name from information_schema.tables WHERE WHERE table_schema = '{self.__name}' amd table_name='{self.TABLE_ACCOUNTS}'")
-            if not cursor.fetchone():
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_ACCOUNTS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} INTEGER PRIMARY KEY," + \
                         f"{self.ACCOUNT_CURRENCIES} TEXT, {self.ACCOUNT_CRYPTOS} TEXT, {self.ACCOUNT_CALC_CURRENCIES} TEXT, {self.ACCOUNT_CALC_CRYPTOS} TEXT, {self.ACCOUNT_USERNAME} TEXT, " + \
                         f"{self.ACCOUNT_LAST_INTERACTION} DATE, {self.ACCOUNT_PLUS_END_DATE} DATE, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} TEXT DEFAULT NULL, " + \
@@ -85,8 +69,7 @@ class DatabaseInterface:
                 # write any migration needed in the function called below
                 self.migrate()
 
-            cursor.execute(f"SELECT table_name from information_schema.tables WHERE WHERE table_schema = '{self.__name}' amd table_name='{self.TABLE_CHANNELS}'")
-            if cursor.fetchone():
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_CHANNELS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} INTEGER PRIMARY KEY, " + \
                         f"{self.CHANNEL_NAME} TEXT, {self.CHANNEL_TITLE} TEXT NOT_NULL," + \
                         f"{self.CHANNEL_INTERVAL} INTEGER NOT_NULL, {self.CHANNEL_LAST_POST_TIME} INTEGER, " + \
@@ -95,8 +78,7 @@ class DatabaseInterface:
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
 
-            cursor.execute(f"SELECT table_name from information_schema.tables WHERE WHERE table_schema = '{self.__name}' amd table_name='{self.TABLE_GROUPS}'")
-            if not cursor.fetchone():
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_GROUPS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} INTEGER PRIMARY KEY, " + \
                         f"{self.GROUP_NAME} TEXT, {self.GROUP_TITLE} TEXT NOT_NULL," + \
                         f"{self.GROUP_COINS} TEXT, {self.GROUP_CURRENCIES} TEXT, " + \
@@ -107,8 +89,7 @@ class DatabaseInterface:
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
 
-            cursor.execute(f"SELECT table_name from information_schema.tables WHERE WHERE table_schema = '{self.__name}' amd table_name='{self.TABLE_PRICE_ALARMS}'")
-            if not cursor.fetchone():
+            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{self.TABLE_PRICE_ALARMS}'").fetchone():
                 query = f"CREATE TABLE {self.TABLE_PRICE_ALARMS} (" + \
                         f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTOINCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} INTEGER NOT_NULL, " + \
                         f"{self.PRICE_ALARM_TARGET_PRICE} REAL NOT_NULL, {self.PRICE_ALARM_TARGET_CURRENCY} TEXT NOT_NULL, " + \
@@ -120,15 +101,18 @@ class DatabaseInterface:
 
             log("plus Database setup completed.", category_name='DatabaseInfo')
             cursor.close()
-        except Error as ex:
-            log('Failed setting up database, app cannot continue...', ex, category_name='FUX')
+            connection.close()
+        except Exception as ex:
+            if connection:
+                connection.close()
+            raise ex  # create custom exception for this
 
     def add(self, account):
         if not account:
             raise Exception("You must provide an Account to save")
         try:
             columns = ', '.join(self.ACCOUNT_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})"
+            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?{', ?' * (len(self.ACCOUNT_COLUMNS) - 1)})"
             self.execute(False, query, account.chat_id, account.desired_currencies_as_str, account.desired_cryptos_as_str,
                          account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username, account.last_interaction.strftime(self.DATE_FORMAT),
                          account.plus_end_date, account.state.value, account.cache_as_str(), account.is_admin, account.language)
@@ -138,7 +122,7 @@ class DatabaseInterface:
             raise ex  # custom ex needed here too
 
     def get(self, chat_id):
-        accounts = self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s LIMIT 1", chat_id)
+        accounts = self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=? LIMIT 1", chat_id)
         return accounts[0] if accounts else None
 
     def get_all(self, column: str = ACCOUNT_ID) -> list:
@@ -148,75 +132,79 @@ class DatabaseInterface:
         return [row[0] for row in rows]  # just return a list of ids
 
     def get_special_accounts(self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
-        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s", value)
+        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=?", value)
 
     def get_premium_accounts(self, from_date: datetime | None = None) -> list:
         from_date: str = (from_date if from_date else datetime.now()).strftime(self.DATE_FORMAT)
         return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > ?", from_date)
 
     def update(self, account):
-        cursor = self.connection.cursor()
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
 
-        columns_to_set = ', '.join([f'{field}=%s' for field in self.ACCOUNT_COLUMNS[1:]])
-        cursor.execute(f'UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s',
+        columns_to_set = ', '.join([f'{field}=?' for field in self.ACCOUNT_COLUMNS[1:]])
+        result = cursor.execute(f'UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=?',
                         (account.desired_currencies_as_str, account.desired_cryptos_as_str,
                         account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username,
                         account.last_interaction.strftime(self.DATE_FORMAT), account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                         account.state.value, account.cache_as_str(), account.is_admin, account.language, account.chat_id))
 
-        if not cursor.rowcount:
+        if not result.rowcount:
             columns: str = ', '.join(self.ACCOUNT_COLUMNS)
-            cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})",
+            cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (?{', ?' * (len(self.ACCOUNT_COLUMNS) - 1)})",
                            (account.chat_id, account.desired_currencies_as_str, account.desired_cryptos_as_str,
                             account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username, account.last_interaction.strftime(self.DATE_FORMAT),
                             account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                             account.state.value, account.cache_as_str(), account.is_admin, account.language))
             log("New account started using this bot with chat_id=: " + account.__str__(), category_name='DatabaseInfo')
-        self.connection.commit()
+        connection.commit()
         cursor.close()
+        connection.close()
 
     def update_username(self, account):
-        self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_USERNAME}=%s WHERE {self.ACCOUNT_ID}=%s',
+        self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_USERNAME}=? WHERE {self.ACCOUNT_ID}=?',
                      account.username, account.chat_id)
 
     def upgrade_account(self, account, duration_in_months: int):
         account.plus_end_date = after_n_months(duration_in_months)
         str_plus_end_date = account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None
-        self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=%s WHERE {self.ACCOUNT_ID}=%s',
+        self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=? WHERE {self.ACCOUNT_ID}=?',
                      str_plus_end_date, account.chat_id)
         log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {str_plus_end_date}")
 
     def downgrade_account(self, account):
-        self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=%s', account.chat_id)
+        self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=?', account.chat_id)
         log(f"Account with chat_id={account.chat_id} downgraded to free user.")
 
     def plan_channel(self, owner_chat_id: int, channel_id: int, channel_name: str, interval: int, channel_title: str):
-        cursor = self.connection.cursor()
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
         now_in_minutes = time() // 60
-        columns_to_set = ', '.join([f'{field}=%s' for field in self.CHANNELS_COLUMNS[1:]])
-        cursor.execute(f'UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s', \
+        columns_to_set = ', '.join([f'{field}=?' for field in self.CHANNELS_COLUMNS[1:]])
+        affected = cursor.execute(f'UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=?', \
                         (channel_name, channel_title, owner_chat_id, interval, now_in_minutes, channel_id))
         
-        if cursor.rowcount:
+        if affected.rowcount:
             log(f"Channel with the id of [{channel_id}, {channel_name}] has been RE-planned by owner_chat_id=: {owner_chat_id}",
                         category_name='DatabaseInfo')
         else:
             columns = ', '.join(self.CHANNELS_COLUMNS)
-            cursor.execute(f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})",
+            cursor.execute(f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (?{', ?' * (len(self.CHANNELS_COLUMNS) - 1)})",
                            (channel_id, channel_name, channel_title, owner_chat_id, interval, now_in_minutes))
             log(f"New channel with the id of [{channel_id}, {channel_name}] has benn planned by owner_chat_id=: {owner_chat_id}",
                 category_name='DatabaseInfo')
-        self.connection.commit()
+        connection.commit()
         cursor.close()
+        connection.close()
 
     def get_channel(self, channel_id: int):
-        channels = self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s LIMIT 1",
+        channels = self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=? LIMIT 1",
                                 channel_id)
         return channels[0] if channels else None
 
     def get_user_channels(self, owner_chat_id: int) -> list:
         """Get all channels related to this account"""
-        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s", owner_chat_id)
+        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=?", owner_chat_id)
 
     def get_channels_by_interval(self, min_interval: int = 0) -> list:
         """Finds all the channels with plan interval > min_interval"""
@@ -228,7 +216,7 @@ class DatabaseInterface:
             raise Exception("You must provide an Group to add")
         try:
             columns = ', '.join(self.GROUPS_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})"
+            query = f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (?{', ?' * (len(self.GROUPS_COLUMNS) - 1)})"
             self.execute(False, query, group.id, group.name, group.title, group.coins_as_str, group.currencies_as_str,
                         group.message_header, group.message_footer, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id)
             log(f"New group: {group} saved into database successfully.", category_name='DatabaseInfo')
@@ -238,45 +226,49 @@ class DatabaseInterface:
 
 
     def update_group(self, group):
-        cursor = self.connection.cursor()
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
 
-        columns_to_set = ', '.join([f'{field}=%s' for field in self.GROUPS_COLUMNS[1:]])
+        columns_to_set = ', '.join([f'{field}=?' for field in self.GROUPS_COLUMNS[1:]])
 
-        cursor.execute(f'UPDATE {self.TABLE_GROUPS} SET {columns_to_set} WHERE {self.GROUP_ID}=%s',
+        affected_groups = cursor.execute(f'UPDATE {self.TABLE_GROUPS} SET {columns_to_set} WHERE {self.GROUP_ID}=?',
                         (group.name, group.title, group.coins_as_str, group.currencies_as_str, group.message_header,
                         group.message_footer, int(group.message_show_date),
                         int(group.message_show_market_labels), group.owner_id, group.id))
 
-        if not cursor.rowcount:
+        if not affected_groups.rowcount:
             columns: str = ', '.join(self.GROUPS_COLUMNS)
-            cursor.execute(f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})",
+            cursor.execute(f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (?{', ?' * (len(self.GROUPS_COLUMNS) - 1)})",
                            (group.id, group.name, group.title, group.coins_as_str, group.currencies_as_str,
                              group.message_header, group.last_interaction.strftime(self.DATE_FORMAT),
                             int(group.message_show_date), int(group.message_show_market_labels), group.owner_id))
             log("New group started using this bot with id=: " + group.__str__(), category_name='DatabaseInfo')
-        self.connection.commit()
+        connection.commit()
         cursor.close()
+        connection.close()
 
     def get_group(self, group_id: int):
-        groups = self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s LIMIT 1",
+        groups = self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=? LIMIT 1",
                                 group_id)
         return groups[0] if groups else None
 
     def get_user_groups(self, owner_chat_id: int) -> list:
         """Get all groups/supergroups related to this account"""
-        return self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s", owner_chat_id)
+        return self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=?", owner_chat_id)
 
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesnt return result such as insert or delete"""
         result = None
-        cursor = self.connection.cursor()
+        connection = sqlite3.connect(self._name)
+        cursor = connection.cursor()
         cursor.execute(query, (*params,))
         if is_fetch_query:
             result = cursor.fetchall()
         else:
             result = cursor.lastrowid
-            self.connection.commit()
+            connection.commit()
         cursor.close()
+        connection.close()
         return result
 
     def delete_channel(self, channel_id: int):
@@ -287,16 +279,16 @@ class DatabaseInterface:
         fields = ', '.join(
             self.PRICE_ALARMS_COLUMNS[1:])  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
-        return self.execute(False, f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (%s{', %s' * (len(self.PRICE_ALARMS_COLUMNS) - 2)})",
+        return self.execute(False, f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (?{', ?' * (len(self.PRICE_ALARMS_COLUMNS) - 2)})",
                             alarm.chat_id, alarm.currency, alarm.target_price, alarm.change_direction.value,
                             alarm.target_unit)
 
     def get_single_alarm(self, id: int):
-        return self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s", id)
+        return self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=?", id)
 
     def get_alarms(self, currency: str | None = None):
         return self.execute(True, f"SELECT * from {self.TABLE_PRICE_ALARMS}") if not currency else \
-            self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY}=%s", currency)
+            self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY}=?", currency)
 
     def get_alarms_by_currencies(self, currencies: List[str]):
         targets = 'n'.join([f"'{curr}'" for curr in currencies])
@@ -315,7 +307,7 @@ class DatabaseInterface:
         return 0
 
     def delete_alarm(self, id: int):
-        self.execute(False, f'DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s', id)
+        self.execute(False, f'DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=?', id)
 
     def get_table_columns(self, table: str):
         columns_info = self.execute(True, f'PRAGMA table_info({table});')
@@ -337,9 +329,5 @@ class DatabaseInterface:
             fwrite_from_scratch(f'{filename_prefix}{table}_{output_filename_suffix}.txt', "\n".join(rows))
 
     def __init__(self, name="data.db"):
-        self.__host = config('DATABASE_HOST', 'localhost')
-        self.__username = config('DATABASE_USERNAME', 'root')
-        self.__password = config('DATABASE_PASSWORD', '')
-        self.__name = config('DATABASE_NAME', 'database')
-        self.__connection_instance: MySQLConnection = None
+        self._name = name
         self.setup()

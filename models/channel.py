@@ -51,6 +51,7 @@ class Channel:
     def __init__(self, owner_id: int, channel_id: int, interval: int = 0, channel_name: str = None,
                  channel_title: str = None, last_post_time: int = None) -> None:
         self.owner_id = owner_id
+        self.owner = None
         self.id = channel_id
         self.name = channel_name  # username
         self.title = channel_title
@@ -84,6 +85,7 @@ class Channel:
 
     @staticmethod
     def Get(channel_id):
+        # FXIME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         if channel_id in Channel.Instances:
             return Channel.Instances[channel_id]
         row = Channel.Database.get_channel(channel_id)

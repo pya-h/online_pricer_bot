@@ -246,10 +246,10 @@ class BotMan:
 
     def get_main_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup([*self.common_menu_main_keys,
-                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value if not account.is_premium() else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA), KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
+                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA), KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
                         ] if account.language != 'en' else [
                             *self.common_menu_main_keys_en,
-                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value if not account.is_premium() else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN), KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
+                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN), KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
                         ], resize_keyboard=True)
     
 
@@ -564,7 +564,7 @@ class BotMan:
                 pass
 
     async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
-        if not account.is_premium():
+        if not account.is_premium:
             link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
             await telegram_handle.message.reply_text(
                 text=self.error('max_selection', account.language) % (max_value,) + self.error('get_premium', account.language),

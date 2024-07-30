@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import List, Dict
 from db.interface import DatabaseInterface
+from .account import Account
+
 
 class PriceAlarm:
     _database: DatabaseInterface = None
@@ -36,6 +38,7 @@ class PriceAlarm:
     def __init__(self, chat_id, currency: str, target_price: int | float, change_direction: ChangeDirection | int | None = None, target_unit: str = 'irt', id: int = None, current_price: float | int | None = None) -> None:
         self.id = id
         self.chat_id = chat_id
+        self.owner: Account | None = None
         self.currency = currency
         self.target_price = target_price
         self.target_unit = target_unit
@@ -51,7 +54,11 @@ class PriceAlarm:
 
     def ExtractQueryRowData(row: tuple):
         return PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0])
-    
+
+    @staticmethod
+    def get_alarms(chat_id):
+        return PriceAlarm.GetByUser(chat_id)
+       
     @staticmethod
     def GetByUser(chat_id: int):
         rows = PriceAlarm.Database().get_user_alarms(chat_id)
@@ -59,6 +66,7 @@ class PriceAlarm:
         
     @staticmethod
     def Get(currencies: List[str] | None = None):
+        # FXIME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         rows = PriceAlarm.Database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.Database().get_alarms()
         return list(map(PriceAlarm.ExtractQueryRowData, rows))
 
