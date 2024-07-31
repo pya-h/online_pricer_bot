@@ -9,6 +9,13 @@ class CryptoCurrencyService(APIService):
     CoinsInPersian: Dict[str, str] | None = None
 
     @staticmethod
+    def Find(word: str):
+        for coin in CryptoCurrencyService.CoinsInPersian:
+            if coin == word or CryptoCurrencyService.CoinsInPersian[coin] == word:
+                return coin
+        return None
+
+    @staticmethod
     def LoadPersianNames() -> dict:
         coins_fa = "{}"
         try:

@@ -624,3 +624,18 @@ class BotMan:
             except:
                 upgrading_chat_id = None
         return user
+
+    def extract_symbols(self, text: str):
+        words = { word.upper() for word in text.split() }
+        coin_symbols = set()
+        currency_symbols = set()
+
+        for word in words:
+            slug = self.crypto_serv.Find(word)
+            if slug:
+                coin_symbols.add(slug)
+            else:
+                slug = self.currency_serv.Find(word)
+                if slug:
+                    currency_symbols.add(slug)
+        # now find the prices of found symbols

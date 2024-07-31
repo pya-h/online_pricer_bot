@@ -104,6 +104,13 @@ class NavasanService(CurrencyService):
             NavasanService.LoadPersianNames()
 
     @staticmethod
+    def Find(word: str):
+        for slug in NavasanService.CurrenciesInPersian:
+            if slug == word or NavasanService.CurrenciesInPersian[slug] == word:
+                return slug
+        return None
+    
+    @staticmethod
     def LoadPersianNames():
         NavasanService.NationalCurrenciesInPersian, NavasanService.GoldsInPersian = get_persian_currency_names()
         NavasanService.GoldsInPersian = dict(GoldService.GoldsInPersian, **NavasanService.GoldsInPersian)

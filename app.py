@@ -598,9 +598,8 @@ async def cmd_start_using_in_channel(update: Update, context: CallbackContext):
     account.change_state(Account.States.MAKE_BOT_ADMIN, clear_cache=True)
     await update.message.reply_text(botman.text('add_bot_as_channel_admin', account.language), reply_markup=botman.cancel_menu(account.language))
 
-async def check_group_messages(update: Update, context: CallbackContext):
-    pass # check telegram-responses.dat file and write code
-
+async def handle_group_messages(update: Update, context: CallbackContext):
+    pass
 async def unknwon_command_handler(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat)
     await update.message.reply_text(botman.error('what_the_fuck', account.language),
@@ -609,11 +608,7 @@ async def unknwon_command_handler(update: Update, context: CallbackContext):
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:
         return
-    
-    if update.message.chat.type == ChatType.GROUP or update.message.chat.type == ChatType.SUPERGROUP:
-        await check_group_messages(update, context)
-        return
-    
+
     match update.message.text:
         case BotMan.Commands.GET_FA.value | BotMan.Commands.GET_EN.value:
             await cmd_get_prices(update, context)
@@ -880,7 +875,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             account.change_state(clear_cache=True)  # reset .state and .state_data
 
 
-async def handle_new_chat_members(update: Update, context: CallbackContext):
+async def handle_new_group_members(update: Update, context: CallbackContext):
     my_id = context.bot.id
     for member in update.message.new_chat_members:
         if member.id == my_id:
@@ -915,9 +910,10 @@ def main():
     app.add_handler(CommandHandler("gecko", cmd_change_source_to_coingecko))
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
 
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_chat_members))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_group_members))
+    app.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & ~filters.COMMAND, handle_group_messages))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_messages))  # TODO: Is private filter required?
     app.add_handler(MessageHandler(filters.COMMAND, unknwon_command_handler))
     # app.add_error_handler() # TODO:Check this out
 
