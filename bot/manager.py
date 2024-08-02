@@ -638,4 +638,4 @@ class BotMan:
                 slug = self.currency_serv.Find(word)
                 if slug:
                     currency_symbols.add(slug)
-        # now find the prices of found symbols
+        return coin_symbols, currency_symbols

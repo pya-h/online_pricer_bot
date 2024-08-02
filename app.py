@@ -598,8 +598,6 @@ async def cmd_start_using_in_channel(update: Update, context: CallbackContext):
     account.change_state(Account.States.MAKE_BOT_ADMIN, clear_cache=True)
     await update.message.reply_text(botman.text('add_bot_as_channel_admin', account.language), reply_markup=botman.cancel_menu(account.language))
 
-async def handle_group_messages(update: Update, context: CallbackContext):
-    pass
 async def unknwon_command_handler(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat)
     await update.message.reply_text(botman.error('what_the_fuck', account.language),
@@ -886,6 +884,10 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
             else:
                 await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('go_premium_for_group_activation', owner.language) % (group.title))
             return
+
+async def handle_group_messages(update: Update, context: CallbackContext):
+    coins, currencies = botman.extract_symbols(update.message.text)
+    
 
 def main():
     app = BotApplicationBuilder().token(botman.token).build()
