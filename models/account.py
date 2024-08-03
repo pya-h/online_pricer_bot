@@ -8,7 +8,7 @@ from models.channel import Channel
 from typing import List, Dict
 from bot.types import SelectionListTypes, MarketOptions
 from json import loads as json_parse, dumps as jsonify
-from telegram import Chat
+from telegram import Chat, User
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')
@@ -70,16 +70,16 @@ class Account:
         Account.GarbageCollect()
         Account.Instances[self.chat_id] = self
 
-    def __init__(self, chat_id, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None,
+    def __init__(self, chat_id: int, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None,
                  calc_currencies: List[str] = None, language: str = 'fa', plus_end_date: datetime = None,
                  state: States = States.NONE, cache=None, is_admin: bool = False, username: str | None = None,
                  prevent_instance_arrangement: bool = False, ) -> None:
 
-        self.chat_id: int = chat_id
-        self.desired_cryptos: list = cryptos if cryptos else []
-        self.desired_currencies: list = currencies if currencies else []
-        self.calc_cryptos: list = calc_cryptos if calc_cryptos else []
-        self.calc_currencies: list = calc_currencies if calc_currencies else []
+        self.chat_id: int = int(chat_id)
+        self.desired_cryptos: list = cryptos or []
+        self.desired_currencies: list = currencies or []
+        self.calc_cryptos: list = calc_cryptos or []
+        self.calc_currencies: list = calc_currencies or []
         self.last_interaction: datetime = tz_today()
         self.language: str = language
         self.state: Account.States = state
@@ -310,7 +310,7 @@ class Account:
         username = row[5]
         # add new rows here
 
-        plus_end_date = datetime.strptime(row[-5], DatabaseInterface.DATE_FORMAT) if row[-5] else None
+        plus_end_date = row[-5]
         state = Account.States.Which(row[-4])
         cache = Account.load_cache(row[-3])
         is_admin = row[-2]
@@ -321,9 +321,10 @@ class Account:
                        language=language, state=state, cache=cache, prevent_instance_arrangement=prevent_instance_arrangement)
 
     @staticmethod
-    def Get(chat: Chat, prevent_instance_arrangement: bool = False):
+    def Get(chat: Chat | User, prevent_instance_arrangement: bool = False):
         account = Account.GetById(chat.id, prevent_instance_arrangement=prevent_instance_arrangement)
         account.current_username = chat.username
+        account.firstname = chat.first_name  # It doesnt going to be saved in database, but its picked from Chat in case its needed in code.
         return account
     
     @staticmethod

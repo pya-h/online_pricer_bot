@@ -21,23 +21,21 @@ class Group:
     def __init__(self, owner_id: int, group_id: int, group_name: str = None, group_title: str | None = None,
                  selected_coins: List[str] | None = None, selected_currencies: List[str] | None = None, message_header: str | None = None,
                  message_footer: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True, prevent_cache_cleanup: bool = False) -> None:
-        self.owner_id: int = owner_id
-        self.id: int = group_id
+        self.owner_id: int = int(owner_id)
+        self.id: int = int(group_id)
         self.name: str | None = group_name  # username
         self.title: str = group_title
-        self.selected_coins: List[str] = selected_coins
-        self.selected_currencies: List[str] = selected_currencies
+        self.selected_coins: List[str] = selected_coins or []
+        self.selected_currencies: List[str] = selected_currencies or []
         self.message_header: str | None = message_header
         self.message_footer: str | None = message_footer
         self.message_show_date: bool = message_show_date
         self.message_show_market_labels: bool = message_show_market_labels
 
-        if not prevent_cache_cleanup:
-            Group.cache_cleanup()
-        # TODO: extract and zip coins and currencies to string/list
+        # if not prevent_cache_cleanup:
+        #     self.cache_cleanup() # TODO: Add last interaction to group for garbage collect
         # TODO: Maybe create a MessageSetting class? to use in group/channel
         # TODO: Do the same for channels
-        # TODO: write method in database to save group dara
         
 
     def cache_cleanup(self):
@@ -62,7 +60,7 @@ class Group:
     @property
     def is_active(self):
         '''Check owner premium date is valid or not'''
-        owner = Account.Get(self.owner_id)
+        owner = Account.GetById(self.owner_id)
         return owner.is_premium
     
     @staticmethod
@@ -70,7 +68,7 @@ class Group:
         # FXIME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         if group_id in Group.Instances:
             return Group.Instances[group_id]
-        row = Group.Database.get_group(group_id)
+        row = Group.Database().get_group(group_id)
         if row:
             return Group.ExtractQueryRowData(row)
 
@@ -83,7 +81,7 @@ class Group:
     
     @staticmethod
     def GetByOwner(owner_chat_id: int):
-        rows = Group.Database().get_user_groups(owner_chat_id)
+        rows = Group.Database().get_user_groups(int(owner_chat_id))
         return list(map(Group.ExtractQueryRowData, rows))
     
     @staticmethod

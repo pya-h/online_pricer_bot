@@ -11,7 +11,7 @@ from decouple import config
 class DatabaseInterface:
     _instance = None
     TABLE_ACCOUNTS = "accounts"
-    DATE_FORMAT = '%Y-%m-%d'
+    DATE_FORMAT = '%Y-%m-%d %H:%M'
     BACKUP_FOLDER = 'db_backups'
     ACCOUNT_COLUMNS = (ACCOUNT_ID, ACCOUNT_CURRENCIES, ACCOUNT_CRYPTOS, ACCOUNT_CALC_CURRENCIES, ACCOUNT_CALC_CRYPTOS, ACCOUNT_USERNAME,
                        ACCOUNT_LAST_INTERACTION, ACCOUNT_PLUS_END_DATE, ACCOUNT_STATE, ACCOUNT_CACHE, ACCOUNT_IS_ADMIN, ACCOUNT_LANGUAGE) = \
@@ -20,9 +20,9 @@ class DatabaseInterface:
 
     TABLE_CHANNELS = "channels"  # channels to be scheduled
     CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME, CHANNEL_OWNER_ID) = \
-        ("id", "name", "title", "interval", "last_post_time", "owner_id")
+        ("id", "name", "title", "post_interval", "last_post_time", "owner_id")
     
-    TABLE_GROUPS = "groups"  # group to be scheduled
+    TABLE_GROUPS = "supergroups"  # group to be scheduled
     GROUPS_COLUMNS = (GROUP_ID, GROUP_NAME, GROUP_TITLE, GROUP_COINS, GROUP_CURRENCIES, GROUP_MESSAGE_HEADER, GROUP_MESSAGE_FOOTNOTE, GROUP_MESSAGE_SHOW_DATE, GROUP_MESSAGE_SHOW_MARKET_LABELS, GROUP_OWNER_ID) = \
         ("id", "name", "title", "coins", "currencies", "msg_header", "msg_footnote", "msg_show_date", "msg_show_market_labels", "owner_id")
 
@@ -70,14 +70,13 @@ class DatabaseInterface:
     def setup(self):
         try:
             cursor = self.connection.cursor()
-
             # check if the table accounts was created
-            cursor.execute(f"SELECT table_name from information_schema.tables WHERE WHERE table_schema = '{self.__name}' amd table_name='{self.TABLE_ACCOUNTS}'")
+            cursor.execute(f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_ACCOUNTS}'")
             if not cursor.fetchone():
-                query = f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} INTEGER PRIMARY KEY," + \
-                        f"{self.ACCOUNT_CURRENCIES} TEXT, {self.ACCOUNT_CRYPTOS} TEXT, {self.ACCOUNT_CALC_CURRENCIES} TEXT, {self.ACCOUNT_CALC_CRYPTOS} TEXT, {self.ACCOUNT_USERNAME} TEXT, " + \
-                        f"{self.ACCOUNT_LAST_INTERACTION} DATE, {self.ACCOUNT_PLUS_END_DATE} DATE, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} TEXT DEFAULT NULL, " + \
-                        f"{self.ACCOUNT_IS_ADMIN} INTEGER DEFAULT 0, {self.ACCOUNT_LANGUAGE} TEXT)"
+                query = f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY," + \
+                        f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), " + \
+                        f"{self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} VARCHAR(256) DEFAULT NULL, " + \
+                        f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2))"
                 # create table account
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_ACCOUNTS} table created successfully.", category_name='DatabaseInfo')
@@ -85,34 +84,34 @@ class DatabaseInterface:
                 # write any migration needed in the function called below
                 self.migrate()
 
-            cursor.execute(f"SELECT table_name from information_schema.tables WHERE WHERE table_schema = '{self.__name}' amd table_name='{self.TABLE_CHANNELS}'")
-            if cursor.fetchone():
-                query = f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} INTEGER PRIMARY KEY, " + \
-                        f"{self.CHANNEL_NAME} TEXT, {self.CHANNEL_TITLE} TEXT NOT_NULL," + \
-                        f"{self.CHANNEL_INTERVAL} INTEGER NOT_NULL, {self.CHANNEL_LAST_POST_TIME} INTEGER, " + \
-                        f"{self.CHANNEL_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
-                # create table account
-                cursor.execute(query)
-                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
-
-            cursor.execute(f"SELECT table_name from information_schema.tables WHERE WHERE table_schema = '{self.__name}' amd table_name='{self.TABLE_GROUPS}'")
+            cursor.execute(f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_CHANNELS}'")
             if not cursor.fetchone():
-                query = f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} INTEGER PRIMARY KEY, " + \
-                        f"{self.GROUP_NAME} TEXT, {self.GROUP_TITLE} TEXT NOT_NULL," + \
-                        f"{self.GROUP_COINS} TEXT, {self.GROUP_CURRENCIES} TEXT, " + \
-                        f"{self.GROUP_MESSAGE_HEADER} TEXT, {self.GROUP_MESSAGE_FOOTNOTE} TEXT, " + \
-                        f"{self.GROUP_MESSAGE_SHOW_DATE} INTEGER DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_LABELS} INTEGER DEFAULT 1, " + \
-                        f"{self.GROUP_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
+                query = f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} BIGINT PRIMARY KEY, " + \
+                        f"{self.CHANNEL_NAME} VARCHAR(32), {self.CHANNEL_TITLE} VARCHAR(128) NOT NULL," + \
+                        f"{self.CHANNEL_INTERVAL} INTEGER NOT NULL, {self.CHANNEL_LAST_POST_TIME} INTEGER, " + \
+                        f"{self.CHANNEL_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
                 # create table account
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
 
-            cursor.execute(f"SELECT table_name from information_schema.tables WHERE WHERE table_schema = '{self.__name}' amd table_name='{self.TABLE_PRICE_ALARMS}'")
+            cursor.execute(f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_GROUPS}'")
+            if not cursor.fetchone():
+                query = f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} BIGINT PRIMARY KEY, " + \
+                        f"{self.GROUP_NAME} VARCHAR(32), {self.GROUP_TITLE} VARCHAR(128) NOT NULL," + \
+                        f"{self.GROUP_COINS} VARCHAR(1024), {self.GROUP_CURRENCIES} VARCHAR(1024), " + \
+                        f"{self.GROUP_MESSAGE_HEADER} VARCHAR(256), {self.GROUP_MESSAGE_FOOTNOTE} VARCHAR(256), " + \
+                        f"{self.GROUP_MESSAGE_SHOW_DATE} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_LABELS} BOOLEAN DEFAULT 1, " + \
+                        f"{self.GROUP_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
+                # create table account
+                cursor.execute(query)
+                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
+
+            cursor.execute(f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_PRICE_ALARMS}'")
             if not cursor.fetchone():
                 query = f"CREATE TABLE {self.TABLE_PRICE_ALARMS} (" + \
-                        f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTOINCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} INTEGER NOT_NULL, " + \
-                        f"{self.PRICE_ALARM_TARGET_PRICE} REAL NOT_NULL, {self.PRICE_ALARM_TARGET_CURRENCY} TEXT NOT_NULL, " + \
-                        f"{self.PRICE_ALARM_CHANGE_DIRECTION} INTEGER, {self.PRICE_ALARM_PRICE_UNIT} TEXT NOT_NULL, " + \
+                        f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTO_INCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} BIGINT NOT NULL, " + \
+                        f"{self.PRICE_ALARM_TARGET_PRICE} DOUBLE NOT NULL, {self.PRICE_ALARM_TARGET_CURRENCY} VARCHAR(16) NOT NULL, " + \
+                        f"{self.PRICE_ALARM_CHANGE_DIRECTION} TINYINT(2), {self.PRICE_ALARM_PRICE_UNIT} VARCHAR(16) NOT NULL, " + \
                         f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
 
                 cursor.execute(query)
@@ -130,7 +129,7 @@ class DatabaseInterface:
             columns = ', '.join(self.ACCOUNT_COLUMNS)
             query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})"
             self.execute(False, query, account.chat_id, account.desired_currencies_as_str, account.desired_cryptos_as_str,
-                         account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username, account.last_interaction.strftime(self.DATE_FORMAT),
+                         account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username, account.last_interaction,
                          account.plus_end_date, account.state.value, account.cache_as_str(), account.is_admin, account.language)
             log(f"New account: {account} saved into database successfully.", category_name='DatabaseInfo')
         except Exception as ex:
@@ -143,16 +142,14 @@ class DatabaseInterface:
 
     def get_all(self, column: str = ACCOUNT_ID) -> list:
         rows = self.execute(True, f"SELECT ({column}) FROM {self.TABLE_ACCOUNTS}")
-        if column == self.ACCOUNT_LAST_INTERACTION:
-            return [datetime.strptime(row[0], self.DATE_FORMAT) if row[0] else None for row in rows]
         return [row[0] for row in rows]  # just return a list of ids
 
     def get_special_accounts(self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
         return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s", value)
 
     def get_premium_accounts(self, from_date: datetime | None = None) -> list:
-        from_date: str = (from_date if from_date else datetime.now()).strftime(self.DATE_FORMAT)
-        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > ?", from_date)
+        from_date = from_date or datetime.now()
+        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > %s", from_date)
 
     def update(self, account):
         cursor = self.connection.cursor()
@@ -161,16 +158,19 @@ class DatabaseInterface:
         cursor.execute(f'UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s',
                         (account.desired_currencies_as_str, account.desired_cryptos_as_str,
                         account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username,
-                        account.last_interaction.strftime(self.DATE_FORMAT), account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
+                        account.last_interaction, account.plus_end_date,
                         account.state.value, account.cache_as_str(), account.is_admin, account.language, account.chat_id))
 
         if not cursor.rowcount:
+            cursor.execute(f'SELECT 1 FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s', (account.chat_id, ))
+            if cursor.fetchone():  # Id exists but no update happened.
+                cursor.close()
+                return
             columns: str = ', '.join(self.ACCOUNT_COLUMNS)
             cursor.execute(f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})",
                            (account.chat_id, account.desired_currencies_as_str, account.desired_cryptos_as_str,
-                            account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username, account.last_interaction.strftime(self.DATE_FORMAT),
-                            account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
-                            account.state.value, account.cache_as_str(), account.is_admin, account.language))
+                            account.calc_currencies_as_str, account.calc_cryptos_as_str, account.username, account.last_interaction,
+                            account.plus_end_date, account.state.value, account.cache_as_str(), account.is_admin, account.language))
             log("New account started using this bot with chat_id=: " + account.__str__(), category_name='DatabaseInfo')
         self.connection.commit()
         cursor.close()
@@ -181,10 +181,9 @@ class DatabaseInterface:
 
     def upgrade_account(self, account, duration_in_months: int):
         account.plus_end_date = after_n_months(duration_in_months)
-        str_plus_end_date = account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None
         self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=%s WHERE {self.ACCOUNT_ID}=%s',
-                     str_plus_end_date, account.chat_id)
-        log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {str_plus_end_date}")
+                     account.plus_end_date, account.chat_id)
+        log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {account.plus_end_date}")
 
     def downgrade_account(self, account):
         self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=%s', account.chat_id)
@@ -201,6 +200,10 @@ class DatabaseInterface:
             log(f"Channel with the id of [{channel_id}, {channel_name}] has been RE-planned by owner_chat_id=: {owner_chat_id}",
                         category_name='DatabaseInfo')
         else:
+            cursor.execute(f'SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s', (channel_id, ))
+            if cursor.fetchone():  # Id exists but no update happened.
+                cursor.close()
+                return
             columns = ', '.join(self.CHANNELS_COLUMNS)
             cursor.execute(f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})",
                            (channel_id, channel_name, channel_title, owner_chat_id, interval, now_in_minutes))
@@ -248,11 +251,14 @@ class DatabaseInterface:
                         int(group.message_show_market_labels), group.owner_id, group.id))
 
         if not cursor.rowcount:
+            cursor.execute(f'SELECT 1 FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s', (group.id, ))
+            if cursor.fetchone():  # Id exists but no update happened.
+                cursor.close()
+                return
             columns: str = ', '.join(self.GROUPS_COLUMNS)
             cursor.execute(f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})",
                            (group.id, group.name, group.title, group.coins_as_str, group.currencies_as_str,
-                             group.message_header, group.last_interaction.strftime(self.DATE_FORMAT),
-                            int(group.message_show_date), int(group.message_show_market_labels), group.owner_id))
+                            group.message_header, group.message_footer, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id))
             log("New group started using this bot with id=: " + group.__str__(), category_name='DatabaseInfo')
         self.connection.commit()
         cursor.close()
@@ -336,7 +342,7 @@ class DatabaseInterface:
 
             fwrite_from_scratch(f'{filename_prefix}{table}_{output_filename_suffix}.txt', "\n".join(rows))
 
-    def __init__(self, name="data.db"):
+    def __init__(self):
         self.__host = config('DATABASE_HOST', 'localhost')
         self.__username = config('DATABASE_USERNAME', 'root')
         self.__password = config('DATABASE_PASSWORD', '')

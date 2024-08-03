@@ -222,7 +222,7 @@ class NavasanService(CurrencyService):
 
         # text header
         header: str = ("✅ %s %s" % (mathematix.persianify(amount),
-                               NavasanService.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با::\n\n'
+                               NavasanService.CurrenciesInPersian[source_unit_symbol])) + ' معادل است با:\n\n'
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         try:

@@ -50,9 +50,9 @@ class Channel:
 
     def __init__(self, owner_id: int, channel_id: int, interval: int = 0, channel_name: str = None,
                  channel_title: str = None, last_post_time: int = None) -> None:
-        self.owner_id = owner_id
+        self.owner_id = int(owner_id)
         self.owner = None
-        self.id = channel_id
+        self.id = int(channel_id)
         self.name = channel_name  # username
         self.title = channel_title
         self.interval = interval

@@ -35,9 +35,9 @@ class PriceAlarm:
                     return PriceAlarm.ChangeDirection.DOWN
             return PriceAlarm.ChangeDirection.UP
 
-    def __init__(self, chat_id, currency: str, target_price: int | float, change_direction: ChangeDirection | int | None = None, target_unit: str = 'irt', id: int = None, current_price: float | int | None = None) -> None:
+    def __init__(self, chat_id: int, currency: str, target_price: int | float, change_direction: ChangeDirection | int | None = None, target_unit: str = 'irt', id: int = None, current_price: float | int | None = None) -> None:
         self.id = id
-        self.chat_id = chat_id
+        self.chat_id = int(chat_id)
         self.owner: Account | None = None
         self.currency = currency
         self.target_price = target_price
@@ -61,7 +61,7 @@ class PriceAlarm:
        
     @staticmethod
     def GetByUser(chat_id: int):
-        rows = PriceAlarm.Database().get_user_alarms(chat_id)
+        rows = PriceAlarm.Database().get_user_alarms(int(chat_id))
         return list(map(PriceAlarm.ExtractQueryRowData, rows))
         
     @staticmethod

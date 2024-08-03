@@ -7,13 +7,13 @@ from telegram.error import BadRequest
 from api.currency_service import CurrencyService
 from api.crypto_service import CryptoCurrencyService
 from json import dumps as jsonify
-from typing import List, Dict
+from typing import List, Dict, Tuple, Set
 from bot.post import PostMan
 from models.account import Account
 from tools.manuwriter import log
 from tools.mathematix import persianify, cut_and_separate
 from models.alarms import PriceAlarm
-
+from re import findall as re_findall
 
 class ResourceManager:
 
@@ -191,7 +191,6 @@ class BotMan:
 
         self.menu_main_keys = None
         self.menu_main = None
-        self.admin_keyboard = None
         self.cancel_menu_key = None
         self.cancel_menu = None
         self.return_key = None
@@ -246,10 +245,10 @@ class BotMan:
 
     def get_main_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup([*self.common_menu_main_keys,
-                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA), KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
+                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA.value), KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
                         ] if account.language != 'en' else [
                             *self.common_menu_main_keys_en,
-                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN), KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
+                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN.value), KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
                         ], resize_keyboard=True)
     
 
@@ -625,17 +624,48 @@ class BotMan:
                 upgrading_chat_id = None
         return user
 
-    def extract_symbols(self, text: str):
-        words = { word.upper() for word in text.split() }
-        coin_symbols = set()
-        currency_symbols = set()
+    def extract_coef(self, word: str | float):
+        try:
+            f = float(word)
+            return f
+        except:
+            pass
+        return 1.0
+    
+    def extract_symbols_and_amounts(self, text: str) -> Tuple[Set[str], Set[str]]:
+        words = self.split_words_except_double_qoutations(text)
+        crypto_amounts = set()
+        currency_amounts = set()
 
-        for word in words:
-            slug = self.crypto_serv.Find(word)
+        i, length = 0, len(words)
+
+        while i < length:
+            words[i] = words[i].upper()
+            prev_word: str | float = words[i - 1] if i else 1.0
+            slug = self.crypto_serv.Find(words[i])
             if slug:
-                coin_symbols.add(slug)
+                coef = self.extract_coef(prev_word)
+                crypto_amounts.add(f'{coef} {slug}')
             else:
-                slug = self.currency_serv.Find(word)
+                slug = self.currency_serv.Find(words[i])
                 if slug:
-                    currency_symbols.add(slug)
-        return coin_symbols, currency_symbols
+                    coef = self.extract_coef(prev_word)
+                    currency_amounts.add(f'{coef} {slug}')
+            i += 1
+        return crypto_amounts, currency_amounts
+    
+    def create_crypto_equalize_message(self, unit: str, amount: float | int, target_cryptos: List[str] | None, target_currencies: List[str] | None, language: str = 'fa'):
+        header, response, _, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos)
+        response = self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies) + "\n\n" + response
+        return header + response
+    
+    def create_currency_equalize_message(self, unit: str, amount: float | int, target_cryptos: List[str] | None, target_currencies: List[str] | None, language: str = 'fa'):
+        header, response, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies)
+        response += "\n\n" + self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
+        return header + response
+    
+    def split_words_except_double_qoutations(self, input_string):
+        pattern = r'\"[^\"]*\"|\S+'
+        matches = re_findall(pattern, input_string)        
+        result = [match.strip('"') for match in matches]
+        return result

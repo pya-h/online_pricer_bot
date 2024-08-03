@@ -203,7 +203,7 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
 
     await update.message.reply_text(
         'اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.',
-        reply_markup=botman.admin_keyboard(account.language))
+        reply_markup=botman.get_admin_keyboard(account.language))
 
 async def cmd_upgrade_user(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat)
@@ -211,7 +211,7 @@ async def cmd_upgrade_user(update: Update, context: CallbackContext):
         return await say_youre_not_allowed(update.message.reply_text, account.language)
     account.change_state(Account.States.UPGRADE_USER, clear_cache=True)
     await update.message.reply_text(botman.text("specify_user", account.language),
-        reply_markup=botman.admin_keyboard(account.language))
+        reply_markup=botman.get_admin_keyboard(account.language))
 
 
 async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
@@ -257,21 +257,17 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
     response: str
     for amount in amounts:
         for unit in units:
-            name: str | None = ''
             try:
                 if unit in botman.crypto_serv.CoinsInPersian:
-                    name = botman.crypto_serv.CoinsInPersian[unit]
-                    header, response, _, absolute_irt = botman.crypto_serv.equalize(unit, amount, account.calc_cryptos)
-                    response = botman.currency_serv.irt_to_currencies(absolute_irt, unit,
-                                                                    account.calc_currencies) + "\n\n" + response
+                    response = botman.create_crypto_equalize_message(unit, amount, 
+                                                        account.calc_cryptos, account.calc_currencies, account.language)
                 else:
-                    name = botman.currency_serv.CurrenciesInPersian[unit]
-                    header, response, absolute_usd, _ = botman.currency_serv.equalize(unit, amount, account.calc_currencies)
-                    response += "\n\n" + botman.crypto_serv.usd_to_cryptos(absolute_usd, unit, account.calc_cryptos)
-                await func_send_message(header + response)
+                    response = botman.create_currency_equalize_message(unit, amount, 
+                                                account.calc_cryptos, account.calc_currencies, account.language)
+                await func_send_message(response)
             except ValueError as ex:
                 log('Error while equalizing', ex, category_name='Calculator')
-                await func_send_message(botman.error('price_not_available', account.language) % (name, ))
+                await func_send_message(botman.error('price_not_available', account.language) % (unit, ))
             except NoLatestDataException:
                 await func_send_message(botman.error('api_not_available', account.language))
             except InvalidInputException:
@@ -829,6 +825,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     return
                                 target = Account.GetById(upgrading_chat_id)
                                 target.upgrade(months)
+                                
                                 await context.bot.send_message(chat_id=target.chat_id, text=botman.text('youre_upgraded_premium', target.language), reply_markup=botman.mainkeyboard(target))
 
                                 await update.message.reply_text(botman.text('user_upgraded_premium', account.language), reply_markup=botman.mainkeyboard(account))
@@ -869,7 +866,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
                             await update.message.reply_text(
                                 botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
-                                reply_markup=botman.admin_keyboard(account.language))
+                                reply_markup=botman.get_admin_keyboard(account.language))
                             account.change_state(clear_cache=True)  # reset .state and .state_data
 
 
@@ -878,7 +875,7 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
     for member in update.message.new_chat_members:
         if member.id == my_id:
             group = Group.Register(update.message.chat, update.message.from_user.id)
-            owner = Account.Get(group.owner_id)  # TODO: Use Join query if account is not in cache mem
+            owner = Account.GetById(group.owner_id)  # TODO: Use Join query if account is not in cache mem
             if group.is_active:
                 await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('group_is_active', owner.language) % (group.title,))
             else:
@@ -886,8 +883,21 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
             return
 
 async def handle_group_messages(update: Update, context: CallbackContext):
-    coins, currencies = botman.extract_symbols(update.message.text)
+    crypto_amounts, currency_amounts = botman.extract_symbols_and_amounts(update.message.text)
+    group: Group = Group.Get(update.message.chat.id)
+    to_user: Account = Account.GetById(update.message.from_user.id)
     
+    if not group.is_active:
+        return
+    
+    for input_list in [(crypto_amounts, botman.create_crypto_equalize_message), (currency_amounts, botman.create_currency_equalize_message)]:
+        inputs, equalizer_func = input_list
+        for coef_n_unit in inputs:
+            coef, unit = coef_n_unit.split()
+            coef = botman.extract_coef(coef)
+            message = equalizer_func(unit, coef, group.selected_coins, group.selected_currencies, to_user.language)
+            await update.message.reply_text(message)
+
 
 def main():
     app = BotApplicationBuilder().token(botman.token).build()
