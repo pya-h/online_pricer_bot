@@ -13,7 +13,8 @@ from models.account import Account
 from tools.manuwriter import log
 from tools.mathematix import persianify, cut_and_separate
 from models.alarms import PriceAlarm
-from re import findall as re_findall
+from tools.optifinder import OptiFinder
+
 
 class ResourceManager:
 
@@ -627,31 +628,33 @@ class BotMan:
     def extract_coef(self, word: str | float):
         try:
             f = float(word)
-            return f
+            intf = int(f)
+            return f if intf != f else intf 
         except:
             pass
-        return 1.0
+        return 1
     
     def extract_symbols_and_amounts(self, text: str) -> Tuple[Set[str], Set[str]]:
-        words = self.split_words_except_double_qoutations(text)
+        words = text.split()
         crypto_amounts = set()
         currency_amounts = set()
 
-        i, length = 0, len(words)
+        finder = OptiFinder(words)
+        i = 0
 
-        while i < length:
+        while i < finder.word_count:
             words[i] = words[i].upper()
             prev_word: str | float = words[i - 1] if i else 1.0
-            slug = self.crypto_serv.Find(words[i])
+            slug, word_count = finder.search_around(self.crypto_serv.CoinsInPersian, i)
             if slug:
                 coef = self.extract_coef(prev_word)
                 crypto_amounts.add(f'{coef} {slug}')
             else:
-                slug = self.currency_serv.Find(words[i])
+                slug, word_count = finder.search_around(self.currency_serv.CurrenciesInPersian, i)
                 if slug:
                     coef = self.extract_coef(prev_word)
                     currency_amounts.add(f'{coef} {slug}')
-            i += 1
+            i += word_count
         return crypto_amounts, currency_amounts
     
     def create_crypto_equalize_message(self, unit: str, amount: float | int, target_cryptos: List[str] | None, target_currencies: List[str] | None, language: str = 'fa'):
@@ -663,9 +666,3 @@ class BotMan:
         header, response, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies)
         response += "\n\n" + self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
         return header + response
-    
-    def split_words_except_double_qoutations(self, input_string):
-        pattern = r'\"[^\"]*\"|\S+'
-        matches = re_findall(pattern, input_string)        
-        result = [match.strip('"') for match in matches]
-        return result

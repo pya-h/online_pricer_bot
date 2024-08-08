@@ -9,10 +9,19 @@ class CryptoCurrencyService(APIService):
     CoinsInPersian: Dict[str, str] | None = None
 
     @staticmethod
-    def Find(word: str):
+    def Find(words: List[str], index: int, word_count: int, max_name_word_count = 4):
+        # word_count is for not calculating the words length everytime.
+        word = words[i]
+        multi_word_findings: Dict[str, str] = []
         for coin in CryptoCurrencyService.CoinsInPersian:
             if coin == word or CryptoCurrencyService.CoinsInPersian[coin] == word:
                 return coin
+            coin_words = CryptoCurrencyService.CoinsInPersian[coin].split()
+            coin_cord_count = len(coin_words)
+
+            if word in CryptoCurrencyService.CoinsInPersian[coin]:
+                # for multi-word coins
+                i = index + max_name_word_count if index + max_name_word_count < word_count else word_count - 1 
         return None
 
     @staticmethod
