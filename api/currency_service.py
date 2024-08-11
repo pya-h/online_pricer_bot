@@ -34,6 +34,17 @@ def get_persian_currency_names():
 
     return json.loads(currency_names_fa), json.loads(gold_names_fa)
 
+def get_shortcuts():
+    shortcut_names_fa = "{}"
+    try:
+        json_file = open("./api/data/fiat-shortcut.fa.json", "r")
+        shortcut_names_fa = json_file.read()
+        json_file.close()
+    except Exception as e:
+        log('Cannot get currency names', exception=e, category_name='Currency')
+
+    return json.loads(shortcut_names_fa)
+
 
 class CurrencyService(APIService):
     DefaultTetherInTomans = 61300
@@ -87,6 +98,7 @@ class GoldService(BaseAPIService):
 
 class NavasanService(CurrencyService):
     Defaults = ("USD", "EUR", "AED", "GBP", "TRY", 'ONS', 'TALA_18', 'TALA_MESGHAL', 'SEKE_EMAMI', 'SEKE_GERAMI',)
+    PersianShortcuts: Dict[str, str] | None = None
     CurrenciesInPersian = None
     NationalCurrenciesInPersian = None
     GoldsInPersian = None
@@ -100,7 +112,7 @@ class NavasanService(CurrencyService):
                          tether_service_token=self.tether_service.token, token=token)
         self.get_desired_ones = lambda desired_ones: desired_ones or NavasanService.Defaults
         self.gold_service: GoldService = GoldService(self.token)
-        if not NavasanService.NationalCurrenciesInPersian or not NavasanService.GoldsInPersian or not NavasanService.CurrenciesInPersian:
+        if not NavasanService.NationalCurrenciesInPersian or not NavasanService.GoldsInPersian or not NavasanService.CurrenciesInPersian or not NavasanService.PersianShortcuts:
             NavasanService.LoadPersianNames()
 
     @staticmethod
@@ -115,7 +127,8 @@ class NavasanService(CurrencyService):
         NavasanService.NationalCurrenciesInPersian, NavasanService.GoldsInPersian = get_persian_currency_names()
         NavasanService.GoldsInPersian = dict(GoldService.GoldsInPersian, **NavasanService.GoldsInPersian)
         NavasanService.CurrenciesInPersian = dict(NavasanService.NationalCurrenciesInPersian, **NavasanService.GoldsInPersian)
-
+        NavasanService.PersianShortcuts = get_shortcuts()
+        
     @staticmethod
     def GetPersianName(symbol: str) -> str:
         if NavasanService.CurrenciesInPersian is None or not NavasanService.CurrenciesInPersian:

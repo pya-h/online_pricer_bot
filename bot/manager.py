@@ -651,6 +651,10 @@ class BotMan:
                 crypto_amounts.add(f'{coef} {slug}')
             else:
                 slug, word_count = finder.search_around(self.currency_serv.CurrenciesInPersian, i)
+                
+                if not slug:
+                    slug, word_count = finder.search_around(self.currency_serv.PersianShortcuts)
+
                 if slug:
                     coef = self.extract_coef(prev_word)
                     currency_amounts.add(f'{coef} {slug}')
