@@ -39,3 +39,9 @@ class InvalidKeyboardException(Exception):
         self.message = message
         super().__init__(f'Invalid keyboard used: {self.message}')
 
+
+class MaxAddedCommunityException(Exception):
+    def __init__(self, community_type: str) -> None:
+        self.message = f'You can not add another {community_type} anymore.'
+        super().__init__(self.message)
+

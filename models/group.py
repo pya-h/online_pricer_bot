@@ -4,6 +4,7 @@ from db.interface import DatabaseInterface
 from typing import List
 from telegram import Chat
 from .account import Account
+from tools.exceptions import MaxAddedCommunityException
 
 
 class Group:
@@ -88,7 +89,8 @@ class Group:
     def Register(chat: Chat, owner_id: int):
         '''Create group model and save into database. set its active_until field same as user premium date.
         return the database data if group is existing from before (just update its owner id).'''
-        group_columns = Group.Database().get_group(chat.id)
+        db = Group.Database()
+        group_columns = db.get_group(chat.id)
         if group_columns:
             group = Group.ExtractQueryRowData(group_columns)
             group.name = chat.username
@@ -97,8 +99,11 @@ class Group:
             group.save()
             return group
         
+        user_groups_count = db.user_groups_count(owner_id)
+        if user_groups_count >= 1:
+            raise MaxAddedCommunityException('group')
         group = Group(owner_id=owner_id, group_id=chat.id, group_title=chat.title, group_name=chat.username)
-        Group.Database().add_group(group)
+        db.add_group(group)
         return group
     
     @staticmethod

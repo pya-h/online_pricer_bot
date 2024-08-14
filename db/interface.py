@@ -224,8 +224,13 @@ class DatabaseInterface:
         return channels[0] if channels else None
 
     def get_user_channels(self, owner_chat_id: int) -> list:
-        """Get all channels related to this account"""
+        """Get all channels owned by this account"""
         return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s", owner_chat_id)
+
+    def user_channels_count(self, owner_chat_id: int) -> int:
+        """Get count of channels owned by this account"""
+        result = self.execute(True, f"SELECT COUNT(id) as cnt FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s", owner_chat_id)
+        return result.cnt if result else 0
 
     def get_channels_by_interval(self, min_interval: int = 0) -> list:
         """Finds all the channels with plan interval > min_interval"""
@@ -283,8 +288,13 @@ class DatabaseInterface:
         return groups[0] if groups else None
 
     def get_user_groups(self, owner_chat_id: int) -> list:
-        """Get all groups/supergroups related to this account"""
+        """Get all groups/supergroups owned by this account"""
         return self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s", owner_chat_id)
+
+    def user_groups_count(self, owner_chat_id: int) -> int:
+        """Get count of groups owned by this account"""
+        result = self.execute(True, f"SELECT COUNT(id) as cnt FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s", owner_chat_id)
+        return result.cnt if result else 0
 
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesn't return result such as insert or delete"""

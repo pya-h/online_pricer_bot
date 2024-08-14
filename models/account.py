@@ -285,11 +285,20 @@ class Account:
         return 10 if self.is_premium else 3
 
     @property
-    def max_channel_plans_count(self):
+    def max_channel_count(self):
         return 1 if self.is_premium else 0
     
         # causing a slight enhancement on performance
 
+    @property
+    def my_channels_count(self) -> int:
+        return self.Database().user_channels_count(self.chat_id)
+    
+
+    @property
+    def my_groups_count(self) -> int:
+        return self.Database().user_groups_count(self.chat_id)
+    
     @staticmethod
     def Database():
         if Account._database is None:

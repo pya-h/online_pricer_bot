@@ -1,5 +1,5 @@
 from enum import Enum
-from tools.manuwriter import load_json
+from tools.exceptions import MaxAddedCommunityException
 from decouple import config
 from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, Update, CallbackQuery, Message
 from telegram.ext import CallbackContext
@@ -11,7 +11,7 @@ from typing import List, Dict, Tuple, Set
 from bot.post import PostMan
 from models.account import Account
 from models.channel import Channel, PostInterval
-from tools.manuwriter import log
+from tools.manuwriter import log, load_json
 from tools.mathematix import persianify, cut_and_separate
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
@@ -67,6 +67,7 @@ class BotMan:
 
         USE_IN_CHANNEL_FA = resourceman.mainkeyboard('use_in_channel', 'fa')
         USE_IN_GROUP_FA = resourceman.mainkeyboard('use_in_group', 'fa')
+        MY_GROUP_FA = resourceman.mainkeyboard('my_group', 'fa')
 
         RETURN_FA = resourceman.keyboard('return', 'fa')
 
@@ -92,6 +93,7 @@ class BotMan:
         
         USE_IN_CHANNEL_EN = resourceman.mainkeyboard('use_in_channel', 'en')
         USE_IN_GROUP_EN = resourceman.mainkeyboard('use_in_group', 'en')
+        MY_GROUP_EN = resourceman.mainkeyboard('my_group', 'en')
 
         RETURN_EN = resourceman.keyboard('return', 'en')
 
@@ -705,6 +707,9 @@ class BotMan:
             
             await ctx.bot.send_message(chat_id=owner.chat_id, text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
                                     reply_markup=self.action_inline_keyboard(self.QueryActions.START_CHANNEL_POSTING, {channel_id: "start"}, owner.language, columns_in_a_row=1))
+        except MaxAddedCommunityException:
+            await ctx.bot.send_message(chat_id=owner.chat_id, text=self.error("max_channels_reached", owner.language))
+            return False
         except Exception as ex:
             log("Getting and planning channel data failed.", ex, category_name="Channels")
             return False

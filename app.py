@@ -12,7 +12,7 @@ from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from models.alarms import PriceAlarm
 from typing import List
-from tools.exceptions import NoLatestDataException, InvalidInputException
+from tools.exceptions import NoLatestDataException, InvalidInputException, MaxAddedCommunityException
 from models.group import Group
 from models.channel import Channel
 
@@ -894,12 +894,16 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
     my_id = context.bot.id
     for member in update.message.new_chat_members:
         if member.id == my_id:
-            group = Group.Register(update.message.chat, update.message.from_user.id)
             owner = Account.GetById(group.owner_id)  # TODO: Use Join query if account is not in cache mem
-            if group.is_active:
-                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('group_is_active', owner.language) % (group.title,))
-            else:
-                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('go_premium_for_group_activation', owner.language) % (group.title))
+            try:
+                group = Group.Register(update.message.chat, update.message.from_user.id)
+
+                if group.is_active:
+                    await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('group_is_active', owner.language) % (group.title,))
+                else:
+                    await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('go_premium_for_group_activation', owner.language) % (group.title))
+            except MaxAddedCommunityException:
+                await context.bot.send_message(chat_id=owner.chat_id, text=botman.error('max_groups_reached', owner.language))
             return
 
 async def handle_group_messages(update: Update, context: CallbackContext):

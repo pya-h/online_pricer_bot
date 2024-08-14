@@ -3,7 +3,7 @@ from db.interface import DatabaseInterface
 from json import dumps as jsonify
 from bot.types import GroupInlineKeyboardButtonTemplate
 from typing import List
-
+from tools.exceptions import MaxAddedCommunityException
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
     def __init__(self, title: str | None = None, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
@@ -97,6 +97,8 @@ class Channel:
         self.last_post_time: int | None = last_post_time  # don't forget database has this
 
     def create(self):
+        if self.user_channels_count >= 1:
+            raise MaxAddedCommunityException('channel')
         Channel.Database().add_channel(self)
 
     # TODO: Write garbage collector for this class too
@@ -128,6 +130,10 @@ class Channel:
     @property
     def currencies_as_str(self):
         return ';'.join(self.selected_currencies)
+
+    @property
+    def user_channels_count(self):
+        return self.Database().user_channels_count(self.owner_id)
 
     @staticmethod
     def Get(channel_id):
