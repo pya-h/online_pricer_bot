@@ -189,25 +189,25 @@ class DatabaseInterface:
         self.execute(False, f'UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=%s', account.chat_id)
         log(f"Account with chat_id={account.chat_id} downgraded to free user.")
 
-    def plan_channel(self, owner_chat_id: int, channel_id: int, channel_name: str, interval: int, channel_title: str):
+    def add_channel(self, channel):
         cursor = self.connection.cursor()
         now_in_minutes = time() // 60
         columns_to_set = ', '.join([f'{field}=%s' for field in self.CHANNELS_COLUMNS[1:]])
         cursor.execute(f'UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s', \
-                        (channel_name, channel_title, owner_chat_id, interval, now_in_minutes, channel_id))
+                        (channel.name, channel.title, channel.owner_id, channel.interval, now_in_minutes, channel.id))
         
         if cursor.rowcount:
-            log(f"Channel with the id of [{channel_id}, {channel_name}] has been RE-planned by owner_chat_id=: {owner_chat_id}",
+            log(f"Channel with the id of [{channel.id}, {channel.name}] has been RE-planned by: {channel.owner_id}",
                         category_name='DatabaseInfo')
         else:
-            cursor.execute(f'SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s', (channel_id, ))
+            cursor.execute(f'SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s', (channel.id, ))
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()
                 return
             columns = ', '.join(self.CHANNELS_COLUMNS)
             cursor.execute(f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})",
-                           (channel_id, channel_name, channel_title, owner_chat_id, interval, now_in_minutes))
-            log(f"New channel with the id of [{channel_id}, {channel_name}] has benn planned by owner_chat_id=: {owner_chat_id}",
+                           (channel.id, channel.name, channel.title, channel.owner_id, channel.interval, now_in_minutes))
+            log(f"New channel with the id of [{channel.id}, {channel.name}] has been planned by: {channel.owner_id}",
                 category_name='DatabaseInfo')
         self.connection.commit()
         cursor.close()

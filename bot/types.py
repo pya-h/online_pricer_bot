@@ -29,3 +29,13 @@ class SelectionListTypes(Enum):
             if option.value == value:
                 return option
         return None
+
+
+class GroupInlineKeyboardButtonTemplate:
+    @property
+    def value(self) -> int:
+        pass
+
+    @property
+    def title(self) -> str:
+        pass

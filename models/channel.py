@@ -1,23 +1,28 @@
 from tools import manuwriter
 from db.interface import DatabaseInterface
 from json import dumps as jsonify
+from bot.types import GroupInlineKeyboardButtonTemplate
 
 
-class PlanInterval:
+class PostInterval(GroupInlineKeyboardButtonTemplate):
     def __init__(self, title: str, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
         self._title = title
         self.days = days
         self.hours = hours + self.days * 24  # total in hours
         self.minutes = minutes + self.hours * 60  # total interval in minutes
 
+    @property
     def value(self) -> int:
         return self.minutes  # this is for GlassButton.Arrange
 
+    @property
     def title(self) -> str:
         return self._title
 
+    @property
     def as_json(self):
         return jsonify({"d": self.days, "h": self.hours, "m": self.minutes})
+
 
 
 class Channel:
@@ -42,10 +47,10 @@ class Channel:
             Channel.Instances[channel.id] = channel
         return Channel.Instances
 
-    SupportedIntervals: list[PlanInterval] = [
-        PlanInterval("1 MIN", minutes=1), *[PlanInterval(f"{m} MINS", minutes=m) for m in [2, 5, 10, 30, 45]],
-        PlanInterval("1 HOUR", hours=1), *[PlanInterval(f"{h} HOURS", hours=h) for h in [2, 3, 4, 6, 12]],
-        PlanInterval("1 DAY", days=1), *[PlanInterval(f"{d} DAYS", days=d) for d in [2, 3, 4, 5, 6, 7, 10, 14, 30, 60]]
+    SupportedIntervals: list[PostInterval] = [
+        PostInterval("1 MIN", minutes=1), *[PostInterval(f"{m} MINS", minutes=m) for m in [2, 5, 10, 30, 45]],
+        PostInterval("1 HOUR", hours=1), *[PostInterval(f"{h} HOURS", hours=h) for h in [2, 3, 4, 6, 12]],
+        PostInterval("1 DAY", days=1), *[PostInterval(f"{d} DAYS", days=d) for d in [2, 3, 4, 5, 6, 7, 10, 14, 30, 60]]
     ]
 
     def __init__(self, owner_id: int, channel_id: int, interval: int = 0, channel_name: str = None,
@@ -58,8 +63,10 @@ class Channel:
         self.interval = interval
         self.last_post_time = last_post_time  # don't forget database has this
 
-    # TODO: Write garbage collector for this class too
+    def create(self):
+        Channel.Database().add_channel(self)
 
+    # TODO: Write garbage collector for this class too
     def plan(self) -> bool:
         if self.interval <= 0:
             if self.id in Channel.Instances:
@@ -85,7 +92,7 @@ class Channel:
 
     @staticmethod
     def Get(channel_id):
-        # FXIME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
+        # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         if channel_id in Channel.Instances:
             return Channel.Instances[channel_id]
         row = Channel.Database.get_channel(channel_id)

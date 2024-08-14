@@ -24,15 +24,13 @@ class Account:
         SEND_POST = 1
         INPUT_EQUALIZER_AMOUNT = 2
         INPUT_EQUALIZER_UNIT = 3
-        SELECT_CHANNEL = 4
-        SELECT_INTERVAL = 5
-        SELECT_LANGUAGE = 6
-        CONFIG_MARKETS = 7
-        CONFIG_CALCULATOR_LIST = 8
-        CREATE_ALARM = 9
-        UPGRADE_USER = 10
-        DOWNGRADE_USER = 11
-        MAKE_BOT_ADMIN = 12
+        CONFIG_MARKETS = 4
+        CONFIG_CALCULATOR_LIST = 5
+        CREATE_ALARM = 6
+        UPGRADE_USER = 7
+        DOWNGRADE_USER = 8
+        ADD_BOT_AS_ADMIN = 9
+        SELECT_POST_INTERVAL = 10
         
         @staticmethod
         def Which(value: int):
@@ -41,14 +39,12 @@ class Account:
                 Account.States.SEND_POST,
                 Account.States.INPUT_EQUALIZER_AMOUNT,
                 Account.States.INPUT_EQUALIZER_UNIT,
-                Account.States.SELECT_CHANNEL,
-                Account.States.SELECT_INTERVAL,
-                Account.States.SELECT_LANGUAGE,
                 Account.States.CONFIG_MARKETS,
                 Account.States.CONFIG_CALCULATOR_LIST,
                 Account.States.CREATE_ALARM,
                 Account.States.UPGRADE_USER,
                 Account.States.DOWNGRADE_USER,
+                Account.States.SELECT_POST_INTERVAL,
             )
             try:
                 return values[int(value)]
@@ -324,7 +320,7 @@ class Account:
     def Get(chat: Chat | User, prevent_instance_arrangement: bool = False):
         account = Account.GetById(chat.id, prevent_instance_arrangement=prevent_instance_arrangement)
         account.current_username = chat.username
-        account.firstname = chat.first_name  # It doesnt going to be saved in database, but its picked from Chat in case its needed in code.
+        account.firstname = chat.first_name  # It doesn't going to be saved in database, but its picked from Chat in case its needed in code.
         return account
     
     @staticmethod

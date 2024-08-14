@@ -243,6 +243,10 @@
         "bot_seems_not_admin": {
             "fa": "به نظر می رسد ربات را ادمین نکرده اید و یا آدرس یا آیدی موردنظر اشتباه است. اکر آیدی یا آدرس اشتباه است، مقدار درست را دوباره وارد کنید، و اگر ربات را ادمین نکرده اید، آن را ادمین کرده و روی تایید کلیک کنید.",
             "en": "It seems that bot has not been made admin or maybe the provided url or id is invalid. If the id or url is invalid, rewrite and send the correct one, and if you've forgotten to make the bot admin, make it admin and click verify.int"
+        },
+        "error_while_planning_channel": {
+            "fa": "مشکلی حین ثبت اطلاعات کانال رخ داد. لطفا دوباره از اول تلاش کنید.",
+            "en": "Something went wrong while trying to config this channel. Please try again from scratch,"
         }
     },
     "what_can_i_do": {
@@ -413,7 +417,7 @@
         "fa": "⚠️ برای استفاده از قابلیت های ربات در گروه، ربات را در گروه مدیر کرده و اشتراک تهیه کنید.\n\nجهت مشاوره و تهیه اشتراک به ادمین پاسخگویی پیام دهید:\n👩‍💻 @KSA_Admin",
         "en": "⚠️ You can add this bot to your group to use this feature. Make you have purchased premium plan.\n\nTo consult and become premium you can chat with support group:\n👩‍💻 @KSA_Admin"
     },
-    "select_time_interval": {
+    "select_post_interval": {
         "fa": "🔹 بازه زمانی بروزرسانی شدن قیمت در کانالتان را تعیین کنید؟\n\n(مثلا اگر می خواهید هر ۵ دقیقه یک بار قیمت ها بروز شوند و در کانالتان قرار بگیرد، باید گزینه 5m را انتخاب کنید)\n\n🔹 در صورتی که بازه زمانی مدنظر شما در لیست زیر نباشد می توانید بصورت دستی بنویسید:\n\n(مثلاً اگر می خواهید بازه زمانی شما [۱۵ دقیقه] تنظیم شود باید به زبان انگلیسی بنویسید: 15m)\n\n(دقیقه: m / ساعت: h / روز: d)",
         "en": "🔹 Determine the price update interval in your channel?\n(For example, if you want the prices to be updated every 5 minutes and placed on your channel, you should choose the 5m option)\n\n🔹 If the period you are looking for is not in the list below, you can write it manually:\n\n(For example, if you want your time period to be set to [15 minutes], you must write in English: 15m)\n\n(minute: m / hour: h / day: d)"
     },

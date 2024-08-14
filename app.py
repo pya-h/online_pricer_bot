@@ -14,6 +14,8 @@ from models.alarms import PriceAlarm
 from typing import List
 from tools.exceptions import NoLatestDataException, InvalidInputException
 from models.group import Group
+from models.channel import Channel
+
 
 
 botman = BotMan()
@@ -283,7 +285,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
         return
     my_alarms = PriceAlarm.get_alarms(account.chat_id)
     alarms_count = len(my_alarms)
-    desciptions: List[str | None] = [None] * alarms_count
+    descriptions: List[str | None] = [None] * alarms_count
     buttons: List[InlineKeyboardButton | None] = [None] * alarms_count
 
     for i, alarm in enumerate(my_alarms):
@@ -297,15 +299,15 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
                 price = persianify(price)
                 curreny_title = botman.crypto_serv.CoinsInPersian[curreny_title] if curreny_title in botman.crypto_serv.CoinsInPersian else botman.currency_serv.CurrenciesInPersian[curreny_title]
                 unit = botman.text(f'price_unit_{alarm.target_unit.lower()}', account.language)
-            desciptions[i] = f"{index}) {curreny_title}: {price} {unit}"
+            descriptions[i] = f"{index}) {curreny_title}: {price} {unit}"
         except:
-            desciptions[i] = f"{index}) " + botman.error('invalid_alarm_data', account.language)
-        buttons[i] = InlineKeyboardButton(desciptions[i], callback_data=botman.action_callback_data(BotMan.QueryActions.DISABLE_ALARM, alarm.id))
+            descriptions[i] = f"{index}) " + botman.error('invalid_alarm_data', account.language)
+        buttons[i] = InlineKeyboardButton(descriptions[i], callback_data=botman.action_callback_data(BotMan.QueryActions.DISABLE_ALARM, alarm.id))
 
     if account.language.lower() == 'fa':
         alarms_count = persianify(alarms_count)
     message_text = botman.text('u_have_n_alarms', account.language) % (str(alarms_count), ) \
-        + ((":\n\n" + "\n".join(desciptions) + "\n\n" + botman.text('click_alarm_to_disable', account.language)) if my_alarms else ".")
+        + ((":\n\n" + "\n".join(descriptions) + "\n\n" + botman.text('click_alarm_to_disable', account.language)) if my_alarms else ".")
     
     if isinstance(update, CallbackQuery):
         await update.message.edit_text(message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons]))
@@ -420,6 +422,17 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             import resources.longtext as long_texts
             await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language.lower()])
             return
+        case BotMan.QueryActions.SELECT_POST_INTERVAL.value:
+            account = Account.Get(query.message.chat)
+            channel_id = account.get_cache('channel_chat_id')
+            if not channel_id:
+                await query.message.edit_text(botman.error('error_while_planning_channel', account.language))
+                account.clear_cache()
+                return
+            # send a message and delete to obtain all channel data
+            channel = Channel(owner_id=query.message.chat_id, channel_id=channel_id, interval=value)
+            channel.create()
+            # send message that says click to start
         case _:
             if not account.authorization(context.args):
                 await query.message.edit_text(botman.error('what_the_fuck', account.language))
@@ -591,13 +604,13 @@ async def list_type_is_selected(update: Update):
 # premiums:
 async def cmd_start_using_in_channel(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat)
-    account.change_state(Account.States.MAKE_BOT_ADMIN, clear_cache=True)
+    account.change_state(Account.States.ADD_BOT_AS_ADMIN, clear_cache=True)
     await update.message.reply_text(botman.text('add_bot_as_channel_admin', account.language), reply_markup=botman.cancel_menu(account.language))
 
-async def unknwon_command_handler(update: Update, context: CallbackContext):
+async def unknown_command_handler(update: Update, context: CallbackContext):
     account = Account.Get(update.message.chat)
     await update.message.reply_text(botman.error('what_the_fuck', account.language),
-                                                    reply_markup=botman.mainkeyboard(account))
+                                               reply_markup=botman.mainkeyboard(account))
 
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:
@@ -767,31 +780,31 @@ async def handle_messages(update: Update, context: CallbackContext):
                                                                      f'{data_prefix}{botman.CALLBACK_DATA_JOINER}usd': 'price_unit_usd'}))
                     account.delete_specific_cache('create_alarm_props')
 
-                case Account.States.MAKE_BOT_ADMIN:
-                    target_chat_id: int | None = None
+                case Account.States.ADD_BOT_AS_ADMIN:  # TODO: Add code to automatically add channel, just like groups
+                    channel_chat_id: int | None = None
                     if update.message.forward_from_chat:
-                        target_chat_id = update.message.forward_from_chat.id
+                        channel_chat_id = update.message.forward_from_chat.id
                     else:
                         try:
-                            target_chat_id = int(msg)
+                            channel_chat_id = int(msg)
                         except:
                             pass
 
-                    if not target_chat_id:
+                    if not channel_chat_id:
                         # send a message to the channel or group and retrieve chat_id
                         try:
                             response = await context.bot.send_message(chat_id=msg, text='Test')
-                            target_chat_id = response.chat.id  # TODO: Print response and get chat_id and message_id
+                            channel_chat_id = response.chat.id
 
-                            await context.bot.delete_message(chat_id=target_chat_id, message_id=response.message_id)
+                            await context.bot.delete_message(chat_id=channel_chat_id, message_id=response.message_id)
                         except:
                             await update.message.reply_text(botman.error('bot_seems_not_admin', account.language), reply_markup=botman.action_inline_keyboard(botman.QueryActions.VERIFY_BOT_IS_ADMIN, {
                                 msg: 'verify'
                             }, in_main_keyboard=False))
 
-                    if target_chat_id:
-                        account.add_cache('target_chat_id', target_chat_id)
-                        await update.message.reply_text(botman.text('select_time_interval'), reply_markup="use the one in old bot") # TODO: FIX this
+                    if channel_chat_id:
+                        account.change_state(Account.States.SELECT_POST_INTERVAL, 'channel_chat_id', channel_chat_id, clear_cache=True)
+                        await update.message.reply_text(botman.text('select_post_interval'), reply_markup=BotMan.ArrangeInlineKeyboardButtons(Channel.SupportedIntervals, botman.QueryActions.SELECT_POST_INTERVAL))
                 case _:
                     if not account.authorization(context.args):
                         await update.message.reply_text(botman.error('what_the_fuck', account.language),
@@ -926,7 +939,7 @@ def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_group_members))
     app.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & ~filters.COMMAND, handle_group_messages))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_messages))  # TODO: Is private filter required?
-    app.add_handler(MessageHandler(filters.COMMAND, unknwon_command_handler))
+    app.add_handler(MessageHandler(filters.COMMAND, unknown_command_handler))
     # app.add_error_handler() # TODO:Check this out
 
     print("Server is up and running...")

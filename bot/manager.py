@@ -14,6 +14,8 @@ from tools.manuwriter import log
 from tools.mathematix import persianify, cut_and_separate
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
+from .types import GroupInlineKeyboardButtonTemplate
+from math import ceil as math_ceil
 
 
 class ResourceManager:
@@ -118,6 +120,7 @@ class BotMan:
         SELECT_TUTORIAL = 5
         ADMIN_DOWNGRADE_USER = 6
         VERIFY_BOT_IS_ADMIN = 7
+        SELECT_POST_INTERVAL = 8
         NONE = 0
 
         @staticmethod
@@ -137,6 +140,8 @@ class BotMan:
                     return BotMan.QueryActions.ADMIN_DOWNGRADE_USER
                 case 7:
                     return BotMan.QueryActions.VERIFY_BOT_IS_ADMIN
+                case 8:
+                    return BotMan.QueryActions.SELECT_POST_INTERVAL
             return BotMan.QueryActions.NONE
 
     class ChatType(Enum):
@@ -670,3 +675,12 @@ class BotMan:
         header, response, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies)
         response += "\n\n" + self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
         return header + response
+    
+    @staticmethod
+    def ArrangeInlineKeyboardButtons(list_of_keys: list[GroupInlineKeyboardButtonTemplate], query_action: QueryActions):
+        keys_count = len(list_of_keys)
+        keys = [[InlineKeyboardButton(list_of_keys[j].title, callback_data=BotMan.action_callback_data(query_action, list_of_keys[j].value)) \
+                 for j in range(i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count)] \
+                    for i in range(math_ceil(keys_count // 5))]
+
+        return InlineKeyboardMarkup(keys)
