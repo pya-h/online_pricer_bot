@@ -20,7 +20,7 @@ class Group:
 
     def __init__(self, owner_id: int, group_id: int, group_name: str = None, group_title: str | None = None,
                  selected_coins: List[str] | None = None, selected_currencies: List[str] | None = None, message_header: str | None = None,
-                 message_footer: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True, prevent_cache_cleanup: bool = False) -> None:
+                 message_footnote: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True, prevent_cache_cleanup: bool = False) -> None:
         self.owner_id: int = int(owner_id)
         self.id: int = int(group_id)
         self.name: str | None = group_name  # username
@@ -28,7 +28,7 @@ class Group:
         self.selected_coins: List[str] = selected_coins or []
         self.selected_currencies: List[str] = selected_currencies or []
         self.message_header: str | None = message_header
-        self.message_footer: str | None = message_footer
+        self.message_footnote: str | None = message_footnote
         self.message_show_date: bool = message_show_date
         self.message_show_market_labels: bool = message_show_market_labels
 
@@ -65,7 +65,7 @@ class Group:
     
     @staticmethod
     def Get(group_id):
-        # FXIME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
+        # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         if group_id in Group.Instances:
             return Group.Instances[group_id]
         row = Group.Database().get_group(group_id)
@@ -77,7 +77,7 @@ class Group:
     @staticmethod
     def ExtractQueryRowData(row: tuple):
         return Group(group_id=int(row[0]), group_name=row[1], group_title=row[2], selected_coins=DatabaseInterface.StringToList(row[3]), selected_currencies=DatabaseInterface.StringToList(row[4]),
-                           message_header=row[5], message_footer=row[6], message_show_date=bool(row[7]), message_show_market_labels=bool(row[8]), owner_id=int(row[-1]))
+                           message_header=row[5], message_footnote=row[6], message_show_date=bool(row[7]), message_show_market_labels=bool(row[8]), owner_id=int(row[-1]))
     
     @staticmethod
     def GetByOwner(owner_chat_id: int):
@@ -87,7 +87,7 @@ class Group:
     @staticmethod
     def Register(chat: Chat, owner_id: int):
         '''Create group model and save into database. set its active_until field same as user premium date.
-        retuen the database data if group is existing from before (just update its owner id).'''
+        return the database data if group is existing from before (just update its owner id).'''
         group_columns = Group.Database().get_group(chat.id)
         if group_columns:
             group = Group.ExtractQueryRowData(group_columns)

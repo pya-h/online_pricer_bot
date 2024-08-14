@@ -2,10 +2,11 @@ from tools import manuwriter
 from db.interface import DatabaseInterface
 from json import dumps as jsonify
 from bot.types import GroupInlineKeyboardButtonTemplate
+from typing import List
 
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
-    def __init__(self, title: str, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
+    def __init__(self, title: str | None = None, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
         self._title = title
         self.days = days
         self.hours = hours + self.days * 24  # total in hours
@@ -23,6 +24,30 @@ class PostInterval(GroupInlineKeyboardButtonTemplate):
     def as_json(self):
         return jsonify({"d": self.days, "h": self.hours, "m": self.minutes})
 
+    @property
+    def timestamps(self):
+        if self.minutes < 60:
+            return f"{self.minutes}m", f"{self.minutes} minutes", f"هر {self.minutes} دقیقه"
+
+        days = 0
+        hours = int(self.minutes / 60)
+        mins = self.minutes - hours * 60
+        if hours < 24:
+            return (f"{hours}h", "{hours} hours", f"{hours} ساعت") if not mins \
+                else (f"{hours}h, {mins}m", f"{hours} hours and {mins} minutes", f"{hours} ساعت و {mins} دقیقه")
+        
+        days = int(hours / 24)
+        hours -= days * 24
+        result_short, result_en, result_fa = f"{days}d", f"{days} days", f"{days} روز"
+        if hours:
+            result_short += f", {hours}h"
+            result_en += f" and {hours} hours"
+            result_fa += f" و {hours} ساعت"
+        if mins:
+            result_short += f", {mins}m"
+            result_en += f" and {mins} minutes"
+            result_fa += f" و {mins} دقیقه"
+        return result_short, result_en, result_fa
 
 
 class Channel:
@@ -40,7 +65,7 @@ class Channel:
     def GetHasPlanChannels():
         """return all channel table rows that has interval > 0"""
         Channel.Instances.clear()
-        channels_as_row = Channel.Database.get_channels_by_interval()  # fetch all positive interval channels
+        channels_as_row = Channel.Database().get_channels_by_interval()  # fetch all positive interval channels
         for row in channels_as_row:
             channel = Channel(channel_id=int(row[0]), interval=int(row[1]), last_post_time=int(row[2]),
                               channel_name=row[3], channel_title=row[4], owner_id=int(row[-1]))
@@ -53,15 +78,23 @@ class Channel:
         PostInterval("1 DAY", days=1), *[PostInterval(f"{d} DAYS", days=d) for d in [2, 3, 4, 5, 6, 7, 10, 14, 30, 60]]
     ]
 
-    def __init__(self, owner_id: int, channel_id: int, interval: int = 0, channel_name: str = None,
-                 channel_title: str = None, last_post_time: int = None) -> None:
-        self.owner_id = int(owner_id)
+    def __init__(self, channel_id: int, owner_id: int, interval: int = 0, channel_name: str = None, channel_title: str = None, last_post_time: int = None, is_active: bool = False,
+                 selected_coins: List[str] | None = None, selected_currencies: List[str] | None = None, message_header: str | None = None,
+                 message_footnote: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True, prevent_cache_cleanup: bool = False) -> None:
+        self.owner_id: int = int(owner_id)
         self.owner = None
-        self.id = int(channel_id)
-        self.name = channel_name  # username
-        self.title = channel_title
-        self.interval = interval
-        self.last_post_time = last_post_time  # don't forget database has this
+        self.id: int = int(channel_id)
+        self.name: str = channel_name  # username
+        self.title: str = channel_title
+        self.interval: int = interval
+        self.is_active: bool = is_active
+        self.selected_coins: List[str] = selected_coins or []
+        self.selected_currencies: List[str] = selected_currencies or []
+        self.message_header: str | None = message_header
+        self.message_footnote: str | None = message_footnote
+        self.message_show_date: bool = message_show_date
+        self.message_show_market_labels: bool = message_show_market_labels
+        self.last_post_time: int | None = last_post_time  # don't forget database has this
 
     def create(self):
         Channel.Database().add_channel(self)
@@ -74,15 +107,13 @@ class Channel:
                 del Channel.Instances[self.id]
             return False  # Plan removed
 
-        # if self.interval < 60:
-        #     Channel.Instances[self.id] = self
         Channel.Instances[self.id] = self
-        Channel.Database.plan_channel(self.owner_id, self.id, self.name, self.interval, self.title)
+        Channel.Database().set_channel_state(self.id, True)
         return True
 
     def stop_plan(self) -> bool:
         try:
-            Channel.Database.delete_channel(self.id)
+            Channel.Database().delete_channel(self.id)
             if self.id in Channel.Instances:
                 del Channel.Instances[self.id]
         except Exception as ex:
@@ -90,12 +121,20 @@ class Channel:
             return False
         return True
 
+    @property
+    def coins_as_str(self):
+        return ';'.join(self.selected_coins)
+
+    @property
+    def currencies_as_str(self):
+        return ';'.join(self.selected_currencies)
+
     @staticmethod
     def Get(channel_id):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         if channel_id in Channel.Instances:
             return Channel.Instances[channel_id]
-        row = Channel.Database.get_channel(channel_id)
+        row = Channel.Database().get_channel(channel_id)
         if row:
             return Channel.ExtractQueryRowData(row)
 
@@ -106,11 +145,12 @@ class Channel:
     
     @staticmethod
     def ExtractQueryRowData(row: tuple):
-        return Channel(channel_id=int(row[0]), channel_name=row[1], channel_title=int(row[2]),
-                           interval=int(row[3]), last_post_time=int(row[4]), owner_id=int(row[-1]))
+        return Channel(channel_id=int(row[0]), channel_name=row[1], channel_title=row[2],
+                           interval=int(row[3]), is_active=bool(row[4]), selected_coins=DatabaseInterface.StringToList(row[5]),
+                            selected_currencies=DatabaseInterface.StringToList(row[6]), message_header=row[7], message_footnote=row[8],
+                            message_show_date=bool(row[9]), message_show_market_labels=bool(row[10]), last_post_time=int(row[-2] or 0), owner_id=int(row[-1]))
     
     @staticmethod
     def GetByOwner(owner_chat_id: int):
         rows = Channel.Database().get_user_channels(owner_chat_id)
         return list(map(Channel.ExtractQueryRowData, rows))
-        

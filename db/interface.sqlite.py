@@ -218,7 +218,7 @@ class DatabaseInterface:
             columns = ', '.join(self.GROUPS_COLUMNS)
             query = f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (?{', ?' * (len(self.GROUPS_COLUMNS) - 1)})"
             self.execute(False, query, group.id, group.name, group.title, group.coins_as_str, group.currencies_as_str,
-                        group.message_header, group.message_footer, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id)
+                        group.message_header, group.message_footnote, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id)
             log(f"New group: {group} saved into database successfully.", category_name='DatabaseInfo')
         except Exception as ex:
             log(f"Cannot save this group:{group}", ex, category_name='DatabaseError')
@@ -233,7 +233,7 @@ class DatabaseInterface:
 
         affected_groups = cursor.execute(f'UPDATE {self.TABLE_GROUPS} SET {columns_to_set} WHERE {self.GROUP_ID}=?',
                         (group.name, group.title, group.coins_as_str, group.currencies_as_str, group.message_header,
-                        group.message_footer, int(group.message_show_date),
+                        group.message_footnote, int(group.message_show_date),
                         int(group.message_show_market_labels), group.owner_id, group.id))
 
         if not affected_groups.rowcount:

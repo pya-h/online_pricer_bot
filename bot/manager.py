@@ -10,6 +10,7 @@ from json import dumps as jsonify
 from typing import List, Dict, Tuple, Set
 from bot.post import PostMan
 from models.account import Account
+from models.channel import Channel, PostInterval
 from tools.manuwriter import log
 from tools.mathematix import persianify, cut_and_separate
 from models.alarms import PriceAlarm
@@ -121,6 +122,7 @@ class BotMan:
         ADMIN_DOWNGRADE_USER = 6
         VERIFY_BOT_IS_ADMIN = 7
         SELECT_POST_INTERVAL = 8
+        START_CHANNEL_POSTING = 9
         NONE = 0
 
         @staticmethod
@@ -142,6 +144,8 @@ class BotMan:
                     return BotMan.QueryActions.VERIFY_BOT_IS_ADMIN
                 case 8:
                     return BotMan.QueryActions.SELECT_POST_INTERVAL
+                case 9:
+                    return BotMan.QueryActions.START_CHANNEL_POSTING
             return BotMan.QueryActions.NONE
 
     class ChatType(Enum):
@@ -684,3 +688,24 @@ class BotMan:
                     for i in range(math_ceil(keys_count // 5))]
 
         return InlineKeyboardMarkup(keys)
+    
+    async def prepare_channel(self, ctx: CallbackContext, owner: Account, channel_id: int, interval: int):
+        try:
+            channel_response: Message = await ctx.bot.send_message(chat_id=channel_id, text="OK")
+            await ctx.bot.delete_message(chat_id=channel_id, message_id=channel_response.message_id)
+            channel = Channel(channel_id, owner.chat_id, int(interval), channel_response.chat.username or None, channel_response.chat.title or 'Unnamed')
+            channel.create()
+            post_interval, desc_en, desc_fa = PostInterval(minutes=interval).timestamps
+            interval_description: str = None
+            if owner.language.lower() == 'fa':
+                post_interval = persianify(post_interval)
+                interval_description = persianify(desc_fa)
+            else:
+                interval_description = desc_en
+            
+            await ctx.bot.send_message(chat_id=owner.chat_id, text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
+                                    reply_markup=self.action_inline_keyboard(self.QueryActions.START_CHANNEL_POSTING, {channel_id: "start"}, owner.language, columns_in_a_row=1))
+        except Exception as ex:
+            log("Getting and planning channel data failed.", ex, category_name="Channels")
+            return False
+        return True

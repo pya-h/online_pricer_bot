@@ -417,22 +417,29 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             except Exception as ex:
                 await query.message.edit_text(text=botman.error('factory_reset_incomplete', account.language))
                 log(f'User {account.chat_id} factory reset failed!', ex, 'FactoryReset')
-               
         case BotMan.QueryActions.SELECT_TUTORIAL.value:
             import resources.longtext as long_texts
             await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language.lower()])
             return
-        case BotMan.QueryActions.SELECT_POST_INTERVAL.value:
+        case BotMan.QueryActions.SELECT_POST_INTERVAL.value: 
+            # TODO: Also add this code for when user enters interval by keyboard
             account = Account.Get(query.message.chat)
             channel_id = account.get_cache('channel_chat_id')
             if not channel_id:
+                await query.message.edit_text(botman.error('error_while_planning_channel', account.language))  
+            elif not (await botman.prepare_channel(context, account, channel_id, value)):
                 await query.message.edit_text(botman.error('error_while_planning_channel', account.language))
-                account.clear_cache()
-                return
-            # send a message and delete to obtain all channel data
-            channel = Channel(owner_id=query.message.chat_id, channel_id=channel_id, interval=value)
-            channel.create()
-            # send message that says click to start
+
+            account.clear_cache()
+            return
+
+        case BotMan.QueryActions.START_CHANNEL_POSTING.value:
+            channel = Channel.Get(value)
+            if not channel:
+                await query.message.edit_text(botman.error('error_while_planning_channel', account.language))  
+            channel.plan()  # TODO: check this again
+            await query.message.edit_text(botman.text('channel_posting_started', account.language))
+            # TODO: Write the post job part.
         case _:
             if not account.authorization(context.args):
                 await query.message.edit_text(botman.error('what_the_fuck', account.language))

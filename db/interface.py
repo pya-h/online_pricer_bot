@@ -19,8 +19,9 @@ class DatabaseInterface:
          'state', 'cache', 'admin', 'language')
 
     TABLE_CHANNELS = "channels"  # channels to be scheduled
-    CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_INTERVAL, CHANNEL_LAST_POST_TIME, CHANNEL_OWNER_ID) = \
-        ("id", "name", "title", "post_interval", "last_post_time", "owner_id")
+    CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_INTERVAL, CHANNEL_IS_ACTIVE, CHANNEL_COINS, CHANNEL_CURRENCIES,
+                        CHANNEL_MESSAGE_HEADER, CHANNEL_MESSAGE_FOOTNOTE, CHANNEL_MESSAGE_SHOW_DATE, CHANNEL_MESSAGE_SHOW_MARKET_LABELS, CHANNEL_LAST_POST_TIME, CHANNEL_OWNER_ID) = \
+        ("id", "name", "title", "post_interval", "is_active", "coins", "currencies", "msg_header", "msg_footnote", "msg_show_date", "msg_show_market_labels", "last_post_time", "owner_id")
     
     TABLE_GROUPS = "supergroups"  # group to be scheduled
     GROUPS_COLUMNS = (GROUP_ID, GROUP_NAME, GROUP_TITLE, GROUP_COINS, GROUP_CURRENCIES, GROUP_MESSAGE_HEADER, GROUP_MESSAGE_FOOTNOTE, GROUP_MESSAGE_SHOW_DATE, GROUP_MESSAGE_SHOW_MARKET_LABELS, GROUP_OWNER_ID) = \
@@ -66,7 +67,7 @@ class DatabaseInterface:
             self.connect()
             
         return self.__connection_instance
-    
+
     def setup(self):
         try:
             cursor = self.connection.cursor()
@@ -87,8 +88,10 @@ class DatabaseInterface:
             cursor.execute(f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_CHANNELS}'")
             if not cursor.fetchone():
                 query = f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} BIGINT PRIMARY KEY, " + \
-                        f"{self.CHANNEL_NAME} VARCHAR(32), {self.CHANNEL_TITLE} VARCHAR(128) NOT NULL," + \
-                        f"{self.CHANNEL_INTERVAL} INTEGER NOT NULL, {self.CHANNEL_LAST_POST_TIME} INTEGER, " + \
+                        f"{self.CHANNEL_NAME} VARCHAR(32) NOT NULL, {self.CHANNEL_TITLE} VARCHAR(128), {self.CHANNEL_INTERVAL} INTEGER NOT NULL," + \
+                        f"{self.CHANNEL_IS_ACTIVE} TINYINT DEFAULT 0, {self.CHANNEL_COINS} VARCHAR(1024), {self.CHANNEL_CURRENCIES} VARCHAR(1024), " + \
+                        f"{self.CHANNEL_MESSAGE_HEADER} VARCHAR(256), {self.CHANNEL_MESSAGE_FOOTNOTE} VARCHAR(256), " + \
+                        f"{self.CHANNEL_MESSAGE_SHOW_DATE} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_SHOW_MARKET_LABELS} BOOLEAN DEFAULT 1, {self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, " + \
                         f"{self.CHANNEL_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
                 # create table account
                 cursor.execute(query)
@@ -97,7 +100,7 @@ class DatabaseInterface:
             cursor.execute(f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_GROUPS}'")
             if not cursor.fetchone():
                 query = f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} BIGINT PRIMARY KEY, " + \
-                        f"{self.GROUP_NAME} VARCHAR(32), {self.GROUP_TITLE} VARCHAR(128) NOT NULL," + \
+                        f"{self.GROUP_NAME} VARCHAR(32), {self.GROUP_TITLE} VARCHAR(128)," + \
                         f"{self.GROUP_COINS} VARCHAR(1024), {self.GROUP_CURRENCIES} VARCHAR(1024), " + \
                         f"{self.GROUP_MESSAGE_HEADER} VARCHAR(256), {self.GROUP_MESSAGE_FOOTNOTE} VARCHAR(256), " + \
                         f"{self.GROUP_MESSAGE_SHOW_DATE} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_LABELS} BOOLEAN DEFAULT 1, " + \
@@ -191,11 +194,12 @@ class DatabaseInterface:
 
     def add_channel(self, channel):
         cursor = self.connection.cursor()
-        now_in_minutes = time() // 60
         columns_to_set = ', '.join([f'{field}=%s' for field in self.CHANNELS_COLUMNS[1:]])
         cursor.execute(f'UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s', \
-                        (channel.name, channel.title, channel.owner_id, channel.interval, now_in_minutes, channel.id))
-        
+                        (channel.name, channel.title, channel.interval, int(channel.is_active), channel.coins_as_str,
+                            channel.currencies_as_str, channel.message_header, channel.message_footnote, int(channel.message_show_date),
+                            int(channel.message_show_market_labels), channel.last_post_time, channel.owner_id, channel.id))
+            
         if cursor.rowcount:
             log(f"Channel with the id of [{channel.id}, {channel.name}] has been RE-planned by: {channel.owner_id}",
                         category_name='DatabaseInfo')
@@ -206,7 +210,9 @@ class DatabaseInterface:
                 return
             columns = ', '.join(self.CHANNELS_COLUMNS)
             cursor.execute(f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})",
-                           (channel.id, channel.name, channel.title, channel.owner_id, channel.interval, now_in_minutes))
+                           (channel.id, channel.name, channel.title, channel.interval, int(channel.is_active), channel.coins_as_str,
+                                channel.currencies_as_str, channel.message_header, channel.message_footnote, int(channel.message_show_date),
+                                int(channel.message_show_market_labels), channel.last_post_time, channel.owner_id))
             log(f"New channel with the id of [{channel.id}, {channel.name}] has been planned by: {channel.owner_id}",
                 category_name='DatabaseInfo')
         self.connection.commit()
@@ -223,8 +229,16 @@ class DatabaseInterface:
 
     def get_channels_by_interval(self, min_interval: int = 0) -> list:
         """Finds all the channels with plan interval > min_interval"""
-        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_INTERVAL} > ?",
+        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_INTERVAL} > %s",
                             min_interval)
+
+    def set_channel_state(self, channel_id: int, is_active: bool = True):
+        """Delete channel and its planning"""
+        self.execute(False, f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_IS_ACTIVE}=%s WHERE {self.CHANNEL_ID} = %s", int(is_active), channel_id)
+
+    def delete_channel(self, channel_id: int):
+        """Delete channel and its planning"""
+        self.execute(False, f"DELETE FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID} = %s", channel_id)
 
     def add_group(self, group):
         if not group:
@@ -233,7 +247,7 @@ class DatabaseInterface:
             columns = ', '.join(self.GROUPS_COLUMNS)
             query = f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})"
             self.execute(False, query, group.id, group.name, group.title, group.coins_as_str, group.currencies_as_str,
-                        group.message_header, group.message_footer, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id)
+                        group.message_header, group.message_footnote, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id)
             log(f"New group: {group} saved into database successfully.", category_name='DatabaseInfo')
         except Exception as ex:
             log(f"Cannot save this group:{group}", ex, category_name='DatabaseError')
@@ -247,7 +261,7 @@ class DatabaseInterface:
 
         cursor.execute(f'UPDATE {self.TABLE_GROUPS} SET {columns_to_set} WHERE {self.GROUP_ID}=%s',
                         (group.name, group.title, group.coins_as_str, group.currencies_as_str, group.message_header,
-                        group.message_footer, int(group.message_show_date),
+                        group.message_footnote, int(group.message_show_date),
                         int(group.message_show_market_labels), group.owner_id, group.id))
 
         if not cursor.rowcount:
@@ -258,7 +272,7 @@ class DatabaseInterface:
             columns: str = ', '.join(self.GROUPS_COLUMNS)
             cursor.execute(f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})",
                            (group.id, group.name, group.title, group.coins_as_str, group.currencies_as_str,
-                            group.message_header, group.message_footer, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id))
+                            group.message_header, group.message_footnote, int(group.message_show_date), int(group.message_show_market_labels), group.owner_id))
             log("New group started using this bot with id=: " + group.__str__(), category_name='DatabaseInfo')
         self.connection.commit()
         cursor.close()
@@ -273,7 +287,7 @@ class DatabaseInterface:
         return self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s", owner_chat_id)
 
     def execute(self, is_fetch_query: bool, query: str, *params):
-        """Execute queries that doesnt return result such as insert or delete"""
+        """Execute queries that doesn't return result such as insert or delete"""
         result = None
         cursor = self.connection.cursor()
         cursor.execute(query, (*params,))
@@ -284,10 +298,6 @@ class DatabaseInterface:
             self.connection.commit()
         cursor.close()
         return result
-
-    def delete_channel(self, channel_id: int):
-        """Delete channel and its planning"""
-        self.execute(False, f"DELETE FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID} = ?", channel_id)
 
     def create_new_alarm(self, alarm):
         fields = ', '.join(
