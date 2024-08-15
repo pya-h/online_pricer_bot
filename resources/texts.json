@@ -28,11 +28,11 @@
             "fa": "⚙️ تنظیمات",
             "en": "⚙️ Settings"
         },
-        "use_in_channel": {
+        "my_channels": {
             "fa": "پلنر کانال",
             "en": "Channel Planner"
         },
-        "use_in_group": {
+        "my_groups": {
             "fa": "قیمت گوی گروه",
             "en": "Group Price Teller"
         }

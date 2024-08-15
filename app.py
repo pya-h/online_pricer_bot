@@ -686,11 +686,14 @@ async def handle_messages(update: Update, context: CallbackContext):
                                             }, language=account.language, in_main_keyboard=True))
 
         # Premium commands
-        case BotMan.Commands.USE_IN_CHANNEL_FA.value | BotMan.Commands.USE_IN_CHANNEL_EN.value:
+        case BotMan.Commands.MY_CHANNELS_FA.value | BotMan.Commands.MY_CHANNELS_EN.value:
             await cmd_start_using_in_channel(update, context)
-        case BotMan.Commands.USE_IN_GROUP_FA.value | BotMan.Commands.USE_IN_GROUP_EN.value:
-            await update.message.reply_text(botman.text('add_bot_as_group_admin', Account.Get(update.message.chat).language))
-
+        case BotMan.Commands.MY_GROUPS_FA.value | BotMan.Commands.MY_GROUPS_EN.value:
+            account = Account.Get(update.message.chat)
+            if not account.my_groups_count:
+                await update.message.reply_text(botman.text('add_bot_as_group_admin', Account.Get(update.message.chat).language))
+                return
+            
         # admin options:
         case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:
             await cmd_upgrade_user(update, context)

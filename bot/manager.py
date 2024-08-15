@@ -46,72 +46,61 @@ class BotMan:
     CALLBACK_DATA_JOINER = '&'
     class Commands(Enum):
         GET_FA = resourceman.mainkeyboard('get_prices', 'fa')
+        GET_EN = resourceman.mainkeyboard('get_prices', 'en')
         CALCULATOR_FA = resourceman.mainkeyboard('calculator', 'fa')
-        CRYPTOS_FA = resourceman.keyboard('crypto', 'fa')
-        NATIONAL_CURRENCIES_FA = resourceman.keyboard('currency', 'fa')
-        GOLDS_FA = resourceman.keyboard('gold', 'fa')
+        CALCULATOR_EN = resourceman.mainkeyboard('calculator', 'en')
         CREATE_ALARM_FA = resourceman.mainkeyboard('create_alarm', 'fa')
-        CANCEL_FA = resourceman.keyboard('cancel', 'fa')
+        CREATE_ALARM_EN = resourceman.mainkeyboard('create_alarm', 'en')
         CONFIG_PRICE_LIST_FA = resourceman.mainkeyboard('config_lists')
+        CONFIG_PRICE_LIST_EN = resourceman.mainkeyboard('config_lists', 'en')
         CONFIG_CALCULATOR_FA = resourceman.mainkeyboard('config_calculator', 'fa')
+        CONFIG_CALCULATOR_EN = resourceman.mainkeyboard('config_calculator', 'en')
         LIST_ALARMS_FA = resourceman.mainkeyboard('list_alarms', 'fa')
-        SETTINGS_FA = resourceman.mainkeyboard('settings', 'fa')
+        LIST_ALARMS_EN = resourceman.mainkeyboard('list_alarms', 'en')
         GO_PREMIUM_FA = resourceman.keyboard('premium', 'fa')
+        GO_PREMIUM_EN = resourceman.keyboard('premium', 'en')
+        SETTINGS_FA = resourceman.mainkeyboard('settings', 'fa')
+        SETTINGS_EN = resourceman.mainkeyboard('settings', 'en')
         MY_PREMIUM_PLAN_DURATION_FA = resourceman.keyboard('my_premium_duration', 'fa')
+        MY_PREMIUM_PLAN_DURATION_EN = resourceman.keyboard('my_premium_duration', 'en')
+        MY_CHANNELS_FA = resourceman.mainkeyboard('my_channels', 'fa')
+        MY_CHANNELS_EN = resourceman.mainkeyboard('my_channels', 'en')
+        MY_GROUPS_FA = resourceman.mainkeyboard('my_groups', 'fa')
+        MY_GROUPS_EN = resourceman.mainkeyboard('my_groups', 'en')
 
+        CRYPTOS_FA = resourceman.keyboard('crypto', 'fa')
+        CRYPTOS_EN = resourceman.keyboard('crypto', 'en')
+        NATIONAL_CURRENCIES_FA = resourceman.keyboard('currency', 'fa')
+        NATIONAL_CURRENCIES_EN = resourceman.keyboard('currency', 'en')
+        GOLDS_FA = resourceman.keyboard('gold', 'fa')
+        GOLDS_EN = resourceman.keyboard('gold', 'en')
+        
         TUTORIALS_FA = resourceman.keyboard('tutorials', 'fa')
+        TUTORIALS_EN = resourceman.keyboard('tutorials', 'en')
         SET_BOT_LANGUAGE_FA = resourceman.keyboard('set_language', 'fa')
+        SET_BOT_LANGUAGE_EN = resourceman.keyboard('set_language', 'en')
         FACTORY_RESET_FA = resourceman.keyboard('factory_reset', 'fa')
+        FACTORY_RESET_EN = resourceman.keyboard('factory_reset', 'en')
         SUPPORT_FA = resourceman.keyboard('support', 'fa')
+        SUPPORT_EN = resourceman.keyboard('support', 'en')
         OUR_OTHERS_FA = resourceman.keyboard('our_others', 'fa')
-
-        USE_IN_CHANNEL_FA = resourceman.mainkeyboard('use_in_channel', 'fa')
-        USE_IN_GROUP_FA = resourceman.mainkeyboard('use_in_group', 'fa')
-        MY_GROUP_FA = resourceman.mainkeyboard('my_group', 'fa')
+        OUR_OTHERS_EN = resourceman.keyboard('our_others', 'en')
 
         RETURN_FA = resourceman.keyboard('return', 'fa')
-
-        GET_EN = resourceman.mainkeyboard('get_prices', 'en')
-        CALCULATOR_EN = resourceman.mainkeyboard('calculator', 'en')
-        CRYPTOS_EN = resourceman.keyboard('crypto', 'en')
-        NATIONAL_CURRENCIES_EN = resourceman.keyboard('currency', 'en')
-        GOLDS_EN = resourceman.keyboard('gold', 'en')
-        CANCEL_EN = resourceman.keyboard('cancel', 'en')
-        CREATE_ALARM_EN = resourceman.mainkeyboard('create_alarm', 'en')
-        CONFIG_PRICE_LIST_EN = resourceman.mainkeyboard('config_lists', 'en')
-        CONFIG_CALCULATOR_EN = resourceman.mainkeyboard('config_calculator', 'en')
-        LIST_ALARMS_EN = resourceman.mainkeyboard('list_alarms', 'en')
-        SETTINGS_EN = resourceman.mainkeyboard('settings', 'en')
-        GO_PREMIUM_EN = resourceman.keyboard('premium', 'en')
-        MY_PREMIUM_PLAN_DURATION_EN = resourceman.keyboard('my_premium_duration', 'en')
-
-        TUTORIALS_EN = resourceman.keyboard('tutorials', 'en')
-        SET_BOT_LANGUAGE_EN = resourceman.keyboard('set_language', 'en')
-        FACTORY_RESET_EN = resourceman.keyboard('factory_reset', 'en')
-        SUPPORT_EN = resourceman.keyboard('support', 'en')
-        OUR_OTHERS_EN = resourceman.keyboard('our_others', 'en')
-        
-        USE_IN_CHANNEL_EN = resourceman.mainkeyboard('use_in_channel', 'en')
-        USE_IN_GROUP_EN = resourceman.mainkeyboard('use_in_group', 'en')
-        MY_GROUP_EN = resourceman.mainkeyboard('my_group', 'en')
-
         RETURN_EN = resourceman.keyboard('return', 'en')
+        CANCEL_FA = resourceman.keyboard('cancel', 'fa')
+        CANCEL_EN = resourceman.keyboard('cancel', 'en')
 
         ADMIN_NOTICES_FA = resourceman.keyboard('admin_notices', 'fa')
         ADMIN_NOTICES_EN = resourceman.keyboard('admin_notices', 'en')
-
         ADMIN_PLAN_CHANNEL_FA = resourceman.keyboard('admin_plan_channel', 'fa')
         ADMIN_PLAN_CHANNEL_EN = resourceman.keyboard('admin_plan_channel', 'en')
-
         ADMIN_STOP_CHANNEL_PLAN_FA = resourceman.keyboard('admin_stop_channel_plan', 'fa')
         ADMIN_STOP_CHANNEL_PLAN_EN = resourceman.keyboard('admin_stop_channel_plan', 'en')
-
         ADMIN_STATISTICS_FA = resourceman.keyboard('admin_statistics', 'fa')
         ADMIN_STATISTICS_EN = resourceman.keyboard('admin_statistics', 'en')
-
         ADMIN_UPGRADE_TO_PREMIUM_FA = resourceman.keyboard('admin_upgrade_to_premium', 'fa')
         ADMIN_UPGRADE_TO_PREMIUM_EN = resourceman.keyboard('admin_upgrade_to_premium', 'en')
-
         ADMIN_DOWNGRADE_USER_FA = resourceman.keyboard('admin_downgrade_user', 'fa')
         ADMIN_DOWNGRADE_USER_EN = resourceman.keyboard('admin_downgrade_user', 'en')
         
@@ -217,8 +206,8 @@ class BotMan:
              KeyboardButton(BotMan.Commands.CALCULATOR_FA.value)],
             [KeyboardButton(BotMan.Commands.LIST_ALARMS_FA.value),
              KeyboardButton(BotMan.Commands.CREATE_ALARM_FA.value)],
-            [KeyboardButton(BotMan.Commands.USE_IN_GROUP_FA.value),
-             KeyboardButton(BotMan.Commands.USE_IN_CHANNEL_FA.value)],
+            [KeyboardButton(BotMan.Commands.MY_GROUPS_FA.value),
+             KeyboardButton(BotMan.Commands.MY_CHANNELS_FA.value)],
         ]
         self.common_menu_main_keys_en = [
             [KeyboardButton(BotMan.Commands.CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.GET_EN.value)],
@@ -226,8 +215,8 @@ class BotMan:
              KeyboardButton(BotMan.Commands.CALCULATOR_EN.value)],
             [KeyboardButton(BotMan.Commands.LIST_ALARMS_EN.value),
              KeyboardButton(BotMan.Commands.CREATE_ALARM_EN.value)],
-            [KeyboardButton(BotMan.Commands.USE_IN_GROUP_EN.value),
-             KeyboardButton(BotMan.Commands.USE_IN_CHANNEL_EN.value)],
+            [KeyboardButton(BotMan.Commands.MY_GROUPS_EN.value),
+             KeyboardButton(BotMan.Commands.MY_CHANNELS_EN.value)],
         ]
 
         self.cancel_menu_key = {'fa': [
@@ -297,6 +286,8 @@ class BotMan:
                                     [KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]], resize_keyboard=True)
 
 
+    def get_community_config_keyboard(community_type: ChatType, language: str):
+        pass
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account.language)
 
