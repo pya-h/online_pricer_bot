@@ -157,6 +157,12 @@ class Channel:
                             message_show_date=bool(row[9]), message_show_market_labels=bool(row[10]), last_post_time=int(row[-2] or 0), owner_id=int(row[-1]))
     
     @staticmethod
-    def GetByOwner(owner_chat_id: int):
-        rows = Channel.Database().get_user_channels(owner_chat_id)
+    def GetByOwner(owner_chat_id: int, take: int | None = 1):
+        rows = Channel.Database().get_user_channels(owner_chat_id, take)
+        if rows == 1:
+            return Channel.ExtractQueryRowData(rows[0])
         return list(map(Channel.ExtractQueryRowData, rows))
+    
+    def save(self):
+        self.Database().update_channel(self)
+        return self

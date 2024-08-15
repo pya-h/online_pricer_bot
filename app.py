@@ -12,9 +12,9 @@ from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from models.alarms import PriceAlarm
 from typing import List
-from tools.exceptions import NoLatestDataException, InvalidInputException, MaxAddedCommunityException
+from tools.exceptions import NoLatestDataException, InvalidInputException, MaxAddedCommunityException, NoSuchThingException
 from models.group import Group
-from models.channel import Channel
+from models.channel import Channel, PostInterval
 
 
 
@@ -294,7 +294,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
             curreny_title = alarm.currency.upper()
             price = cut_and_separate(alarm.target_price)
 
-            if account.language.lower() == 'fa':
+            if account.language == 'fa':
                 index = persianify(index)
                 price = persianify(price)
                 curreny_title = botman.crypto_serv.CoinsInPersian[curreny_title] if curreny_title in botman.crypto_serv.CoinsInPersian else botman.currency_serv.CurrenciesInPersian[curreny_title]
@@ -304,7 +304,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
             descriptions[i] = f"{index}) " + botman.error('invalid_alarm_data', account.language)
         buttons[i] = InlineKeyboardButton(descriptions[i], callback_data=botman.action_callback_data(BotMan.QueryActions.DISABLE_ALARM, alarm.id))
 
-    if account.language.lower() == 'fa':
+    if account.language == 'fa':
         alarms_count = persianify(alarms_count)
     message_text = botman.text('u_have_n_alarms', account.language) % (str(alarms_count), ) \
         + ((":\n\n" + "\n".join(descriptions) + "\n\n" + botman.text('click_alarm_to_disable', account.language)) if my_alarms else ".")
@@ -392,7 +392,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                         alarm.set()
                         price_unit_str = botman.text(f'price_unit_{price_unit.lower()}', language=account.language)
                         current_price = cut_and_separate(target_price)
-                        lang = account.language.lower()
+                        lang = account.language
                         if lang == 'fa':
                             current_price = persianify(current_price)
                         await query.message.edit_text(text=botman.text('alarm_set', lang) % (currency_name if lang == 'fa' else symbol, target_price, price_unit_str))
@@ -419,24 +419,38 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                 log(f'User {account.chat_id} factory reset failed!', ex, 'FactoryReset')
         case BotMan.QueryActions.SELECT_TUTORIAL.value:
             import resources.longtext as long_texts
-            await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language.lower()])
+            await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language])
             return
         case BotMan.QueryActions.SELECT_POST_INTERVAL.value: 
-            # TODO: Also add this code for when user enters interval by keyboard
             account = Account.Get(query.message.chat)
             channel_id = account.get_cache('channel_chat_id')
-            if not channel_id:
-                await query.message.edit_text(botman.error('error_while_planning_channel', account.language))  
-            elif not (await botman.prepare_channel(context, account, channel_id, value)):
-                await query.message.edit_text(botman.error('error_while_planning_channel', account.language))
-
-            account.clear_cache()
+            try:
+                if account.state == Account.States.SELECT_POST_INTERVAL:
+                    if not channel_id or not (await botman.prepare_channel(context, account, channel_id, value)):
+                        raise InvalidInputException('Invalid channel data.')
+                elif account.state == Account.States.CHANGE_POST_INTERVAL:
+                    channel = Channel(channel_id, account.chat_id)
+                    if not channel:
+                        raise NoSuchThingException(channel_id)
+                    channel.interval = value
+                    channel.save()
+                    await query.message.reply_text(botman.text('update_successful', account.language))
+                else:
+                    raise InvalidInputException('Invalid account state.')
+            except NoSuchThingException:
+                await query.message.reply_text(botman.error('no_channels', account.language), reply_markup=botman.mainkeyboard(account))
+            except InvalidInputException:
+                await query.message.reply_text(botman.error('error_while_planning_channel', account.language), reply_markup=botman.mainkeyboard(account))
+            await query.message.delete()
+            account.change_state(clear_cache=True)
             return
 
         case BotMan.QueryActions.START_CHANNEL_POSTING.value:
             channel = Channel.Get(value)
             if not channel:
-                await query.message.edit_text(botman.error('error_while_planning_channel', account.language))  
+                await query.message.reply_text(botman.error('error_while_planning_channel', account.language), reply_markup=botman.mainkeyboard(account))  
+                await query.message.delete()
+                return
             channel.plan()  # TODO: check this again
             await query.message.edit_text(botman.text('channel_posting_started', account.language))
             # TODO: Write the post job part.
@@ -596,7 +610,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
 async def cmd_switch_language(update: Update, context: CallbackContext):
     acc = Account.Get(update.message.chat)
-    acc.language = "en" if acc.language.lower() == 'fa' else 'fa'
+    acc.language = "en" if acc.language == 'fa' else 'fa'
     await update.message.reply_text(botman.text('language_switched', acc.language))
     acc.save()
 
@@ -636,6 +650,26 @@ async def handle_messages(update: Update, context: CallbackContext):
             await list_user_alarms(update, context)
         case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
             await cmd_equalizer(update, context)
+        case BotMan.Commands.MY_CHANNELS_FA.value | BotMan.Commands.MY_CHANNELS_EN.value:
+            account = Account.Get(update.message.chat)
+            if not account.has_channels:
+                await cmd_start_using_in_channel(update, context)
+                return
+            account.add_cache('community_type', ChatType.CHANNEL)
+            await update.message.reply_text(botman.resourceman.keyboard('my_channels' if account.is_premium else "go_premium_to_activate_feature", account.language),
+                                            reply_markup=botman.get_community_config_keyboard(ChatType.CHANNEL, account.language))
+        case BotMan.Commands.MY_GROUPS_FA.value | BotMan.Commands.MY_GROUPS_EN.value:
+            account = Account.Get(update.message.chat)
+            if not account.has_groups:
+                await update.message.reply_text(botman.text('add_bot_as_group_admin', Account.Get(update.message.chat).language))
+                return
+            account.add_cache('community_type', ChatType.GROUP)
+            await update.message.reply_text(botman.resourceman.keyboard('my_groups' if account.is_premium else "go_premium_to_activate_feature", account.language),
+                                            reply_markup=botman.get_community_config_keyboard(ChatType.GROUP, account.language))
+        case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
+            await update.message.delete()
+            await botman.show_settings_menu(update)
+
 
         # Select market sub menu
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
@@ -648,10 +682,18 @@ async def handle_messages(update: Update, context: CallbackContext):
             if await list_type_is_selected(update):
                 await select_gold_menu(update, context)
 
-        # setting section:
-        case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
-            await update.message.delete()
-            await botman.show_settings_menu(update)
+        # community sub menu:
+        case BotMan.Commands.CHANNELS_CHANGE_INTERVAL_FA.value | BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN.value:
+            account = Account.Get(update.message.chat)
+            channel = Channel.GetByOwner(account.chat_id)
+            if not channel:
+                await update.message.reply_text(botman.error('no_channels', account.language), reply_markup=botman.mainkeyboard(account))
+                return
+            account.change_state(Account.States.CHANGE_POST_INTERVAL, 'channel_chat_id', channel.id)
+            # FIXME: Complete this, also handle premium check
+            await ctx.bot.send_message(chat_id=owner.chat_id, text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
+                                    reply_markup=self.action_inline_keyboard(self.QueryActions.START_CHANNEL_POSTING, {channel_id: "start"}, owner.language, columns_in_a_row=1))
+        # settings sub menu:
         case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
                 account = Account.Get(update.message.chat)
                 if not await botman.has_subscribed_us(account.chat_id, context):
@@ -685,29 +727,6 @@ async def handle_messages(update: Update, context: CallbackContext):
                                                 f'! {update.message.message_id}': 'close'
                                             }, language=account.language, in_main_keyboard=True))
 
-        # Premium commands
-        case BotMan.Commands.MY_CHANNELS_FA.value | BotMan.Commands.MY_CHANNELS_EN.value:
-            await cmd_start_using_in_channel(update, context)
-        case BotMan.Commands.MY_GROUPS_FA.value | BotMan.Commands.MY_GROUPS_EN.value:
-            account = Account.Get(update.message.chat)
-            if not account.my_groups_count:
-                await update.message.reply_text(botman.text('add_bot_as_group_admin', Account.Get(update.message.chat).language))
-                return
-            
-        # admin options:
-        case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:
-            await cmd_upgrade_user(update, context)
-        case BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value | BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value:
-            await cmd_list_users_to_downgrade(update, context)
-        case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
-            await cmd_send_post(update, context)
-        case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
-            await cmd_schedule_channel_update(update, context)
-        case BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value | BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value:
-            await cmd_stop_schedule(update, context)
-        case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
-            await cmd_report_statistics(update, context)
-
         # cancel/return options
         case BotMan.Commands.CANCEL_FA.value | BotMan.Commands.CANCEL_EN.value:
             account = Account.Get(update.message.chat)
@@ -718,11 +737,34 @@ async def handle_messages(update: Update, context: CallbackContext):
             account = Account.Get(update.message.chat)
             account.change_state(clear_cache=True)
             await update.message.reply_text(botman.text('what_can_i_do', account.language), reply_markup=botman.mainkeyboard(account))
+        
         # special states
         case _:
             # check account state first, to see if he/she is in input state
             account = Account.Get(update.message.chat)
             msg = update.message.text
+
+            if account.is_admin:
+                # admin options:
+                match msg:
+                    case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:
+                        await cmd_upgrade_user(update, context)
+                        return
+                    case BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value | BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value:
+                        await cmd_list_users_to_downgrade(update, context)
+                        return
+                    case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
+                        await cmd_send_post(update, context)
+                        return
+                    case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
+                        await cmd_schedule_channel_update(update, context)
+                        return
+                    case BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value | BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value:
+                        await cmd_stop_schedule(update, context)
+                        return
+                    case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
+                        await cmd_report_statistics(update, context)
+                        return
 
             match account.state:
                 case Account.States.INPUT_EQUALIZER_AMOUNT:
@@ -813,14 +855,35 @@ async def handle_messages(update: Update, context: CallbackContext):
                             }, in_main_keyboard=False))
 
                     if channel_chat_id:
-                        account.change_state(Account.States.SELECT_POST_INTERVAL, 'channel_chat_id', channel_chat_id, clear_cache=True)
-                        await update.message.reply_text(botman.text('select_post_interval'), reply_markup=BotMan.ArrangeInlineKeyboardButtons(Channel.SupportedIntervals, botman.QueryActions.SELECT_POST_INTERVAL))
+                        botman.select_post_interval_menu(update, account)
+                case Account.States.SELECT_POST_INTERVAL:
+                    interval: int = 0
+                    try:
+                        msg = msg.split()
+                        for term in msg:
+                            if term[-1].lower() == 'h':
+                                interval += int(term[:-1]) * 60
+                            elif term[-1].lower() == 'd':
+                                interval += int(term[:-1]) * 24 * 60
+                            elif term[-1].lower() == 'm' or term[-1].isdigit():
+                                interval += int(term[:-1])
+                    except:
+                        await update.message.reply_text(botman.error('unsupported_input_format', account.language))
+                        return
+                    channel_id = account.get_cache('channel_chat_id')
+                    if not channel_id or not (await botman.prepare_channel(context, account, channel_id, interval)):
+                        await update.message.reply_text(botman.error('error_while_planning_channel', account.language), reply_markup=botman.mainkeyboard(account))
+                    try:
+                        await context.bot.delete_message(chat_id=account.chat_id, message_id=int(account.get_cache('interval_menu_msg_id')))
+                    except:
+                        pass
+                    account.change_state(clear_cache=True)
                 case _:
                     if not account.authorization(context.args):
                         await update.message.reply_text(botman.error('what_the_fuck', account.language),
                                                     reply_markup=botman.mainkeyboard(account))
                         return
-                    
+
                     # Admin states
                     match account.state:
                         case Account.States.UPGRADE_USER:

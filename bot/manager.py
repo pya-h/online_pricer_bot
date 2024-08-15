@@ -86,6 +86,25 @@ class BotMan:
         OUR_OTHERS_FA = resourceman.keyboard('our_others', 'fa')
         OUR_OTHERS_EN = resourceman.keyboard('our_others', 'en')
 
+        CHANNELS_CHANGE_INTERVAL_FA = resourceman.keyboard('channels_change_interval', 'fa')
+        CHANNELS_CHANGE_INTERVAL_EN = resourceman.keyboard('channels_change_interval', 'en')
+        COMMUNITY_CONFIG_PRICE_LIST_FA = resourceman.keyboard('community_config_price_list', 'fa')
+        COMMUNITY_CONFIG_PRICE_LIST_EN = resourceman.keyboard('community_config_price_list', 'en')
+        COMMUNITY_TRIGGER_DATE_TAG_FA = resourceman.keyboard('community_trigger_date_tag', 'fa')
+        COMMUNITY_TRIGGER_DATE_TAG_EN = resourceman.keyboard('community_trigger_date_tag', 'en')
+        COMMUNITY_TRIGGER_MARKET_TAGS_FA = resourceman.keyboard('community_trigger_market_tags', 'fa')
+        COMMUNITY_TRIGGER_MARKET_TAGS_EN = resourceman.keyboard('community_trigger_market_tags', 'en')
+        COMMUNITY_SET_MESSAGE_HEADER_FA = resourceman.keyboard('community_set_message_header', 'fa')
+        COMMUNITY_SET_MESSAGE_HEADER_EN = resourceman.keyboard('community_set_message_header', 'en')
+        COMMUNITY_SET_MESSAGE_FOOTER_FA = resourceman.keyboard('community_set_message_footer', 'fa')
+        COMMUNITY_SET_MESSAGE_FOOTER_EN = resourceman.keyboard('community_set_message_footer', 'en')
+        CHANNEL_CHANGE_FA = resourceman.keyboard('channel_change', 'fa')
+        CHANNEL_CHANGE_EN = resourceman.keyboard('channel_change', 'en')
+        GROUP_CHANGE_FA = resourceman.keyboard('change_group', 'fa')
+        GROUP_CHANGE_EN = resourceman.keyboard('change_group', 'en')
+        COMMUNITY_DISCONNECT_FA = resourceman.keyboard('community_disconnect', 'fa')
+        COMMUNITY_DISCONNECT_EN = resourceman.keyboard('community_disconnect', 'en')
+
         RETURN_FA = resourceman.keyboard('return', 'fa')
         RETURN_EN = resourceman.keyboard('return', 'en')
         CANCEL_FA = resourceman.keyboard('cancel', 'fa')
@@ -237,7 +256,7 @@ class BotMan:
                                         [KeyboardButton(BotMan.Commands.GOLDS_FA.value)],
                                         [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)],
                                         *self.return_key['fa']] \
-                            if lang.lower() == 'fa' else [
+                            if lang == 'fa' else [
                                 [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_EN.value)],
                                 [KeyboardButton(BotMan.Commands.GOLDS_EN.value)],
                                 [KeyboardButton(BotMan.Commands.CRYPTOS_EN.value)], *self.return_key['en']
@@ -287,7 +306,34 @@ class BotMan:
 
 
     def get_community_config_keyboard(community_type: ChatType, language: str):
-        pass
+        if community_type == Channel:
+            return ReplyKeyboardMarkup([
+                [BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA, BotMan.Commands.CHANNELS_CHANGE_INTERVAL_FA],
+                [BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA, BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA],
+                [BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA, BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA],
+                [BotMan.Commands.COMMUNITY_DISCONNECT_FA, BotMan.Commands.CHANNEL_CHANGE_FA],
+                [BotMan.Commands.RETURN_FA],
+            ] if language == 'fa' else [
+                [BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN, BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN],
+                [BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN, BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN],
+                [BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN, BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN],
+                [BotMan.Commands.COMMUNITY_DISCONNECT_EN, BotMan.Commands.CHANNEL_CHANGE_EN],
+                [BotMan.Commands.RETURN_EN],
+            ])
+        return ReplyKeyboardMarkup([
+            [BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA],
+            [BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA, BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA],
+            [BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA, BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA],
+            [BotMan.Commands.COMMUNITY_DISCONNECT_FA, BotMan.Commands.GROUP_CHANGE_FA],
+            [BotMan.Commands.RETURN_FA],
+        ] if language == 'fa' else [
+            [BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN, BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN],
+            [BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN, BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN],
+            [BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN, BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN],
+            [BotMan.Commands.COMMUNITY_DISCONNECT_EN, BotMan.Commands.GROUP_CHANGE_EN],
+            [BotMan.Commands.RETURN_EN],
+        ])
+    
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account.language)
 
@@ -324,7 +370,7 @@ class BotMan:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
             if idx_last > buttons_count:
                 idx_last = buttons_count
-            lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language.lower() == 'fa' else (
+            lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language == 'fa' else (
                 idx_first + 1, idx_last)
 
             pages_count = int(buttons_count / max_page_buttons)
@@ -415,7 +461,7 @@ class BotMan:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
             if idx_last > buttons_count:
                 idx_last = buttons_count
-            lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language.lower() == 'fa' else (
+            lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language == 'fa' else (
                 idx_first + 1, idx_last)
 
             pages_count = int(buttons_count / max_page_buttons)
@@ -578,7 +624,7 @@ class BotMan:
     async def show_settings_menu(self, update: Update):
         account = Account.Get(update.message.chat)
         keyboard = ReplyKeyboardMarkup([[KeyboardButton(BotMan.Commands.TUTORIALS_FA.value)], [KeyboardButton(BotMan.Commands.FACTORY_RESET_FA.value), KeyboardButton(BotMan.Commands.SET_BOT_LANGUAGE_FA.value)],
-                                    [KeyboardButton(BotMan.Commands.OUR_OTHERS_FA.value), KeyboardButton(BotMan.Commands.SUPPORT_FA.value)], [KeyboardButton(BotMan.Commands.RETURN_FA.value)]] if account.language.lower() == 'fa' else \
+                                    [KeyboardButton(BotMan.Commands.OUR_OTHERS_FA.value), KeyboardButton(BotMan.Commands.SUPPORT_FA.value)], [KeyboardButton(BotMan.Commands.RETURN_FA.value)]] if account.language == 'fa' else \
                                         [[KeyboardButton(BotMan.Commands.TUTORIALS_EN.value)], [KeyboardButton(BotMan.Commands.FACTORY_RESET_EN.value), KeyboardButton(BotMan.Commands.SET_BOT_LANGUAGE_EN.value)],
                                     [KeyboardButton(BotMan.Commands.OUR_OTHERS_EN.value), KeyboardButton(BotMan.Commands.SUPPORT_EN.value)], [KeyboardButton(BotMan.Commands.RETURN_EN.value)]], resize_keyboard=True, one_time_keyboard=False)
         return await update.message.reply_text(self.resourceman.mainkeyboard('settings', account.language), reply_markup=keyboard)
@@ -690,12 +736,12 @@ class BotMan:
             channel.create()
             post_interval, desc_en, desc_fa = PostInterval(minutes=interval).timestamps
             interval_description: str = None
-            if owner.language.lower() == 'fa':
+            if owner.language == 'fa':
                 post_interval = persianify(post_interval)
                 interval_description = persianify(desc_fa)
             else:
                 interval_description = desc_en
-            
+            # FIXME: Complete this, also handle premium check
             await ctx.bot.send_message(chat_id=owner.chat_id, text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
                                     reply_markup=self.action_inline_keyboard(self.QueryActions.START_CHANNEL_POSTING, {channel_id: "start"}, owner.language, columns_in_a_row=1))
         except MaxAddedCommunityException:
@@ -705,3 +751,9 @@ class BotMan:
             log("Getting and planning channel data failed.", ex, category_name="Channels")
             return False
         return True
+    
+    async def select_post_interval_menu(self, update: Update, account: Account, channel_id: int, next_state: Account.States):
+        account.change_state(next_state, 'channel_chat_id', channel_id, clear_cache=True)
+        response_message = await update.message.reply_text(self.text('select_post_interval'), 
+                                                        reply_markup=self.ArrangeInlineKeyboardButtons(Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL))
+        account.add_cache('interval_menu_msg_id', response_message.message_id)

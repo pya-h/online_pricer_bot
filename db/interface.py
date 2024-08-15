@@ -20,12 +20,12 @@ class DatabaseInterface:
 
     TABLE_CHANNELS = "channels"  # channels to be scheduled
     CHANNELS_COLUMNS = (CHANNEL_ID, CHANNEL_NAME, CHANNEL_TITLE, CHANNEL_INTERVAL, CHANNEL_IS_ACTIVE, CHANNEL_COINS, CHANNEL_CURRENCIES,
-                        CHANNEL_MESSAGE_HEADER, CHANNEL_MESSAGE_FOOTNOTE, CHANNEL_MESSAGE_SHOW_DATE, CHANNEL_MESSAGE_SHOW_MARKET_LABELS, CHANNEL_LAST_POST_TIME, CHANNEL_OWNER_ID) = \
-        ("id", "name", "title", "post_interval", "is_active", "coins", "currencies", "msg_header", "msg_footnote", "msg_show_date", "msg_show_market_labels", "last_post_time", "owner_id")
+                        CHANNEL_MESSAGE_HEADER, CHANNEL_MESSAGE_FOOTNOTE, CHANNEL_MESSAGE_DATE_TAG, CHANNEL_MESSAGE_MARKET_TAGS, CHANNEL_LAST_POST_TIME, CHANNEL_OWNER_ID) = \
+        ("id", "name", "title", "post_interval", "is_active", "coins", "currencies", "msg_header", "msg_footnote", "msg_date_tag", "msg_market_tags", "last_post_time", "owner_id")
     
     TABLE_GROUPS = "supergroups"  # group to be scheduled
-    GROUPS_COLUMNS = (GROUP_ID, GROUP_NAME, GROUP_TITLE, GROUP_COINS, GROUP_CURRENCIES, GROUP_MESSAGE_HEADER, GROUP_MESSAGE_FOOTNOTE, GROUP_MESSAGE_SHOW_DATE, GROUP_MESSAGE_SHOW_MARKET_LABELS, GROUP_OWNER_ID) = \
-        ("id", "name", "title", "coins", "currencies", "msg_header", "msg_footnote", "msg_show_date", "msg_show_market_labels", "owner_id")
+    GROUPS_COLUMNS = (GROUP_ID, GROUP_NAME, GROUP_TITLE, GROUP_COINS, GROUP_CURRENCIES, GROUP_MESSAGE_HEADER, GROUP_MESSAGE_FOOTNOTE, GROUP_MESSAGE_DATE_TAG, GROUP_MESSAGE_MARKET_TAGS, GROUP_OWNER_ID) = \
+        ("id", "name", "title", "coins", "currencies", "msg_header", "msg_footnote", "msg_date_tag", "msg_market_tags", "owner_id")
 
     TABLE_PRICE_ALARMS = "alarms"
     PRICE_ALARMS_COLUMNS = (
@@ -77,7 +77,7 @@ class DatabaseInterface:
                 query = f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY," + \
                         f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), " + \
                         f"{self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} VARCHAR(256) DEFAULT NULL, " + \
-                        f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2))"
+                        f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
                 # create table account
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_ACCOUNTS} table created successfully.", category_name='DatabaseInfo')
@@ -91,8 +91,8 @@ class DatabaseInterface:
                         f"{self.CHANNEL_NAME} VARCHAR(32) NOT NULL, {self.CHANNEL_TITLE} VARCHAR(128), {self.CHANNEL_INTERVAL} INTEGER NOT NULL," + \
                         f"{self.CHANNEL_IS_ACTIVE} TINYINT DEFAULT 0, {self.CHANNEL_COINS} VARCHAR(1024), {self.CHANNEL_CURRENCIES} VARCHAR(1024), " + \
                         f"{self.CHANNEL_MESSAGE_HEADER} VARCHAR(256), {self.CHANNEL_MESSAGE_FOOTNOTE} VARCHAR(256), " + \
-                        f"{self.CHANNEL_MESSAGE_SHOW_DATE} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_SHOW_MARKET_LABELS} BOOLEAN DEFAULT 1, {self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, " + \
-                        f"{self.CHANNEL_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
+                        f"{self.CHANNEL_MESSAGE_DATE_TAG} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_MARKET_TAGS} BOOLEAN DEFAULT 1, {self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, " + \
+                        f"{self.CHANNEL_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
                 # create table account
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
@@ -103,8 +103,8 @@ class DatabaseInterface:
                         f"{self.GROUP_NAME} VARCHAR(32), {self.GROUP_TITLE} VARCHAR(128)," + \
                         f"{self.GROUP_COINS} VARCHAR(1024), {self.GROUP_CURRENCIES} VARCHAR(1024), " + \
                         f"{self.GROUP_MESSAGE_HEADER} VARCHAR(256), {self.GROUP_MESSAGE_FOOTNOTE} VARCHAR(256), " + \
-                        f"{self.GROUP_MESSAGE_SHOW_DATE} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_LABELS} BOOLEAN DEFAULT 1, " + \
-                        f"{self.GROUP_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
+                        f"{self.GROUP_MESSAGE_DATE_TAG} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_MARKET_TAGS} BOOLEAN DEFAULT 1, " + \
+                        f"{self.GROUP_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
                 # create table account
                 cursor.execute(query)
                 log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name='DatabaseInfo')
@@ -115,7 +115,7 @@ class DatabaseInterface:
                         f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTO_INCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} BIGINT NOT NULL, " + \
                         f"{self.PRICE_ALARM_TARGET_PRICE} DOUBLE NOT NULL, {self.PRICE_ALARM_TARGET_CURRENCY} VARCHAR(16) NOT NULL, " + \
                         f"{self.PRICE_ALARM_CHANGE_DIRECTION} TINYINT(2), {self.PRICE_ALARM_PRICE_UNIT} VARCHAR(16) NOT NULL, " + \
-                        f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
+                        f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
 
                 cursor.execute(query)
                 log(f"plus Database {self.TABLE_PRICE_ALARMS} table created successfully.", category_name='DatabaseInfo')
@@ -193,6 +193,20 @@ class DatabaseInterface:
         log(f"Account with chat_id={account.chat_id} downgraded to free user.")
 
     def add_channel(self, channel):
+        if not channel:
+            raise Exception("You must provide an Group to add")
+        try:
+            columns = ', '.join(self.GROUPS_COLUMNS)
+            query = f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})",
+            self.execute(False, query, (channel.id, channel.name, channel.title, channel.interval, int(channel.is_active), channel.coins_as_str,
+                            channel.currencies_as_str, channel.message_header, channel.message_footnote, int(channel.message_show_date),
+                            int(channel.message_show_market_labels), channel.last_post_time, channel.owner_id))
+            log(f"New channel: {channel} saved into database successfully.", category_name='DatabaseInfo')
+        except Exception as ex:
+            log(f"Cannot save this channel:{channel}", ex, category_name='DatabaseError')
+            raise ex  # custom ex needed here too
+
+    def update_channel(self, channel):
         cursor = self.connection.cursor()
         columns_to_set = ', '.join([f'{field}=%s' for field in self.CHANNELS_COLUMNS[1:]])
         cursor.execute(f'UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s', \
@@ -223,9 +237,10 @@ class DatabaseInterface:
                                 channel_id)
         return channels[0] if channels else None
 
-    def get_user_channels(self, owner_chat_id: int) -> list:
+    def get_user_channels(self, owner_chat_id: int, take: int | None = 1) -> list:
         """Get all channels owned by this account"""
-        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s", owner_chat_id)
+        limitation = f"LIMIT {take}" if take else ''
+        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s {limitation}", owner_chat_id)
 
     def user_channels_count(self, owner_chat_id: int) -> int:
         """Get count of channels owned by this account"""
@@ -287,9 +302,10 @@ class DatabaseInterface:
                                 group_id)
         return groups[0] if groups else None
 
-    def get_user_groups(self, owner_chat_id: int) -> list:
+    def get_user_groups(self, owner_chat_id: int, take: int | None = 1) -> list:
         """Get all groups/supergroups owned by this account"""
-        return self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s", owner_chat_id)
+        limitation = f"LIMIT {take}" if take else ''
+        return self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s {limitation}", owner_chat_id)
 
     def user_groups_count(self, owner_chat_id: int) -> int:
         """Get count of groups owned by this account"""

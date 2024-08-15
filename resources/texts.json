@@ -150,13 +150,41 @@
             "fa": "شروع",
             "en": "Start"
         },
-        "my_group": {
-            "fa": "تنظیمات گروه من",
-            "en": "My Group Settings"
+        "channels_change_interval": {
+            "fa": "تنظیم زمان بندی",
+            "en": "Change Interval"
         },
-        "my_channel": {
-            "fa": "تنظیمات کانال من",
-            "en": "My Channel Settings"
+        "community_config_price_list": {
+            "fa": "تنظیم لیست قیمت ها",
+            "en": "Config Price List"
+        },
+        "community_trigger_date_tag": {
+            "fa": "تنظیم تاریخ بروزرسانی",
+            "en": "Trigger Date Tag"
+        },
+        "community_trigger_market_tags": {
+            "fa": "تنظیم پیش نویس ها",
+            "en": "Trigger Market Tags"
+        },
+        "community_set_message_header": {
+            "fa": "تنظیم متن ابتدای پیام",
+            "en": "Set Message Header"
+        },
+        "community_set_message_footer": {
+            "fa": "تنظیم متن انتهای پیام",
+            "en": "Set Message Footer"
+        },
+        "channel_change": {
+            "fa": "تغییر کانال",
+            "en": "Change Channel"
+        },
+        "change_group": {
+            "fa": "تعییر گروه",
+            "en": "تغییر کانال"
+        },
+        "community_disconnect": {
+            "fa": "قطع اتصال",
+            "en": "Disconnect"
         }
     },
     "which_market": {
@@ -267,6 +295,14 @@
         "max_channels_reached": {
             "fa": "شما هم اکنون در حال استفاده از ربات در یک کانال دیگر می باشید. در حال حاضر کاربران مجاز به استفاده از بات در حداکثر یک کانال هستند. در صورت تمایل می توانید یا استفاده از گزینه تغییر کانال در تنظیمات کانال، ربات را در کانال جدیدتان فعال کنید.",
             "en": "You are already using this bot in another channel right now. Users are allowed to use our bot in at most 1 channel for now. You can use the Change Channel option in My Channel Settings menu to activate the bot in your new channel."
+        },
+        "unsupported_input_format": {
+            "fa": "ورودی شما مطابق فرمت ورودی مذکور نیست! لطفا ورودی را مطابق فرمت مربوطه وارد کنید و یا از گزینه های ارائه شده استفاده کنید ...",
+            "en": "Unsupported input! Please provide your input according to described input format, or use the provided input list ..."
+        },
+        "no_channels": {
+            "fa": "❗️ شما هنوز کانالی را ثبت نکرده اید. لطفا ابتدا اقدامات لازم برای اتصال ربات به کانال را انجام داده و سپس از این گزینه استفاده کنید.",
+            "en": "❗️ You have no channels regitered right now. Yoy should register a new channel in the bot to use this option."
         }
     },
     "what_can_i_do": {
@@ -460,5 +496,13 @@
     "channel_posting_started": {
         "fa": "✅ پست گذاری در کانال شما با موفقیت شروع شد.",
         "en": "✅ Posting in your channel has been started."
+    },
+    "go_premium_to_activate_feature": {
+        "fa": "⚠️ برای فعال سازی کامل قابلیت باید اکانتتان را پریمیوم کنید.\n\n⚠️ البته با توجه به اینکه شما ربات را اضافه کرده و ادمین نموده اید، می توانید شخصی سازی های این قابلیت را انجام دهید.",
+        "en": "⚠️ Go premium in order to activate this feature.\n\n⚠️ Although, since you've added the bot and made it admin, you can do feature customization."
+    },
+    "update_successful": {
+        "fa": "✅ تغییرات جدید با موفقیت ثبت شد..",
+        "en": "✅ New changes applied and saved successfuly.."
     }
 }

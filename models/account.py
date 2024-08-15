@@ -31,7 +31,7 @@ class Account:
         DOWNGRADE_USER = 8
         ADD_BOT_AS_ADMIN = 9
         SELECT_POST_INTERVAL = 10
-        
+        CHANGE_POST_INTERVAL = 11
         @staticmethod
         def Which(value: int):
             values = (
@@ -45,6 +45,7 @@ class Account:
                 Account.States.UPGRADE_USER,
                 Account.States.DOWNGRADE_USER,
                 Account.States.SELECT_POST_INTERVAL,
+                Account.States.CHANGE_POST_INTERVAL
             )
             try:
                 return values[int(value)]
@@ -144,9 +145,6 @@ class Account:
         """This extra info are just for temporary messaging purposes and won't be saved in database."""
         self.firstname = firstname
         self.username = username
-
-    def my_channel_plans(self) -> list[Channel]:
-        return list(filter(lambda channel: channel.owner_id == self.chat_id, Channel.Instances.values()))
 
     @property
     def is_premium(self) -> bool:
@@ -294,10 +292,18 @@ class Account:
     def my_channels_count(self) -> int:
         return self.Database().user_channels_count(self.chat_id)
     
+    @property
+    def has_channels(self) -> int:
+        return bool(self.Database().get_user_channels(self.chat_id, take=1))
+    
 
     @property
     def my_groups_count(self) -> int:
         return self.Database().user_groups_count(self.chat_id)
+    
+    @property
+    def has_groups(self) -> int:
+        return bool(self.Database().get_user_groups(self.chat_id, take=1))
     
     @staticmethod
     def Database():

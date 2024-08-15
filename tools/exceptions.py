@@ -27,10 +27,10 @@ class NotPlusException(Exception):
         super().__init__(self.message)
 
 
-class NoSuchPlusPlanException(Exception):
+class NoSuchThingException(Exception):
 
-    def __init__(self, plan_id: int) -> None:
-        self.message = f"PlusPlan with id={plan_id} does not exist!"
+    def __init__(self, id: int) -> None:
+        self.message = f"Entity with id={id} does not exist!"
         super().__init__(self.message)
 
 
