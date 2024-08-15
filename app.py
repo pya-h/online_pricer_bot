@@ -422,25 +422,7 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
             await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language])
             return
         case BotMan.QueryActions.SELECT_POST_INTERVAL.value: 
-            account = Account.Get(query.message.chat)
-            channel_id = account.get_cache('channel_chat_id')
-            try:
-                if account.state == Account.States.SELECT_POST_INTERVAL:
-                    if not channel_id or not (await botman.prepare_channel(context, account, channel_id, value)):
-                        raise InvalidInputException('Invalid channel data.')
-                elif account.state == Account.States.CHANGE_POST_INTERVAL:
-                    channel = Channel(channel_id, account.chat_id)
-                    if not channel:
-                        raise NoSuchThingException(channel_id)
-                    channel.interval = value
-                    channel.save()
-                    await query.message.reply_text(botman.text('update_successful', account.language))
-                else:
-                    raise InvalidInputException('Invalid account state.')
-            except NoSuchThingException:
-                await query.message.reply_text(botman.error('no_channels', account.language), reply_markup=botman.mainkeyboard(account))
-            except InvalidInputException:
-                await query.message.reply_text(botman.error('error_while_planning_channel', account.language), reply_markup=botman.mainkeyboard(account))
+            await botman.handle_interval_input(query, context, value)
             await query.message.delete()
             account.change_state(clear_cache=True)
             return
@@ -689,10 +671,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             if not channel:
                 await update.message.reply_text(botman.error('no_channels', account.language), reply_markup=botman.mainkeyboard(account))
                 return
-            account.change_state(Account.States.CHANGE_POST_INTERVAL, 'channel_chat_id', channel.id)
-            # FIXME: Complete this, also handle premium check
-            await ctx.bot.send_message(chat_id=owner.chat_id, text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
-                                    reply_markup=self.action_inline_keyboard(self.QueryActions.START_CHANNEL_POSTING, {channel_id: "start"}, owner.language, columns_in_a_row=1))
+            await botman.select_post_interval_menu(update, account, channel.id, Account.States.CHANGE_POST_INTERVAL)
         # settings sub menu:
         case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
                 account = Account.Get(update.message.chat)
@@ -855,24 +834,15 @@ async def handle_messages(update: Update, context: CallbackContext):
                             }, in_main_keyboard=False))
 
                     if channel_chat_id:
-                        botman.select_post_interval_menu(update, account)
-                case Account.States.SELECT_POST_INTERVAL:
+                        botman.select_post_interval_menu(update, account, channel_chat_id, Account.States.SELECT_POST_INTERVAL)
+                case Account.States.SELECT_POST_INTERVAL | Account.States.CHANGE_POST_INTERVAL:
                     interval: int = 0
                     try:
-                        msg = msg.split()
-                        for term in msg:
-                            if term[-1].lower() == 'h':
-                                interval += int(term[:-1]) * 60
-                            elif term[-1].lower() == 'd':
-                                interval += int(term[:-1]) * 24 * 60
-                            elif term[-1].lower() == 'm' or term[-1].isdigit():
-                                interval += int(term[:-1])
+                        interval = PostInterval.TimestampToMinutes(msg)
                     except:
                         await update.message.reply_text(botman.error('unsupported_input_format', account.language))
                         return
-                    channel_id = account.get_cache('channel_chat_id')
-                    if not channel_id or not (await botman.prepare_channel(context, account, channel_id, interval)):
-                        await update.message.reply_text(botman.error('error_while_planning_channel', account.language), reply_markup=botman.mainkeyboard(account))
+                    await botman.handle_interval_input(update, context, interval)
                     try:
                         await context.bot.delete_message(chat_id=account.chat_id, message_id=int(account.get_cache('interval_menu_msg_id')))
                     except:

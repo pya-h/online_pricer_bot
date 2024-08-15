@@ -1,5 +1,5 @@
 from enum import Enum
-from tools.exceptions import MaxAddedCommunityException
+from tools.exceptions import MaxAddedCommunityException, InvalidInputException, NoSuchThingException
 from decouple import config
 from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, ChatMember, Update, CallbackQuery, Message
 from telegram.ext import CallbackContext
@@ -752,8 +752,31 @@ class BotMan:
             return False
         return True
     
-    async def select_post_interval_menu(self, update: Update, account: Account, channel_id: int, next_state: Account.States):
+    async def select_post_interval_menu(self, update: Update, account: Account, channel_id: int, next_state: Account.States = Account.States.SELECT_POST_INTERVAL):
         account.change_state(next_state, 'channel_chat_id', channel_id, clear_cache=True)
         response_message = await update.message.reply_text(self.text('select_post_interval'), 
                                                         reply_markup=self.ArrangeInlineKeyboardButtons(Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL))
         account.add_cache('interval_menu_msg_id', response_message.message_id)
+
+    async def handle_interval_input(self, update: Update | CallbackQuery, context: CallbackContext, interval: int):
+        account = Account.Get(update.message.chat)
+        channel_id = account.get_cache('channel_chat_id')
+        try:
+            if account.state == Account.States.SELECT_POST_INTERVAL:
+                if not channel_id or not (await self.prepare_channel(context, account, channel_id, interval)):
+                    raise InvalidInputException('Invalid channel data.')
+            elif account.state == Account.States.CHANGE_POST_INTERVAL:
+                channel = Channel(channel_id, account.chat_id)
+                if not channel:
+                    raise NoSuchThingException(channel_id)
+                channel.interval = interval
+                channel.save()
+                await update.message.reply_text(self.text('update_successful', account.language))
+            else:
+                raise InvalidInputException('Invalid account state.')
+            return True
+        except NoSuchThingException:
+            await update.message.reply_text(self.error('no_channels', account.language), reply_markup=self.mainkeyboard(account))
+        except InvalidInputException:
+            await update.message.reply_text(self.error('error_while_planning_channel', account.language), reply_markup=self.mainkeyboard(account))
+        return False

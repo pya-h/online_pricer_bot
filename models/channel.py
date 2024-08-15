@@ -49,6 +49,19 @@ class PostInterval(GroupInlineKeyboardButtonTemplate):
             result_fa += f" و {mins} دقیقه"
         return result_short, result_en, result_fa
 
+    @staticmethod
+    def TimestampToMinutes(string: str):
+        string = string.split()
+        interval_in_mins: int = 0
+        for term in string:
+            if term[-1].lower() == 'h':
+                interval_in_mins += int(term[:-1]) * 60
+            elif term[-1].lower() == 'd':
+                interval_in_mins += int(term[:-1]) * 24 * 60
+            elif term[-1].lower() == 'm' or term[-1].isdigit():
+                interval_in_mins += int(term[:-1])
+        return interval_in_mins
+    
 
 class Channel:
     Instances = {}
