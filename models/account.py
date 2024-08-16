@@ -54,23 +54,23 @@ class Account:
             return Account.States.NONE
 
     _database = None
-    GarbageCollectionInterval = 30
-    PreviousGarbageCollectionTime: int = now_in_minute()  # in minutes
-    Instances: dict = {}  # active accounts will cache into this; so there's no need to access database everytime
+    FastMemGarbageCollectionInterval = 5
+    PreviousFastMemGarbageCollectionTime: int = now_in_minute()  # in minutes
+    FastMemInstances: dict = {}  # active accounts will cache into this; so there's no need to access database every time
 
 
     def no_interaction_duration(self):
         diff, _ = from_now_time_diff(self.last_interaction)
         return diff
 
-    def arrange_instances(self):
+    def organize_fastmem(self):
         Account.GarbageCollect()
-        Account.Instances[self.chat_id] = self
+        Account.FastMemInstances[self.chat_id] = self
 
     def __init__(self, chat_id: int, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None,
                  calc_currencies: List[str] = None, language: str = 'fa', plus_end_date: datetime = None,
                  state: States = States.NONE, cache=None, is_admin: bool = False, username: str | None = None,
-                 prevent_instance_arrangement: bool = False, ) -> None:
+                 no_fastmem: bool = False, ) -> None:
 
         self.chat_id: int = int(chat_id)
         self.desired_cryptos: list = cryptos or []
@@ -85,8 +85,8 @@ class Account:
         self.username: str | None = username[1:] if username and (username[0] == '@') else username
         self.firstname: str | None = None
         self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
-        if not prevent_instance_arrangement:
-            self.arrange_instances()
+        if not no_fastmem:
+            self.organize_fastmem()
 
     def change_state(self, state: States = States.NONE, cache_key: str = None, data: any = None, clear_cache: bool = False):
         self.state = state
@@ -312,7 +312,7 @@ class Account:
         return Account._database
 
     @staticmethod
-    def ExtractQueryRowData(row: tuple, prevent_instance_arrangement: bool = False):
+    def ExtractQueryRowData(row: tuple, no_fastmem: bool = False):
         currs = row[1]
         cryptos = row[2]
         calc_currs = row[3]
@@ -329,28 +329,28 @@ class Account:
         return Account(chat_id=int(row[0]), currencies=DatabaseInterface.StringToList(currs), cryptos=DatabaseInterface.StringToList(cryptos),
                        plus_end_date=plus_end_date, calc_currencies=DatabaseInterface.StringToList(calc_currs),
                        calc_cryptos=DatabaseInterface.StringToList(calc_cryptos), is_admin=is_admin, username=username,
-                       language=language, state=state, cache=cache, prevent_instance_arrangement=prevent_instance_arrangement)
+                       language=language, state=state, cache=cache, no_fastmem=no_fastmem)
 
     @staticmethod
-    def Get(chat: Chat | User, prevent_instance_arrangement: bool = False):
-        account = Account.GetById(chat.id, prevent_instance_arrangement=prevent_instance_arrangement)
+    def Get(chat: Chat | User, no_fastmem: bool = False):
+        account = Account.GetById(chat.id, no_fastmem=no_fastmem)
         account.current_username = chat.username
         account.firstname = chat.first_name  # It doesn't going to be saved in database, but its picked from Chat in case its needed in code.
         return account
     
     @staticmethod
-    def GetById(chat_id: int, prevent_instance_arrangement: bool = False):
-        if chat_id in Account.Instances:
-            account: Account = Account.Instances[chat_id]
+    def GetById(chat_id: int, no_fastmem: bool = False):
+        if chat_id in Account.FastMemInstances:
+            account: Account = Account.FastMemInstances[chat_id]
             account.last_interaction = tz_today()
             return account
         
         row = Account.Database().get(chat_id)
         if row:
-            account = Account.ExtractQueryRowData(row, prevent_instance_arrangement=prevent_instance_arrangement)
+            account = Account.ExtractQueryRowData(row, no_fastmem=no_fastmem)
             return account
 
-        return Account(chat_id=chat_id, prevent_instance_arrangement=prevent_instance_arrangement).save()
+        return Account(chat_id=chat_id, no_fastmem=no_fastmem).save()
 
     @staticmethod
     def GetByUsername(username: str):
@@ -358,7 +358,7 @@ class Account:
             return None
         if username[0] == '@':
             username = username[1:]
-        accounts = list(filter(lambda acc: acc.username == username, list(Account.Instances.values())))
+        accounts = list(filter(lambda acc: acc.username == username, list(Account.FastMemInstances.values())))
         if accounts:
             return accounts[0]
 
@@ -383,8 +383,8 @@ class Account:
     @staticmethod
     def Statistics():
         # first save all last interactions:
-        for kid in Account.Instances:
-            Account.Instances[kid].save()
+        for kid in Account.FastMemInstances:
+            Account.FastMemInstances[kid].save()
         now = tz_today().date()
         today_actives, yesterday_actives, this_week_actives, this_month_actives = 0, 0, 0, 0
 
@@ -426,18 +426,13 @@ class Account:
     @staticmethod
     def GarbageCollect():
         now = now_in_minute()
-        if now - Account.PreviousGarbageCollectionTime <= Account.GarbageCollectionInterval:
+        if now - Account.PreviousFastMemGarbageCollectionTime <= Account.FastMemGarbageCollectionInterval:
             return
-
-        garbage = []
-        Account.PreviousGarbageCollectionTime = now
-        for chat_id in Account.Instances:
-            if Account.Instances[chat_id].no_interaction_duration() >= Account.GarbageCollectionInterval / 2:
-                garbage.append(chat_id)
-        # because changing dict size in a loop on itself causes error,
-        # we first collect redundant chat_id s and then delete them from the memory
-        cleaned_counts = len(garbage)
+        Account.PreviousFastMemGarbageCollectionTime = now
+        interval_in_secs = Account.FastMemGarbageCollectionInterval * 60
+        garbage = filter(
+            lambda chat_id: Account.FastMemInstances[chat_id].no_interaction_duration() >= interval_in_secs,
+            Account.FastMemInstances
+        )
         for g in garbage:
-            del Account.Instances[g]
-
-        log(f"Cleaned {cleaned_counts} accounts from my simple cache store.", category_name="account_gc")
+            del Account.FastMemInstances[g]

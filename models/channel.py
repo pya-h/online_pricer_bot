@@ -3,7 +3,7 @@ from db.interface import DatabaseInterface
 from json import dumps as jsonify
 from bot.types import GroupInlineKeyboardButtonTemplate
 from typing import List
-from tools.exceptions import MaxAddedCommunityException
+from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
     def __init__(self, title: str | None = None, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
@@ -93,7 +93,7 @@ class Channel:
 
     def __init__(self, channel_id: int, owner_id: int, interval: int = 0, channel_name: str = None, channel_title: str = None, last_post_time: int = None, is_active: bool = False,
                  selected_coins: List[str] | None = None, selected_currencies: List[str] | None = None, message_header: str | None = None,
-                 message_footnote: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True, prevent_cache_cleanup: bool = False) -> None:
+                 message_footnote: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True) -> None:
         self.owner_id: int = int(owner_id)
         self.owner = None
         self.id: int = int(channel_id)
@@ -109,12 +109,24 @@ class Channel:
         self.message_show_market_labels: bool = message_show_market_labels
         self.last_post_time: int | None = last_post_time  # don't forget database has this
 
-    def create(self):
-        if self.user_channels_count >= 1:
-            raise MaxAddedCommunityException('channel')
-        Channel.Database().add_channel(self)
+    def create(self, allowed_channels_count: int = 1):
+        db = Channel.Database()
+        channel_columns = db.get_channel(self.id)
+        if channel_columns:
+            self.save()  # just update database
+            return
+        # enhanced check:
+        if allowed_channels_count == 1:
+            if self.owner_has_channel:
+                raise MaxAddedCommunityException('channel')
+        elif allowed_channels_count > 1:
+            if self.owner_channels_count > allowed_channels_count:
+                raise MaxAddedCommunityException('channel')
+        elif not allowed_channels_count:
+            raise UserNotAllowedException(self.owner_id, 'have channels')
+        
+        db.add_channel(self)
 
-    # TODO: Write garbage collector for this class too
     def plan(self) -> bool:
         if self.interval <= 0:
             if self.id in Channel.Instances:
@@ -145,8 +157,12 @@ class Channel:
         return ';'.join(self.selected_currencies)
 
     @property
-    def user_channels_count(self):
+    def owner_channels_count(self):
         return self.Database().user_channels_count(self.owner_id)
+
+    @property
+    def owner_has_channel(self):
+        return bool(self.Database().get_user_channels(self.owner_id, take=1))
 
     @staticmethod
     def Get(channel_id):
@@ -172,7 +188,7 @@ class Channel:
     @staticmethod
     def GetByOwner(owner_chat_id: int, take: int | None = 1):
         rows = Channel.Database().get_user_channels(owner_chat_id, take)
-        if rows == 1:
+        if len(rows) == 1:
             return Channel.ExtractQueryRowData(rows[0])
         return list(map(Channel.ExtractQueryRowData, rows))
     

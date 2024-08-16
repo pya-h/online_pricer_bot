@@ -17,6 +17,7 @@ from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
 from .types import GroupInlineKeyboardButtonTemplate
 from math import ceil as math_ceil
+from telegram.constants import ChatType
 
 
 class ResourceManager:
@@ -265,10 +266,12 @@ class BotMan:
 
     def get_main_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup([*self.common_menu_main_keys,
-                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA.value), KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
+                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA.value),
+                              KeyboardButton(BotMan.Commands.SETTINGS_FA.value)]
                         ] if account.language != 'en' else [
                             *self.common_menu_main_keys_en,
-                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN.value), KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
+                            [KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value if not account.is_premium else BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN.value),
+                              KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]
                         ], resize_keyboard=True)
     
 
@@ -305,34 +308,34 @@ class BotMan:
                                     [KeyboardButton(BotMan.Commands.SETTINGS_EN.value)]], resize_keyboard=True)
 
 
-    def get_community_config_keyboard(community_type: ChatType, language: str):
-        if community_type == Channel:
+    def get_community_config_keyboard(self, community_type: ChatType, language: str):
+        if community_type == self.ChatType.CHANNEL:
             return ReplyKeyboardMarkup([
-                [BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA, BotMan.Commands.CHANNELS_CHANGE_INTERVAL_FA],
-                [BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA, BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA],
-                [BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA, BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA],
-                [BotMan.Commands.COMMUNITY_DISCONNECT_FA, BotMan.Commands.CHANNEL_CHANGE_FA],
-                [BotMan.Commands.RETURN_FA],
+                [KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value), KeyboardButton(BotMan.Commands.CHANNELS_CHANGE_INTERVAL_FA.value)],
+                [KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value), KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value)],
+                [KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA.value), KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value)],
+                [KeyboardButton(BotMan.Commands.COMMUNITY_DISCONNECT_FA.value), KeyboardButton(BotMan.Commands.CHANNEL_CHANGE_FA.value)],
+                [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
             ] if language == 'fa' else [
-                [BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN, BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN],
-                [BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN, BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN],
-                [BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN, BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN],
-                [BotMan.Commands.COMMUNITY_DISCONNECT_EN, BotMan.Commands.CHANNEL_CHANGE_EN],
-                [BotMan.Commands.RETURN_EN],
-            ])
+                [KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN.value)],
+                [KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value), KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value)],
+                [KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN.value), KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value)],
+                [KeyboardButton(BotMan.Commands.COMMUNITY_DISCONNECT_EN.value), KeyboardButton(BotMan.Commands.CHANNEL_CHANGE_EN.value)],
+                [KeyboardButton(BotMan.Commands.RETURN_EN.value)],
+            ], resize_keyboard=True)
         return ReplyKeyboardMarkup([
-            [BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA],
-            [BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA, BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA],
-            [BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA, BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA],
-            [BotMan.Commands.COMMUNITY_DISCONNECT_FA, BotMan.Commands.GROUP_CHANGE_FA],
-            [BotMan.Commands.RETURN_FA],
+            [KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value)],
+            [KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value), KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value)],
+            [KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA.value), KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value)],
+            [KeyboardButton(BotMan.Commands.COMMUNITY_DISCONNECT_FA.value), KeyboardButton(BotMan.Commands.GROUP_CHANGE_FA.value)],
+            [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
         ] if language == 'fa' else [
-            [BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN, BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN],
-            [BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN, BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN],
-            [BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN, BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN],
-            [BotMan.Commands.COMMUNITY_DISCONNECT_EN, BotMan.Commands.GROUP_CHANGE_EN],
-            [BotMan.Commands.RETURN_EN],
-        ])
+            [KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value), KeyboardButton(BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN.value)],
+            [KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value), KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value)],
+            [KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN.value), KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value)],
+            [KeyboardButton(BotMan.Commands.COMMUNITY_DISCONNECT_EN.value), KeyboardButton(BotMan.Commands.GROUP_CHANGE_EN.value)],
+            [KeyboardButton(BotMan.Commands.RETURN_EN.value)],
+        ], resize_keyboard=True)
     
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account.language)
@@ -594,7 +597,7 @@ class BotMan:
         }
         for alarm in self.check_price_alarms():
             try:
-                account = Account.GetById(alarm.chat_id, prevent_instance_arrangement=True)
+                account = Account.GetById(alarm.chat_id, no_fastmem=True)
                 target_price = cut_and_separate(alarm.target_price)
                 current_price = cut_and_separate(alarm.current_price)
                 currency_name, unit_name = alarm.full_currency_name[account.language], unit_names[alarm.target_unit][
@@ -751,7 +754,6 @@ class BotMan:
             log("Getting and planning channel data failed.", ex, category_name="Channels")
             return False
         return True
-    
     async def select_post_interval_menu(self, update: Update, account: Account, channel_id: int, next_state: Account.States = Account.States.SELECT_POST_INTERVAL):
         account.change_state(next_state, 'channel_chat_id', channel_id, clear_cache=True)
         response_message = await update.message.reply_text(self.text('select_post_interval'), 
@@ -766,7 +768,7 @@ class BotMan:
                 if not channel_id or not (await self.prepare_channel(context, account, channel_id, interval)):
                     raise InvalidInputException('Invalid channel data.')
             elif account.state == Account.States.CHANGE_POST_INTERVAL:
-                channel = Channel(channel_id, account.chat_id)
+                channel = Channel.Get(channel_id)
                 if not channel:
                     raise NoSuchThingException(channel_id)
                 channel.interval = interval

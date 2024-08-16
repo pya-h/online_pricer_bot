@@ -88,7 +88,7 @@ class DatabaseInterface:
             cursor.execute(f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_CHANNELS}'")
             if not cursor.fetchone():
                 query = f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} BIGINT PRIMARY KEY, " + \
-                        f"{self.CHANNEL_NAME} VARCHAR(32) NOT NULL, {self.CHANNEL_TITLE} VARCHAR(128), {self.CHANNEL_INTERVAL} INTEGER NOT NULL," + \
+                        f"{self.CHANNEL_NAME} VARCHAR(32), {self.CHANNEL_TITLE} VARCHAR(128), {self.CHANNEL_INTERVAL} INTEGER NOT NULL," + \
                         f"{self.CHANNEL_IS_ACTIVE} TINYINT DEFAULT 0, {self.CHANNEL_COINS} VARCHAR(1024), {self.CHANNEL_CURRENCIES} VARCHAR(1024), " + \
                         f"{self.CHANNEL_MESSAGE_HEADER} VARCHAR(256), {self.CHANNEL_MESSAGE_FOOTNOTE} VARCHAR(256), " + \
                         f"{self.CHANNEL_MESSAGE_DATE_TAG} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_MARKET_TAGS} BOOLEAN DEFAULT 1, {self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, " + \
@@ -196,11 +196,11 @@ class DatabaseInterface:
         if not channel:
             raise Exception("You must provide an Group to add")
         try:
-            columns = ', '.join(self.GROUPS_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})",
-            self.execute(False, query, (channel.id, channel.name, channel.title, channel.interval, int(channel.is_active), channel.coins_as_str,
+            columns = ', '.join(self.CHANNELS_COLUMNS)
+            query = f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})"
+            self.execute(False, query, channel.id, channel.name, channel.title, channel.interval, int(channel.is_active), channel.coins_as_str,
                             channel.currencies_as_str, channel.message_header, channel.message_footnote, int(channel.message_show_date),
-                            int(channel.message_show_market_labels), channel.last_post_time, channel.owner_id))
+                            int(channel.message_show_market_labels), channel.last_post_time, channel.owner_id)
             log(f"New channel: {channel} saved into database successfully.", category_name='DatabaseInfo')
         except Exception as ex:
             log(f"Cannot save this channel:{channel}", ex, category_name='DatabaseError')
@@ -245,7 +245,8 @@ class DatabaseInterface:
     def user_channels_count(self, owner_chat_id: int) -> int:
         """Get count of channels owned by this account"""
         result = self.execute(True, f"SELECT COUNT(id) as cnt FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s", owner_chat_id)
-        return result.cnt if result else 0
+        count = result[0][0] if result and result[0] else 0
+        return count
 
     def get_channels_by_interval(self, min_interval: int = 0) -> list:
         """Finds all the channels with plan interval > min_interval"""
@@ -310,13 +311,14 @@ class DatabaseInterface:
     def user_groups_count(self, owner_chat_id: int) -> int:
         """Get count of groups owned by this account"""
         result = self.execute(True, f"SELECT COUNT(id) as cnt FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s", owner_chat_id)
-        return result.cnt if result else 0
+        count = result[0][0] if result and result[0] else 0
+        return count
 
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesn't return result such as insert or delete"""
         result = None
         cursor = self.connection.cursor()
-        cursor.execute(query, (*params,))
+        r = cursor.execute(query, (*params,))
         if is_fetch_query:
             result = cursor.fetchall()
         else:

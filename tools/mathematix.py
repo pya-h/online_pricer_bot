@@ -201,6 +201,8 @@ def now_in_minute() -> int:
 def from_now_time_diff(dt: datetime):
     '''time passed from time:t in minutes'''
     now = tz_today()
+    if not dt:
+        return 0
     return (now - dt).total_seconds() // 60, now
 
 if __name__ == "__main__":

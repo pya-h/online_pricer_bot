@@ -434,7 +434,8 @@ async def handle_action_queries(query: CallbackQuery, context: CallbackContext, 
                 await query.message.delete()
                 return
             channel.plan()  # TODO: check this again
-            await query.message.edit_text(botman.text('channel_posting_started', account.language))
+            await query.message.reply_text(botman.text('channel_posting_started', account.language), reply_markup=botman.mainkeyboard(account))
+            await query.message.delete()
             # TODO: Write the post job part.
         case _:
             if not account.authorization(context.args):
@@ -637,17 +638,17 @@ async def handle_messages(update: Update, context: CallbackContext):
             if not account.has_channels:
                 await cmd_start_using_in_channel(update, context)
                 return
-            account.add_cache('community_type', ChatType.CHANNEL)
-            await update.message.reply_text(botman.resourceman.keyboard('my_channels' if account.is_premium else "go_premium_to_activate_feature", account.language),
-                                            reply_markup=botman.get_community_config_keyboard(ChatType.CHANNEL, account.language))
+            account.add_cache('community_type', botman.ChatType.CHANNEL)
+            await update.message.reply_text(botman.resourceman.keyboard('my_channels', account.language) if account.is_premium else botman.text("go_premium_to_activate_feature", account.language),
+                                            reply_markup=botman.get_community_config_keyboard(botman.ChatType.CHANNEL, account.language))
         case BotMan.Commands.MY_GROUPS_FA.value | BotMan.Commands.MY_GROUPS_EN.value:
             account = Account.Get(update.message.chat)
             if not account.has_groups:
                 await update.message.reply_text(botman.text('add_bot_as_group_admin', Account.Get(update.message.chat).language))
                 return
-            account.add_cache('community_type', ChatType.GROUP)
-            await update.message.reply_text(botman.resourceman.keyboard('my_groups' if account.is_premium else "go_premium_to_activate_feature", account.language),
-                                            reply_markup=botman.get_community_config_keyboard(ChatType.GROUP, account.language))
+            account.add_cache('community_type', botman.ChatType.GROUP)
+            await update.message.reply_text(botman.resourceman.keyboard('my_groups', account.language) if account.is_premium else botman.text("go_premium_to_activate_feature", account.language),
+                                            reply_markup=botman.get_community_config_keyboard(botman.ChatType.GROUP, account.language))
         case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
             await update.message.delete()
             await botman.show_settings_menu(update)
@@ -834,7 +835,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             }, in_main_keyboard=False))
 
                     if channel_chat_id:
-                        botman.select_post_interval_menu(update, account, channel_chat_id, Account.States.SELECT_POST_INTERVAL)
+                        await botman.select_post_interval_menu(update, account, channel_chat_id, Account.States.SELECT_POST_INTERVAL)
                 case Account.States.SELECT_POST_INTERVAL | Account.States.CHANGE_POST_INTERVAL:
                     interval: int = 0
                     try:

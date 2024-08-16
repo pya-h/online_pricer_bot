@@ -1,17 +1,16 @@
-from tools.manuwriter import log
 from tools.mathematix import now_in_minute
 from db.interface import DatabaseInterface
 from typing import List
 from telegram import Chat
 from .account import Account
-from tools.exceptions import MaxAddedCommunityException
+from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException
 
 
 class Group:
-    Instances = {}
+    FastMemInstances = {}
     _database: DatabaseInterface = None
-    PreviousCleanupTime: int = now_in_minute()
-    CleanupInterval: int = 10
+    PreviousFastMemGarbageCollectionTime: int = now_in_minute()
+    FastMemGarbageCollectionInterval: int = 5
 
     @staticmethod
     def Database():
@@ -21,7 +20,7 @@ class Group:
 
     def __init__(self, owner_id: int, group_id: int, group_name: str = None, group_title: str | None = None,
                  selected_coins: List[str] | None = None, selected_currencies: List[str] | None = None, message_header: str | None = None,
-                 message_footnote: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True, prevent_cache_cleanup: bool = False) -> None:
+                 message_footnote: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True, no_fastmem: bool = False) -> None:
         self.owner_id: int = int(owner_id)
         self.id: int = int(group_id)
         self.name: str | None = group_name  # username
@@ -32,16 +31,17 @@ class Group:
         self.message_footnote: str | None = message_footnote
         self.message_show_date: bool = message_show_date
         self.message_show_market_labels: bool = message_show_market_labels
+        self.last_interaction: int = now_in_minute()
 
-        # if not prevent_cache_cleanup:
-        #     self.cache_cleanup() # TODO: Add last interaction to group for garbage collect
+        if not no_fastmem:
+            self.organize_fastmem()
         # TODO: Maybe create a MessageSetting class? to use in group/channel
         # TODO: Do the same for channels
         
 
-    def cache_cleanup(self):
+    def organize_fastmem(self):
         Group.GarbageCollect()
-        Group.Instances[self.id] = self
+        Group.FastMemInstances[self.id] = self
 
     def __str__(self) -> str:
         return f"Groupname:{self.name}\nId: {self.id}\nOwner Id: {self.owner_id}"
@@ -65,20 +65,20 @@ class Group:
         return owner.is_premium
     
     @staticmethod
-    def Get(group_id):
+    def Get(group_id, no_fastmem: bool = False):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
-        if group_id in Group.Instances:
-            return Group.Instances[group_id]
+        if group_id in Group.FastMemInstances:
+            return Group.FastMemInstances[group_id]
         row = Group.Database().get_group(group_id)
         if row:
-            return Group.ExtractQueryRowData(row)
+            return Group.ExtractQueryRowData(row, no_fastmem)
 
         return None
 
     @staticmethod
-    def ExtractQueryRowData(row: tuple):
+    def ExtractQueryRowData(row: tuple, no_fastmem: bool = False):
         return Group(group_id=int(row[0]), group_name=row[1], group_title=row[2], selected_coins=DatabaseInterface.StringToList(row[3]), selected_currencies=DatabaseInterface.StringToList(row[4]),
-                           message_header=row[5], message_footnote=row[6], message_show_date=bool(row[7]), message_show_market_labels=bool(row[8]), owner_id=int(row[-1]))
+                           message_header=row[5], message_footnote=row[6], message_show_date=bool(row[7]), message_show_market_labels=bool(row[8]), owner_id=int(row[-1]), no_fastmem=no_fastmem)
     
     @staticmethod
     def GetByOwner(owner_chat_id: int):
@@ -86,7 +86,7 @@ class Group:
         return list(map(Group.ExtractQueryRowData, rows))
     
     @staticmethod
-    def Register(chat: Chat, owner_id: int):
+    def Register(chat: Chat, owner_id: int, allowed_group_count: int = 1):
         '''Create group model and save into database. set its active_until field same as user premium date.
         return the database data if group is existing from before (just update its owner id).'''
         db = Group.Database()
@@ -99,26 +99,39 @@ class Group:
             group.save()
             return group
         
-        user_groups_count = db.user_groups_count(owner_id)
-        if user_groups_count >= 1:
-            raise MaxAddedCommunityException('group')
+        # enhanced check:
+        if allowed_group_count == 1:
+            if Group.OwnerHasGroup(owner_id):
+                raise MaxAddedCommunityException('group')
+        elif allowed_group_count > 1:
+            if Group.OwnerGroupCount(owner_id) > allowed_group_count:
+                raise MaxAddedCommunityException('group')
+        elif not allowed_group_count:
+            raise UserNotAllowedException(owner_id, 'have groups')
+        
         group = Group(owner_id=owner_id, group_id=chat.id, group_title=chat.title, group_name=chat.username)
         db.add_group(group)
         return group
+
+    @staticmethod
+    def OwnerHasGroup(owner_id: int):
+        return bool(Group.Database().get_user_groups(owner_id, take=1))
     
+    @staticmethod
+    def OwnerGroupCount(owner_id: int):
+        return Group.Database().user_groups_count(owner_id)
+
     @staticmethod
     def GarbageCollect():
         now = now_in_minute()
-        if now - Group.PreviousCleanupTime <= Group.CleanupInterval:
+        if now - Group.PreviousFastMemGarbageCollectionTime <= Group.FastMemGarbageCollectionInterval:
             return
 
-        garbage = []
-        Group.PreviousCleanupTime = now
-        for group_id in Group.Instances:
-            if Group.Instances[group_id].no_interaction_duration() >= Group.CleanupInterval / 2:
-                garbage.append(group_id)
-        cleaned_counts = len(garbage)
+        garbage = filter(
+            lambda group_id: Group.FastMemInstances[group_id].last_interaction >= Group.FastMemGarbageCollectionInterval,
+            Group.FastMemInstances
+        )
+        Group.PreviousFastMemGarbageCollectionTime = now
+        
         for g in garbage:
-            del Group.Instances[g]
-
-        log(f"Cleaned {cleaned_counts} groups from cache.", category_name="gc")
+            del Group.FastMemInstances[g]

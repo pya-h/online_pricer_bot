@@ -45,3 +45,8 @@ class MaxAddedCommunityException(Exception):
         self.message = f'You can not add another {community_type} anymore.'
         super().__init__(self.message)
 
+class UserNotAllowedException(Exception):
+    def __init__(self, user_id: int, forbidden_action_title: str) -> None:
+        self.message = f'User with id={user_id} is not allowed to {forbidden_action_title}.'
+        super().__init__(self.message)
+
