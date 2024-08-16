@@ -7,12 +7,12 @@ from typing import Dict
 
 
 class TetherService(BaseAPIService):
-    TetherSymbol = 'USDT'
+    TetherSymbol = "USDT"
 
     def __init__(self, url: str, token: str, source: str, cache_name: str | None = None) -> None:
         self.token = token
         super(TetherService, self).__init__(url=url, source=source, cache_file_name=cache_name)
-        self.headers = {'Authorization': None}
+        self.headers = {"Authorization": None}
         self.recent_value: float | None = None
         self.recent_response: dict = {}
         self.no_response_counts: int = 0
@@ -28,7 +28,7 @@ class TetherService(BaseAPIService):
     def summary(self, api_data: Dict[str, str | bool | float | int], mid_price_key: str) -> str:
         tether = api_data
         tether[mid_price_key] = self.mid()
-        tether['USD'] = self.usd_recent_guess
+        tether["USD"] = self.usd_recent_guess
         return jsonify(tether)
 
     def time_for_next_guess(self) -> int:
@@ -55,14 +55,17 @@ class TetherService(BaseAPIService):
 class AbanTetherService(TetherService):
     def __init__(self, token: str) -> None:
         super(AbanTetherService, self).__init__(
-            url=f'https://abantether.com/api/v1/otc/coin-price?coin={AbanTetherService.TetherSymbol}',
-            token=token, source="Abantether.com", cache_name="AbanTether.json")
-        self.headers = {'Authorization': f'Token {self.token}'}
+            url=f"https://abantether.com/api/v1/otc/coin-price?coin={AbanTetherService.TetherSymbol}",
+            token=token,
+            source="Abantether.com",
+            cache_name="AbanTether.json",
+        )
+        self.headers = {"Authorization": f"Token {self.token}"}
 
     def mid(self) -> float | None:
         if self.recent_response and AbanTetherService.TetherSymbol in self.recent_response:
             value = self.recent_response[AbanTetherService.TetherSymbol]
-            mid = (float(value['irtPriceBuy']) + float(value['irtPriceSell'])) / 2.0
+            mid = (float(value["irtPriceBuy"]) + float(value["irtPriceSell"])) / 2.0
             self.recent_value = mid
             self.no_response_counts = 0
             return mid
@@ -75,26 +78,27 @@ class AbanTetherService(TetherService):
         if self.recent_response and AbanTetherService.TetherSymbol in self.recent_response:
             raise Exception("Couldn't retrieve tether from AbanTether")
         value = self.recent_response[AbanTetherService.TetherSymbol]
-        self.recent_value = value['irtPriceBuy']
+        self.recent_value = value["irtPriceBuy"]
         self.no_response_counts = 0
         return self.recent_value
-    
+
     def summary(self) -> str:
-        return super(AbanTetherService, self).summary(self.recent_response[self.TetherSymbol], 'irtMidPoint')
+        return super(AbanTetherService, self).summary(self.recent_response[self.TetherSymbol], "irtMidPoint")
 
 
 class NobitexService(TetherService):
     TomanSymbol = "IRT"
 
     def __init__(self, token: str) -> None:
-        super(NobitexService, self).__init__(url='https://api.nobitex.ir/market/stats', token=token,
-                                             source="Nobitex.ir", cache_name="Nobitex.json")
-        self.headers = {'Authorization': f'Bearer {self.token}'}
+        super(NobitexService, self).__init__(
+            url="https://api.nobitex.ir/market/stats", token=token, source="Nobitex.ir", cache_name="Nobitex.json"
+        )
+        self.headers = {"Authorization": f"Bearer {self.token}"}
 
     def mid(self) -> float | None:
         if self.recent_response and AbanTetherService.TetherSymbol in self.recent_response:
             value = self.recent_response[AbanTetherService.TetherSymbol]
-            mid = (float(value['bestBuy']) + float(value['bestSell'])) / 2.0
+            mid = (float(value["bestBuy"]) + float(value["bestSell"])) / 2.0
             self.recent_value = mid
             self.no_response_counts = 0
             return mid
@@ -102,24 +106,23 @@ class NobitexService(TetherService):
 
     async def get(self):
         self.no_response_counts += 1
-        self.recent_response = await self.post_request(headers=self.headers, payload={
-            "srcCurrency": self.TetherSymbol,
-            "dstCurrency": self.TomanSymbol
-        })
+        self.recent_response = await self.post_request(
+            headers=self.headers, payload={"srcCurrency": self.TetherSymbol, "dstCurrency": self.TomanSymbol}
+        )
 
         self.recent_value = None
 
-        if not self.recent_response or 'status' not in self.recent_response or self.recent_response['status'].lower() != 'ok':
+        if not self.recent_response or "status" not in self.recent_response or self.recent_response["status"].lower() != "ok":
             raise Exception("Couldn't retrieve tether from nobitex")
-        if 'global' in self.recent_response:
-            del self.recent_response['global']
+        if "global" in self.recent_response:
+            del self.recent_response["global"]
         self.no_response_counts = 0
         value = self.recent_response["stats"][f"{self.TetherSymbol}-{self.TomanSymbol}"]
-        value['bestBuy'] = float(value['bestBuy']) / 10.0
-        value['bestSell'] = float(value['bestSell']) / 10.0
-        self.recent_value = value['bestBuy']
+        value["bestBuy"] = float(value["bestBuy"]) / 10.0
+        value["bestSell"] = float(value["bestSell"]) / 10.0
+        self.recent_value = value["bestBuy"]
         self.no_response_counts = 0
         return self.recent_value
 
     def summary(self) -> str:
-        return super(AbanTetherService, self).summary(self.recent_response[self.TetherSymbol], 'bestPriceMid')
+        return super(AbanTetherService, self).summary(self.recent_response[self.TetherSymbol], "bestPriceMid")

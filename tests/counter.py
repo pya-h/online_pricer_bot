@@ -3,6 +3,7 @@ from api.currency_service import NavasanService, GoldService
 
 coins = CoinMarketCapService.LoadPersianNames()
 
+
 def count_them(target_dict: dict):
     max_symbol_word_count = 0
     max_name_word_count = 0
@@ -16,10 +17,11 @@ def count_them(target_dict: dict):
 
     return max_symbol_word_count, max_name_word_count
 
+
 s, n = count_them(coins)
 print(s, " ", n)
 
-x = GoldService('sss')
+x = GoldService("sss")
 NavasanService.LoadPersianNames()
 
 s, n = count_them(NavasanService.CurrenciesInPersian)

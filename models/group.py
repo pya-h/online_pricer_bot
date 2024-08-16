@@ -18,9 +18,20 @@ class Group:
             Group._database = DatabaseInterface.Get()
         return Group._database
 
-    def __init__(self, owner_id: int, group_id: int, group_name: str = None, group_title: str | None = None,
-                 selected_coins: List[str] | None = None, selected_currencies: List[str] | None = None, message_header: str | None = None,
-                 message_footnote: str | None = None, message_show_date: bool = False, message_show_market_labels: bool = True, no_fastmem: bool = False) -> None:
+    def __init__(
+        self,
+        owner_id: int,
+        group_id: int,
+        group_name: str = None,
+        group_title: str | None = None,
+        selected_coins: List[str] | None = None,
+        selected_currencies: List[str] | None = None,
+        message_header: str | None = None,
+        message_footnote: str | None = None,
+        message_show_date: bool = False,
+        message_show_market_labels: bool = True,
+        no_fastmem: bool = False,
+    ) -> None:
         self.owner_id: int = int(owner_id)
         self.id: int = int(group_id)
         self.name: str | None = group_name  # username
@@ -37,7 +48,6 @@ class Group:
             self.organize_fastmem()
         # TODO: Maybe create a MessageSetting class? to use in group/channel
         # TODO: Do the same for channels
-        
 
     def organize_fastmem(self):
         Group.GarbageCollect()
@@ -52,18 +62,18 @@ class Group:
 
     @property
     def coins_as_str(self):
-        return ';'.join(self.selected_coins)
+        return ";".join(self.selected_coins)
 
     @property
     def currencies_as_str(self):
-        return ';'.join(self.selected_currencies)
-    
+        return ";".join(self.selected_currencies)
+
     @property
     def is_active(self):
-        '''Check owner premium date is valid or not'''
+        """Check owner premium date is valid or not"""
         owner = Account.GetById(self.owner_id)
         return owner.is_premium
-    
+
     @staticmethod
     def Get(group_id, no_fastmem: bool = False):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
@@ -77,18 +87,29 @@ class Group:
 
     @staticmethod
     def ExtractQueryRowData(row: tuple, no_fastmem: bool = False):
-        return Group(group_id=int(row[0]), group_name=row[1], group_title=row[2], selected_coins=DatabaseInterface.StringToList(row[3]), selected_currencies=DatabaseInterface.StringToList(row[4]),
-                           message_header=row[5], message_footnote=row[6], message_show_date=bool(row[7]), message_show_market_labels=bool(row[8]), owner_id=int(row[-1]), no_fastmem=no_fastmem)
-    
+        return Group(
+            group_id=int(row[0]),
+            group_name=row[1],
+            group_title=row[2],
+            selected_coins=DatabaseInterface.StringToList(row[3]),
+            selected_currencies=DatabaseInterface.StringToList(row[4]),
+            message_header=row[5],
+            message_footnote=row[6],
+            message_show_date=bool(row[7]),
+            message_show_market_labels=bool(row[8]),
+            owner_id=int(row[-1]),
+            no_fastmem=no_fastmem,
+        )
+
     @staticmethod
     def GetByOwner(owner_chat_id: int):
         rows = Group.Database().get_user_groups(int(owner_chat_id))
         return list(map(Group.ExtractQueryRowData, rows))
-    
+
     @staticmethod
     def Register(chat: Chat, owner_id: int, allowed_group_count: int = 1):
-        '''Create group model and save into database. set its active_until field same as user premium date.
-        return the database data if group is existing from before (just update its owner id).'''
+        """Create group model and save into database. set its active_until field same as user premium date.
+        return the database data if group is existing from before (just update its owner id)."""
         db = Group.Database()
         group_columns = db.get_group(chat.id)
         if group_columns:
@@ -98,17 +119,17 @@ class Group:
             group.owner_id = owner_id
             group.save()
             return group
-        
+
         # enhanced check:
         if allowed_group_count == 1:
             if Group.OwnerHasGroup(owner_id):
-                raise MaxAddedCommunityException('group')
+                raise MaxAddedCommunityException("group")
         elif allowed_group_count > 1:
             if Group.OwnerGroupCount(owner_id) > allowed_group_count:
-                raise MaxAddedCommunityException('group')
+                raise MaxAddedCommunityException("group")
         elif not allowed_group_count:
-            raise UserNotAllowedException(owner_id, 'have groups')
-        
+            raise UserNotAllowedException(owner_id, "have groups")
+
         group = Group(owner_id=owner_id, group_id=chat.id, group_title=chat.title, group_name=chat.username)
         db.add_group(group)
         return group
@@ -116,7 +137,7 @@ class Group:
     @staticmethod
     def OwnerHasGroup(owner_id: int):
         return bool(Group.Database().get_user_groups(owner_id, take=1))
-    
+
     @staticmethod
     def OwnerGroupCount(owner_id: int):
         return Group.Database().user_groups_count(owner_id)
@@ -129,9 +150,9 @@ class Group:
 
         garbage = filter(
             lambda group_id: Group.FastMemInstances[group_id].last_interaction >= Group.FastMemGarbageCollectionInterval,
-            Group.FastMemInstances
+            Group.FastMemInstances,
         )
         Group.PreviousFastMemGarbageCollectionTime = now
-        
+
         for g in garbage:
             del Group.FastMemInstances[g]

@@ -5,13 +5,14 @@ from dateutil.relativedelta import relativedelta
 from time import time
 
 
-timezone = pytz.timezone('Asia/Tehran')
-
-def separate_by3(number: float, precision: int=None):
-    return f"{number:,.{precision}f}" if precision else f'{number:,}'
+timezone = pytz.timezone("Asia/Tehran")
 
 
-def cut(number: float|int, return_string: bool=False):
+def separate_by3(number: float, precision: int = None):
+    return f"{number:,.{precision}f}" if precision else f"{number:,}"
+
+
+def cut(number: float | int, return_string: bool = False):
     if not number:
         return 0, 0
     intnum = int(number)
@@ -19,12 +20,12 @@ def cut(number: float|int, return_string: bool=False):
         return str(intnum) if return_string else intnum, 0
 
     strnum = str(number)
-    if 'e' in strnum:
+    if "e" in strnum:
         strnum = f"{number:.16f}"
-    if '.' not in strnum:  # just to double-check
+    if "." not in strnum:  # just to double-check
         return strnum if return_string else int(strnum), 0
 
-    dot_index = strnum.index('.')
+    dot_index = strnum.index(".")
     end = len(strnum)
 
     if number >= 10:  # limit number to two digits after .
@@ -35,7 +36,7 @@ def cut(number: float|int, return_string: bool=False):
             end = dot_index + 5
 
     ei = dot_index + 1
-    while ei < end and strnum[ei] == '0':
+    while ei < end and strnum[ei] == "0":
         ei += 1
     if ei >= end:
         return str(intnum) if return_string else intnum, 0
@@ -48,27 +49,30 @@ def cut(number: float|int, return_string: bool=False):
     end -= 1
     if ei + 3 <= end:
         end = ei + 3
-    while end > ei and strnum[end] == '0':
+    while end > ei and strnum[end] == "0":
         end -= 1
 
-    return strnum[:end + 1] if return_string else float(strnum[:end + 1]), end - dot_index
+    return strnum[: end + 1] if return_string else float(strnum[: end + 1]), end - dot_index
 
 
-def persianify(number: str|float|int):
+def persianify(number: str | float | int):
     if not isinstance(number, str):
         number = str(number)
-    return digits.en_to_fa(number)  #.replace('.', '/').replace(',', '،')
+    return digits.en_to_fa(number)  # .replace('.', '/').replace(',', '،')
 
-def cut_and_separate(num: float|int):
+
+def cut_and_separate(num: float | int):
     num, precision = cut(num)
 
-    return  separate_by3(num, precision)
+    return separate_by3(num, precision)
 
 
 def tz_today() -> datetime:  # today date in a specific timezone
     return datetime.now(tz=timezone)
 
-WEEKDAYS = ('دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنج شنبه', 'جمعه', 'شنبه', 'یکشنبه')
+
+WEEKDAYS = ("دوشنبه", "سه شنبه", "چهارشنبه", "پنج شنبه", "جمعه", "شنبه", "یکشنبه")
+
 
 def timestamp() -> str:
     # today date and time as persian
@@ -76,31 +80,32 @@ def timestamp() -> str:
         now = tz_today()  # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
         weekday = WEEKDAYS[now.weekday()]
-        date = digits.en_to_fa(f'{year}/{month:02d}/{day:02d}')
+        date = digits.en_to_fa(f"{year}/{month:02d}/{day:02d}")
         time = digits.en_to_fa(now.strftime("%H:%M"))
-        return f'📆 {date} {weekday} {time}'
+        return f"📆 {date} {weekday} {time}"
 
     except Exception as ex:
         try:
             now = tz_today()  # timezone.localize(datetime.now())
             return f'📆 {now.year}/{now.month:02d}/{now.day:02d} {weekday} {now.strftime("%H:%M")}'
         except:
-            return 'تاریخ نامعلوم: دریافت تاریخ روز با مشکل مواجه شد!'
+            return "تاریخ نامعلوم: دریافت تاریخ روز با مشکل مواجه شد!"
 
 
-def short_timestamp(date_delimiter='-', time_delimiter='.', datetime_delimiter='_', show_minutes: bool=False) -> str:
+def short_timestamp(date_delimiter="-", time_delimiter=".", datetime_delimiter="_", show_minutes: bool = False) -> str:
     # today date and time as persian
     try:
         now = tz_today()  # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
 
         time = now.strftime(now.strftime("%H" if not show_minutes else f"%H{time_delimiter}%M"))
-        return f'{year}{date_delimiter}{month:02d}{date_delimiter}{day:02d}{datetime_delimiter}{time}'
+        return f"{year}{date_delimiter}{month:02d}{date_delimiter}{day:02d}{datetime_delimiter}{time}"
 
     except Exception as ex:
         now = tz_today()  # timezone.localize(datetime.now())
         return f'{now.year}{date_delimiter}{now.month:02d}{date_delimiter}{now.day:02d}{datetime_delimiter}{now.strftime("%H" if not show_minutes else f"%H{time_delimiter}%M")}'
     return None
+
 
 def gregorian_to_jalali(gy: int, gm: int, gd: int):
     g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
@@ -143,7 +148,7 @@ def jalali_to_gregorian(jy: int, jm: int, jd: int):
     gy += 4 * (days // 1461)
     days %= 1461
     if days > 365:
-        gy += ((days - 1) // 365)
+        gy += (days - 1) // 365
         days = (days - 1) % 365
     gd = days + 1
     if (gy % 4 == 0 and gy % 100 != 0) or (gy % 400 == 0):
@@ -158,7 +163,7 @@ def jalali_to_gregorian(jy: int, jm: int, jd: int):
     return gy, gm, gd
 
 
-def extend_date(date:datetime, months_count: int) -> datetime:
+def extend_date(date: datetime, months_count: int) -> datetime:
     return date + relativedelta(months=months_count)
 
 
@@ -167,8 +172,8 @@ def after_n_months(n: int = 2) -> datetime:
     return extend_date(date=datetime.now(), months_count=n)
 
 
-def force_cast(value: str) -> int|float|str:
-    '''Convert a numric string to a number type variable, or return the string itself if its not numeric'''
+def force_cast(value: str) -> int | float | str:
+    """Convert a numric string to a number type variable, or return the string itself if its not numeric"""
     try:
         value = int(value)
     except:
@@ -177,6 +182,7 @@ def force_cast(value: str) -> int|float|str:
         except:
             pass
     return value
+
 
 def minutes_to_timestamp(minutes: int) -> str:
     hours = minutes // 60
@@ -195,15 +201,18 @@ def minutes_to_timestamp(minutes: int) -> str:
         # else:
     return timestamp
 
+
 def now_in_minute() -> int:
     return time() // 60
 
+
 def from_now_time_diff(dt: datetime):
-    '''time passed from time:t in minutes'''
+    """time passed from time:t in minutes"""
     now = tz_today()
     if not dt:
         return 0
     return (now - dt).total_seconds() // 60, now
+
 
 if __name__ == "__main__":
     d = datetime.today()

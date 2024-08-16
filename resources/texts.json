@@ -185,6 +185,14 @@
         "community_disconnect": {
             "fa": "قطع اتصال",
             "en": "Disconnect"
+        },
+        "yes_show_tag": {
+            "fa": "بله، قرار بکیرد",
+            "en": "Yes, Show Tag"
+        },
+        "no_hide_tag": {
+            "fa": "خیر، قرار نکیرد",
+            "en": "No, Don't Show Tag"
         }
     },
     "which_market": {
@@ -502,7 +510,11 @@
         "en": "⚠️ Go premium in order to activate this feature.\n\n⚠️ Although, since you've added the bot and made it admin, you can do feature customization."
     },
     "update_successful": {
-        "fa": "✅ تغییرات جدید با موفقیت ثبت شد..",
-        "en": "✅ New changes applied and saved successfuly.."
+        "fa": "✅ تغییر اعمال شد.",
+        "en": "✅ Applied."
+    },
+    "trigger_date_tag": {
+        "fa": "🔹 آیا می خواهید تاریخ بروزرسانی در اول هر پیام قرار بگیرد؟\n\nشکل قرار گیری:\n\n📆 ۱۴۰۱/۰۱/۰۱ پنج شنبه ۱۲:۳۰",
+        "en": "🔹 Do you prefer to show the current date tag at post headers?\n\nDate Tag Example:\n\n📆 2022/01/01 Thursday 12:30"
     }
 }

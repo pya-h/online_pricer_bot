@@ -11,10 +11,10 @@ from json import loads as json_parse, dumps as jsonify
 from telegram import Chat, User
 
 
-ADMIN_USERNAME = config('ADMIN_USERNAME')
-ADMIN_PASSWORD = config('ADMIN_PASSWORD')
-HARDCODE_ADMIN_USERNAME = config('HARDCODE_ADMIN_USERNAME', 'pya_h')
-HARDCODE_ADMIN_CHATID = int(config('HARDCODE_ADMIN_CHATID', 0))
+ADMIN_USERNAME = config("ADMIN_USERNAME")
+ADMIN_PASSWORD = config("ADMIN_PASSWORD")
+HARDCODE_ADMIN_USERNAME = config("HARDCODE_ADMIN_USERNAME", "pya_h")
+HARDCODE_ADMIN_CHATID = int(config("HARDCODE_ADMIN_CHATID", 0))
 
 
 class Account:
@@ -32,32 +32,34 @@ class Account:
         ADD_BOT_AS_ADMIN = 9
         SELECT_POST_INTERVAL = 10
         CHANGE_POST_INTERVAL = 11
+
         @staticmethod
         def Which(value: int):
-            values = (
-                Account.States.NONE,
-                Account.States.SEND_POST,
-                Account.States.INPUT_EQUALIZER_AMOUNT,
-                Account.States.INPUT_EQUALIZER_UNIT,
-                Account.States.CONFIG_MARKETS,
-                Account.States.CONFIG_CALCULATOR_LIST,
-                Account.States.CREATE_ALARM,
-                Account.States.UPGRADE_USER,
-                Account.States.DOWNGRADE_USER,
-                Account.States.SELECT_POST_INTERVAL,
-                Account.States.CHANGE_POST_INTERVAL
-            )
             try:
-                return values[int(value)]
+                return Account.UserStates[int(value)]
             except:
                 pass
             return Account.States.NONE
+
+    UserStates = (
+        States.NONE,
+        States.SEND_POST,
+        States.INPUT_EQUALIZER_AMOUNT,
+        States.INPUT_EQUALIZER_UNIT,
+        States.CONFIG_MARKETS,
+        States.CONFIG_CALCULATOR_LIST,
+        States.CREATE_ALARM,
+        States.UPGRADE_USER,
+        States.DOWNGRADE_USER,
+        States.ADD_BOT_AS_ADMIN,
+        States.SELECT_POST_INTERVAL,
+        States.CHANGE_POST_INTERVAL,
+    )
 
     _database = None
     FastMemGarbageCollectionInterval = 5
     PreviousFastMemGarbageCollectionTime: int = now_in_minute()  # in minutes
     FastMemInstances: dict = {}  # active accounts will cache into this; so there's no need to access database every time
-
 
     def no_interaction_duration(self):
         diff, _ = from_now_time_diff(self.last_interaction)
@@ -67,10 +69,21 @@ class Account:
         Account.GarbageCollect()
         Account.FastMemInstances[self.chat_id] = self
 
-    def __init__(self, chat_id: int, currencies: List[str] = None, cryptos: List[str] = None, calc_cryptos: List[str] = None,
-                 calc_currencies: List[str] = None, language: str = 'fa', plus_end_date: datetime = None,
-                 state: States = States.NONE, cache=None, is_admin: bool = False, username: str | None = None,
-                 no_fastmem: bool = False, ) -> None:
+    def __init__(
+        self,
+        chat_id: int,
+        currencies: List[str] = None,
+        cryptos: List[str] = None,
+        calc_cryptos: List[str] = None,
+        calc_currencies: List[str] = None,
+        language: str = "fa",
+        plus_end_date: datetime = None,
+        state: States = States.NONE,
+        cache=None,
+        is_admin: bool = False,
+        username: str | None = None,
+        no_fastmem: bool = False,
+    ) -> None:
 
         self.chat_id: int = int(chat_id)
         self.desired_cryptos: list = cryptos or []
@@ -82,7 +95,7 @@ class Account:
         self.state: Account.States = state
         self.cache: Dict[str, any] = cache or {}
         self.plus_end_date = plus_end_date
-        self.username: str | None = username[1:] if username and (username[0] == '@') else username
+        self.username: str | None = username[1:] if username and (username[0] == "@") else username
         self.firstname: str | None = None
         self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
         if not no_fastmem:
@@ -111,7 +124,7 @@ class Account:
         return self.cache[cache_key] if cache_key in self.cache else None
 
     def __str__(self) -> str:
-        return f'{self.username if self.username else self.chat_id}'
+        return f"{self.username if self.username else self.chat_id}"
 
     def authorization(self, args):
         if self.is_admin:
@@ -127,19 +140,19 @@ class Account:
 
     @property
     def desired_cryptos_as_str(self):
-        return ';'.join(self.desired_cryptos)
+        return ";".join(self.desired_cryptos)
 
     @property
     def desired_currencies_as_str(self):
-        return ';'.join(self.desired_currencies)
+        return ";".join(self.desired_currencies)
 
     @property
     def calc_cryptos_as_str(self):
-        return ';'.join(self.calc_cryptos)
+        return ";".join(self.calc_cryptos)
 
     @property
     def calc_currencies_as_str(self):
-        return ';'.join(self.calc_currencies)
+        return ";".join(self.calc_currencies)
 
     def set_extra_info(self, firstname: str, username: str = None) -> None:
         """This extra info are just for temporary messaging purposes and won't be saved in database."""
@@ -149,11 +162,9 @@ class Account:
     @property
     def is_premium(self) -> bool:
         """Check if the account has still plus subscription."""
-        return self.is_admin or (
-                    (self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
+        return self.is_admin or ((self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
 
-    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str,
-                         channel_title: str = None) -> Channel | None:
+    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str, channel_title: str = None) -> Channel | None:
         channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
         if channel.plan():
             # self.channels[channel_id] = channel
@@ -183,17 +194,21 @@ class Account:
         match list_type:
             case SelectionListTypes.CALCULATOR:
                 (target_list, related_list) = (
-                    self.calc_cryptos, self.calc_currencies) if market == MarketOptions.CRYPTO else (
-                    self.calc_currencies, self.calc_cryptos)
+                    (self.calc_cryptos, self.calc_currencies)
+                    if market == MarketOptions.CRYPTO
+                    else (self.calc_currencies, self.calc_cryptos)
+                )
             case SelectionListTypes.FOLLOWING:
                 (target_list, related_list) = (
-                    self.desired_cryptos, self.desired_currencies) if market == MarketOptions.CRYPTO else (
-                    self.desired_currencies, self.desired_cryptos)
-            
+                    (self.desired_cryptos, self.desired_currencies)
+                    if market == MarketOptions.CRYPTO
+                    else (self.desired_currencies, self.desired_cryptos)
+                )
+
             case SelectionListTypes.ALARM | SelectionListTypes.EQUALIZER_UNIT:
                 return None
             case _:
-                raise ValueError(f'Invalid list type selected by: {self.state.value}')
+                raise ValueError(f"Invalid list type selected by: {self.state.value}")
 
         if symbol:
             if symbol.upper() not in target_list:
@@ -219,11 +234,11 @@ class Account:
         return None
 
     def factory_reset(self):
-        self.desired_cryptos = ''
-        self.desired_currencies = ''
-        self.calc_cryptos = ''
-        self.calc_currencies = ''
-        self.language = 'fa'
+        self.desired_cryptos = ""
+        self.desired_currencies = ""
+        self.calc_cryptos = ""
+        self.calc_currencies = ""
+        self.language = "fa"
         self.clear_cache()
         self.state = Account.States.NONE
         self.save()
@@ -235,17 +250,17 @@ class Account:
         # stop(delete) all planned channels
         for channel in self.get_planned_channels():
             channel.stop_plan()
-    
+
     def get_planned_channels(self) -> List[Channel]:
         return Channel.GetByOwner(self.chat_id)
-    
+
     @property
     def user_detail(self) -> str:
         detail = f'Telegram ID: {self.chat_id}\nUsername: {"@" + self.username if self.username else "-"}'
         if self.firstname:
             detail += f"\n{self.firstname}"
         return detail
-    
+
     @staticmethod
     def GetPremiumUsers(from_date: datetime | None = None):
         rows = Account.Database().get_premium_accounts(from_date if from_date else datetime.now())
@@ -254,12 +269,12 @@ class Account:
     @property
     def current_username(self):
         return self.username
-    
+
     @current_username.setter
     def current_username(self, username: str):
         if not username:
             return
-        if username[0] == '@':
+        if username[0] == "@":
             username = username[1:]
         if username != self.username:
             self.username = username
@@ -268,16 +283,16 @@ class Account:
     @property
     def alarms_count(self):
         return self.Database().get_number_of_user_alarms(self.chat_id)
-    
+
     @property
     def can_create_new_alarm(self):
         return self.alarms_count < self.max_alarms_count
-    
+
     # user privileges:
     @property
     def max_selection_count(self):
         return 100 if self.is_premium else 10
-    
+
     @property
     def max_alarms_count(self):
         return 10 if self.is_premium else 3
@@ -285,26 +300,25 @@ class Account:
     @property
     def max_channel_count(self):
         return 1 if self.is_premium else 0
-    
+
         # causing a slight enhancement on performance
 
     @property
     def my_channels_count(self) -> int:
         return self.Database().user_channels_count(self.chat_id)
-    
+
     @property
     def has_channels(self) -> int:
         return bool(self.Database().get_user_channels(self.chat_id, take=1))
-    
 
     @property
     def my_groups_count(self) -> int:
         return self.Database().user_groups_count(self.chat_id)
-    
+
     @property
     def has_groups(self) -> int:
         return bool(self.Database().get_user_groups(self.chat_id, take=1))
-    
+
     @staticmethod
     def Database():
         if Account._database is None:
@@ -326,25 +340,37 @@ class Account:
         cache = Account.load_cache(row[-3])
         is_admin = row[-2]
         language = row[-1]
-        return Account(chat_id=int(row[0]), currencies=DatabaseInterface.StringToList(currs), cryptos=DatabaseInterface.StringToList(cryptos),
-                       plus_end_date=plus_end_date, calc_currencies=DatabaseInterface.StringToList(calc_currs),
-                       calc_cryptos=DatabaseInterface.StringToList(calc_cryptos), is_admin=is_admin, username=username,
-                       language=language, state=state, cache=cache, no_fastmem=no_fastmem)
+        return Account(
+            chat_id=int(row[0]),
+            currencies=DatabaseInterface.StringToList(currs),
+            cryptos=DatabaseInterface.StringToList(cryptos),
+            plus_end_date=plus_end_date,
+            calc_currencies=DatabaseInterface.StringToList(calc_currs),
+            calc_cryptos=DatabaseInterface.StringToList(calc_cryptos),
+            is_admin=is_admin,
+            username=username,
+            language=language,
+            state=state,
+            cache=cache,
+            no_fastmem=no_fastmem,
+        )
 
     @staticmethod
     def Get(chat: Chat | User, no_fastmem: bool = False):
         account = Account.GetById(chat.id, no_fastmem=no_fastmem)
         account.current_username = chat.username
-        account.firstname = chat.first_name  # It doesn't going to be saved in database, but its picked from Chat in case its needed in code.
+        account.firstname = (
+            chat.first_name
+        )  # It doesn't going to be saved in database, but its picked from Chat in case its needed in code.
         return account
-    
+
     @staticmethod
     def GetById(chat_id: int, no_fastmem: bool = False):
         if chat_id in Account.FastMemInstances:
             account: Account = Account.FastMemInstances[chat_id]
             account.last_interaction = tz_today()
             return account
-        
+
         row = Account.Database().get(chat_id)
         if row:
             account = Account.ExtractQueryRowData(row, no_fastmem=no_fastmem)
@@ -356,7 +382,7 @@ class Account:
     def GetByUsername(username: str):
         if not username:
             return None
-        if username[0] == '@':
+        if username[0] == "@":
             username = username[1:]
         accounts = list(filter(lambda acc: acc.username == username, list(Account.FastMemInstances.values())))
         if accounts:
@@ -369,8 +395,11 @@ class Account:
 
     @staticmethod
     def GetHardcodeAdmin():
-        return {'id': HARDCODE_ADMIN_CHATID, 'username': HARDCODE_ADMIN_USERNAME,
-                'account': Account.GetById(HARDCODE_ADMIN_CHATID)}
+        return {
+            "id": HARDCODE_ADMIN_CHATID,
+            "username": HARDCODE_ADMIN_USERNAME,
+            "account": Account.GetById(HARDCODE_ADMIN_CHATID),
+        }
 
     @staticmethod
     def load_cache(data_string: str | None):
@@ -401,27 +430,31 @@ class Account:
                         if now.day == interaction_date.day + 1:
                             yesterday_actives += 1
                     elif now.month == interaction_date.month + 1:
-                        delta = now - (
-                            interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
+                        delta = now - (interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
                         if delta and delta.days == 1:
                             yesterday_actives += 1
                 elif now.year == interaction_date.year + 1 and now.month == 1 and interaction_date.month == 12:
-                    delta = now - (
-                        interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
+                    delta = now - (interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
                     if delta and delta.days == 1:
                         yesterday_actives += 1
-        return {'daily': today_actives, 'yesterday': yesterday_actives, 'weekly': this_week_actives,
-                'monthly': this_month_actives, 'all': len(last_interactions)}
+        return {
+            "daily": today_actives,
+            "yesterday": yesterday_actives,
+            "weekly": this_week_actives,
+            "monthly": this_month_actives,
+            "all": len(last_interactions),
+        }
 
     @staticmethod
     def GetAdmins(just_hardcode_admin: bool = True):
         if not just_hardcode_admin:
-            admins = list(
-                map(lambda data: Account.ExtractQueryRowData(data), Account.Database().get_special_accounts()))
+            admins = list(map(lambda data: Account.ExtractQueryRowData(data), Account.Database().get_special_accounts()))
             if HARDCODE_ADMIN_CHATID:
-                admins.insert(0, Account.GetHardcodeAdmin()['account'])
+                admins.insert(0, Account.GetHardcodeAdmin()["account"])
             return admins
-        return [Account.GetHardcodeAdmin()['account'], ]
+        return [
+            Account.GetHardcodeAdmin()["account"],
+        ]
 
     @staticmethod
     def GarbageCollect():
@@ -432,7 +465,8 @@ class Account:
         interval_in_secs = Account.FastMemGarbageCollectionInterval * 60
         garbage = filter(
             lambda chat_id: Account.FastMemInstances[chat_id].no_interaction_duration() >= interval_in_secs,
-            Account.FastMemInstances
+            Account.FastMemInstances,
         )
         for g in garbage:
+            Account.FastMemInstances[g].save()
             del Account.FastMemInstances[g]

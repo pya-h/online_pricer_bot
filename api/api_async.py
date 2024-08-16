@@ -28,7 +28,7 @@ class Response:
     async def read(self):
         self.__raw = await self.response.text()
 
-        if self.response.content_type == 'application/json':
+        if self.response.content_type == "application/json":
             self.__decoded = await self.response.json()
 
         try:
@@ -48,34 +48,39 @@ class Response:
 
     @property
     def data(self):
-        '''Decoded[if json] result of request.'''
+        """Decoded[if json] result of request."""
         return self.__decoded
 
     @property
     def text(self):
-        '''The exact string returned from request.'''
+        """The exact string returned from request."""
         return self.__raw
 
 
 class Request:
 
-    def __init__(self, url: str, payload: dict = None, headers: dict = None, method: RequestMethod = RequestMethod.Get,
-                 timeout: float = 5.0) -> None:
+    def __init__(
+        self,
+        url: str,
+        payload: dict = None,
+        headers: dict = None,
+        method: RequestMethod = RequestMethod.Get,
+        timeout: float = 5.0,
+    ) -> None:
         self.__url = url
         self.__payload = payload
         self.__method = method
         self.__headers = headers
         if not self.__headers and (
-                self.__method == RequestMethod.Post or self.__method == RequestMethod.Put or self.__method == RequestMethod.Patch):
-            self.__headers = {
-                "Content-Type": "application/json"
-            }
+            self.__method == RequestMethod.Post or self.__method == RequestMethod.Put or self.__method == RequestMethod.Patch
+        ):
+            self.__headers = {"Content-Type": "application/json"}
         self.__timeout = aiohttp.ClientTimeout(timeout)
 
     def header(self, *args):
         idx, length = 0, len(args)
         if length % 2:
-            raise ValueError('Parameters must be a key, value sequence like header(key1, balue1, key2, value2, ...).')
+            raise ValueError("Parameters must be a key, value sequence like header(key1, balue1, key2, value2, ...).")
         if not self.__headers or not isinstance(self.__headers, dict):
             self.__headers = dict()
 
@@ -87,7 +92,7 @@ class Request:
     def payload(self, *args):
         idx, length = 0, len(args)
         if length % 2:
-            raise ValueError('Parameters must be a key, value sequence like header(key1, balue1, key2, value2, ...).')
+            raise ValueError("Parameters must be a key, value sequence like header(key1, balue1, key2, value2, ...).")
         if not self.__payload or not isinstance(self.__payload, dict):
             self.__payload = dict()
 

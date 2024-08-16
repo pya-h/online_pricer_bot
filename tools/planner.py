@@ -8,12 +8,11 @@ class Planner:
         self.interval: float = interval
         self.callback: Callable[..., None] = callback
         self.last_call_result: any = None
-        self.params: list|tuple = params
+        self.params: list | tuple = params
         self.is_running: bool = False
         self.started_at: int = None
         self.scheduler: BackgroundScheduler = BackgroundScheduler()
-        self.scheduler.add_job(self._run_callback, 'interval', seconds=interval*60)
-
+        self.scheduler.add_job(self._run_callback, "interval", seconds=interval * 60)
 
     def start(self):
         if not self.is_running:

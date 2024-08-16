@@ -8,12 +8,14 @@ class MarketOptions(Enum):
 
     @staticmethod
     def Which(value: int):
-        for option in (MarketOptions.CRYPTO, MarketOptions.CURRENCY, MarketOptions.GOLD,):
+        for option in (
+            MarketOptions.CRYPTO,
+            MarketOptions.CURRENCY,
+            MarketOptions.GOLD,
+        ):
             if option.value == value:
                 return option
         return None
-
-
 class SelectionListTypes(Enum):
     FOLLOWING = 1
     CALCULATOR = 2
@@ -21,11 +23,17 @@ class SelectionListTypes(Enum):
     NOTIFICATION = 4
     EQUALIZER_UNIT = 5
     ALARM = 6
-    
+
     @staticmethod
     def Which(value: int):
-        for option in (SelectionListTypes.FOLLOWING, SelectionListTypes.CALCULATOR, SelectionListTypes.CHANNEL,
-                       SelectionListTypes.NOTIFICATION, SelectionListTypes.EQUALIZER_UNIT, SelectionListTypes.ALARM):
+        for option in (
+            SelectionListTypes.FOLLOWING,
+            SelectionListTypes.CALCULATOR,
+            SelectionListTypes.CHANNEL,
+            SelectionListTypes.NOTIFICATION,
+            SelectionListTypes.EQUALIZER_UNIT,
+            SelectionListTypes.ALARM,
+        ):
             if option.value == value:
                 return option
         return None

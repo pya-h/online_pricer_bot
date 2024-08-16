@@ -1,19 +1,18 @@
 TUTORIALS_TEXT = {
-    'get_prices': {
-        'fa': '''🔸 آموزش بخش [ مشاهده قیمت ها ]
+    "get_prices": {
+        "fa": """🔸 آموزش بخش [ مشاهده قیمت ها ]
 
 👈 بطور پیشفرض ۳ مورد از بازار ارز، ۳ مورد از بازار طلا و ۳ مورد از بازار ارز دیجیتال در این لیست قرار گرفته است و با هربار کلیک کردن بر روی کلید [ مشاهده قیمت ها ] قیمتِ بروزشدهِ این لیست برای شما ارسال می شود.
 
-👈 شما می توانید از قسمت [ لیست مشاهده قیمت ها ] موارد داخل لیستتان را تغییر دهید.''',
-                        'en': '''🔸 Training part [ View prices ]
+👈 شما می توانید از قسمت [ لیست مشاهده قیمت ها ] موارد داخل لیستتان را تغییر دهید.""",
+        "en": """🔸 Training part [ View prices ]
 
 👉 By default, 3 items from the currency market, 3 items from the gold market and 3 items from the digital currency market are included in this list, and every time you click on the [ View prices ] button, the updated price of this list will be sent to you.
 
-👉 You can change the items in your list from the [ View list of prices ] section.'''
+👉 You can change the items in your list from the [ View list of prices ] section.""",
     },
-
-    'config_lists': {
-        'fa': '''🔸 آموزش بخش [ لیست مشاهده قیمت ها ]
+    "config_lists": {
+        "fa": """🔸 آموزش بخش [ لیست مشاهده قیمت ها ]
 
 👈 زمانی که روی گزینه [ لیست مشاهده قیمت ها ] کلیک کنید ۳ قسمت زیر برایتان به نمایش در می آید:
 [ بازار ارز ]
@@ -33,8 +32,8 @@ TUTORIALS_TEXT = {
 
 👈 شما هربار که بخواهید می توانید این لیست را تغییر دهید.
 
-💎 با پریمیوم کردن اکانتتان می توانید تا ۱۰۰ قیمت را در لیست خود اضافه کنید.''',
-                        'en': '''🔸 Training part [ View list of prices ]
+💎 با پریمیوم کردن اکانتتان می توانید تا ۱۰۰ قیمت را در لیست خود اضافه کنید.""",
+        "en": """🔸 Training part [ View list of prices ]
 
 👉 When you click on the option [ View list of prices ], the following 3 parts will be displayed:
 [ Currency market ]
@@ -54,12 +53,10 @@ TUTORIALS_TEXT = {
 
 👉 You can change this list whenever you want.
 
-💎 By making your account premium, you can add up to 100 prices to your list.'''
+💎 By making your account premium, you can add up to 100 prices to your list.""",
     },
-
-
-    'calculator': {
-        'fa': '''🔸 آموزش بخش [ ماشین حساب ]
+    "calculator": {
+        "fa": """🔸 آموزش بخش [ ماشین حساب ]
 
 👈 با کلیک بر روی گزینه [ ماشین حساب ] ربات از شما می خواهد مقدار و نام اختصاری مورد نظرتان را با یک فاصله در کنار هم (به انگلیسی) بنویسید.
 
@@ -99,8 +96,8 @@ TUTORIALS_TEXT = {
 👈 حالا فرض کنید می خواهیم معادل ۱۰ بیت کوین، ۲۰ انس طلا و ۵۰ دلار را محاسبه کنیم؛ برای اینکار کافیست بنویسیم:
 10 20 50 BTC GOLD USD
 
-👈 دقت کنید اگر لیست ماشین حساب خود را انتخاب نکرده باشید بطور پیش فرض ۴ مورد از بازار ارز، ۳ مورد از بازار طلا و ۳ مورد از بازار ارز دیجیتال در لیستتان قرار خواهد گرفت.''',
-        'en': '''🔸 Training Part [ Calculator ]
+👈 دقت کنید اگر لیست ماشین حساب خود را انتخاب نکرده باشید بطور پیش فرض ۴ مورد از بازار ارز، ۳ مورد از بازار طلا و ۳ مورد از بازار ارز دیجیتال در لیستتان قرار خواهد گرفت.""",
+        "en": """🔸 Training Part [ Calculator ]
 
 👉 By clicking on the [ Calculator ] option, the robot will ask you to write the amount and the abbreviation you want with a space (in English).
 
@@ -139,12 +136,10 @@ TUTORIALS_TEXT = {
 👉 Now suppose we want to calculate the equivalent of 10 bitcoins, 20 ounces of gold and 50 dollars; For this, it is enough to write:
 10 20 50 BTC GOLD USD
 
-👉 Be careful, if you have not selected your calculator list, by default, 4 items from the currency market, 3 items from the gold market and 3 items from the crypto market will be included in your list.''',
+👉 Be careful, if you have not selected your calculator list, by default, 4 items from the currency market, 3 items from the gold market and 3 items from the crypto market will be included in your list.""",
     },
-
-
-    'config_calculator': {
-        'fa': '''🔸 آموزش بخش [ لیست ماشین حساب من ]
+    "config_calculator": {
+        "fa": """🔸 آموزش بخش [ لیست ماشین حساب من ]
 
 👈 زمانی که روی گزینه [ لیست ماشین حساب من ] کلیک کنید ۳ قسمت زیر برایتان به نمایش در می آید:
 [ بازار ارز ]
@@ -164,8 +159,8 @@ TUTORIALS_TEXT = {
 
 👈 شما هربار که بخواهید می توانید این لیست را تغییر دهید.
 
-💎 با پریمیوم کردن اکانتتان می توانید تا ۱۰۰ قیمت را در لیست خود اضافه کنید.''',
-        'en': '''🔸 Training part [ My calculator list ]
+💎 با پریمیوم کردن اکانتتان می توانید تا ۱۰۰ قیمت را در لیست خود اضافه کنید.""",
+        "en": """🔸 Training part [ My calculator list ]
 
 👉 When you click on the option [ My calculator list ], the following 3 parts will be displayed:
 [ Currency market ]
@@ -185,11 +180,10 @@ TUTORIALS_TEXT = {
 
 👉 You can change this list whenever you want.
 
-💎 By making your account premium, you can add up to 100 prices to your list.'''
+💎 By making your account premium, you can add up to 100 prices to your list.""",
     },
-
-    'create_alarm': {
-        'fa': '''🔸 آموزش بخش [ ایجاد هشدار قیمت ] 
+    "create_alarm": {
+        "fa": """🔸 آموزش بخش [ ایجاد هشدار قیمت ] 
 
 👈 با کلیک بر روی گزینه [ ایجاد هشدار قیمت ] ۳ قسمت زیر برایتان به نمایش در می آید:
 [ بازار ارز ]
@@ -209,8 +203,8 @@ TUTORIALS_TEXT = {
 👈 حالا باید تعیین کنیم قیمت مدنظر ما به [ تومان ] است یا [ دلار ] ؟
 (قیمت مدنظر ما ۵۰,۰۰۰ دلار بود پس باید گزینه [ دلار ] را انتخاب کنیم ولی اگر قیمت مدنظرمان به تومان بود باید گزینه [ تومان ] را انتخاب می کردیم)
 
-👈 حالا هشدار ما تنظیم شده است و اگر قیمت بیت کوین به ۵۰,۰۰۰ دلار برسد ربات همان لحظه به ما هشدار می دهد.''',
-        'en': '''🔸 Training part [ Create a price alarm ] 
+👈 حالا هشدار ما تنظیم شده است و اگر قیمت بیت کوین به ۵۰,۰۰۰ دلار برسد ربات همان لحظه به ما هشدار می دهد.""",
+        "en": """🔸 Training part [ Create a price alarm ] 
 
 👉 When you click on the option [ Create a price alarm ], the following 3 parts will be displayed:
 [ Currency market ]
@@ -228,12 +222,10 @@ TUTORIALS_TEXT = {
 👉 Now we have to specify whether our target price is based on [toman] or [dollar]?
 (Our desired price was 50,000 dollars, so we should choose the [dollar] option, but if our desired price was in Tomans, we should have chosen the [Toman] option)
 
-👉 Now our alarm is set and if the price of Bitcoin reaches $50,000, the robot will alarm us right away.''',
+👉 Now our alarm is set and if the price of Bitcoin reaches $50,000, the robot will alarm us right away.""",
     },
-
-
-    'list_alarms': {
-        'fa': '''🔸 آموزش بخش [ لیست هشدار قیمت من ] 
+    "list_alarms": {
+        "fa": """🔸 آموزش بخش [ لیست هشدار قیمت من ] 
 
 👈 با کلیک بر روی گزینه [ لیست هشدار قیمت من ] تمامی هشدار های تنظیم شده شما برایتان به نمایش در می آید.
 
@@ -247,8 +239,8 @@ TUTORIALS_TEXT = {
 
 👈 زمانی که یک هشدار به قیمت مدنظر شما رسید و به شما اطلاع داده شد، از لیست هشدارهای شما به طور خودکار حذف می شود.
 
-💎 با پریمیوم کردن اکانتتان می توانید تا ۳۰ هشدار قیمت را در لیست خود اضافه کنید.''',
-        'en': '''🔸 Training part [ My price alarm list ] 
+💎 با پریمیوم کردن اکانتتان می توانید تا ۳۰ هشدار قیمت را در لیست خود اضافه کنید.""",
+        "en": """🔸 Training part [ My price alarm list ] 
 
 👉 By clicking on the [ My price alarm list ] option, all your set alarms will be displayed.
 
@@ -262,12 +254,10 @@ TUTORIALS_TEXT = {
 
 👉 When an alarm reaches your target price and you are notified, it will be automatically removed from your alarm list.
 
-💎 By making your account premium, you can add up to 30 price alarms to your list.'''
+💎 By making your account premium, you can add up to 30 price alarms to your list.""",
     },
-
-
-    'use_in_channel': {
-        'fa': '''🔸 آموزش بخش [ اتصال ربات به کانال ]
+    "use_in_channel": {
+        "fa": """🔸 آموزش بخش [ اتصال ربات به کانال ]
 
 👈 زمانی که برای اولین بار روی گزینه [ اتصال ربات به کانال ] کلیک کنید ربات از شما می خواهد آن را در کانالتان مدیر کنید.
 
@@ -315,8 +305,8 @@ TUTORIALS_TEXT = {
 
 👈 با کلیک بر روی این گزینه، اتصال ربات با کانالتان قطع خواهد شد.
 
-💎 برای استفاده از این قابلیت باید اکانتتان پریمیوم باشد.''',
-        "en": '''🔸 Training part [ Connect to channel ]
+💎 برای استفاده از این قابلیت باید اکانتتان پریمیوم باشد.""",
+        "en": """🔸 Training part [ Connect to channel ]
 
 👉 When you click on [ My channel setting ] for the first time, bot will ask you to manage it in your channel.
 
@@ -364,12 +354,10 @@ TUTORIALS_TEXT = {
 
 👉 By clicking this option, bot will be disconnected from your channel.
 
-💎 To use this feature, your account must be premium.'''
+💎 To use this feature, your account must be premium.""",
     },
-
-
-    'use_in_group': {
-        'fa': '''🔸 آموزش بخش [ اتصال ربات به گروه ]
+    "use_in_group": {
+        "fa": """🔸 آموزش بخش [ اتصال ربات به گروه ]
 
 👈 زمانی که برای اولین بار روی گزینه [ اتصال ربات به گروه ] کلیک کنید ربات از شما می خواهد آن را در گروهتان مدیر کنید.
 
@@ -422,8 +410,8 @@ GOLD
 
 👈 با کلیک بر روی این گزینه، اتصال ربات با گروهتان قطع خواهد شد.
 
-💎 برای استفاده از این قابلیت باید اکانتتان پریمیوم باشد.''',
-        'en': '''🔸 Training part [ Connect to group ]
+💎 برای استفاده از این قابلیت باید اکانتتان پریمیوم باشد.""",
+        "en": """🔸 Training part [ Connect to group ]
 
 👉 When you first click on the [ Connect to group ] option, bot will ask you to manage it in your group.
 
@@ -476,6 +464,6 @@ The robot sends the price of each of them in the group)
 
 👉 Clicking this option will disconnect bot from your group.
 
-💎 To use this feature, your account must be premium.'''
-    }
+💎 To use this feature, your account must be premium.""",
+    },
 }

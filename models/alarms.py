@@ -21,10 +21,10 @@ class PriceAlarm:
         def __str__(self) -> str:
             match self.value:
                 case PriceAlarm.ChangeDirection.EXACT:
-                    return 'is exactly'
+                    return "is exactly"
                 case PriceAlarm.ChangeDirection.UP:
-                    return 'is above'
-            return 'is below'
+                    return "is above"
+            return "is below"
 
         @staticmethod
         def Which(direction_value: int):
@@ -35,7 +35,16 @@ class PriceAlarm:
                     return PriceAlarm.ChangeDirection.DOWN
             return PriceAlarm.ChangeDirection.UP
 
-    def __init__(self, chat_id: int, currency: str, target_price: int | float, change_direction: ChangeDirection | int | None = None, target_unit: str = 'irt', id: int = None, current_price: float | int | None = None) -> None:
+    def __init__(
+        self,
+        chat_id: int,
+        currency: str,
+        target_price: int | float,
+        change_direction: ChangeDirection | int | None = None,
+        target_unit: str = "irt",
+        id: int = None,
+        current_price: float | int | None = None,
+    ) -> None:
         self.id = id
         self.chat_id = int(chat_id)
         self.owner: Account | None = None
@@ -48,7 +57,11 @@ class PriceAlarm:
             else:
                 self.change_direction = PriceAlarm.ChangeDirection.DOWN
         else:
-            self.change_direction = change_direction if isinstance(change_direction, PriceAlarm.ChangeDirection) else PriceAlarm.ChangeDirection.Which(change_direction)
+            self.change_direction = (
+                change_direction
+                if isinstance(change_direction, PriceAlarm.ChangeDirection)
+                else PriceAlarm.ChangeDirection.Which(change_direction)
+            )
         self.current_price: int | None = None
         self.full_currency_name: Dict[str, str] | None = None
 
@@ -58,15 +71,15 @@ class PriceAlarm:
     @staticmethod
     def get_alarms(chat_id):
         return PriceAlarm.GetByUser(chat_id)
-       
+
     @staticmethod
     def GetByUser(chat_id: int):
         rows = PriceAlarm.Database().get_user_alarms(int(chat_id))
         return list(map(PriceAlarm.ExtractQueryRowData, rows))
-        
+
     @staticmethod
     def Get(currencies: List[str] | None = None):
-        # FXIME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
+        # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         rows = PriceAlarm.Database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.Database().get_alarms()
         return list(map(PriceAlarm.ExtractQueryRowData, rows))
 
@@ -75,9 +88,9 @@ class PriceAlarm:
 
     @staticmethod
     def DisableById(alarm_id):
-        '''Efficient way to disable alarms when there is just an id available'''
+        """Efficient way to disable alarms when there is just an id available"""
         PriceAlarm.Database().delete_alarm(alarm_id)
-    
+
     def set(self):
         db = self.Database()
         if self.id:
@@ -87,4 +100,4 @@ class PriceAlarm:
         self.id = db.create_new_alarm(self)
 
     def __str__(self) -> str:
-        return f'Alarm for when {self.currency} {self.change_direction} {self.target_price} {self.target_unit}'
+        return f"Alarm for when {self.currency} {self.change_direction} {self.target_price} {self.target_unit}"

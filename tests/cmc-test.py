@@ -3,14 +3,16 @@ from decouple import config
 from json import dumps
 
 
-api_key = config('COINMARKETCAP_API_KEY')
+api_key = config("COINMARKETCAP_API_KEY")
 
 cmc = CoinMarketCapService(api_key)
 
+
 def save(data: dict):
-    f = open('api-result.json', 'w')
+    f = open("api-result.json", "w")
     f.write(dumps(data))
     f.close()
+
 
 res = cmc.cmc_api.cryptocurrency_listings_latest(limit=5000)
 save(res.data)
