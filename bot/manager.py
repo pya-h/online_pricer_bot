@@ -20,6 +20,7 @@ from typing import List, Dict, Tuple, Set
 from bot.post import PostMan
 from models.account import Account
 from models.channel import Channel, PostInterval
+from models.group import Group
 from tools.manuwriter import log, load_json
 from tools.mathematix import persianify, cut_and_separate
 from models.alarms import PriceAlarm
@@ -145,6 +146,7 @@ class BotMan:
         SELECT_POST_INTERVAL = 8
         START_CHANNEL_POSTING = 9
         TRIGGER_DATE_TAG = 10
+        TRIGGER_MARKET_TAGS = 11
         NONE = 0
 
         @staticmethod
@@ -166,6 +168,7 @@ class BotMan:
         QueryActions.SELECT_POST_INTERVAL,
         QueryActions.START_CHANNEL_POSTING,
         QueryActions.TRIGGER_DATE_TAG,
+        QueryActions.TRIGGER_MARKET_TAGS,
     )
 
     class CommunityType(Enum):
@@ -181,6 +184,27 @@ class BotMan:
                 case 2:
                     return BotMan.CommunityType.GROUP
             return BotMan.CommunityType.NONE
+
+        def __str__(self) -> str:
+            return self.ToString(self.value)
+
+        @staticmethod
+        def ToString(value: int) -> str:
+            return (
+                "channel"
+                if value == BotMan.CommunityType.CHANNEL.value
+                else "group" if value == BotMan.CommunityType.GROUP.value else "none"
+            )
+
+        @staticmethod
+        def ToClass(value: int) -> Channel | Group | None:
+            return (
+                Channel
+                if value == BotMan.CommunityType.CHANNEL.value
+                else Group if value == BotMan.CommunityType.GROUP.value else None
+            )
+        def __cls__(self) -> Channel | Group | None:
+            return self.ToClass(self.value)
 
     def __init__(self, main_plan_interval: float = 10.0, plan_manager_interval: float = 1.0) -> None:
         self.resourceman = resourceman

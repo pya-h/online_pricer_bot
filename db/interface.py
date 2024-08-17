@@ -52,8 +52,8 @@ class DatabaseInterface:
         CHANNEL_CURRENCIES,
         CHANNEL_MESSAGE_HEADER,
         CHANNEL_MESSAGE_FOOTNOTE,
-        CHANNEL_MESSAGE_DATE_TAG,
-        CHANNEL_MESSAGE_MARKET_TAGS,
+        CHANNEL_MESSAGE_SHOW_DATE_TAG,
+        CHANNEL_MESSAGE_SHOW_MARKET_TAGS,
         CHANNEL_LAST_POST_TIME,
         CHANNEL_OWNER_ID,
     ) = (
@@ -81,8 +81,8 @@ class DatabaseInterface:
         GROUP_CURRENCIES,
         GROUP_MESSAGE_HEADER,
         GROUP_MESSAGE_FOOTNOTE,
-        GROUP_MESSAGE_DATE_TAG,
-        GROUP_MESSAGE_MARKET_TAGS,
+        GROUP_MESSAGE_SHOW_DATE_TAG,
+        GROUP_MESSAGE_SHOW_MARKET_TAGS,
         GROUP_OWNER_ID,
     ) = (
         "id",
@@ -172,7 +172,7 @@ class DatabaseInterface:
                     + f"{self.CHANNEL_NAME} VARCHAR(32), {self.CHANNEL_TITLE} VARCHAR(128), {self.CHANNEL_INTERVAL} INTEGER NOT NULL,"
                     + f"{self.CHANNEL_IS_ACTIVE} TINYINT DEFAULT 0, {self.CHANNEL_COINS} VARCHAR(1024), {self.CHANNEL_CURRENCIES} VARCHAR(1024), "
                     + f"{self.CHANNEL_MESSAGE_HEADER} VARCHAR(256), {self.CHANNEL_MESSAGE_FOOTNOTE} VARCHAR(256), "
-                    + f"{self.CHANNEL_MESSAGE_DATE_TAG} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_MARKET_TAGS} BOOLEAN DEFAULT 1, {self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, "
+                    + f"{self.CHANNEL_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, {self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, "
                     + f"{self.CHANNEL_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
                 )
                 # create table account
@@ -188,7 +188,7 @@ class DatabaseInterface:
                     + f"{self.GROUP_NAME} VARCHAR(32), {self.GROUP_TITLE} VARCHAR(128),"
                     + f"{self.GROUP_COINS} VARCHAR(1024), {self.GROUP_CURRENCIES} VARCHAR(1024), "
                     + f"{self.GROUP_MESSAGE_HEADER} VARCHAR(256), {self.GROUP_MESSAGE_FOOTNOTE} VARCHAR(256), "
-                    + f"{self.GROUP_MESSAGE_DATE_TAG} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_MARKET_TAGS} BOOLEAN DEFAULT 1, "
+                    + f"{self.GROUP_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, "
                     + f"{self.GROUP_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
                 )
                 # create table account
@@ -350,8 +350,8 @@ class DatabaseInterface:
                 channel.currencies_as_str,
                 channel.message_header,
                 channel.message_footnote,
-                int(channel.message_show_date),
-                int(channel.message_show_market_labels),
+                int(channel.message_show_date_tag),
+                int(channel.message_show_market_tags),
                 channel.last_post_time,
                 channel.owner_id,
             )
@@ -374,8 +374,8 @@ class DatabaseInterface:
                 channel.currencies_as_str,
                 channel.message_header,
                 channel.message_footnote,
-                int(channel.message_show_date),
-                int(channel.message_show_market_labels),
+                int(channel.message_show_date_tag),
+                int(channel.message_show_market_tags),
                 channel.last_post_time,
                 channel.owner_id,
                 channel.id,
@@ -405,8 +405,8 @@ class DatabaseInterface:
                     channel.currencies_as_str,
                     channel.message_header,
                     channel.message_footnote,
-                    int(channel.message_show_date),
-                    int(channel.message_show_market_labels),
+                    int(channel.message_show_date_tag),
+                    int(channel.message_show_market_tags),
                     channel.last_post_time,
                     channel.owner_id,
                 ),
@@ -470,8 +470,8 @@ class DatabaseInterface:
                 group.currencies_as_str,
                 group.message_header,
                 group.message_footnote,
-                int(group.message_show_date),
-                int(group.message_show_market_labels),
+                int(group.message_show_date_tag),
+                int(group.message_show_market_tags),
                 group.owner_id,
             )
             log(f"New group: {group} saved into database successfully.", category_name="DatabaseInfo")
@@ -493,8 +493,8 @@ class DatabaseInterface:
                 group.currencies_as_str,
                 group.message_header,
                 group.message_footnote,
-                int(group.message_show_date),
-                int(group.message_show_market_labels),
+                int(group.message_show_date_tag),
+                int(group.message_show_market_tags),
                 group.owner_id,
                 group.id,
             ),
@@ -516,8 +516,8 @@ class DatabaseInterface:
                     group.currencies_as_str,
                     group.message_header,
                     group.message_footnote,
-                    int(group.message_show_date),
-                    int(group.message_show_market_labels),
+                    int(group.message_show_date_tag),
+                    int(group.message_show_market_tags),
                     group.owner_id,
                 ),
             )

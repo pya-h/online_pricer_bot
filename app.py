@@ -17,15 +17,12 @@ from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from models.alarms import PriceAlarm
 from typing import List
-from tools.exceptions import (
-    NoLatestDataException,
-    InvalidInputException,
-    MaxAddedCommunityException,
-)
+from tools.exceptions import NoLatestDataException, InvalidInputException, MaxAddedCommunityException, NoSuchThingException
 from models.group import Group
 from models.channel import Channel, PostInterval
 
 botman = BotMan()
+
 
 async def show_market_types(update: Update, context: CallbackContext, next_state: Account.States):
     account = Account.Get(update.message.chat)
@@ -232,7 +229,10 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     botman.crypto_serv = CoinGeckoService()
-    await update.message.reply_text("منبع قیمت ها به کوین گکو نغییر یافت.")
+    await update.message.reply_text(
+        botman.text("price_source_changed_coingecko", account.language),
+        reply_markup=botman.get_admin_keyboard(account.language),
+    )
     await notify_source_change(context)
 
 
@@ -242,7 +242,9 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     botman.crypto_serv = CoinMarketCapService(botman.postman.coinmarketcap_api_key)
-    await update.message.reply_text("منبع قیمت ها به کوین مارکت کپ نغییر یافت.")
+    await update.message.reply_text(
+        botman.text("price_source_changed_cmc", account.language), reply_markup=botman.get_admin_keyboard(account.language)
+    )
     await notify_source_change(context)
 
 
@@ -252,7 +254,7 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
         return await say_youre_not_allowed(update.message.reply_text, account.language)
 
     await update.message.reply_text(
-        "اکانت شما به عنوان ادمین تایید اعتبار شد و می توانید از امکانات ادمین استفاده کنید.",
+        botman.text("congrats_admin", account.language),
         reply_markup=botman.get_admin_keyboard(account.language),
     )
 
@@ -288,8 +290,7 @@ async def cmd_send_post(update: Update, context: CallbackContext):
 
     account.change_state(Account.States.SEND_POST)
     await update.message.reply_text(
-        """🔹 پست خود را ارسال کنید:
-(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)""",
+        botman.text("send_48h_post", account.language),
         reply_markup=botman.cancel_menu[account.language],
     )
 
@@ -313,9 +314,7 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 
 async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
     if not isinstance(botman.crypto_serv, CoinMarketCapService):
-        await func_send_message(
-            "در حال حاضر این گزینه فقط بری ارز دیجیتال و کوین مارکت کپ فعال است. بزودی این امکان گسترش می یابد..."
-        )
+        await func_send_message(botman.error("only_available_on_cmc", account.language))
         return
     response: str
     for amount in amounts:
@@ -407,8 +406,8 @@ async def send_r_u_sure_to_downgrade_message(context: CallbackContext, admin_use
         reply_markup=botman.action_inline_keyboard(
             BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
             {
-                f"{target_user.chat_id}{botman.CALLBACK_DATA_JOINER}y": "yes",
-                f"{target_user.chat_id}{botman.CALLBACK_DATA_JOINER}n": "no",
+                f"{target_user.chat_id}{BotMan.CALLBACK_DATA_JOINER}y": "yes",
+                f"{target_user.chat_id}{BotMan.CALLBACK_DATA_JOINER}n": "no",
             },
         ),
     )
@@ -461,7 +460,7 @@ async def handle_action_queries(
             )
         case BotMan.QueryActions.SELECT_PRICE_UNIT.value:
             if value:
-                value = value.split(botman.CALLBACK_DATA_JOINER)
+                value = value.split(BotMan.CALLBACK_DATA_JOINER)
                 market = MarketOptions.Which(int(value[0]))
                 symbol = value[1]
                 target_price = float(value[2])
@@ -554,21 +553,43 @@ async def handle_action_queries(
             return
 
         case BotMan.QueryActions.START_CHANNEL_POSTING.value:
-            channel = Channel.Get(value)
-            if not channel:
+            try:
+                channel = Channel.Get(value)
+                if not channel:
+                    raise Exception()
+                channel.plan()  # TODO: check this again
+                await query.message.reply_text(
+                    botman.text("channel_posting_started", account.language),
+                    reply_markup=botman.mainkeyboard(account),
+                )
+                await query.message.delete()
+                # TODO: Write the post job part.
+            except:
                 await query.message.reply_text(
                     botman.error("error_while_planning_channel", account.language),
                     reply_markup=botman.mainkeyboard(account),
                 )
                 await query.message.delete()
-                return
-            channel.plan()  # TODO: check this again
-            await query.message.reply_text(
-                botman.text("channel_posting_started", account.language),
-                reply_markup=botman.mainkeyboard(account),
-            )
-            await query.message.delete()
-            # TODO: Write the post job part.
+
+        case BotMan.QueryActions.TRIGGER_DATE_TAG.value | BotMan.QueryActions.TRIGGER_MARKET_TAGS.value:
+            try:
+                community_type, enable = value.split(BotMan.CALLBACK_DATA_JOINER)
+                if not community_type or not enable:
+                    raise InvalidInputException('Invalid callback data.')
+                community_type, enable = int(community_type), int(enable)
+                community: Channel | Group = (BotMan.CommunityType.ToClass(community_type)).GetByOwner(account.chat_id)
+                if not community:
+                    raise NoSuchThingException(-1, BotMan.CommunityType.ToString(community_type))
+                if action == BotMan.QueryActions.TRIGGER_DATE_TAG.value:
+                    community.message_show_date_tag = bool(enable)
+                else:
+                    community.message_show_market_tags = bool(enable)
+                community.save()
+                await query.message.edit_text(botman.text("update_successful", account.language))
+            except NoSuchThingException as x:
+                await query.message.edit_text(botman.error(f"no_{x.thing}s", account.language))
+            except:
+                await query.message.edit_text(botman.error("unexpected_error", account.language))
         case _:
             if not account.authorization(context.args):
                 await query.message.edit_text(botman.error("what_the_fuck", account.language))
@@ -607,11 +628,10 @@ async def handle_action_queries(
                             await query.message.edit_reply_markup(reply_markup=menu)
                         except:
                             page = 0
-
                         return
 
                     chat_id: int | None = None
-                    values = str(value).split(botman.CALLBACK_DATA_JOINER)
+                    values = str(value).split(BotMan.CALLBACK_DATA_JOINER)
                     try:
                         chat_id = int(values[0])
                     except:
@@ -632,7 +652,6 @@ async def handle_action_queries(
                         # downgrade user
                     else:
                         await send_r_u_sure_to_downgrade_message(context, account, target_user)
-
     await query.answer()
 
 
@@ -649,11 +668,8 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         await handle_action_queries(query, context, account, data)
         return
 
-    # list queries are handled below
-
     # check if user is changing list page:
     page: int
-
     try:
         page = int(data["pg"])
         # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
@@ -681,7 +697,6 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     market = MarketOptions.Which(data["bt"])
     list_type = SelectionListTypes.Which(data["lt"])
-
     match list_type:
         case SelectionListTypes.EQUALIZER_UNIT:
             input_amounts = account.get_cache("input_amounts")
@@ -719,7 +734,6 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             return
 
     # if the user is configuring a list:
-
     try:
         selection_list = account.handle_market_selection(list_type, market, data["v"])
 
@@ -823,7 +837,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             account.add_cache("community_type", BotMan.CommunityType.CHANNEL)
             await update.message.reply_text(
                 (
-                    botman.resourceman.keyboard("my_channels", account.language)
+                    botman.resourceman.mainkeyboard("my_channels", account.language)
                     if account.is_premium
                     else botman.text("go_premium_to_activate_feature", account.language)
                 ),
@@ -842,7 +856,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             account.add_cache("community_type", BotMan.CommunityType.GROUP)
             await update.message.reply_text(
                 (
-                    botman.resourceman.keyboard("my_groups", account.language)
+                    botman.resourceman.mainkeyboard("my_groups", account.language)
                     if account.is_premium
                     else botman.text("go_premium_to_activate_feature", account.language)
                 ),
@@ -889,7 +903,21 @@ async def handle_messages(update: Update, context: CallbackContext):
                     },
                 ),
             )
-
+        case BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value | BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value:
+            account = Account.Get(update.message.chat)
+            community_type = account.get_cache("community_type")
+            if isinstance(community_type, BotMan.CommunityType):
+                community_type = community_type.value
+            await update.message.reply_text(
+                botman.text("trigger_market_tags", account.language),
+                reply_markup=botman.action_inline_keyboard(
+                    BotMan.QueryActions.TRIGGER_MARKET_TAGS,
+                    {
+                        f"{community_type}{BotMan.CALLBACK_DATA_JOINER}0": "no_hide_tag",
+                        f"{community_type}{BotMan.CALLBACK_DATA_JOINER}1": "yes_show_tag",
+                    },
+                ),
+            )
         # settings sub menu:
         case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
             account = Account.Get(update.message.chat)
@@ -1055,14 +1083,14 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                     symbol = props["symbol"]
                     market = props["market"]
-                    data_prefix = f"{market}{botman.CALLBACK_DATA_JOINER}{symbol}{botman.CALLBACK_DATA_JOINER}{price}"
+                    data_prefix = f"{market}{BotMan.CALLBACK_DATA_JOINER}{symbol}{BotMan.CALLBACK_DATA_JOINER}{price}"
                     await update.message.reply_text(
                         botman.text("whats_price_unit", account.language),
                         reply_markup=botman.action_inline_keyboard(
                             BotMan.QueryActions.SELECT_PRICE_UNIT,
                             {
-                                f"{data_prefix}{botman.CALLBACK_DATA_JOINER}irt": "price_unit_irt",
-                                f"{data_prefix}{botman.CALLBACK_DATA_JOINER}usd": "price_unit_usd",
+                                f"{data_prefix}{BotMan.CALLBACK_DATA_JOINER}irt": "price_unit_irt",
+                                f"{data_prefix}{BotMan.CALLBACK_DATA_JOINER}usd": "price_unit_usd",
                             },
                         ),
                     )
@@ -1222,9 +1250,9 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
     my_id = context.bot.id
     for member in update.message.new_chat_members:
         if member.id == my_id:
-            owner = Account.GetById(group.owner_id)  # TODO: Use Join query if account is not in cache mem
+            owner = Account.GetById(update.message.from_user.id)  # TODO: Use Join query if account is not in cache mem
             try:
-                group = Group.Register(update.message.chat, update.message.from_user.id)
+                group = Group.Register(update.message.chat, owner.chat_id)
 
                 if group.is_active:
                     await context.bot.send_message(
@@ -1272,7 +1300,6 @@ async def handle_group_messages(update: Update, context: CallbackContext):
 
 def main():
     app = BotApplicationBuilder().token(botman.token).build()
-
     app.add_handler(CommandHandler("start", cmd_welcome))
     app.add_handler(CommandHandler("get", cmd_get_prices))
     app.add_handler(CommandHandler("crypto", select_coin_menu))

@@ -31,8 +31,9 @@ class NotPlusException(Exception):
 
 class NoSuchThingException(Exception):
 
-    def __init__(self, id: int) -> None:
-        self.message = f"Entity with id={id} does not exist!"
+    def __init__(self, id: int, thing: str | None = None) -> None:
+        self.thing = thing or 'Entity'
+        self.message = f"{self.thing} with id={id} does not exist!"
         super().__init__(self.message)
 
 

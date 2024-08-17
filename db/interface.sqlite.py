@@ -58,8 +58,8 @@ class DatabaseInterface:
         GROUP_CURRENCIES,
         GROUP_MESSAGE_HEADER,
         GROUP_MESSAGE_FOOTNOTE,
-        GROUP_MESSAGE_SHOW_DATE,
-        GROUP_MESSAGE_SHOW_MARKET_LABELS,
+        GROUP_MESSAGE_DATE_TAG,
+        GROUP_MESSAGE_MARKET_TAGS,
         GROUP_OWNER_ID,
     ) = (
         "id",
@@ -69,8 +69,8 @@ class DatabaseInterface:
         "currencies",
         "msg_header",
         "msg_footnote",
-        "msg_show_date",
-        "msg_show_market_labels",
+        "msg_date_tag",
+        "msg_market_tags",
         "owner_id",
     )
 
@@ -142,7 +142,7 @@ class DatabaseInterface:
                     + f"{self.GROUP_NAME} TEXT, {self.GROUP_TITLE} TEXT NOT_NULL,"
                     + f"{self.GROUP_COINS} TEXT, {self.GROUP_CURRENCIES} TEXT, "
                     + f"{self.GROUP_MESSAGE_HEADER} TEXT, {self.GROUP_MESSAGE_FOOTNOTE} TEXT, "
-                    + f"{self.GROUP_MESSAGE_SHOW_DATE} INTEGER DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_LABELS} INTEGER DEFAULT 1, "
+                    + f"{self.GROUP_MESSAGE_DATE_TAG} INTEGER DEFAULT 0, {self.GROUP_MESSAGE_MARKET_TAGS} INTEGER DEFAULT 1, "
                     + f"{self.GROUP_OWNER_ID} INTEGER NOT_NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID}))"
                 )
                 # create table account
@@ -344,8 +344,8 @@ class DatabaseInterface:
                 group.currencies_as_str,
                 group.message_header,
                 group.message_footnote,
-                int(group.message_show_date),
-                int(group.message_show_market_labels),
+                int(group.message_show_date_tag),
+                int(group.message_show_market_tags),
                 group.owner_id,
             )
             log(f"New group: {group} saved into database successfully.", category_name="DatabaseInfo")
@@ -368,8 +368,8 @@ class DatabaseInterface:
                 group.currencies_as_str,
                 group.message_header,
                 group.message_footnote,
-                int(group.message_show_date),
-                int(group.message_show_market_labels),
+                int(group.message_show_date_tag),
+                int(group.message_show_market_tags),
                 group.owner_id,
                 group.id,
             ),
@@ -387,8 +387,8 @@ class DatabaseInterface:
                     group.currencies_as_str,
                     group.message_header,
                     group.last_interaction.strftime(self.DATE_FORMAT),
-                    int(group.message_show_date),
-                    int(group.message_show_market_labels),
+                    int(group.message_show_date_tag),
+                    int(group.message_show_market_tags),
                     group.owner_id,
                 ),
             )

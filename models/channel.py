@@ -116,8 +116,8 @@ class Channel:
         selected_currencies: List[str] | None = None,
         message_header: str | None = None,
         message_footnote: str | None = None,
-        message_show_date: bool = False,
-        message_show_market_labels: bool = True,
+        message_show_date_tag: bool = False,
+        message_show_market_tags: bool = True,
     ) -> None:
         self.owner_id: int = int(owner_id)
         self.owner = None
@@ -130,8 +130,8 @@ class Channel:
         self.selected_currencies: List[str] = selected_currencies or []
         self.message_header: str | None = message_header
         self.message_footnote: str | None = message_footnote
-        self.message_show_date: bool = message_show_date
-        self.message_show_market_labels: bool = message_show_market_labels
+        self.message_show_date_tag: bool = message_show_date_tag
+        self.message_show_market_tags: bool = message_show_market_tags
         self.last_post_time: int | None = last_post_time  # don't forget database has this
 
     def create(self, allowed_channels_count: int = 1):
@@ -215,8 +215,8 @@ class Channel:
             selected_currencies=DatabaseInterface.StringToList(row[6]),
             message_header=row[7],
             message_footnote=row[8],
-            message_show_date=bool(row[9]),
-            message_show_market_labels=bool(row[10]),
+            message_show_date_tag=bool(row[9]),
+            message_show_market_tags=bool(row[10]),
             last_post_time=int(row[-2] or 0),
             owner_id=int(row[-1]),
         )

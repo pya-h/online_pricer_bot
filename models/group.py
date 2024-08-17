@@ -28,8 +28,8 @@ class Group:
         selected_currencies: List[str] | None = None,
         message_header: str | None = None,
         message_footnote: str | None = None,
-        message_show_date: bool = False,
-        message_show_market_labels: bool = True,
+        message_show_date_tag: bool = False,
+        message_show_market_tags: bool = True,
         no_fastmem: bool = False,
     ) -> None:
         self.owner_id: int = int(owner_id)
@@ -40,8 +40,8 @@ class Group:
         self.selected_currencies: List[str] = selected_currencies or []
         self.message_header: str | None = message_header
         self.message_footnote: str | None = message_footnote
-        self.message_show_date: bool = message_show_date
-        self.message_show_market_labels: bool = message_show_market_labels
+        self.message_show_date_tag: bool = message_show_date_tag
+        self.message_show_market_tags: bool = message_show_market_tags
         self.last_interaction: int = now_in_minute()
 
         if not no_fastmem:
@@ -95,15 +95,17 @@ class Group:
             selected_currencies=DatabaseInterface.StringToList(row[4]),
             message_header=row[5],
             message_footnote=row[6],
-            message_show_date=bool(row[7]),
-            message_show_market_labels=bool(row[8]),
+            message_show_date_tag=bool(row[7]),
+            message_show_market_tags=bool(row[8]),
             owner_id=int(row[-1]),
             no_fastmem=no_fastmem,
         )
 
     @staticmethod
-    def GetByOwner(owner_chat_id: int):
-        rows = Group.Database().get_user_groups(int(owner_chat_id))
+    def GetByOwner(owner_chat_id: int, take: int | None = 1):
+        rows = Group.Database().get_user_groups(owner_chat_id, take)
+        if len(rows) == 1:
+            return Group.ExtractQueryRowData(rows[0])
         return list(map(Group.ExtractQueryRowData, rows))
 
     @staticmethod

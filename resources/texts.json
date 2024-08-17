@@ -311,6 +311,18 @@
         "no_channels": {
             "fa": "❗️ شما هنوز کانالی را ثبت نکرده اید. لطفا ابتدا اقدامات لازم برای اتصال ربات به کانال را انجام داده و سپس از این گزینه استفاده کنید.",
             "en": "❗️ You have no channels regitered right now. Yoy should register a new channel in the bot to use this option."
+        },
+        "no_groups": {
+            "fa": "❗️ شما هنوز گروهی را ثبت نکرده اید. لطفا ابتدا اقدامات لازم برای اتصال ربات به گروه را انجام داده و سپس از این گزینه استفاده کنید\n\n* توجه: درصورتی که ربات را در گروهی اضافه کرده اید اما بازهم این پیام را دریافت می کنید، لطفا ربات را از گروه حذف کرده و دوباره اضافه کنید. همچنین برای تجربه بهتر، حتما به آن دسترسی ادمین بدهید..",
+            "en": "❗️ You have no groups regitered right now. Yoy should register a new group in the bot to use this option.\n\n* Notice: If you've already added the bot in a group, but you still see this error, Please remove the bot and add it to the group again. Also give it the admin privileges for best experience."
+        },
+        "only_available_on_cmc": {
+            "fa": "در حال حاضر این ویژگی فقط زمانی که منبع ربات روی کوین مارکت کپ تنظیم باشد فعال است. از ادمین درخواست کنید که منبع قیمت ها را دوباره به کوین مارکت کپ بازگرداند تا این ویژگی قابل استفاده شود.",
+            "en": "This feature only works when the bot price source is set on CoinMarketCap, for now. Ask admins to reset the price source to CoinMarketCap to that this feature ra-activates again."
+        },
+        "unexpected_error": {
+            "fa": "❗️ متاسفانه حین اعمال تغییرات خطای غیرمنتظره ای پیش آمد. لطفا از نو تلاش کنید.",
+            "en": "❗️ Sorry! Something went wrong unexpectedly. Please retry this operation."
         }
     },
     "what_can_i_do": {
@@ -365,7 +377,7 @@
         "fa": "🔹 قیمت مدنظرتان را [با ارقام انگلیسی] بنویسید:",
         "en": "Write your desired price:"
     },
-    "channel_plan_already_started": {
+    "group_plan_already_started": {
         "fa": "فرآیند به روزرسانی قبلا شروع شده است.",
         "en": "Planning process is already started."
     },
@@ -490,7 +502,7 @@
         "en": "✅ Bot has connected to your group."
     },
     "group_is_active": {
-        "fa": "تبریک! شما گروه ربات قیمت لحظه ای را وارد گروه '%s' نمودید. این ربات تا لحظه پایان اشتراک شم در گروه دستیار هوشمند شما و هم گروی هایتان خواهد بود.",
+        "fa": "تبریک! شما گروه ربات قیمت لحظه ای را وارد گروه '%s' نمودید. این ربات تا لحظه پایان اشتراک شما در گروه دستیار هوشمند شما و هم گروی هایتان خواهد بود.",
         "en": "Congrats! You've added Online Pricer to your group called '%s'; From now until you're premium, this bot tries to be a smart assistant for you and your groupmates."
     },
     "go_premium_for_group_activation": {
@@ -516,5 +528,25 @@
     "trigger_date_tag": {
         "fa": "🔹 آیا می خواهید تاریخ بروزرسانی در اول هر پیام قرار بگیرد؟\n\nشکل قرار گیری:\n\n📆 ۱۴۰۱/۰۱/۰۱ پنج شنبه ۱۲:۳۰",
         "en": "🔹 Do you prefer to show the current date tag at post headers?\n\nDate Tag Example:\n\n📆 2022/01/01 Thursday 12:30"
+    },
+    "trigger_market_tags": {
+        "fa": "🔹 آیا می خواهید پیش نویس ها در پیام قرار بگیرند؟\n\nشکل قرار گیری:\n\n📌 #بازار_ارز\n\n📌 #بازار_طلا\n\n📌 #بازار_ارز_دیجیتال",
+        "en": "🔹 Do you want drafts to be included in the message?\n\nHere is how they seem in the message:\n\n📌#Currency_market\n\n📌#Gold_market\n\n📌 #Crypto_market"
+    },
+    "price_source_changed_coingecko": {
+        "fa": "منبع قیمت ها به کوین گکو تغییر یافت.",
+        "en": "The source of crypto prices changed to CoinGecko."
+    },
+    "price_source_is_cmc": {
+        "fa": "منبع قیمت ها به کوین مارکت کپ تغییر یافت.",
+        "en": "The source of crypto prices changed to CoinMarketCap."
+    },
+    "congrats_admin": {
+        "fa": "تبریک! اکانت شما هم اکنون به سطح کاربری ادمین ارتقا یافت.",
+        "en": "Congarts! Yo're account is now upgraded to admin mode."
+    },
+    "send_48h_post": {
+        "fa": "🔹 متن پست را تایپ کرده و ارسال کنید:\n\n(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)",
+        "en": "🔹 Write your post and send it.\n\n*It will automatically delete after 48 hours."
     }
 }
