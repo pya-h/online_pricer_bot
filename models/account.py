@@ -5,10 +5,12 @@ from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from tools.manuwriter import log
 from enum import Enum
 from models.channel import Channel
+from models.group import Group
 from typing import List, Dict
 from bot.types import SelectionListTypes, MarketOptions
 from json import loads as json_parse, dumps as jsonify
 from telegram import Chat, User
+from tools.exceptions import NoSuchThingException
 
 
 ADMIN_USERNAME = config("ADMIN_USERNAME")
@@ -32,6 +34,8 @@ class Account:
         ADD_BOT_AS_ADMIN = 9
         SELECT_POST_INTERVAL = 10
         CHANGE_POST_INTERVAL = 11
+        CONFIG_GROUP_MARKETS = 12
+        CONFIG_CHANNEL_MARKETS = 13
 
         @staticmethod
         def Which(value: int):
@@ -54,6 +58,9 @@ class Account:
         States.ADD_BOT_AS_ADMIN,
         States.SELECT_POST_INTERVAL,
         States.CHANGE_POST_INTERVAL,
+        States.CONFIG_GROUP_MARKETS,
+        States.CONFIG_CHANNEL_MARKETS,
+
     )
 
     _database = None
@@ -164,13 +171,6 @@ class Account:
         """Check if the account has still plus subscription."""
         return self.is_admin or ((self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
 
-    def plan_new_channel(self, channel_id: int, interval: int, channel_name: str, channel_title: str = None) -> Channel | None:
-        channel = Channel(self.chat_id, channel_id, interval, channel_name=channel_name, channel_title=channel_title)
-        if channel.plan():
-            # self.channels[channel_id] = channel
-            return channel
-        return None
-
     def upgrade(self, duration_in_months: int):
         Account.Database().upgrade_account(self, duration_in_months)
 
@@ -190,6 +190,7 @@ class Account:
     def handle_market_selection(self, list_type: SelectionListTypes, market: MarketOptions, symbol: str | None = None):
         target_list: List[str]
         related_list: List[str]
+        save_func: callable = self.save
 
         match list_type:
             case SelectionListTypes.CALCULATOR:
@@ -198,13 +199,32 @@ class Account:
                     if market == MarketOptions.CRYPTO
                     else (self.calc_currencies, self.calc_cryptos)
                 )
-            case SelectionListTypes.FOLLOWING:
+            case SelectionListTypes.USER_TOKENS:
                 (target_list, related_list) = (
                     (self.desired_cryptos, self.desired_currencies)
                     if market == MarketOptions.CRYPTO
                     else (self.desired_currencies, self.desired_cryptos)
                 )
-
+            case SelectionListTypes.GROUP_TOKENS:
+                my_group = Group.GetByOwner(self.chat_id, take=1)
+                if not my_group:
+                    raise NoSuchThingException(self.chat_id, 'Group')
+                (target_list, related_list) = (
+                    (my_group.selected_coins, my_group.selected_currencies)
+                    if market == MarketOptions.CRYPTO
+                    else (my_group.selected_currencies, my_group.selected_coins)
+                )
+                save_func = my_group.save
+            case SelectionListTypes.CHANNEL_TOKENS:
+                my_channel = Channel.GetByOwner(self.chat_id, take=1)
+                if not my_channel:
+                    raise NoSuchThingException(self.chat_id, 'Channel')
+                (target_list, related_list) = (
+                    (my_channel.selected_coins, my_channel.selected_currencies)
+                    if market == MarketOptions.CRYPTO
+                    else (my_channel.selected_currencies, my_channel.selected_coins)
+                )
+                save_func = my_channel.save
             case SelectionListTypes.ALARM | SelectionListTypes.EQUALIZER_UNIT:
                 return None
             case _:
@@ -216,15 +236,19 @@ class Account:
                     raise ValueError(self.max_selection_count)
 
                 target_list.append(symbol)
-                self.save()
             else:
                 target_list.remove(symbol)
+            save_func()
         return target_list
 
     def match_state_with_selection_type(self):
         match self.state:
             case Account.States.CONFIG_MARKETS:
-                return SelectionListTypes.FOLLOWING
+                return SelectionListTypes.USER_TOKENS
+            case Account.States.CONFIG_GROUP_MARKETS:
+                return SelectionListTypes.GROUP_TOKENS
+            case Account.States.CONFIG_CHANNEL_MARKETS:
+                return SelectionListTypes.CHANNEL_TOKENS
             case Account.States.INPUT_EQUALIZER_UNIT:
                 return SelectionListTypes.EQUALIZER_UNIT
             case Account.States.CONFIG_CALCULATOR_LIST:

@@ -834,7 +834,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             if not account.has_channels:
                 await cmd_start_using_in_channel(update, context)
                 return
-            account.add_cache("community_type", BotMan.CommunityType.CHANNEL)
+            account.add_cache("community_type", BotMan.CommunityType.CHANNEL.value)
             await update.message.reply_text(
                 (
                     botman.resourceman.mainkeyboard("my_channels", account.language)
@@ -853,7 +853,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     )
                 )
                 return
-            account.add_cache("community_type", BotMan.CommunityType.GROUP)
+            account.add_cache("community_type", BotMan.CommunityType.GROUP.value)
             await update.message.reply_text(
                 (
                     botman.resourceman.mainkeyboard("my_groups", account.language)
@@ -888,11 +888,18 @@ async def handle_messages(update: Update, context: CallbackContext):
                 )
                 return
             await botman.select_post_interval_menu(update, account, channel.id, Account.States.CHANGE_POST_INTERVAL)
+        case BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value | BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value:
+            community_type = BotMan.CommunityType.Which(account.get_cache("community_type"))
+            if not community_type:
+                await unknown_command_handler(update, context)
+                return
+            await show_market_types(update, context, Account.States.CONFIG_GROUP_MARKETS if community_type == BotMan.CommunityType.GROUP else Account.States.CONFIG_CHANNEL_MARKETS)
         case BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value | BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value:
             account = Account.Get(update.message.chat)
             community_type = account.get_cache("community_type")
-            if isinstance(community_type, BotMan.CommunityType):
-                community_type = community_type.value
+            if not BotMan.CommunityType.Which(community_type):
+                await unknown_command_handler(update, context)
+                return
             await update.message.reply_text(
                 botman.text("trigger_date_tag", account.language),
                 reply_markup=botman.action_inline_keyboard(
@@ -906,8 +913,9 @@ async def handle_messages(update: Update, context: CallbackContext):
         case BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value | BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value:
             account = Account.Get(update.message.chat)
             community_type = account.get_cache("community_type")
-            if isinstance(community_type, BotMan.CommunityType):
-                community_type = community_type.value
+            if not BotMan.CommunityType.Which(community_type):
+                await unknown_command_handler(update, context)
+                return
             await update.message.reply_text(
                 botman.text("trigger_market_tags", account.language),
                 reply_markup=botman.action_inline_keyboard(

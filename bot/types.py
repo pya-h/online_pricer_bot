@@ -17,17 +17,19 @@ class MarketOptions(Enum):
                 return option
         return None
 class SelectionListTypes(Enum):
-    FOLLOWING = 1
+    USER_TOKENS = 1
     CALCULATOR = 2
     CHANNEL = 3
     NOTIFICATION = 4
     EQUALIZER_UNIT = 5
     ALARM = 6
+    GROUP_TOKENS = 7
+    CHANNEL_TOKENS = 8
 
     @staticmethod
     def Which(value: int):
         for option in (
-            SelectionListTypes.FOLLOWING,
+            SelectionListTypes.USER_TOKENS,
             SelectionListTypes.CALCULATOR,
             SelectionListTypes.CHANNEL,
             SelectionListTypes.NOTIFICATION,
