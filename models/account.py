@@ -36,6 +36,8 @@ class Account:
         CHANGE_POST_INTERVAL = 11
         CONFIG_GROUP_MARKETS = 12
         CONFIG_CHANNEL_MARKETS = 13
+        SET_MESSAGE_FOOTER = 14
+        SET_MESSAGE_HEADER = 15
 
         @staticmethod
         def Which(value: int):
@@ -60,7 +62,8 @@ class Account:
         States.CHANGE_POST_INTERVAL,
         States.CONFIG_GROUP_MARKETS,
         States.CONFIG_CHANNEL_MARKETS,
-
+        States.SET_MESSAGE_FOOTER,
+        States.SET_MESSAGE_HEADER,
     )
 
     _database = None
@@ -177,6 +180,7 @@ class Account:
     def downgrade(self):
         Account.Database().downgrade_account(self)
 
+    @property
     def cache_as_str(self) -> str | None:
         return jsonify(self.cache) if self.cache else None
 

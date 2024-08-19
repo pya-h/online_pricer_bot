@@ -179,9 +179,9 @@ class BotMan:
         @staticmethod
         def Which(value: int):
             match value:
-                case 1:
+                case BotMan.CommunityType.CHANNEL.value:
                     return BotMan.CommunityType.CHANNEL
-                case 2:
+                case BotMan.CommunityType.GROUP.value:
                     return BotMan.CommunityType.GROUP
             return BotMan.CommunityType.NONE
 
@@ -205,6 +205,18 @@ class BotMan:
             )
         def __cls__(self) -> Channel | Group | None:
             return self.ToClass(self.value)
+
+    class MenuSections(Enum):
+        COMMUNITY_PANEL = 1
+        NONE = 0
+
+        @staticmethod
+        def Which(value: int):
+            match value:
+                case BotMan.MenuSections.COMMUNITY_PANEL.value:
+                    return BotMan.MenuSections.COMMUNITY_PANEL
+            return BotMan.MenuSections.NONE
+
 
     def __init__(self, main_plan_interval: float = 10.0, plan_manager_interval: float = 1.0) -> None:
         self.resourceman = resourceman
