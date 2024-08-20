@@ -552,5 +552,9 @@
     "write_ur_text": {
         "fa": "",
         "en": ""
+    },
+    "message_attachment_updated": {
+        "fa": "",
+        "en": ""
     }
 }

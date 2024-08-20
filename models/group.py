@@ -104,6 +104,8 @@ class Group:
     @staticmethod
     def GetByOwner(owner_chat_id: int, take: int | None = 1):
         rows = Group.Database().get_user_groups(owner_chat_id, take)
+        if not rows:
+            return None
         if len(rows) == 1:
             return Group.ExtractQueryRowData(rows[0])
         return list(map(Group.ExtractQueryRowData, rows))

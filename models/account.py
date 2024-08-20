@@ -279,6 +279,8 @@ class Account:
         for channel in self.get_planned_channels():
             channel.stop_plan()
 
+        # FIXME: Also disable groups
+
     def get_planned_channels(self) -> List[Channel]:
         return Channel.GetByOwner(self.chat_id)
 
@@ -346,6 +348,12 @@ class Account:
     @property
     def has_groups(self) -> int:
         return bool(self.Database().get_user_groups(self.chat_id, take=1))
+
+    def get_my_groups(self, take: int | None = None):
+        return Group.GetByOwner(self.chat_id, take)
+    
+    def get_my_channels(self, take: int | None = None):
+        return Channel.GetByOwner(self.chat_id, take)
 
     @staticmethod
     def Database():

@@ -224,6 +224,8 @@ class Channel:
     @staticmethod
     def GetByOwner(owner_chat_id: int, take: int | None = 1):
         rows = Channel.Database().get_user_channels(owner_chat_id, take)
+        if not rows:
+            return None
         if len(rows) == 1:
             return Channel.ExtractQueryRowData(rows[0])
         return list(map(Channel.ExtractQueryRowData, rows))

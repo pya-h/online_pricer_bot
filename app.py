@@ -577,7 +577,7 @@ async def handle_action_queries(
                 if not community_type or not enable:
                     raise InvalidInputException('Invalid callback data.')
                 community_type, enable = int(community_type), int(enable)
-                community: Channel | Group = (BotMan.CommunityType.ToClass(community_type)).GetByOwner(account.chat_id)
+                community = (BotMan.CommunityType.ToClass(community_type)).GetByOwner(account.chat_id)
                 if not community:
                     raise NoSuchThingException(-1, BotMan.CommunityType.ToString(community_type))
                 if action == BotMan.QueryActions.TRIGGER_DATE_TAG.value:
@@ -587,7 +587,9 @@ async def handle_action_queries(
                 community.save()
                 await query.message.edit_text(botman.text("update_successful", account.language))
             except NoSuchThingException as x:
-                await query.message.edit_text(botman.error(f"no_{x.thing}s", account.language))
+                await query.message.edit_text(botman.error(f"no_{x.thing}s", account.language),
+                                                reply_markup=botman.mainkeyboard(account))
+                account.delete_specific_cache('community')
             except:
                 await query.message.edit_text(botman.error("unexpected_error", account.language))
         case _:
@@ -1173,10 +1175,22 @@ async def handle_messages(update: Update, context: CallbackContext):
                     except:
                         pass
                     account.change_state(clear_cache=True)
-                case Account.States.SET_MESSAGE_FOOTER:
-                    '''TODO: update msg footer (consider this that saving emojis in db can cause problem)'''
-                case Account.States.SET_MESSAGE_HEADER:
-                    '''TODO: update msg footer (consider this that saving emojis in db can cause problem)'''
+                case Account.States.SET_MESSAGE_FOOTER | Account.States.SET_MESSAGE_HEADER:
+                    community_type = BotMan.CommunityType.Which(account.get_cache('community'))
+                    if not community_type:
+                        await unknown_command_handler(update, context)
+                        return
+                    community = (BotMan.CommunityType.ToClass(community_type)).GetByOwner(account.chat_id)
+                    if not community:
+                        await update.message.reply_text(botman.error(f'no_{community_type}s', account.language),
+                                                            reply_markup=botman.mainkeyboard(account))
+                        account.delete_specific_cache('community')
+                        return
+                    community.message_header if account.state == Account.States.SET_MESSAGE_HEADER else community.message_footnote = msg
+                    community.save()
+                    await update.message.reply_text(botman.text('message_attachment_updated', account.language),
+                                                        reply_markup=botman.get_community_config_keyboard(community, account.language))
+                    account.change_state()
                 case _:
                     if not account.authorization(context.args):
                         await update.message.reply_text(
