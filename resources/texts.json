@@ -556,5 +556,13 @@
     "message_attachment_updated": {
         "fa": "",
         "en": ""
+    },
+    "add_bot_to_new_group": {
+        "fa": "",
+        "en": ""
+    },
+    "group_changed": {
+        "fa": "",
+        "en": ""
     }
 }

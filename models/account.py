@@ -38,6 +38,8 @@ class Account:
         CONFIG_CHANNEL_MARKETS = 13
         SET_MESSAGE_FOOTER = 14
         SET_MESSAGE_HEADER = 15
+        CHANGE_GROUP = 16
+        CHNAGE_CHANNEL = 17
 
         @staticmethod
         def Which(value: int):
@@ -64,6 +66,8 @@ class Account:
         States.CONFIG_CHANNEL_MARKETS,
         States.SET_MESSAGE_FOOTER,
         States.SET_MESSAGE_HEADER,
+        States.CHANGE_GROUP,
+        States.CHNAGE_CHANNEL,
     )
 
     _database = None
@@ -349,11 +353,11 @@ class Account:
     def has_groups(self) -> int:
         return bool(self.Database().get_user_groups(self.chat_id, take=1))
 
-    def get_my_groups(self, take: int | None = None):
-        return Group.GetByOwner(self.chat_id, take)
+    def get_my_groups(self):
+        return Group.GetByOwner(self.chat_id)
     
-    def get_my_channels(self, take: int | None = None):
-        return Channel.GetByOwner(self.chat_id, take)
+    def get_my_channels(self):
+        return Channel.GetByOwner(self.chat_id)
 
     @staticmethod
     def Database():

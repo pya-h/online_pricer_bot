@@ -942,6 +942,18 @@ async def handle_messages(update: Update, context: CallbackContext):
                 botman.text("write_ur_text", account.language),# TODO: Add it to text resource
                 reply_markup=botman.cancel_menu(account.language)
             )
+        case BotMan.Commands.GROUP_CHANGE_FA | BotMan.Commands.GROUP_CHANGE_EN:
+            account = Account.Get(update.message.chat)
+            group = account.get_my_groups()
+            if not group:
+                await update.message.reply_text(
+                    botman.error("no_groups", account.language),
+                    reply_markup=botman.mainkeyboard(account),
+                )
+                return
+            account.change_state(Account.States.CHANGE_GROUP, 'changing_id', group.id)
+            account.add_cache('back', BotMan.MenuSections.COMMUNITY_PANEL.value)  # FIXME: DELETE back when operations success (in ops with back page)
+            await update.message.reply_text(botman.text('add_bot_to_new_group', account.language), reply_markup=botman.cancel_menu(account.language))
         # settings sub menu:
         case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
             account = Account.Get(update.message.chat)
@@ -1297,9 +1309,31 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
         if member.id == my_id:
             owner = Account.GetById(update.message.from_user.id)  # TODO: Use Join query if account is not in cache mem
             try:
-                group = Group.Register(update.message.chat, owner.chat_id)
+                if owner.state == Account.States.CHANGE_GROUP:
+                    old_group_id = owner.get_cache('changing_id')
+                    old_group: Group
+                    if not old_group_id or not (old_group := Group.Get(old_group_id, no_fastmem=True)):
+                        await context.bot.send_message(chat_id=owner.chat_id, text=botman.error('unexpected_error', owner.language),
+                                                       reply_markup=botman.mainkeyboard(owner))
+                        owner.change_state(clear_cache=True)
+                        return
+                    Group.Database().delete_group(old_group.id)  # TODO: Maybe create a Group method for change?
+                    old_group.id = update.message.chat.id
+                    old_group.name = update.message.chat.username
+                    old_group.title = update.message.chat.title
+                    group.save()
+                    if Group.FastMemInstances[old_group.id]:
+                        del Group.FastMemInstances[old_group.id]
+                    await context.bot.send_message(
+                        chat_id=owner.chat_id,
+                        text=botman.text("group_changed", owner.language),
+                        reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language)
+                    )
+                    owner.change_state(cache_key='community', data=BotMan.CommunityType.GROUP.value, clear_cache=True)
+                    return
 
-                if group.is_active:
+                group = Group.Register(update.message.chat, owner.chat_id)
+                if group.is_active:  # FIXME: Update this is_active property since its causing circular dep
                     await context.bot.send_message(
                         chat_id=owner.chat_id,
                         text=botman.text("group_is_active", owner.language) % (group.title,),

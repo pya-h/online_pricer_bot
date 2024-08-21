@@ -544,6 +544,10 @@ class DatabaseInterface:
         count = result[0][0] if result and result[0] else 0
         return count
 
+    def delete_group(self, group_id: int):
+        """Delete group and its planning"""
+        self.execute(False, f"DELETE FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID} = %s", group_id)
+
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesn't return result such as insert or delete"""
         result = None
