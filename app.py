@@ -1325,12 +1325,16 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                             reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language)
                         )
                         owner.change_state(cache_key='community', data=BotMan.CommunityType.GROUP.value, clear_cache=True)
+                        await update.message.reply_text(botman.text('farewell_my_friends', owner.language))
+                        await update.message.chat.leave()
                     except InvalidInputException:
                         await context.bot.send_message(
                             chat_id=owner.chat_id,
                             text=botman.error("changed_group_is_the_same", owner.language),
                             reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language)
                         )
+                    except:
+                        pass
                     return
 
                 group = Group.Register(update.message.chat, owner.chat_id)
