@@ -323,6 +323,10 @@
         "unexpected_error": {
             "fa": "❗️ متاسفانه حین اعمال تغییرات خطای غیرمنتظره ای پیش آمد. لطفا از نو تلاش کنید.",
             "en": "❗️ Sorry! Something went wrong unexpectedly. Please retry this operation."
+        },
+        "changed_group_is_the_same": {
+            "fa": "",
+            "en": ""
         }
     },
     "what_can_i_do": {

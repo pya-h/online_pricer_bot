@@ -3,7 +3,7 @@ from db.interface import DatabaseInterface
 from typing import List
 from telegram import Chat
 from .account import Account
-from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException
+from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException
 
 
 class Group:
@@ -58,6 +58,19 @@ class Group:
 
     def save(self):
         self.Database().update_group(self)
+        return self
+
+    def change(self, new_chat: Chat):
+        if self.id == new_chat.id:
+            raise InvalidInputException("chat id; it doesn't differ from the old one.")
+        old_chat_id = self.id
+        self.id = new_chat.id
+        self.name = new_chat.username
+        self.title = new_chat.title
+
+        Group.Database().update_group(self.id, old_chat_id=old_chat_id)
+        if Group.FastMemInstances[old_chat_id]:
+            del Group.FastMemInstances[old_chat_id]
         return self
 
     @property

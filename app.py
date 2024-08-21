@@ -1317,19 +1317,20 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                                                        reply_markup=botman.mainkeyboard(owner))
                         owner.change_state(clear_cache=True)
                         return
-                    Group.Database().delete_group(old_group.id)  # TODO: Maybe create a Group method for change?
-                    old_group.id = update.message.chat.id
-                    old_group.name = update.message.chat.username
-                    old_group.title = update.message.chat.title
-                    group.save()
-                    if Group.FastMemInstances[old_group.id]:
-                        del Group.FastMemInstances[old_group.id]
-                    await context.bot.send_message(
-                        chat_id=owner.chat_id,
-                        text=botman.text("group_changed", owner.language),
-                        reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language)
-                    )
-                    owner.change_state(cache_key='community', data=BotMan.CommunityType.GROUP.value, clear_cache=True)
+                    try:
+                        old_group.change(update.message.chat)
+                        await context.bot.send_message(
+                            chat_id=owner.chat_id,
+                            text=botman.text("group_changed", owner.language),
+                            reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language)
+                        )
+                        owner.change_state(cache_key='community', data=BotMan.CommunityType.GROUP.value, clear_cache=True)
+                    except InvalidInputException:
+                        await context.bot.send_message(
+                            chat_id=owner.chat_id,
+                            text=botman.error("changed_group_is_the_same", owner.language),
+                            reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language)
+                        )
                     return
 
                 group = Group.Register(update.message.chat, owner.chat_id)

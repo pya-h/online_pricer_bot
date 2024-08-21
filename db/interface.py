@@ -360,12 +360,14 @@ class DatabaseInterface:
             log(f"Cannot save this channel:{channel}", ex, category_name="DatabaseError")
             raise ex  # custom ex needed here too
 
-    def update_channel(self, channel):
+    def update_channel(self, channel, old_chat_id: int = None):
+        channel_id = old_chat_id or channel.id
         cursor = self.connection.cursor()
-        columns_to_set = ", ".join([f"{field}=%s" for field in self.CHANNELS_COLUMNS[1:]])
+        columns_to_set = ", ".join([f"{field}=%s" for field in self.CHANNELS_COLUMNS])
         cursor.execute(
             f"UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s",
             (
+                channel.id,
                 channel.name,
                 channel.title,
                 channel.interval,
@@ -378,7 +380,7 @@ class DatabaseInterface:
                 int(channel.message_show_market_tags),
                 channel.last_post_time,
                 channel.owner_id,
-                channel.id,
+                channel_id,
             ),
         )
 
@@ -387,7 +389,7 @@ class DatabaseInterface:
                 f"Channel with the id of [{channel.id}, {channel.name}] has been RE-planned by: {channel.owner_id}",
                 category_name="DatabaseInfo",
             )
-        else:
+        elif not old_chat_id:
             cursor.execute(f"SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s", (channel.id,))
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()
@@ -479,14 +481,16 @@ class DatabaseInterface:
             log(f"Cannot save this group:{group}", ex, category_name="DatabaseError")
             raise ex  # custom ex needed here too
 
-    def update_group(self, group):
+    def update_group(self, group, old_chat_id: int = None):
+        group_id = old_chat_id or group.id
         cursor = self.connection.cursor()
 
-        columns_to_set = ", ".join([f"{field}=%s" for field in self.GROUPS_COLUMNS[1:]])
+        columns_to_set = ", ".join([f"{field}=%s" for field in self.GROUPS_COLUMNS])
 
         cursor.execute(
             f"UPDATE {self.TABLE_GROUPS} SET {columns_to_set} WHERE {self.GROUP_ID}=%s",
             (
+                group.id,
                 group.name,
                 group.title,
                 group.coins_as_str,
@@ -496,11 +500,11 @@ class DatabaseInterface:
                 int(group.message_show_date_tag),
                 int(group.message_show_market_tags),
                 group.owner_id,
-                group.id,
+                group_id,
             ),
         )
 
-        if not cursor.rowcount:
+        if not cursor.rowcount and not old_chat_id:
             cursor.execute(f"SELECT 1 FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s", (group.id,))
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()

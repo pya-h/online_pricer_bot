@@ -22,17 +22,10 @@ class CacheFailureException(Exception):
         super().__init__(f"Invalid {self.message}")
 
 
-class NotPlusException(Exception):
-
-    def __init__(self, chat_id: int) -> None:
-        self.message = f"Account with chat_id={chat_id} is not VIP now!"
-        super().__init__(self.message)
-
-
 class NoSuchThingException(Exception):
 
     def __init__(self, id: int, thing: str | None = None) -> None:
-        self.thing = thing or 'Entity'
+        self.thing = thing or "Entity"
         self.message = f"{self.thing} with id={id} does not exist!"
         super().__init__(self.message)
 

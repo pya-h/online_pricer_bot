@@ -3,7 +3,8 @@ from db.interface import DatabaseInterface
 from json import dumps as jsonify
 from bot.types import GroupInlineKeyboardButtonTemplate
 from typing import List
-from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException
+from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException
+from telegram import Chat
 
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
@@ -173,6 +174,26 @@ class Channel:
             return False
         return True
 
+    def __str__(self) -> str:
+        return f"Username:{self.name}\nTitle: {self.title}\nId: {self.id}\nInterval: {self.interval}\nOwner Id: {self.owner_id}"
+
+    def save(self):
+        self.Database().update_channel(self)
+        return self
+
+    def change(self, new_chat: Chat):
+        if self.id == new_chat.id:
+            raise InvalidInputException("chat id; it doesn't differ from the old one.")
+        old_chat_id = self.id
+        self.id = new_chat.id
+        self.name = new_chat.username
+        self.title = new_chat.title
+
+        Channel.Database().update_group(self.id, old_chat_id=old_chat_id)
+        # if Channel.FastMemInstances[old_chat_id]:
+        #     del Channel.FastMemInstances[old_chat_id]
+        return self
+
     @property
     def coins_as_str(self):
         return ";".join(self.selected_coins)
@@ -200,9 +221,6 @@ class Channel:
 
         return None
 
-    def __str__(self) -> str:
-        return f"Username:{self.name}\nTitle: {self.title}\nId: {self.id}\nInterval: {self.interval}\nOwner Id: {self.owner_id}"
-
     @staticmethod
     def ExtractQueryRowData(row: tuple):
         return Channel(
@@ -229,7 +247,3 @@ class Channel:
         if len(rows) == 1:
             return Channel.ExtractQueryRowData(rows[0])
         return list(map(Channel.ExtractQueryRowData, rows))
-
-    def save(self):
-        self.Database().update_channel(self)
-        return self
