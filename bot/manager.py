@@ -25,7 +25,7 @@ from tools.manuwriter import log, load_json
 from tools.mathematix import persianify, cut_and_separate
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
-from .types import GroupInlineKeyboardButtonTemplate
+from .types import GroupInlineKeyboardButtonTemplate, SelectionListTypes, MarketOptions
 from math import ceil as math_ceil
 
 
@@ -150,7 +150,7 @@ class BotMan:
         NONE = 0
 
         @staticmethod
-        def Which(value: int):
+        def which(value: int):
             try:
                 return BotMan.QueryActionOptions[int(value)]
             except:
@@ -177,7 +177,7 @@ class BotMan:
         NONE = 0
 
         @staticmethod
-        def Which(value: int):
+        def which(value: int):
             match value:
                 case BotMan.CommunityType.CHANNEL.value:
                     return BotMan.CommunityType.CHANNEL
@@ -186,10 +186,10 @@ class BotMan:
             return BotMan.CommunityType.NONE
 
         def __str__(self) -> str:
-            return self.ToString(self.value)
+            return self.toString(self.value)
 
         @staticmethod
-        def ToString(value: int) -> str:
+        def toString(value: int) -> str:
             return (
                 "channel"
                 if value == BotMan.CommunityType.CHANNEL.value
@@ -197,26 +197,26 @@ class BotMan:
             )
 
         @staticmethod
-        def ToClass(value: int) -> Channel | Group | None:
+        def toClass(value: int) -> Channel | Group | None:
             return (
                 Channel
                 if value == BotMan.CommunityType.CHANNEL.value
                 else Group if value == BotMan.CommunityType.GROUP.value else None
             )
+
         def __cls__(self) -> Channel | Group | None:
-            return self.ToClass(self.value)
+            return self.toClass(self.value)
 
     class MenuSections(Enum):
         COMMUNITY_PANEL = 1
         NONE = 0
 
         @staticmethod
-        def Which(value: int):
+        def which(value: int):
             match value:
                 case BotMan.MenuSections.COMMUNITY_PANEL.value:
                     return BotMan.MenuSections.COMMUNITY_PANEL
             return BotMan.MenuSections.NONE
-
 
     def __init__(self, main_plan_interval: float = 10.0, plan_manager_interval: float = 1.0) -> None:
         self.resourceman = resourceman
@@ -480,7 +480,7 @@ class BotMan:
         return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account.language)
 
     @staticmethod
-    def action_callback_data(action: QueryActions, value: any, page: int | None = None):
+    def actionCallbackData(action: QueryActions, value: any, page: int | None = None):
         data = {"act": action.value, "v": value}
         if page is not None:
             data["pg"] = page
@@ -603,7 +603,7 @@ class BotMan:
                     text=(self.resourceman.keyboard if not in_main_keyboard else self.resourceman.mainkeyboard)(
                         data[keys[col + row * columns_in_a_row]], language
                     ),
-                    callback_data=self.action_callback_data(action, keys[col + row * columns_in_a_row]),
+                    callback_data=self.actionCallbackData(action, keys[col + row * columns_in_a_row]),
                 )
                 for col in range(columns_in_a_row)
             ]
@@ -616,7 +616,7 @@ class BotMan:
                 [
                     InlineKeyboardButton(
                         self.resourceman.keyboard(data[keys[i]], language),
-                        callback_data=self.action_callback_data(action, keys[i]),
+                        callback_data=self.actionCallbackData(action, keys[i]),
                     )
                     for i in range(full_rows_last_index, buttons_count)
                 ]
@@ -636,7 +636,7 @@ class BotMan:
         buttons_count = len(users)
 
         pagination_menu: List[InlineKeyboardButton] | None = None
-        pagination_callback_data = lambda page: self.action_callback_data(list_type, None, page)
+        pagination_callback_data = lambda page: self.actionCallbackData(list_type, None, page)
 
         if buttons_count > max_page_buttons:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
@@ -666,7 +666,7 @@ class BotMan:
             [
                 InlineKeyboardButton(
                     text=str(users[col + row * columns_in_a_row]),
-                    callback_data=self.action_callback_data(list_type, users[col + row * columns_in_a_row].chat_id),
+                    callback_data=self.actionCallbackData(list_type, users[col + row * columns_in_a_row].chat_id),
                 )
                 for col in range(columns_in_a_row)
             ]
@@ -678,7 +678,7 @@ class BotMan:
             buttons.append(
                 [
                     InlineKeyboardButton(
-                        text=str(users[i]), callback_data=self.action_callback_data(list_type, users[i].chat_id)
+                        text=str(users[i]), callback_data=self.actionCallbackData(list_type, users[i].chat_id)
                     )
                     for i in range(full_rows_last_index, buttons_count)
                 ]
@@ -707,7 +707,7 @@ class BotMan:
 
     async def inform_admins(self, message_key: str, context: CallbackContext, is_error: bool = False):
         message_text = self.error if is_error else self.text
-        for admin in Account.GetAdmins(just_hardcode_admin=False):
+        for admin in Account.getAdmins(just_hardcode_admin=False):
             try:
                 await context.bot.send_message(chat_id=admin.chat_id, text=message_text(message_key, admin.language))
             except:
@@ -750,7 +750,7 @@ class BotMan:
     def check_price_alarms(self) -> List[PriceAlarm]:
         """Checks all user alarms and finds alarms that has gone off"""
         print("ALARM CHECK:")
-        alarms = PriceAlarm.Get()
+        alarms = PriceAlarm.get()
         # TODO: Define a pre_latest_data, check for currencies that have changed in 10m and then get alarms by currencies
         triggered_alarms = []
         for alarm in alarms:
@@ -762,7 +762,7 @@ class BotMan:
                 source = self.crypto_serv
 
             if alarm.current_price is not None:
-                alarm.full_currency_name = {"en": alarm.currency.upper(), "fa": source.GetPersianName(alarm.currency.upper())}
+                alarm.full_currency_name = {"en": alarm.currency.upper(), "fa": source.getPersianName(alarm.currency.upper())}
                 match alarm.change_direction:
                     case PriceAlarm.ChangeDirection.UP:
                         if alarm.current_price >= alarm.target_price:
@@ -781,12 +781,12 @@ class BotMan:
     async def handle_possible_alarms(self, send_message_func):
         # start notifying users [if at least one alarm went off]
         unit_names = {
-            "IRT": {"fa": self.currency_serv.GetPersianName("IRT"), "en": "IRT"},
-            "USD": {"fa": self.currency_serv.GetPersianName("USD"), "en": "USD"},
+            "IRT": {"fa": self.currency_serv.getPersianName("IRT"), "en": "IRT"},
+            "USD": {"fa": self.currency_serv.getPersianName("USD"), "en": "USD"},
         }
         for alarm in self.check_price_alarms():
             try:
-                account = Account.GetById(alarm.chat_id, no_fastmem=True)
+                account = Account.getById(alarm.chat_id, no_fastmem=True)
                 target_price = cut_and_separate(alarm.target_price)
                 current_price = cut_and_separate(alarm.current_price)
                 currency_name, unit_name = (
@@ -808,7 +808,7 @@ class BotMan:
 
     async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
         if not account.is_premium:
-            link = f"https://t.me/{Account.GetHardcodeAdmin()['username']}"
+            link = f"https://t.me/{Account.getHardcodeAdmin()['username']}"
             await telegram_handle.message.reply_text(
                 text=self.error("max_selection", account.language) % (max_value,) + self.error("get_premium", account.language),
                 reply_markup=self.inline_url([{"text_key": "premium", "url": link}]),
@@ -817,7 +817,7 @@ class BotMan:
             await telegram_handle.message.reply_text(text=self.error("max_selection", account.language) % (max_value,))
 
     async def show_settings_menu(self, update: Update):
-        account = Account.Get(update.message.chat)
+        account = Account.get(update.message.chat)
         keyboard = ReplyKeyboardMarkup(
             (
                 [
@@ -853,8 +853,8 @@ class BotMan:
         await update.message.delete()
 
     async def list_premiums(self, update: Update, list_type: QueryActions) -> bool:
-        account = Account.Get(update.message.chat)
-        premiums = Account.GetPremiumUsers()
+        account = Account.get(update.message.chat)
+        premiums = Account.getPremiumUsers()
         if not premiums:
             await update.message.reply_text(
                 text=self.text("no_premium_users_found", account.language), reply_markup=self.mainkeyboard(account)
@@ -874,12 +874,12 @@ class BotMan:
         user: Account | None = None
         if update.message.forward_from:
             upgrading_chat_id = update.message.forward_from.id
-            user = Account.GetById(upgrading_chat_id)
+            user = Account.getById(upgrading_chat_id)
             user.current_username = update.message.forward_from.username
             user.firstname = update.message.forward_from.first_name
         elif update.message.text[0] == "@":
             try:
-                user = Account.GetByUsername(update.message.text)
+                user = Account.getByUsername(update.message.text)
                 if user:
                     upgrading_chat_id = user.chat_id
             except:
@@ -887,7 +887,7 @@ class BotMan:
         else:
             try:
                 upgrading_chat_id = int(update.message.text)
-                user = Account.GetById(upgrading_chat_id)
+                user = Account.getById(upgrading_chat_id)
             except:
                 upgrading_chat_id = None
         return user
@@ -912,15 +912,15 @@ class BotMan:
         while i < finder.word_count:
             words[i] = words[i].upper()
             prev_word: str | float = words[i - 1] if i else 1.0
-            slug, word_count = finder.search_around(self.crypto_serv.CoinsInPersian, i)
+            slug, word_count = finder.search_around(self.crypto_serv.coinsInPersian, i)
             if slug:
                 coef = self.extract_coef(prev_word)
                 crypto_amounts.add(f"{coef} {slug}")
             else:
-                slug, word_count = finder.search_around(self.currency_serv.CurrenciesInPersian, i)
+                slug, word_count = finder.search_around(self.currency_serv.currenciesInPersian, i)
 
                 if not slug:
-                    slug, word_count = finder.search_around(self.currency_serv.PersianShortcuts)
+                    slug, word_count = finder.search_around(self.currency_serv.persianShortcuts)
 
                 if slug:
                     coef = self.extract_coef(prev_word)
@@ -951,21 +951,6 @@ class BotMan:
         header, response, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies)
         response += "\n\n" + self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
         return header + response
-
-    @staticmethod
-    def ArrangeInlineKeyboardButtons(list_of_keys: list[GroupInlineKeyboardButtonTemplate], query_action: QueryActions):
-        keys_count = len(list_of_keys)
-        keys = [
-            [
-                InlineKeyboardButton(
-                    list_of_keys[j].title, callback_data=BotMan.action_callback_data(query_action, list_of_keys[j].value)
-                )
-                for j in range(i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count)
-            ]
-            for i in range(math_ceil(keys_count // 5))
-        ]
-
-        return InlineKeyboardMarkup(keys)
 
     async def prepare_channel(self, ctx: CallbackContext, owner: Account, channel_id: int, interval: int):
         try:
@@ -1012,19 +997,19 @@ class BotMan:
         account.change_state(next_state, "channel_chat_id", channel_id, clear_cache=True)
         response_message = await update.message.reply_text(
             self.text("select_post_interval"),
-            reply_markup=self.ArrangeInlineKeyboardButtons(Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL),
+            reply_markup=self.arrangeInlineKeyboardButtons(Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL),
         )
         account.add_cache("interval_menu_msg_id", response_message.message_id)
 
     async def handle_interval_input(self, update: Update | CallbackQuery, context: CallbackContext, interval: int):
-        account = Account.Get(update.message.chat)
+        account = Account.get(update.message.chat)
         channel_id = account.get_cache("channel_chat_id")
         try:
             if account.state == Account.States.SELECT_POST_INTERVAL:
                 if not channel_id or not (await self.prepare_channel(context, account, channel_id, interval)):
                     raise InvalidInputException("Invalid channel data.")
             elif account.state == Account.States.CHANGE_POST_INTERVAL:
-                channel = Channel.Get(channel_id)
+                channel = Channel.get(channel_id)
                 if not channel:
                     raise NoSuchThingException(channel_id)
                 channel.interval = interval
@@ -1042,3 +1027,89 @@ class BotMan:
                 self.error("error_while_planning_channel", account.language), reply_markup=self.mainkeyboard(account)
             )
         return False
+
+    @staticmethod
+    def arrangeInlineKeyboardButtons(list_of_keys: list[GroupInlineKeyboardButtonTemplate], query_action: QueryActions):
+        keys_count = len(list_of_keys)
+        keys = [
+            [
+                InlineKeyboardButton(
+                    list_of_keys[j].title, callback_data=BotMan.actionCallbackData(query_action, list_of_keys[j].value)
+                )
+                for j in range(i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count)
+            ]
+            for i in range(math_ceil(keys_count // 5))
+        ]
+
+        return InlineKeyboardMarkup(keys)
+
+    @staticmethod
+    def handleMarketSelection(
+        account: Account, list_type: SelectionListTypes, market: MarketOptions, symbol: str | None = None
+    ):
+        target_list: List[str]
+        related_list: List[str]
+        save_func: callable = account.save
+
+        match list_type:
+            case SelectionListTypes.CALCULATOR:
+                (target_list, related_list) = (
+                    (account.calc_cryptos, account.calc_currencies)
+                    if market == MarketOptions.CRYPTO
+                    else (account.calc_currencies, account.calc_cryptos)
+                )
+            case SelectionListTypes.USER_TOKENS:
+                (target_list, related_list) = (
+                    (account.desired_cryptos, account.desired_currencies)
+                    if market == MarketOptions.CRYPTO
+                    else (account.desired_currencies, account.desired_cryptos)
+                )
+            case SelectionListTypes.GROUP_TOKENS:
+                my_group = Group.getByOwner(account.chat_id, take=1)
+                if not my_group:
+                    raise NoSuchThingException(account.chat_id, "Group")
+                (target_list, related_list) = (
+                    (my_group.selected_coins, my_group.selected_currencies)
+                    if market == MarketOptions.CRYPTO
+                    else (my_group.selected_currencies, my_group.selected_coins)
+                )
+                save_func = my_group.save
+            case SelectionListTypes.CHANNEL_TOKENS:
+                my_channel = Channel.getByOwner(account.chat_id, take=1)
+                if not my_channel:
+                    raise NoSuchThingException(account.chat_id, "Channel")
+                (target_list, related_list) = (
+                    (my_channel.selected_coins, my_channel.selected_currencies)
+                    if market == MarketOptions.CRYPTO
+                    else (my_channel.selected_currencies, my_channel.selected_coins)
+                )
+                save_func = my_channel.save
+            case SelectionListTypes.ALARM | SelectionListTypes.EQUALIZER_UNIT:
+                return None
+            case _:
+                raise ValueError(f"Invalid list type selected by: {account.state.value}")
+
+        if symbol:
+            if symbol.upper() not in target_list:
+                if len(target_list) + len(related_list) >= account.max_selection_count:
+                    raise ValueError(account.max_selection_count)
+
+                target_list.append(symbol)
+            else:
+                target_list.remove(symbol)
+            save_func()
+        return target_list
+
+    @staticmethod
+    def factoryResetAccount(account: Account):
+        account.factory_reset()
+
+        # disable(delete) all alarms
+        for alarm in PriceAlarm.getUserAlarms(account.chat_id):
+            alarm.disable()
+
+        # stop(delete) all planned channels
+        for channel in Channel.getByOwner(account.chat_id, take=None):
+            channel.stop_plan()
+
+        # FIXME: Also disable groups

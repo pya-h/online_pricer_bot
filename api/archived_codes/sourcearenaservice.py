@@ -6,7 +6,7 @@ from api.tether_service import AbanTetherService
 
 
 class SourceArenaService(CurrencyService):
-    Defaults = (
+    defaults = (
         "USD",
         "EUR",
         "AED",
@@ -18,26 +18,26 @@ class SourceArenaService(CurrencyService):
         "SEKE_EMAMI",
         "SEKE_GERAMI",
     )
-    EntitiesInDollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
-    CurrenciesInPersian = None
-    NationalCurrenciesInPersian = None
-    GoldsInPersian = None
-    MaxExtraServicesFailure = 5
+    entitiesInDollars = ("ONS", "ONSNOGHRE", "PALA", "ONSPALA", "OIL")
+    currenciesInPersian = None
+    nationalCurrenciesInPersian = None
+    goldsInPersian = None
+    maxExtraServicesFailure = 5
 
     @staticmethod
-    def LoadPersianNames():
-        SourceArenaService.NationalCurrenciesInPersian, SourceArenaService.GoldsInPersian = get_persian_currency_names()
-        SourceArenaService.CurrenciesInPersian = dict(
-            SourceArenaService.NationalCurrenciesInPersian, **SourceArenaService.GoldsInPersian
+    def loadPersianNames():
+        SourceArenaService.nationalCurrenciesInPersian, SourceArenaService.goldsInPersian = get_persian_currency_names()
+        SourceArenaService.currenciesInPersian = dict(
+            SourceArenaService.nationalCurrenciesInPersian, **SourceArenaService.goldsInPersian
         )
 
     @staticmethod
-    def GetPersianName(symbol: str) -> str:
-        if SourceArenaService.CurrenciesInPersian is None or not SourceArenaService.CurrenciesInPersian:
-            SourceArenaService.LoadPersianNames()
-        if symbol not in SourceArenaService.CurrenciesInPersian:
+    def getPersianName(symbol: str) -> str:
+        if SourceArenaService.currenciesInPersian is None or not SourceArenaService.currenciesInPersian:
+            SourceArenaService.loadPersianNames()
+        if symbol not in SourceArenaService.currenciesInPersian:
             raise InvalidInputException("Currency Symbol/Name!")
-        return SourceArenaService.CurrenciesInPersian[symbol]
+        return SourceArenaService.currenciesInPersian[symbol]
 
     def __init__(self, token: str, aban_tether_token: str) -> None:
         super().__init__(
@@ -48,14 +48,14 @@ class SourceArenaService(CurrencyService):
             token=token,
         )
         if (
-            not SourceArenaService.NationalCurrenciesInPersian
-            or not SourceArenaService.GoldsInPersian
-            or not SourceArenaService.CurrenciesInPersian
+            not SourceArenaService.nationalCurrenciesInPersian
+            or not SourceArenaService.goldsInPersian
+            or not SourceArenaService.currenciesInPersian
         ):
-            SourceArenaService.LoadPersianNames()
+            SourceArenaService.loadPersianNames()
 
         self.tether_service = AbanTetherService(aban_tether_token)
-        self.get_desired_ones = lambda desired_ones: desired_ones or SourceArenaService.Defaults
+        self.get_desired_ones = lambda desired_ones: desired_ones or SourceArenaService.defaults
         self.direct_prices: Dict[str, float] = {}
 
     def extract_api_response(self, desired_ones: list = None, short_text: bool = True, optional_api_data: list = None) -> str:
@@ -65,34 +65,34 @@ class SourceArenaService(CurrencyService):
 
         for curr in api_data:
             slug = curr["slug"].upper()
-            price = float(curr["price"]) / 10 if slug not in SourceArenaService.EntitiesInDollars else float(curr["price"])
+            price = float(curr["price"]) / 10 if slug not in SourceArenaService.entitiesInDollars else float(curr["price"])
             self.direct_prices[slug] = price
             if slug in desired_ones:
                 # repetitive code OR using multiple conditions (?)
-                if slug not in SourceArenaService.EntitiesInDollars:
+                if slug not in SourceArenaService.entitiesInDollars:
                     toman, _ = self.rounded_prices(price, False)
                     toman = persianify(toman)
-                    rows[slug] = f"{SourceArenaService.CurrenciesInPersian[slug]}: {toman} تومان"
+                    rows[slug] = f"{SourceArenaService.currenciesInPersian[slug]}: {toman} تومان"
                 else:
                     usd, toman = self.rounded_prices(price)
                     toman = persianify(toman)
-                    rows[slug] = f"{SourceArenaService.CurrenciesInPersian[slug]}: {toman} تومان / {usd}$"
+                    rows[slug] = f"{SourceArenaService.currenciesInPersian[slug]}: {toman} تومان / {usd}$"
 
         res_curr = ""
         res_gold = ""
         for slug in desired_ones:
 
-            if slug in SourceArenaService.NationalCurrenciesInPersian:
+            if slug in SourceArenaService.nationalCurrenciesInPersian:
                 res_curr += (
                     f"🔸 {rows[slug]}\n"
                     if slug in rows
-                    else f"❗️ {SourceArenaService.CurrenciesInPersian[slug]}: قیمت دریافت نشد.\n"
+                    else f"❗️ {SourceArenaService.currenciesInPersian[slug]}: قیمت دریافت نشد.\n"
                 )
             else:
                 res_gold += (
                     f"🔸 {rows[slug]}\n"
                     if slug in rows
-                    else f"❗️ {SourceArenaService.CurrenciesInPersian[slug]}: قیمت دریافت نشد.\n"
+                    else f"❗️ {SourceArenaService.currenciesInPersian[slug]}: قیمت دریافت نشد.\n"
                 )
         if res_curr:
             res_curr = f"📌 #قیمت_لحظه_ای #بازار_ارز \n{res_curr}\n"
@@ -123,25 +123,25 @@ class SourceArenaService(CurrencyService):
         if self.tether_service.recent_value:
             self.set_tether_tomans(self.tether_service.recent_value)
             usd_t["TETHER"]["price"] = self.tether_service.recent_value
-        elif not self.TetherInTomans or self.tether_service.no_response_counts > SourceArenaService.MaxExtraServicesFailure:
+        elif not self.tetherInTomans or self.tether_service.no_response_counts > SourceArenaService.maxExtraServicesFailure:
             try:
-                self.set_tether_tomans((float(usd_t["TETHER"]["price"]) / 10.0) or SourceArenaService.DefaultTetherInTomans)
+                self.set_tether_tomans((float(usd_t["TETHER"]["price"]) / 10.0) or SourceArenaService.defaultTetherInTomans)
             except:
-                if not SourceArenaService.TetherInTomans:
-                    SourceArenaService.TetherInTomans = SourceArenaService.DefaultTetherInTomans
+                if not SourceArenaService.tetherInTomans:
+                    SourceArenaService.tetherInTomans = SourceArenaService.defaultTetherInTomans
 
         try:
             self.set_usd_price(
                 self.tether_service.guess_dollar_price()
                 or (float(usd_t["USD"]["price"]) / 10.0)
-                or SourceArenaService.DefaultUsbInTomans
+                or SourceArenaService.defaultUsdInTomans
             )
             usd_t["USD"]["price"] = (
-                self.UsdInTomans * 10.0
+                self.usdInTomans * 10.0
             )  # in dict must be in fuckin rials; this fuckin country with its fuckin worthless currency
         except:
-            if not SourceArenaService.UsdInTomans:
-                SourceArenaService.UsdInTomans = SourceArenaService.DefaultUsbInTomans
+            if not SourceArenaService.usdInTomans:
+                SourceArenaService.usdInTomans = SourceArenaService.defaultUsdInTomans
 
         self.cache_data(response_text)
         self.tether_service.cache_data(self.tether_service.summary(), custom_file_name="usd_t")

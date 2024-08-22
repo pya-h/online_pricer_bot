@@ -7,7 +7,7 @@ class MarketOptions(Enum):
     GOLD = 3
 
     @staticmethod
-    def Which(value: int):
+    def which(value: int):
         for option in (
             MarketOptions.CRYPTO,
             MarketOptions.CURRENCY,
@@ -27,7 +27,7 @@ class SelectionListTypes(Enum):
     CHANNEL_TOKENS = 8
 
     @staticmethod
-    def Which(value: int):
+    def which(value: int):
         for option in (
             SelectionListTypes.USER_TOKENS,
             SelectionListTypes.CALCULATOR,

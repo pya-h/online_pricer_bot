@@ -24,7 +24,7 @@ class PriceSeek:
         return results
 
     @staticmethod
-    def GetPattern(price_key: str, parent_html_tag: str | None = None) -> str:
+    def getPattern(price_key: str, parent_html_tag: str | None = None) -> str:
         if not parent_html_tag:
             left, right = f'<.*?id="{price_key}".*?>', "</.*?>"
         else:
@@ -37,7 +37,7 @@ class PriceSeek:
         self.digit_separator = ","
         self.parent_html_tag = parent_html_tag
         self.price_key = price_key
-        self.price_pattern, self.pattern_left_hand, self.pattern_right_hand = PriceSeek.GetPattern(
+        self.price_pattern, self.pattern_left_hand, self.pattern_right_hand = PriceSeek.getPattern(
             self.price_key, self.parent_html_tag
         )
         self.url: str = f"https://{url}" if "https://" not in url else url

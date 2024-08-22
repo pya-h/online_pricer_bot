@@ -73,16 +73,16 @@ class Channel:
     _database: DatabaseInterface = None
 
     @staticmethod
-    def Database():
+    def database():
         if not Channel._database:
-            Channel._database = DatabaseInterface.Get()
+            Channel._database = DatabaseInterface.get()
         return Channel._database
 
     @staticmethod
     def GetHasPlanChannels():
         """return all channel table rows that has interval > 0"""
         Channel.Instances.clear()
-        channels_as_row = Channel.Database().get_channels_by_interval()  # fetch all positive interval channels
+        channels_as_row = Channel.database().get_channels_by_interval()  # fetch all positive interval channels
         for row in channels_as_row:
             channel = Channel(
                 channel_id=int(row[0]),
@@ -136,17 +136,17 @@ class Channel:
         self.last_post_time: int | None = last_post_time  # don't forget database has this
 
     def create(self, allowed_channels_count: int = 1):
-        db = Channel.Database()
+        db = Channel.database()
         channel_columns = db.get_channel(self.id)
         if channel_columns:
             self.save()  # just update database
             return
         # enhanced check:
         if allowed_channels_count == 1:
-            if self.owner_has_channel:
+            if Channel.userHasAnyChannels(self.owner_id):
                 raise MaxAddedCommunityException("channel")
         elif allowed_channels_count > 1:
-            if self.owner_channels_count > allowed_channels_count:
+            if Channel.usersChannelsCount(self.owner_id) > allowed_channels_count:
                 raise MaxAddedCommunityException("channel")
         elif not allowed_channels_count:
             raise UserNotAllowedException(self.owner_id, "have channels")
@@ -161,12 +161,12 @@ class Channel:
             return False  # Plan removed
 
         Channel.Instances[self.id] = self
-        Channel.Database().set_channel_state(self.id, True)
+        Channel.database().set_channel_state(self.id, True)
         return True
 
     def stop_plan(self) -> bool:
         try:
-            Channel.Database().delete_channel(self.id)
+            Channel.database().delete_channel(self.id)
             if self.id in Channel.Instances:
                 del Channel.Instances[self.id]
         except Exception as ex:
@@ -178,7 +178,7 @@ class Channel:
         return f"Username:{self.name}\nTitle: {self.title}\nId: {self.id}\nInterval: {self.interval}\nOwner Id: {self.owner_id}"
 
     def save(self):
-        self.Database().update_channel(self)
+        self.database().update_channel(self)
         return self
 
     def change(self, new_chat: Chat):
@@ -189,7 +189,7 @@ class Channel:
         self.name = new_chat.username
         self.title = new_chat.title
 
-        Channel.Database().update_group(self.id, old_chat_id=old_chat_id)
+        Channel.database().update_group(self.id, old_chat_id=old_chat_id)
         # if Channel.FastMemInstances[old_chat_id]:
         #     del Channel.FastMemInstances[old_chat_id]
         return self
@@ -202,35 +202,27 @@ class Channel:
     def currencies_as_str(self):
         return ";".join(self.selected_currencies)
 
-    @property
-    def owner_channels_count(self):
-        return self.Database().user_channels_count(self.owner_id)
-
-    @property
-    def owner_has_channel(self):
-        return bool(self.Database().get_user_channels(self.owner_id, take=1))
-
     @staticmethod
-    def Get(channel_id):
+    def get(channel_id):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         if channel_id in Channel.Instances:
             return Channel.Instances[channel_id]
-        row = Channel.Database().get_channel(channel_id)
+        row = Channel.database().get_channel(channel_id)
         if row:
-            return Channel.ExtractQueryRowData(row)
+            return Channel.extractQueryRowData(row)
 
         return None
 
     @staticmethod
-    def ExtractQueryRowData(row: tuple):
+    def extractQueryRowData(row: tuple):
         return Channel(
             channel_id=int(row[0]),
             channel_name=row[1],
             channel_title=row[2],
             interval=int(row[3]),
             is_active=bool(row[4]),
-            selected_coins=DatabaseInterface.StringToList(row[5]),
-            selected_currencies=DatabaseInterface.StringToList(row[6]),
+            selected_coins=DatabaseInterface.stringToList(row[5]),
+            selected_currencies=DatabaseInterface.stringToList(row[6]),
             message_header=row[7],
             message_footnote=row[8],
             message_show_date_tag=bool(row[9]),
@@ -240,10 +232,19 @@ class Channel:
         )
 
     @staticmethod
-    def GetByOwner(owner_chat_id: int, take: int | None = 1):
-        rows = Channel.Database().get_user_channels(owner_chat_id, take)
+    def getByOwner(owner_chat_id: int, take: int | None = 1):
+        rows = Channel.database().get_user_channels(owner_chat_id, take)
         if not rows:
             return None
         if len(rows) == 1:
-            return Channel.ExtractQueryRowData(rows[0])
-        return list(map(Channel.ExtractQueryRowData, rows))
+            return Channel.extractQueryRowData(rows[0])
+        return list(map(Channel.extractQueryRowData, rows))
+
+
+    @staticmethod
+    def usersChannelsCount(user_chat_id: int) -> int:
+        return Channel.database().user_channels_count(user_chat_id)
+
+    @staticmethod
+    def userHasAnyChannels(user_chat_id: int) -> bool:
+        return bool(Channel.database().get_user_channels(user_chat_id, take=1))

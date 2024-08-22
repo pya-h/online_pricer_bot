@@ -1,7 +1,7 @@
 from api.crypto_service import CoinMarketCapService
 from api.currency_service import NavasanService, GoldService
 
-coins = CoinMarketCapService.LoadPersianNames()
+coins = CoinMarketCapService.loadPersianNames()
 
 
 def count_them(target_dict: dict):
@@ -22,11 +22,11 @@ s, n = count_them(coins)
 print(s, " ", n)
 
 x = GoldService("sss")
-NavasanService.LoadPersianNames()
+NavasanService.loadPersianNames()
 
-s, n = count_them(NavasanService.CurrenciesInPersian)
+s, n = count_them(NavasanService.currenciesInPersian)
 print(s, " ", n)
 
 
-s, n = count_them(NavasanService.GoldsInPersian)
+s, n = count_them(NavasanService.goldsInPersian)
 print(s, " ", n)

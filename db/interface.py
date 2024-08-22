@@ -108,13 +108,13 @@ class DatabaseInterface:
     ) = ("id", "chat_id", "currency", "price", "change_dir", "unit")
 
     @staticmethod
-    def Get():
+    def get():
         if not DatabaseInterface._instance:
             DatabaseInterface._instance = DatabaseInterface()
         return DatabaseInterface._instance
 
     @staticmethod
-    def StringToList(string: str):
+    def stringToList(string: str):
         """Use this method to extract saved currency or cryptocurrency list strings to List again."""
         if not string:
             return None
@@ -233,7 +233,7 @@ class DatabaseInterface:
                 account.last_interaction,
                 account.plus_end_date,
                 account.state.value,
-                account.scache_as_str,
+                account.cache_as_str,
                 account.is_admin,
                 account.language,
             )
@@ -272,7 +272,7 @@ class DatabaseInterface:
                 account.last_interaction,
                 account.plus_end_date,
                 account.state.value,
-                account.scache_as_str,
+                account.cache_as_str,
                 account.is_admin,
                 account.language,
                 account.chat_id,
@@ -297,7 +297,7 @@ class DatabaseInterface:
                     account.last_interaction,
                     account.plus_end_date,
                     account.state.value,
-                    account.scache_as_str,
+                    account.cache_as_str,
                     account.is_admin,
                     account.language,
                 ),

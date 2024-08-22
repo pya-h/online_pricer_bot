@@ -8,9 +8,9 @@ class PriceAlarm:
     _database: DatabaseInterface = None
 
     @staticmethod
-    def Database():
+    def database():
         if PriceAlarm._database is None:
-            PriceAlarm._database = DatabaseInterface.Get()
+            PriceAlarm._database = DatabaseInterface.get()
         return PriceAlarm._database
 
     class ChangeDirection(Enum):
@@ -27,7 +27,7 @@ class PriceAlarm:
             return "is below"
 
         @staticmethod
-        def Which(direction_value: int):
+        def which(direction_value: int):
             match direction_value:
                 case PriceAlarm.ChangeDirection.EXACT.value:
                     return PriceAlarm.ChangeDirection.EXACT
@@ -60,39 +60,40 @@ class PriceAlarm:
             self.change_direction = (
                 change_direction
                 if isinstance(change_direction, PriceAlarm.ChangeDirection)
-                else PriceAlarm.ChangeDirection.Which(change_direction)
+                else PriceAlarm.ChangeDirection.which(change_direction)
             )
         self.current_price: int | None = None
         self.full_currency_name: Dict[str, str] | None = None
 
-    def ExtractQueryRowData(row: tuple):
+    def extractQueryRowData(row: tuple):
         return PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0])
 
     @staticmethod
-    def get_alarms(chat_id):
-        return PriceAlarm.GetByUser(chat_id)
+    def getAlarms(id: int):
+        # FIXME: This must get all alarms
+        return PriceAlarm.getUserAlarms(id)
 
     @staticmethod
-    def GetByUser(chat_id: int):
-        rows = PriceAlarm.Database().get_user_alarms(int(chat_id))
-        return list(map(PriceAlarm.ExtractQueryRowData, rows))
+    def getUserAlarms(chat_id: int):
+        rows = PriceAlarm.database().get_user_alarms(int(chat_id))
+        return list(map(PriceAlarm.extractQueryRowData, rows))
 
     @staticmethod
-    def Get(currencies: List[str] | None = None):
+    def get(currencies: List[str] | None = None):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
-        rows = PriceAlarm.Database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.Database().get_alarms()
-        return list(map(PriceAlarm.ExtractQueryRowData, rows))
+        rows = PriceAlarm.database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.database().get_alarms()
+        return list(map(PriceAlarm.extractQueryRowData, rows))
 
     def disable(self):
-        self.Database().delete_alarm(self.id)
+        self.database().delete_alarm(self.id)
 
     @staticmethod
-    def DisableById(alarm_id):
+    def disableById(alarm_id):
         """Efficient way to disable alarms when there is just an id available"""
-        PriceAlarm.Database().delete_alarm(alarm_id)
+        PriceAlarm.database().delete_alarm(alarm_id)
 
     def set(self):
-        db = self.Database()
+        db = self.database()
         if self.id:
             rows = db.get_single_alarm(self.id)
             if rows and len(rows):

@@ -35,7 +35,7 @@ class PostJob(ParallelJob):
     def __init__(self, channel: Channel, short_text: bool = True) -> None:
         super().__init__(channel.interval, None)
         self.channel: Channel = channel
-        self.account: Account = Account.Get(channel.owner_id)
+        self.account: Account = Account.get(channel.owner_id)
         self.short_text = short_text
 
     def do(self, postman: PostMan, send_message_func: Callable[..., any], call_time: int) -> bool:

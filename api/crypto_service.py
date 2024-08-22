@@ -6,26 +6,31 @@ from typing import Union, List
 
 # Parent Class
 class CryptoCurrencyService(APIService):
-    CoinsInPersian: Dict[str, str] | None = None
+    coinsInPersian: Dict[str, str] | None = None
+
+    def __init__(self, url: str, source: str, max_desired_selection: int = 5, params=None, cache_file_name: str = None) -> None:
+        super().__init__(url, source, max_desired_selection, params, cache_file_name)
+        if not CryptoCurrencyService.coinsInPersian:
+            CryptoCurrencyService.coinsInPersian = CryptoCurrencyService.loadPersianNames()
+        self.get_desired_ones = (
+            lambda desired_ones: desired_ones or list(CryptoCurrencyService.coinsInPersian.keys())[: self.max_desired_selection]
+        )
 
     @staticmethod
-    def Find(words: List[str], index: int, word_count: int, max_name_word_count=4):
+    def find(words: List[str], index: int, word_count: int, max_name_word_count=4):
         # word_count is for not calculating the words length everytime.
         word = words[i]
-        multi_word_findings: Dict[str, str] = []
-        for coin in CryptoCurrencyService.CoinsInPersian:
-            if coin == word or CryptoCurrencyService.CoinsInPersian[coin] == word:
+        for coin in CryptoCurrencyService.coinsInPersian:
+            if coin == word or CryptoCurrencyService.coinsInPersian[coin] == word:
                 return coin
-            coin_words = CryptoCurrencyService.CoinsInPersian[coin].split()
-            coin_cord_count = len(coin_words)
-
-            if word in CryptoCurrencyService.CoinsInPersian[coin]:
+            coin_words = CryptoCurrencyService.coinsInPersian[coin].split()
+            if word in CryptoCurrencyService.coinsInPersian[coin]:
                 # for multi-word coins
                 i = index + max_name_word_count if index + max_name_word_count < word_count else word_count - 1
         return None
 
     @staticmethod
-    def LoadPersianNames() -> dict:
+    def loadPersianNames() -> dict:
         coins_fa = "{}"
         try:
             persian_coin_names_file = open("./api/data/coins.fa.json", "r")
@@ -35,21 +40,13 @@ class CryptoCurrencyService(APIService):
             pass
         return json.loads(coins_fa)
 
-    def __init__(self, url: str, source: str, max_desired_selection: int = 5, params=None, cache_file_name: str = None) -> None:
-        super().__init__(url, source, max_desired_selection, params, cache_file_name)
-        if not CryptoCurrencyService.CoinsInPersian:
-            CryptoCurrencyService.CoinsInPersian = CryptoCurrencyService.LoadPersianNames()
-        self.get_desired_ones = (
-            lambda desired_ones: desired_ones or list(CryptoCurrencyService.CoinsInPersian.keys())[: self.max_desired_selection]
-        )
-
     @staticmethod
-    def GetPersianName(symbol: str) -> str:
-        if not CryptoCurrencyService.CoinsInPersian:
-            CryptoCurrencyService.LoadPersianNames()
-        if symbol not in CryptoCurrencyService.CoinsInPersian:
+    def getPersianName(symbol: str) -> str:
+        if not CryptoCurrencyService.coinsInPersian:
+            CryptoCurrencyService.loadPersianNames()
+        if symbol not in CryptoCurrencyService.coinsInPersian:
             raise InvalidInputException("Crypto symbol!")
-        return CryptoCurrencyService.CoinsInPersian[symbol]
+        return CryptoCurrencyService.coinsInPersian[symbol]
 
 
 # --------- COINGECKO -----------
@@ -69,9 +66,9 @@ class CoinGeckoService(CryptoCurrencyService):
         res = ""
         for coin in api_data:
             symbol = coin["symbol"].upper()
-            name = coin["name"] if symbol != self.TETHER_SYMBOL else "Tether"
+            name = coin["name"] if symbol != self.tetherSymbol else "Tether"
             if symbol in desired_coins:
-                price = coin["market_data"]["current_price"][self.DOLLAR_SYMBOL.lower()]
+                price = coin["market_data"]["current_price"][self.dollarSymbol.lower()]
                 res += self.get_price_description_row(name, symbol, price)
 
         if res:
@@ -99,13 +96,13 @@ class CoinMarketCapService(CryptoCurrencyService):
         self.price_unit = pu
 
     @staticmethod
-    def ListToDict(source_list: list, key_as: str = "symbol"):
+    def listToDict(source_list: list, key_as: str = "symbol"):
         result = {}
 
         for item in source_list:
             try:
                 symbol = item[key_as].upper()
-                if symbol in CoinMarketCapService.CoinsInPersian and symbol not in result:
+                if symbol in CoinMarketCapService.coinsInPersian and symbol not in result:
                     result[symbol] = item
             except:
                 pass
@@ -118,7 +115,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         try:
             latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=5000)
             if latest_cap and latest_cap.data:
-                result = self.ListToDict(latest_cap.data)
+                result = self.listToDict(latest_cap.data)
             self.cache_data(json.dumps(result))
         except Exception as ex:
             manuwriter.log("CoinMarketCap Api Failure", exception=ex, category_name="CoinMarketCapFailure")
@@ -138,7 +135,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             symbol = coin.upper()
             if symbol in api_data:
                 row = self.get_price_description_row(symbol, api_data, short_text=short_text)
-                res += row if row else f"❗️ {CryptoCurrencyService.CoinsInPersian[coin]}: قیمت دریافت نشد."
+                res += row if row else f"❗️ {CryptoCurrencyService.coinsInPersian[coin]}: قیمت دریافت نشد."
 
         if res:
             res = f"📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}"
@@ -153,7 +150,7 @@ class CoinMarketCapService(CryptoCurrencyService):
                 continue
             coin_equalized_price = absolute_amount / float(self.latest_data[coin]["quote"][self.price_unit]["price"])
             coin_equalized_price = mathematix.persianify(mathematix.cut_and_separate(coin_equalized_price))
-            res += f"🔸 {coin_equalized_price} {CryptoCurrencyService.CoinsInPersian[coin]}\n"
+            res += f"🔸 {coin_equalized_price} {CryptoCurrencyService.coinsInPersian[coin]}\n"
 
         return f"📌#بازار_ارز_دیجیتال\n{res}"
 
@@ -165,12 +162,12 @@ class CoinMarketCapService(CryptoCurrencyService):
         # First check the required data is prepared
         if not self.latest_data:
             raise NoLatestDataException("use for equalizing!")
-        if source_unit_symbol not in self.latest_data or source_unit_symbol not in CryptoCurrencyService.CoinsInPersian:
+        if source_unit_symbol not in self.latest_data or source_unit_symbol not in CryptoCurrencyService.coinsInPersian:
             raise InvalidInputException("Coin symbol!")
 
         # text header
         header: str = (
-            "✅ %s %s" % (mathematix.persianify(amount), CryptoCurrencyService.CoinsInPersian[source_unit_symbol])
+            "✅ %s %s" % (mathematix.persianify(amount), CryptoCurrencyService.coinsInPersian[source_unit_symbol])
         ) + " معادل است با:\n\n"
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
@@ -191,8 +188,8 @@ class CoinMarketCapService(CryptoCurrencyService):
             return None
         coin = crypto_symbol.upper()
         price_unit = price_unit.lower()
-        if coin == self.TETHER_SYMBOL and price_unit == "irt":
-            return self.TetherInTomans
+        if coin == self.tetherSymbol and price_unit == "irt":
+            return self.tetherInTomans
 
         data = self.latest_data[coin] if coin in self.latest_data else None
 
@@ -211,7 +208,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         name: str
         try:
             price = api_data[symbol]["quote"][self.price_unit]["price"]
-            name = api_data[symbol]["name"] if symbol != BaseAPIService.TETHER_SYMBOL else "Tether"
+            name = api_data[symbol]["name"] if symbol != BaseAPIService.tetherSymbol else "Tether"
         except:
             return None
 
@@ -221,12 +218,12 @@ class CoinMarketCapService(CryptoCurrencyService):
         if symbol != "USDT":
             rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
         else:
-            rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.TetherInTomans)
+            rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.tetherInTomans)
 
         rp_toman = mathematix.persianify(rp_toman)
 
         return (
-            f"🔸 {CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
+            f"🔸 {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
             if short_text
-            else f"🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrencyService.CoinsInPersian[symbol]}: {rp_toman} تومان\n"
+            else f"🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان\n"
         )

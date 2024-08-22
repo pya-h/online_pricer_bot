@@ -9,9 +9,9 @@ CACHE_ARCHIVE_FOLDER_PATH = "archives"
 
 
 class BaseAPIService:
-    TETHER_SYMBOL = "USDT"
-    DOLLAR_SYMBOL = "USD"
-    TOMAN_SYMBOL = "IRT"
+    tetherSymbol = "USDT"
+    dollarSymbol = "USD"
+    tomanSymbol = "IRT"
 
     """The very Base class for all api services"""
 
@@ -49,7 +49,7 @@ class BaseAPIService:
                     self.Source,
                 )
 
-        except Exception as ex:  # caching is so imortant for the performance of second bot that :
+        except Exception as ex:  # caching is so important for the performance of second bot that :
             # as soon as something goes wrong in caching, the admin must be informed.
             manuwriter.log("Caching failure!", ex, category_name="FATALITY")
             raise CacheFailureException(ex)
@@ -102,8 +102,8 @@ class BaseAPIService:
 
 
 class APIService(BaseAPIService):
-    UsdInTomans = None  # not important, it is just a default value that will be updated at first api get from
-    TetherInTomans = None
+    usdInTomans = None  # not important, it is just a default value that will be updated at first api get from
+    tetherInTomans = None
 
     def __init__(self, url: str, source: str, max_desired_selection: int = 5, params=None, cache_file_name: str = None) -> None:
         super(APIService, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
@@ -111,11 +111,11 @@ class APIService(BaseAPIService):
 
     @staticmethod
     def set_usd_price(value):
-        APIService.UsdInTomans = float(value)
+        APIService.usdInTomans = float(value)
 
     @staticmethod
     def set_tether_tomans(value):
-        APIService.TetherInTomans = float(value)
+        APIService.tetherInTomans = float(value)
 
     def get_desired_ones(self, desired_ones: list) -> List[str]:
         pass
@@ -138,15 +138,15 @@ class APIService(BaseAPIService):
         except Exception as ex:
             if (
                 not self.latest_data
-            ):  # if there is no cache, and the no latest data eigher, to prevent craching, call the api for once
+            ):  # if there is no cache, and the no latest data either, to prevent crashing, call the api for once
                 try:
-                    manuwriter.log("Couldnt read cache; Using Direct api call to obtain data.", ex, category_name="CACHE")
-                    self.latest_data = self.get_request()  # the condition that is happende, may be due to lack of cache file,
-                    # This may be cause when this app is run before oneline_pricer_bot for the first time.
+                    manuwriter.log("couldn't read cache; Using Direct api call to obtain data.", ex, category_name="CACHE")
+                    self.latest_data = self.get_request()  # the condition that is happened, may be due to lack of cache file,
+                    # This may be cause when this app is run before online_pricer_bot for the first time.
                     # sending a request will make new cache and solve this issue.
                 except Exception as fex:
                     manuwriter.log(
-                        "Couldnt get cache and API both. There's something seriously wrong!!", ex, category_name="PLUS_FATALITY"
+                        "Couldn't get cache and API both. There's something seriously wrong!!", ex, category_name="PLUS_FATALITY"
                     )
                     # TODO: send an email or notification or whatever to the admin?
 
@@ -154,7 +154,7 @@ class APIService(BaseAPIService):
 
     def to_irt_exact(self, price: float | int, tether_as_unit_price: bool = False) -> float | int:
         try:
-            return price * (self.TetherInTomans if tether_as_unit_price and self.TetherInTomans else self.UsdInTomans)
+            return price * (self.tetherInTomans if tether_as_unit_price and self.tetherInTomans else self.usdInTomans)
         except:
             pass
         return 0
