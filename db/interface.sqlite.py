@@ -196,11 +196,11 @@ class DatabaseInterface:
             log(f"Cannot save this account:{account}", ex, category_name=f"DatabaseError")
             raise ex  # custom ex needed here too
 
-    def get(self, chat_id):
+    def get_account(self, chat_id):
         accounts = self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=? LIMIT 1", chat_id)
         return accounts[0] if accounts else None
 
-    def get_all(self, column: str = ACCOUNT_ID) -> list:
+    def get_all_accounts(self, column: str = ACCOUNT_ID) -> list:
         rows = self.execute(True, f"SELECT ({column}) FROM {self.TABLE_ACCOUNTS}")
         if column == self.ACCOUNT_LAST_INTERACTION:
             return [datetime.strptime(row[0], self.DATE_FORMAT) if row[0] else None for row in rows]

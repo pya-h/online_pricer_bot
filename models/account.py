@@ -186,7 +186,7 @@ class Account:
         return jsonify(self.cache) if self.cache else None
 
     def save(self):
-        self.database().update(self)
+        self.database().update_account(self)
         return self
 
     def __del__(self):
@@ -317,7 +317,7 @@ class Account:
             account.last_interaction = tz_today()
             return account
 
-        row = Account.database().get(chat_id)
+        row = Account.database().get_account(chat_id)
         if row:
             account = Account.extractQueryRowData(row, no_fastmem=no_fastmem)
             return account
@@ -353,7 +353,7 @@ class Account:
 
     @staticmethod
     def everybody():
-        return Account.database().get_all()
+        return Account.database().get_all_accounts()
 
     @staticmethod
     def statistics():

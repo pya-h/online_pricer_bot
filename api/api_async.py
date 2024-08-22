@@ -80,7 +80,7 @@ class Request:
     def header(self, *args):
         idx, length = 0, len(args)
         if length % 2:
-            raise ValueError("Parameters must be a key, value sequence like header(key1, balue1, key2, value2, ...).")
+            raise ValueError("Parameters must be a key, value sequence like header(key1, value1, key2, value2, ...).")
         if not self.__headers or not isinstance(self.__headers, dict):
             self.__headers = dict()
 
@@ -92,7 +92,7 @@ class Request:
     def payload(self, *args):
         idx, length = 0, len(args)
         if length % 2:
-            raise ValueError("Parameters must be a key, value sequence like header(key1, balue1, key2, value2, ...).")
+            raise ValueError("Parameters must be a key, value sequence like header(key1, value1, key2, value2, ...).")
         if not self.__payload or not isinstance(self.__payload, dict):
             self.__payload = dict()
 

@@ -557,9 +557,13 @@
         "fa": "متاسفانه فعال کننده من، تصمیم گرفته که از این به بعد در اینجا فعالیتی نکنم.\n!🫡👋 پس خداحافظ همگی دوستان عزیزم",
         "en": "Unfortunately, My activator has decided that I don't work here anymore.\n!🫡👋 So farewell my friends."
     },
-    "write_ur_text": {
-        "fa": "",
-        "en": ""
+    "write_msg_header": {
+        "fa": "🔹 متن مورد نظرتان را بنویسید:\n(این متن در ابتدای تمام پیام ها قرار خواهد گرفت)\n\n🔹 اگر می خواهید متنی در ابتدای پیام نباشد روی گزینه [ حذف ] کلیک کنید.\n\n🔹 اگر از اینکار منصرف شده اید روی گزینه [ لغو ] کلیک کنید.",
+        "en": "🔹 Write the header you have in mind:\n(This text will be placed at the beginning of all messages)\n\n🔹 If you you don't like messages to have header, click on [ Delete ].\n\nIf you want to leave this setting as it was before [Cancel ]"
+    },
+    "write_msg_footer": {
+        "fa": "🔹 متن مورد نظرتان را بنویسید:\n(این متن در انتهای تمام پیام ها قرار خواهد گرفت)\n\n🔹 اگر می خواهید متنی در انتهای پیام نباشد روی گزینه [ حذف ] کلیک کنید.\n\n🔹 اگر از اینکار منصرف شده اید روی گزینه [ لغو ] کلیک کنید.",
+        "en": "🔹 Write the footer you have in mind:\n(This text will be placed at the end part of all messages)\n\n🔹 If you you don't like messages to have footer, click on [ Delete ].\n\nIf you want to leave this setting as it was before [Cancel ]"
     },
     "message_attachment_updated": {
         "fa": "",

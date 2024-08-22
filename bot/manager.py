@@ -1087,7 +1087,7 @@ class BotMan:
             case SelectionListTypes.ALARM | SelectionListTypes.EQUALIZER_UNIT:
                 return None
             case _:
-                raise ValueError(f"Invalid list type selected by: {account.state.value}")
+                raise ValueError(f"Invalid list type selected by: {list_type.value}")
 
         if symbol:
             if symbol.upper() not in target_list:

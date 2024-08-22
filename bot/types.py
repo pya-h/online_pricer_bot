@@ -35,6 +35,8 @@ class SelectionListTypes(Enum):
             SelectionListTypes.NOTIFICATION,
             SelectionListTypes.EQUALIZER_UNIT,
             SelectionListTypes.ALARM,
+            SelectionListTypes.GROUP_TOKENS,
+            SelectionListTypes.CHANNEL_TOKENS,
         ):
             if option.value == value:
                 return option

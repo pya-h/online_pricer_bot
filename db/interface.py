@@ -215,7 +215,7 @@ class DatabaseInterface:
         except Error as ex:
             log("Failed setting up database, app cannot continue...", ex, category_name="FUX")
 
-    def add(self, account):
+    def add_account(self, account):
         if not account:
             raise Exception("You must provide an Account to save")
         try:
@@ -242,12 +242,12 @@ class DatabaseInterface:
             log(f"Cannot save this account:{account}", ex, category_name=f"DatabaseError")
             raise ex  # custom ex needed here too
 
-    def get(self, chat_id):
+    def get_account(self, chat_id):
         accounts = self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s LIMIT 1", chat_id)
         return accounts[0] if accounts else None
 
-    def get_all(self, column: str = ACCOUNT_ID) -> list:
-        rows = self.execute(True, f"SELECT ({column}) FROM {self.TABLE_ACCOUNTS}")
+    def get_all_accounts(self, by_column: str = ACCOUNT_ID) -> list:
+        rows = self.execute(True, f"SELECT ({by_column}) FROM {self.TABLE_ACCOUNTS}")
         return [row[0] for row in rows]  # just return a list of ids
 
     def get_special_accounts(self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
@@ -257,7 +257,7 @@ class DatabaseInterface:
         from_date = from_date or datetime.now()
         return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > %s", from_date)
 
-    def update(self, account):
+    def update_account(self, account):
         cursor = self.connection.cursor()
 
         columns_to_set = ", ".join([f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]])
