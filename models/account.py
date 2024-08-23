@@ -70,7 +70,7 @@ class Account:
     _database = None
     FastMemGarbageCollectionInterval = 5
     PreviousFastMemGarbageCollectionTime: int = now_in_minute()  # in minutes
-    FastMemInstances: dict = {}  # active accounts will cache into this; so there's no need to access database every time
+    fastMemInstances: dict = {}  # active accounts will cache into this; so there's no need to access database every time
 
     def no_interaction_duration(self):
         diff, _ = from_now_time_diff(self.last_interaction)
@@ -78,7 +78,7 @@ class Account:
 
     def organize_fastmem(self):
         Account.garbageCollect()
-        Account.FastMemInstances[self.chat_id] = self
+        Account.fastMemInstances[self.chat_id] = self
 
     def __init__(
         self,
@@ -312,8 +312,8 @@ class Account:
 
     @staticmethod
     def getById(chat_id: int, no_fastmem: bool = False):
-        if chat_id in Account.FastMemInstances:
-            account: Account = Account.FastMemInstances[chat_id]
+        if chat_id in Account.fastMemInstances:
+            account: Account = Account.fastMemInstances[chat_id]
             account.last_interaction = tz_today()
             return account
 
@@ -330,7 +330,7 @@ class Account:
             return None
         if username[0] == "@":
             username = username[1:]
-        accounts = list(filter(lambda acc: acc.username == username, list(Account.FastMemInstances.values())))
+        accounts = list(filter(lambda acc: acc.username == username, list(Account.fastMemInstances.values())))
         if accounts:
             return accounts[0]
 
@@ -358,8 +358,8 @@ class Account:
     @staticmethod
     def statistics():
         # first save all last interactions:
-        for kid in Account.FastMemInstances:
-            Account.FastMemInstances[kid].save()
+        for kid in Account.fastMemInstances:
+            Account.fastMemInstances[kid].save()
         now = tz_today().date()
         today_actives, yesterday_actives, this_week_actives, this_month_actives = 0, 0, 0, 0
 
@@ -410,9 +410,13 @@ class Account:
         Account.PreviousFastMemGarbageCollectionTime = now
         interval_in_secs = Account.FastMemGarbageCollectionInterval * 60
         garbage = filter(
-            lambda chat_id: Account.FastMemInstances[chat_id].no_interaction_duration() >= interval_in_secs,
-            Account.FastMemInstances,
+            lambda chat_id: Account.fastMemInstances[chat_id].no_interaction_duration() >= interval_in_secs,
+            Account.fastMemInstances,
         )
         for g in garbage:
-            Account.FastMemInstances[g].save()
-            del Account.FastMemInstances[g]
+            Account.fastMemInstances[g].save()
+            del Account.fastMemInstances[g]
+
+    @staticmethod
+    def getFast(chat_id: int):
+        return Account.fastMemInstances[chat_id] if chat_id in Account.fastMemInstances else None

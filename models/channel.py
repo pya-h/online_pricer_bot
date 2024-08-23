@@ -5,6 +5,7 @@ from bot.types import GroupInlineKeyboardButtonTemplate
 from typing import List
 from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException
 from telegram import Chat
+from .account import Account
 
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
@@ -121,7 +122,6 @@ class Channel:
         message_show_market_tags: bool = True,
     ) -> None:
         self.owner_id: int = int(owner_id)
-        self.owner = None
         self.id: int = int(channel_id)
         self.name: str = channel_name  # username
         self.title: str = channel_title
@@ -134,6 +134,8 @@ class Channel:
         self.message_show_date_tag: bool = message_show_date_tag
         self.message_show_market_tags: bool = message_show_market_tags
         self.last_post_time: int | None = last_post_time  # don't forget database has this
+
+        self.owner: Account | None = Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
     def create(self, allowed_channels_count: int = 1):
         db = Channel.database()
@@ -190,8 +192,8 @@ class Channel:
         self.title = new_chat.title
 
         Channel.database().update_group(self.id, old_chat_id=old_chat_id)
-        # if Channel.FastMemInstances[old_chat_id]:
-        #     del Channel.FastMemInstances[old_chat_id]
+        # if Channel.fastMemInstances[old_chat_id]:
+        #     del Channel.fastMemInstances[old_chat_id]
         return self
 
     @property

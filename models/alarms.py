@@ -47,7 +47,6 @@ class PriceAlarm:
     ) -> None:
         self.id = id
         self.chat_id = int(chat_id)
-        self.owner: Account | None = None
         self.currency = currency
         self.target_price = target_price
         self.target_unit = target_unit
@@ -64,6 +63,7 @@ class PriceAlarm:
             )
         self.current_price: int | None = None
         self.full_currency_name: Dict[str, str] | None = None
+        self.owner: Account | None = Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
     def extractQueryRowData(row: tuple):
         return PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0])

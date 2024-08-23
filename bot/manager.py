@@ -147,6 +147,7 @@ class BotMan:
         START_CHANNEL_POSTING = 9
         TRIGGER_DATE_TAG = 10
         TRIGGER_MARKET_TAGS = 11
+        UPDATE_MESSAGE_SECTIONS = 12
         NONE = 0
 
         @staticmethod
@@ -169,6 +170,7 @@ class BotMan:
         QueryActions.START_CHANNEL_POSTING,
         QueryActions.TRIGGER_DATE_TAG,
         QueryActions.TRIGGER_MARKET_TAGS,
+        QueryActions.UPDATE_MESSAGE_SECTIONS
     )
 
     class CommunityType(Enum):
@@ -204,7 +206,7 @@ class BotMan:
                 else Group if value == BotMan.CommunityType.GROUP.value else None
             )
 
-        def __cls__(self) -> Channel | Group | None:
+        def to_class(self) -> Channel | Group | None:
             return self.toClass(self.value)
 
     class MenuSections(Enum):
@@ -1113,3 +1115,9 @@ class BotMan:
             channel.stop_plan()
 
         # FIXME: Also disable groups
+
+    @staticmethod
+    def getCommunity(community_type: int | CommunityType, owner_id: int) -> Group | Channel | None:
+        if not community_type or not community_type.value:
+            return None
+        return BotMan.CommunityType.toClass(community_type if not isinstance(community_type, BotMan.CommunityType) else community_type.value).getByOwner(owner_id)

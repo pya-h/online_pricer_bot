@@ -29,12 +29,12 @@
             "en": "⚙️ Settings"
         },
         "my_channels": {
-            "fa": "پلنر کانال",
-            "en": "Channel Planner"
+            "fa": "پنل کانال من",
+            "en": "My Channel Panel"
         },
         "my_groups": {
-            "fa": "قیمت گوی گروه",
-            "en": "Group Price Teller"
+            "fa": "پنل گروه من",
+            "en": "My Group Panel"
         }
     },
     "keyboard": {
@@ -193,6 +193,10 @@
         "no_hide_tag": {
             "fa": "خیر، قرار نکیرد",
             "en": "No, Don't Show Tag"
+        },
+        "remove": {
+            "fa": "حذف",
+            "en": "Remove"
         }
     },
     "which_market": {
@@ -325,8 +329,8 @@
             "en": "❗️ Sorry! Something went wrong unexpectedly. Please retry this operation."
         },
         "changed_group_is_the_same": {
-            "fa": "",
-            "en": ""
+            "fa": "شما ربات را به همان گروه قبلی متصل کردید!",
+            "en": "You connected the bot to the same group as before."
         }
     },
     "what_can_i_do": {
@@ -565,16 +569,16 @@
         "fa": "🔹 متن مورد نظرتان را بنویسید:\n(این متن در انتهای تمام پیام ها قرار خواهد گرفت)\n\n🔹 اگر می خواهید متنی در انتهای پیام نباشد روی گزینه [ حذف ] کلیک کنید.\n\n🔹 اگر از اینکار منصرف شده اید روی گزینه [ لغو ] کلیک کنید.",
         "en": "🔹 Write the footer you have in mind:\n(This text will be placed at the end part of all messages)\n\n🔹 If you you don't like messages to have footer, click on [ Delete ].\n\nIf you want to leave this setting as it was before [Cancel ]"
     },
-    "message_attachment_updated": {
-        "fa": "",
-        "en": ""
+    "group_changed": {
+        "fa": "✅ ربات به گروه جدید شما متصل شد.",
+        "en": "✅ Bot is now connected to the new group you've added it."
     },
     "add_bot_to_new_group": {
-        "fa": "",
-        "en": ""
+        "fa": "بسیار خب! هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است. برای این منظور، وارد گروه جدید خود شوید و ربات را در گروه جدید اضافه و ادمین کنید. باقی فرایند بصورت خودکار انجام می شود ...",
+        "en": "Well! Now you should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete ..."
     },
-    "group_changed": {
-        "fa": "",
-        "en": ""
+    "data_invalid": {
+        "fa": "متاسفانه دیتای مربوط به این عملیات منقضی یا اشتباه می باشد. لطفا عملیات را از نو تکرار کنید.",
+        "en": "Unfortunately data related to this operation seems curropted. Please retry this operation again, from scratch."
     }
 }

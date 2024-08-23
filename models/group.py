@@ -7,7 +7,7 @@ from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException
 
 
 class Group:
-    FastMemInstances = {}
+    fastMemInstances = {}
     _database: DatabaseInterface = None
     PreviousFastMemGarbageCollectionTime: int = now_in_minute()
     FastMemGarbageCollectionInterval: int = 5
@@ -44,6 +44,7 @@ class Group:
         self.message_show_market_tags: bool = message_show_market_tags
         self.last_interaction: int = now_in_minute()
 
+        self.owner: Account | None = Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
         if not no_fastmem:
             self.organize_fastmem()
         # TODO: Maybe create a MessageSetting class? to use in group/channel
@@ -51,7 +52,7 @@ class Group:
 
     def organize_fastmem(self):
         Group.garbageCollect()
-        Group.FastMemInstances[self.id] = self
+        Group.fastMemInstances[self.id] = self
 
     def __str__(self) -> str:
         return f"Groupname:{self.name}\nId: {self.id}\nOwner Id: {self.owner_id}"
@@ -69,8 +70,8 @@ class Group:
         self.title = new_chat.title
 
         Group.database().update_group(self.id, old_chat_id=old_chat_id)
-        if Group.FastMemInstances[old_chat_id]:
-            del Group.FastMemInstances[old_chat_id]
+        if Group.fastMemInstances[old_chat_id]:
+            del Group.fastMemInstances[old_chat_id]
         return self
 
     @property
@@ -90,8 +91,8 @@ class Group:
     @staticmethod
     def get(group_id, no_fastmem: bool = False):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
-        if group_id in Group.FastMemInstances:
-            return Group.FastMemInstances[group_id]
+        if group_id in Group.fastMemInstances:
+            return Group.fastMemInstances[group_id]
         row = Group.database().get_group(group_id)
         if row:
             return Group.extractQueryRowData(row, no_fastmem)
@@ -158,13 +159,13 @@ class Group:
             return
 
         garbage = filter(
-            lambda group_id: Group.FastMemInstances[group_id].last_interaction >= Group.FastMemGarbageCollectionInterval,
-            Group.FastMemInstances,
+            lambda group_id: Group.fastMemInstances[group_id].last_interaction >= Group.FastMemGarbageCollectionInterval,
+            Group.fastMemInstances,
         )
         Group.PreviousFastMemGarbageCollectionTime = now
 
         for g in garbage:
-            del Group.FastMemInstances[g]
+            del Group.fastMemInstances[g]
 
     @staticmethod
     def usersGroupCount(user_chat_id: int) -> int:
@@ -173,3 +174,7 @@ class Group:
     @staticmethod
     def userHasAnyGroups(user_chat_id: int) -> bool:
         return bool(Group.database().get_user_groups(user_chat_id, take=1))
+
+    @staticmethod
+    def getFast(group_id: int):
+        return Group.fastMemInstances[group_id] if group_id in Group.fastMemInstances else None

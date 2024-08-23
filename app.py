@@ -577,7 +577,7 @@ async def handle_action_queries(
                 if not community_type or not enable:
                     raise InvalidInputException("Invalid callback data.")
                 community_type, enable = int(community_type), int(enable)
-                community = (BotMan.CommunityType.toClass(community_type)).getByOwner(account.chat_id)
+                community = BotMan.getCommunity(community_type, account.chat_id)
                 if not community:
                     raise NoSuchThingException(-1, BotMan.CommunityType.toString(community_type))
                 if action == BotMan.QueryActions.TRIGGER_DATE_TAG.value:
@@ -593,6 +593,37 @@ async def handle_action_queries(
                 account.delete_specific_cache("community")
             except:
                 await query.message.edit_text(botman.error("unexpected_error", account.language))
+        case BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
+            if not value:
+                await query.message.edit_text(botman.text("operation_canceled", account.language))
+                account.change_state()
+                return
+            params = value.split(BotMan.CALLBACK_DATA_JOINER)
+            community_type = BotMan.CommunityType.which(int(params[0]))
+            if not community_type:
+                await query.message.edit_text(botman.text("data_invalid", account.language))
+                account.change_state(clear_cache=True)
+                return
+
+            community = community_type.to_class().getByOwner(account.chat_id)
+            if not community:
+                await query.message.reply_text(
+                    botman.error(f"no_{community.__str__()}", account.language), reply_markup=botman.mainkeyboard(account)
+                )
+                await query.message.delete()
+                account.change_state(clear_cache=True)
+                return
+
+            if (section := params[1].lower()) != "footer" and section != "header":
+                await query.message.edit_text("data_invalid")
+            else:
+                if section != "footer":
+                    community.message_header = None
+                else:
+                    community.message_footnote = None
+                community.save()
+            account.change_state()
+            await query.message.edit_text(botman.text("update_successful", account.language))
         case _:
             if not account.authorization(context.args):
                 await query.message.edit_text(botman.error("what_the_fuck", account.language))
@@ -943,24 +974,25 @@ async def handle_messages(update: Update, context: CallbackContext):
             | BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA.value
             | BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN.value
         ):
+            (section, state) = (
+                ("header", Account.States.SET_MESSAGE_HEADER)
+                if update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA.value
+                and update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN.value
+                else ("footer", Account.States.SET_MESSAGE_FOOTER)
+            )
             account = Account.get(update.message.chat)
             community_type = account.get_cache("community")
             if not BotMan.CommunityType.which(community_type):
                 await unknown_command_handler(update, context)
                 return
-            account.change_state(
-                (
-                    Account.States.SET_MESSAGE_FOOTER
-                    if update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value
-                    and update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value
-                    else Account.States.SET_MESSAGE_HEADER
-                ),
-                "back",
-                BotMan.MenuSections.COMMUNITY_PANEL.value,
-            )
+            account.change_state(state)
             await update.message.reply_text(
-                botman.text("write_ur_text", account.language),  # TODO: Add it to text resource
-                reply_markup=botman.cancel_menu(account.language),
+                botman.text(f"write_msg_{section}", account.language),
+                reply_markup=botman.action_inline_keyboard(
+                    BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS,
+                    {None: "cancel", f"{community_type}{BotMan.CALLBACK_DATA_JOINER}{section}": "remove"},
+                    account.language,
+                ),
             )
         case BotMan.Commands.GROUP_CHANGE_FA | BotMan.Commands.GROUP_CHANGE_EN:
             account = Account.get(update.message.chat)
@@ -1225,7 +1257,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     if not community_type:
                         await unknown_command_handler(update, context)
                         return
-                    community = (BotMan.CommunityType.toClass(community_type)).getByOwner(account.chat_id)
+                    community = community_type.to_class().getByOwner(account.chat_id)
                     if not community:
                         await update.message.reply_text(
                             botman.error(f"no_{community_type}s", account.language), reply_markup=botman.mainkeyboard(account)
@@ -1238,7 +1270,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                         community.message_footnote = msg
                     community.save()
                     await update.message.reply_text(
-                        botman.text("message_attachment_updated", account.language),
+                        botman.text("update_successful", account.language),
                         reply_markup=botman.get_community_config_keyboard(community, account.language),
                     )
                     account.change_state()
