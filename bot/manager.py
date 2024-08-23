@@ -10,6 +10,7 @@ from telegram import (
     Update,
     CallbackQuery,
     Message,
+    Chat
 )
 from telegram.ext import CallbackContext
 from telegram.error import BadRequest
@@ -993,10 +994,14 @@ class BotMan:
         self,
         update: Update,
         account: Account,
-        channel_id: int,
+        channel_chat: Chat,
         next_state: Account.States = Account.States.SELECT_POST_INTERVAL,
     ):
-        account.change_state(next_state, "channel_chat_id", channel_id, clear_cache=True)
+        community_type = account.get_cache('community')
+        if (community_type := BotMan.CommunityType.which(community_type)) == BotMan.CommunityType.CHANNEL and (
+            old_channel := Channel.getByOwner(account.chat_id)):
+                old_channel.change(channel_chat)
+        account.change_state(next_state, "channel_chat_id", channel_chat.id, clear_cache=True)
         response_message = await update.message.reply_text(
             self.text("select_post_interval"),
             reply_markup=self.arrangeInlineKeyboardButtons(Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL),

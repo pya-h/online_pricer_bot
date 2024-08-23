@@ -6,7 +6,7 @@ from telegram.ext import (
     MessageHandler,
     CallbackQueryHandler,
 )
-from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, Chat
 from telegram.error import BadRequest
 from models.account import Account
 import json
@@ -1010,6 +1010,18 @@ async def handle_messages(update: Update, context: CallbackContext):
             await update.message.reply_text(
                 botman.text("add_bot_to_new_group", account.language), reply_markup=botman.cancel_menu(account.language)
             )
+        case BotMan.Commands.CHANNEL_CHANGE_FA | BotMan.Commands.CHANNEL_CHANGE_EN:
+            account = Account.get(update.message.chat)
+            if not (channel := Channel.getByOwner(account.chat_id)):
+                account.clear_cache()
+                await update.message.reply_text(
+                    botman.error("no_channels", account.language),
+                    reply_markup=botman.mainkeyboard(account),
+                )
+                return
+            account.change_state(Account.States.ADD_BOT_AS_ADMIN, "community", BotMan.CommunityType.CHANNEL.value)
+            account.add_cache("back", BotMan.MenuSections.COMMUNITY_PANEL.value)
+            await update.message.reply_text(botman.text("add_bot_as_channel_admin", account.language), reply_markup=botman.cancel_menu(account.language))
         # settings sub menu:
         case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
             account = Account.get(update.message.chat)
@@ -1203,22 +1215,16 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.delete_specific_cache("create_alarm_props")
 
                 case Account.States.ADD_BOT_AS_ADMIN:  # TODO: Add code to automatically add channel, just like groups
-                    channel_chat_id: int | None = None
+                    channel_chat: Chat | None = None
                     if update.message.forward_from_chat:
-                        channel_chat_id = update.message.forward_from_chat.id
-                    else:
-                        try:
-                            channel_chat_id = int(msg)
-                        except:
-                            pass
+                        channel_chat = update.message.forward_from_chat
 
-                    if not channel_chat_id:
+                    if not channel_chat:
                         # send a message to the channel or group and retrieve chat_id
                         try:
                             response: Message = await context.bot.send_message(chat_id=msg, text="Test")
-                            channel_chat_id = response.chat.id
-
-                            await context.bot.delete_message(chat_id=channel_chat_id, message_id=response.message_id)
+                            channel_chat = response.chat
+                            await context.bot.delete_message(chat_id=channel_chat.id, message_id=response.message_id)
                         except:
                             await update.message.reply_text(
                                 botman.error("bot_seems_not_admin", account.language),
@@ -1229,11 +1235,11 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 ),
                             )
 
-                    if channel_chat_id:
+                    if channel_chat:
                         await botman.select_post_interval_menu(
                             update,
                             account,
-                            channel_chat_id,
+                            channel_chat,
                             Account.States.SELECT_POST_INTERVAL,
                         )
                 case Account.States.SELECT_POST_INTERVAL | Account.States.CHANGE_POST_INTERVAL:
