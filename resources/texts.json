@@ -170,7 +170,7 @@
             "fa": "تنظیم متن ابتدای پیام",
             "en": "Set Message Header"
         },
-        "community_set_message_footer": {
+        "community_set_message_foonote": {
             "fa": "تنظیم متن انتهای پیام",
             "en": "Set Message Footer"
         },
@@ -180,7 +180,7 @@
         },
         "change_group": {
             "fa": "تعییر گروه",
-            "en": "تغییر کانال"
+            "en": "Change Group"
         },
         "community_disconnect": {
             "fa": "قطع اتصال",
@@ -331,6 +331,10 @@
         "changed_group_is_the_same": {
             "fa": "شما ربات را به همان گروه قبلی متصل کردید!",
             "en": "You connected the bot to the same group as before."
+        },
+        "data_invalid": {
+            "fa": "متاسفانه دیتای مربوط به این عملیات منقضی یا اشتباه می باشد. لطفا عملیات را از نو تکرار کنید.",
+            "en": "Unfortunately data related to this operation seems curropted. Please retry this operation again, from scratch."
         }
     },
     "what_can_i_do": {
@@ -345,7 +349,7 @@
         "fa": "🔹 مقدار مدنظرتان را همراه با نام اختصاریِ مدنظرتان (به انگلیسی) بنویسید: \n(بین مقدار و نام اختصاری یک فاصله قرار دهید)\n(شما می توانید در یک سطر یک الی چند مورد مانند مثال های زیر بنویسید)\n\nمثال ها:\n",
         "en": "🔹 Write the amount you want along with the abbreviated name you want (in English):\n(Put a space between the value and the short name)\n(You can write one to several items in one line like the examples below)\n\nExamples:\n"
     },
-    "calculator_hint_footer": {
+    "calculator_hint_foonote": {
         "fa": "🔹 اگر نام اختصاری مورد نظرتان را نمی دانید کافیست فقط مقدار مورد نظرتان را بنویسید:\n\nمثال:\n50",
         "en": "🔹 If you don't know the short name you want, just write the value you want:\n\nExamples:\n50"
     },
@@ -576,9 +580,5 @@
     "add_bot_to_new_group": {
         "fa": "بسیار خب! هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است. برای این منظور، وارد گروه جدید خود شوید و ربات را در گروه جدید اضافه و ادمین کنید. باقی فرایند بصورت خودکار انجام می شود ...",
         "en": "Well! Now you should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete ..."
-    },
-    "data_invalid": {
-        "fa": "متاسفانه دیتای مربوط به این عملیات منقضی یا اشتباه می باشد. لطفا عملیات را از نو تکرار کنید.",
-        "en": "Unfortunately data related to this operation seems curropted. Please retry this operation again, from scratch."
     }
 }

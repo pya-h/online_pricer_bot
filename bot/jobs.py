@@ -32,17 +32,16 @@ class ParallelJob:
 
 class PostJob(ParallelJob):
 
-    def __init__(self, channel: Channel, short_text: bool = True) -> None:
+    def __init__(self, channel: Channel) -> None:
         super().__init__(channel.interval, None)
         self.channel: Channel = channel
         self.account: Account = Account.get(channel.owner_id)
-        self.short_text = short_text
 
     def do(self, postman: PostMan, send_message_func: Callable[..., any], call_time: int) -> bool:
         """This job's function is obvious(sending post in channel via bot instance)"""
         if not self.account.is_member_plus() or not self.running:
-            return False  # False means that postjob is running but it doesnt have run permission because of
-        post_body = postman.create_post(self.account, self.channel, short_text=self.short_text)
+            return False  # False means that post job is running but it doesn't have run permission because of
+        post_body = postman.create_post(self.account, self.channel)
         self.last_run_result = send_message_func(chat_id=self.channel.id, text=post_body)
         self.last_call_time = call_time
         return True

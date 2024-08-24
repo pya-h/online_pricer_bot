@@ -168,21 +168,13 @@ class NavasanService(CurrencyService):
             raise InvalidInputException("Currency Symbol/Name!")
         return NavasanService.currenciesInPersian[symbol]
 
-    def extract_api_response(self, desired_ones: list = None, short_text: bool = True, optional_api_data: list = None) -> str:
+    def extract_api_response(self, desired_ones: list = None) -> str:
         desired_ones = self.get_desired_ones(desired_ones)
-        api_data = optional_api_data or self.latest_data
-
         res_curr = ""
         res_gold = ""
 
         for slug in desired_ones:
-            slug_l = slug.lower()
-            row: str
-            if slug_l in api_data and "value" in api_data[slug_l]:
-                row = self.get_price_description_row(slug_l, api_data, short_text)
-            else:
-                row = f"{NavasanService.currenciesInPersian[slug]}: ❗️ قیمت دریافت نشد."
-
+            row = self.get_price_description_row(slug.lower())
             if slug in NavasanService.nationalCurrenciesInPersian:
                 res_curr += f"🔸 {row}\n"
             else:
@@ -207,7 +199,7 @@ class NavasanService(CurrencyService):
         response = await super(NavasanService, self).get_request(no_cache=True)
         return response.data
 
-    async def get(self, desired_ones: list = None, short_text: bool = True) -> str:
+    async def get(self, desired_ones: list = None) -> str:
         self.latest_data = await self.get_request()  # update latest
         try:
             await self.gold_service.append_gold_prices(self.latest_data)
@@ -223,7 +215,7 @@ class NavasanService(CurrencyService):
 
         self.latest_data[self.tomanSymbol.lower()] = {"value": 1 / self.usdInTomans}
         self.cache_data(json.dumps(self.latest_data))
-        return self.extract_api_response(desired_ones, short_text=short_text)
+        return self.extract_api_response(desired_ones)
 
     def load_cache(self) -> list | dict:
         try:
@@ -261,7 +253,7 @@ class NavasanService(CurrencyService):
     def equalize(
         self, source_unit_symbol: str, amount: float | int, target_currencies: list = None
     ) -> Union[str, float | int, float | int]:
-        """This function gets an amount param, alongside with a source_unit_symbol [and abviously with the users desired coins]
+        """This function gets an amount param, alongside with a source_unit_symbol [and obviously with the users desired coins]
         and it returns a text string, that in each row of that, shows that amount equivalent in another currency unit."""
         # First check the required data is prepared
         if not self.latest_data:
@@ -309,26 +301,23 @@ class NavasanService(CurrencyService):
         usd_price = currency_data["value"]
         return self.to_irt_exact(usd_price) if price_unit != "usd" else usd_price
 
-    def get_price_description_row(
-        self, symbol: str, latest_api_response: Dict[str, float | int | bool | str] | None = None, short_text: bool = True
-    ) -> str:
-        if not latest_api_response:
-            latest_api_response = self.latest_data
-        price: float
-        currency_data: Dict[str, float | int | bool | str]
+    def get_price_description_row(self, symbol: str) -> str:
         try:
-            currency_data = latest_api_response[symbol.lower()]
+            price: float
+            currency_data: Dict[str, float | int | bool | str]
+            currency_data = self.latest_data[symbol.lower()]
             price = float(currency_data["value"])
-        except:
-            return None
-        toman: float = 0.0
-        usd: float | None = None
-        if "usd" not in currency_data or not currency_data["usd"]:
-            toman, _ = self.rounded_prices(price, False)
-        else:
-            usd, toman = self.rounded_prices(price)
+            toman: float = 0.0
+            usd: float | None = None
+            if "usd" not in currency_data or not currency_data["usd"]:
+                toman, _ = self.rounded_prices(price, False)
+            else:
+                usd, toman = self.rounded_prices(price)
 
-        toman = persianify(toman)
-        if price < 0:
-            toman = f"{toman[1:]}-"
-        return f"{NavasanService.currenciesInPersian[symbol.upper()]}: {toman} تومان" + (f" / {usd}$" if usd else "")
+            toman = persianify(toman)
+            if price < 0:
+                toman = f"{toman[1:]}-"
+            return f"{NavasanService.currenciesInPersian[symbol.upper()]}: {toman} تومان" + (f" / {usd}$" if usd else "")
+        except:
+            pass
+        return f"{NavasanService.currenciesInPersian[symbol.upper()]}: ❗️ قیمت دریافت نشد"

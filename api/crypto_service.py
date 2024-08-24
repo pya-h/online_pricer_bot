@@ -59,17 +59,15 @@ class CoinGeckoService(CryptoCurrencyService):
             url="https://api.coingecko.com/api/v3/coins/list", source="CoinGecko.com", cache_file_name="coingecko.json"
         )
 
-    def extract_api_response(self, desired_coins=None, short_text=True, optional_api_data: list | None = None):
+    def get_price_description_row(self, symbol: str, source_data: Dict[str, any] | None = None) -> str:
+        pass
+
+    def extract_api_response(self, desired_coins=None):
         "Construct a text string consisting of each desired coin prices of a special user."
         desired_coins: List[str] = self.get_desired_ones(desired_coins)
-        api_data = optional_api_data or self.latest_data
         res = ""
-        for coin in api_data:
-            symbol = coin["symbol"].upper()
-            name = coin["name"] if symbol != self.tetherSymbol else "Tether"
-            if symbol in desired_coins:
-                price = coin["market_data"]["current_price"][self.dollarSymbol.lower()]
-                res += self.get_price_description_row(name, symbol, price)
+        for symbol in desired_coins:   
+            res += self.get_price_description_row(symbol)
 
         if res:
             res = f"📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}"
@@ -95,48 +93,41 @@ class CoinMarketCapService(CryptoCurrencyService):
     def set_price_unit(self, pu):
         self.price_unit = pu
 
-    @staticmethod
-    def listToDict(source_list: list, key_as: str = "symbol"):
+    def raw_data_to_price_dict(self, source_list: list, key_as: str = "symbol"):
         result = {}
 
         for item in source_list:
             try:
                 symbol = item[key_as].upper()
                 if symbol in CoinMarketCapService.coinsInPersian and symbol not in result:
-                    result[symbol] = item
+                    result[symbol] = item["quote"][self.price_unit]
             except:
                 pass
         return result
 
     async def get_request(self):
-        """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService childs"""
+        """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService children"""
         latest_cap = None
         result: dict = {}
         try:
             latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=5000)
             if latest_cap and latest_cap.data:
-                result = self.listToDict(latest_cap.data)
+                result = self.raw_data_to_price_dict(latest_cap.data)
             self.cache_data(json.dumps(result))
         except Exception as ex:
             manuwriter.log("CoinMarketCap Api Failure", exception=ex, category_name="CoinMarketCapFailure")
         return result
 
-    def extract_api_response(self, desired_coins: list = None, short_text: bool = True, optional_api_data: list = None):
+    def extract_api_response(self, desired_coins: list = None):
         """This function constructs a text string that in each row has the latest price of a
         cryptocurrency unit in two price units, dollars and Tomans"""
         desired_coins = self.get_desired_ones(desired_coins)
-        api_data = optional_api_data or self.latest_data
-
-        if not api_data:
+        if not self.latest_data:
             raise NoLatestDataException("Use for announcing prices!")
 
         res = ""
         for coin in desired_coins:
-            symbol = coin.upper()
-            if symbol in api_data:
-                row = self.get_price_description_row(symbol, api_data, short_text=short_text)
-                res += row if row else f"❗️ {CryptoCurrencyService.coinsInPersian[coin]}: قیمت دریافت نشد."
-
+            res += self.get_price_description_row(coin.upper())
         if res:
             res = f"📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}"
         return res
@@ -144,20 +135,23 @@ class CoinMarketCapService(CryptoCurrencyService):
     def usd_to_cryptos(self, absolute_amount: float | int, source_unit_symbol: str, cryptos: list = None) -> str:
         cryptos = self.get_desired_ones(cryptos)
         res: str = ""
-
+        coin_equalized_price: str
         for coin in cryptos:
             if coin == source_unit_symbol:
                 continue
-            coin_equalized_price = absolute_amount / float(self.latest_data[coin]["quote"][self.price_unit]["price"])
-            coin_equalized_price = mathematix.persianify(mathematix.cut_and_separate(coin_equalized_price))
+            try:
+                coin_equalized_price = absolute_amount / float(self.latest_data[coin]["price"])
+                coin_equalized_price = mathematix.persianify(mathematix.cut_and_separate(coin_equalized_price))
+            except Exception as x:
+                manuwriter.log('No Price Data:', x, 'PriceData')
+                coin_equalized_price = '?'
             res += f"🔸 {coin_equalized_price} {CryptoCurrencyService.coinsInPersian[coin]}\n"
-
         return f"📌#بازار_ارز_دیجیتال\n{res}"
 
     def equalize(
         self, source_unit_symbol: str, amount: float | int, desired_cryptos: list = None
     ) -> Union[str, float | int, float | int]:
-        """This function gets an amount param, alongside with a source_unit_symbol [and abviously with the users desired coins]
+        """This function gets an amount param, alongside with a source_unit_symbol [and oviously with the users desired coins]
         and it returns a text string, that in each row of that, shows that amount equivalent in another cryptocurrency unit."""
         # First check the required data is prepared
         if not self.latest_data:
@@ -172,7 +166,7 @@ class CoinMarketCapService(CryptoCurrencyService):
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         try:
-            absolute_amount: float = amount * float(self.latest_data[source_unit_symbol]["quote"][self.price_unit]["price"])
+            absolute_amount: float = amount * float(self.latest_data[source_unit_symbol]["price"])
         except:
             raise ValueError(f"{source_unit_symbol} has not been received from the API.")
 
@@ -197,33 +191,27 @@ class CoinMarketCapService(CryptoCurrencyService):
             return None
 
         return (
-            self.to_irt_exact(data["quote"][self.price_unit]["price"], tether_instead_of_dollars)
+            self.to_irt_exact(data["price"], tether_instead_of_dollars)
             if price_unit == "irt"
-            else data["quote"][self.price_unit]["price"]
+            else data["price"]
         )
 
-    def get_price_description_row(self, symbol: str, source_data: Dict[str, any] | None = None, short_text: bool = True) -> str:
-        api_data = source_data if source_data else self.latest_data
-        price: float
-        name: str
+    def get_price_description_row(self, symbol: str) -> str:
         try:
-            price = api_data[symbol]["quote"][self.price_unit]["price"]
-            name = api_data[symbol]["name"] if symbol != BaseAPIService.tetherSymbol else "Tether"
+            price: float
+            price = self.latest_data[(symbol := symbol.upper())]["price"]
+
+            if isinstance(price, str):
+                price = float(price)
+
+            if symbol != "USDT":
+                rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
+            else:
+                rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.tetherInTomans)
+
+            rp_toman = mathematix.persianify(rp_toman)
+
+            return f"🔸 {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
         except:
-            return None
-
-        if isinstance(price, str):
-            price = float(price)
-
-        if symbol != "USDT":
-            rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
-        else:
-            rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.tetherInTomans)
-
-        rp_toman = mathematix.persianify(rp_toman)
-
-        return (
-            f"🔸 {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
-            if short_text
-            else f"🔸 {name} ({symbol}): {rp_usd}$\n{CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان\n"
-        )
+            pass
+        return f"{CryptoCurrencyService.coinsInPersian[symbol]}: ❗️ قیمت دریافت نشد"

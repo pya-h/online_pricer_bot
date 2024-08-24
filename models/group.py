@@ -1,4 +1,4 @@
-from tools.mathematix import now_in_minute
+from tools.mathematix import now_in_minute, from_now_time_diff
 from db.interface import DatabaseInterface
 from typing import List
 from telegram import Chat
@@ -69,7 +69,7 @@ class Group:
         self.name = new_chat.username
         self.title = new_chat.title
 
-        Group.database().update_group(self.id, old_chat_id=old_chat_id)
+        Group.database().update_group(self, old_chat_id=old_chat_id)
         if Group.fastMemInstances[old_chat_id]:
             del Group.fastMemInstances[old_chat_id]
         return self
@@ -92,6 +92,7 @@ class Group:
     def get(group_id, no_fastmem: bool = False):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
         if group_id in Group.fastMemInstances:
+            Group.fastMemInstances[group_id].last_interaction = now_in_minute()
             return Group.fastMemInstances[group_id]
         row = Group.database().get_group(group_id)
         if row:
@@ -158,14 +159,9 @@ class Group:
         if now - Group.PreviousFastMemGarbageCollectionTime <= Group.FastMemGarbageCollectionInterval:
             return
 
-        garbage = filter(
-            lambda group_id: Group.fastMemInstances[group_id].last_interaction >= Group.FastMemGarbageCollectionInterval,
-            Group.fastMemInstances,
-        )
-        Group.PreviousFastMemGarbageCollectionTime = now
+        Group.fastMemInstances = {chat_id: group for chat_id, group in Group.fastMemInstances.items() if group.last_interaction < Group.FastMemGarbageCollectionInterval }
 
-        for g in garbage:
-            del Group.fastMemInstances[g]
+        Group.PreviousFastMemGarbageCollectionTime = now
 
     @staticmethod
     def usersGroupCount(user_chat_id: int) -> int:

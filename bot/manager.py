@@ -10,7 +10,7 @@ from telegram import (
     Update,
     CallbackQuery,
     Message,
-    Chat
+    Chat,
 )
 from telegram.ext import CallbackContext
 from telegram.error import BadRequest
@@ -109,8 +109,8 @@ class BotMan:
         COMMUNITY_TRIGGER_MARKET_TAGS_EN = resourceman.keyboard("community_trigger_market_tags", "en")
         COMMUNITY_SET_MESSAGE_HEADER_FA = resourceman.keyboard("community_set_message_header", "fa")
         COMMUNITY_SET_MESSAGE_HEADER_EN = resourceman.keyboard("community_set_message_header", "en")
-        COMMUNITY_SET_MESSAGE_FOOTER_FA = resourceman.keyboard("community_set_message_footer", "fa")
-        COMMUNITY_SET_MESSAGE_FOOTER_EN = resourceman.keyboard("community_set_message_footer", "en")
+        COMMUNITY_SET_MESSAGE_FOOTNOTE_FA = resourceman.keyboard("community_set_message_foonote", "fa")
+        COMMUNITY_SET_MESSAGE_FOOTNOTE_EN = resourceman.keyboard("community_set_message_foonote", "en")
         CHANNEL_CHANGE_FA = resourceman.keyboard("channel_change", "fa")
         CHANNEL_CHANGE_EN = resourceman.keyboard("channel_change", "en")
         GROUP_CHANGE_FA = resourceman.keyboard("change_group", "fa")
@@ -171,7 +171,7 @@ class BotMan:
         QueryActions.START_CHANNEL_POSTING,
         QueryActions.TRIGGER_DATE_TAG,
         QueryActions.TRIGGER_MARKET_TAGS,
-        QueryActions.UPDATE_MESSAGE_SECTIONS
+        QueryActions.UPDATE_MESSAGE_SECTIONS,
     )
 
     class CommunityType(Enum):
@@ -405,7 +405,7 @@ class BotMan:
                             KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value),
                         ],
                         [
-                            KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA.value),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value),
                             KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value),
                         ],
                         [
@@ -425,7 +425,7 @@ class BotMan:
                             KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value),
                         ],
                         [
-                            KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN.value),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value),
                             KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value),
                         ],
                         [
@@ -446,7 +446,7 @@ class BotMan:
                         KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value),
                     ],
                     [
-                        KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA.value),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value),
                         KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value),
                     ],
                     [
@@ -466,7 +466,7 @@ class BotMan:
                         KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value),
                     ],
                     [
-                        KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN.value),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value),
                         KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value),
                     ],
                     [
@@ -680,9 +680,7 @@ class BotMan:
         if full_rows_last_index < buttons_count:
             buttons.append(
                 [
-                    InlineKeyboardButton(
-                        text=str(users[i]), callback_data=self.actionCallbackData(list_type, users[i].chat_id)
-                    )
+                    InlineKeyboardButton(text=str(users[i]), callback_data=self.actionCallbackData(list_type, users[i].chat_id))
                     for i in range(full_rows_last_index, buttons_count)
                 ]
             )
@@ -990,25 +988,42 @@ class BotMan:
             return False
         return True
 
-    async def select_post_interval_menu(
+    async def use_input_channel_chat_info(
         self,
         update: Update,
+        context: CallbackContext,
         account: Account,
         channel_chat: Chat,
         next_state: Account.States = Account.States.SELECT_POST_INTERVAL,
     ):
-        community_type = account.get_cache('community')
+        community_type = account.get_cache("community")
         if (community_type := BotMan.CommunityType.which(community_type)) == BotMan.CommunityType.CHANNEL and (
-            old_channel := Channel.getByOwner(account.chat_id)):
+            old_channel := Channel.getByOwner(account.chat_id)
+        ):
+            try:
+                await context.bot.leave_chat(chat_id=old_channel.id)
                 old_channel.change(channel_chat)
-        account.change_state(next_state, "channel_chat_id", channel_chat.id, clear_cache=True)
+                await update.message.reply_text(
+                    self.text("update_successful", account.language),
+                    reply_markup=self.get_community_config_keyboard(BotMan.CommunityType.CHANNEL, account.language),
+                )
+                account.change_state(cache_key='community', data=BotMan.CommunityType.GROUP.value, clear_cache=True)
+            except Exception as x:
+                log('sth went wrong while changing channel:', x, 'Channel')
+            return
+        await self.prepare_set_interval_interface(update, account, channel_chat.id, next_state)
+
+    async def prepare_set_interval_interface(
+        self, update: Update, account: Account, channel_chat_id: int, next_state: Account.States
+    ):
+        account.change_state(next_state, "channel_chat_id", channel_chat_id, clear_cache=True)
         response_message = await update.message.reply_text(
             self.text("select_post_interval"),
             reply_markup=self.arrangeInlineKeyboardButtons(Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL),
         )
         account.add_cache("interval_menu_msg_id", response_message.message_id)
 
-    async def handle_interval_input(self, update: Update | CallbackQuery, context: CallbackContext, interval: int):
+    async def handle_set_interval_outcome(self, update: Update | CallbackQuery, context: CallbackContext, interval: int):
         account = Account.get(update.message.chat)
         channel_id = account.get_cache("channel_chat_id")
         try:
@@ -1125,4 +1140,6 @@ class BotMan:
     def getCommunity(community_type: int | CommunityType, owner_id: int) -> Group | Channel | None:
         if not community_type or not community_type.value:
             return None
-        return BotMan.CommunityType.toClass(community_type if not isinstance(community_type, BotMan.CommunityType) else community_type.value).getByOwner(owner_id)
+        return BotMan.CommunityType.toClass(
+            community_type if not isinstance(community_type, BotMan.CommunityType) else community_type.value
+        ).getByOwner(owner_id)

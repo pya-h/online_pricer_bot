@@ -58,12 +58,11 @@ class SourceArenaService(CurrencyService):
         self.get_desired_ones = lambda desired_ones: desired_ones or SourceArenaService.defaults
         self.direct_prices: Dict[str, float] = {}
 
-    def extract_api_response(self, desired_ones: list = None, short_text: bool = True, optional_api_data: list = None) -> str:
+    def extract_api_response(self, desired_ones: list = None) -> str:
         desired_ones = self.get_desired_ones(desired_ones)
-        api_data = optional_api_data or self.latest_data
         rows = {}
 
-        for curr in api_data:
+        for curr in self.latest_data:
             slug = curr["slug"].upper()
             price = float(curr["price"]) / 10 if slug not in SourceArenaService.entitiesInDollars else float(curr["price"])
             self.direct_prices[slug] = price
@@ -112,7 +111,7 @@ class SourceArenaService(CurrencyService):
         response = await super(SourceArenaService, self).get_request(no_cache=True)
         return response.data["data"] if "data" in response.data else [], response.text
 
-    async def get(self, desired_ones: list = None, short_text: bool = True) -> str:
+    async def get(self, desired_ones: list = None) -> str:
         self.latest_data, response_text = await self.get_request()  # update latest
 
         usd_t = {
@@ -136,16 +135,14 @@ class SourceArenaService(CurrencyService):
                 or (float(usd_t["USD"]["price"]) / 10.0)
                 or SourceArenaService.defaultUsdInTomans
             )
-            usd_t["USD"]["price"] = (
-                self.usdInTomans * 10.0
-            )  # in dict must be in fuckin rials; this fuckin country with its fuckin worthless currency
+            usd_t["USD"]["price"] = self.usdInTomans * 10.0
         except:
             if not SourceArenaService.usdInTomans:
                 SourceArenaService.usdInTomans = SourceArenaService.defaultUsdInTomans
 
         self.cache_data(response_text)
         self.tether_service.cache_data(self.tether_service.summary(), custom_file_name="usd_t")
-        return self.extract_api_response(desired_ones, short_text=short_text)
+        return self.extract_api_response(desired_ones)
 
     def load_cache(self) -> list | dict:
         try:

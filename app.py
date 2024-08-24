@@ -147,7 +147,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
     await update.message.reply_text(
         botman.text("calculator_hint", account.language)
         + hint_examples
-        + botman.text("calculator_hint_footer", account.language),
+        + botman.text("calculator_hint_foonote", account.language),
         reply_markup=botman.cancel_menu(account.language),
     )
 
@@ -547,7 +547,7 @@ async def handle_action_queries(
             await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language])
             return
         case BotMan.QueryActions.SELECT_POST_INTERVAL.value:
-            await botman.handle_interval_input(query, context, value)
+            await botman.handle_set_interval_outcome(query, context, value)
             await query.message.delete()
             account.change_state(clear_cache=True)
             return
@@ -615,7 +615,7 @@ async def handle_action_queries(
                 return
 
             if (section := params[1].lower()) != "footer" and section != "header":
-                await query.message.edit_text("data_invalid")
+                await query.message.edit_text(botman.error("data_invalid"))
             else:
                 if section != "footer":
                     community.message_header = None
@@ -919,7 +919,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                     reply_markup=botman.mainkeyboard(account),
                 )
                 return
-            await botman.select_post_interval_menu(update, account, channel.id, Account.States.CHANGE_POST_INTERVAL)
+            await botman.prepare_set_interval_interface(update, account, channel.id, Account.States.CHANGE_POST_INTERVAL)
+
         case BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value | BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value:
             account = Account.get(update.message.chat)
             community_type = BotMan.CommunityType.which(account.get_cache("community"))
@@ -971,14 +972,14 @@ async def handle_messages(update: Update, context: CallbackContext):
         case (
             BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value
             | BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value
-            | BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA.value
-            | BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN.value
+            | BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value
+            | BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value
         ):
             (section, state) = (
                 ("header", Account.States.SET_MESSAGE_HEADER)
-                if update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_FA.value
-                and update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTER_EN.value
-                else ("footer", Account.States.SET_MESSAGE_FOOTER)
+                if update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value
+                and update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value
+                else ("footer", Account.States.SET_MESSAGE_FOOTNOTE)
             )
             account = Account.get(update.message.chat)
             community_type = account.get_cache("community")
@@ -994,7 +995,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.language,
                 ),
             )
-        case BotMan.Commands.GROUP_CHANGE_FA | BotMan.Commands.GROUP_CHANGE_EN:
+        case BotMan.Commands.GROUP_CHANGE_FA.value | BotMan.Commands.GROUP_CHANGE_EN.value:
             account = Account.get(update.message.chat)
             group = Group.getByOwner(account.chat_id)
             if not group:
@@ -1010,7 +1011,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             await update.message.reply_text(
                 botman.text("add_bot_to_new_group", account.language), reply_markup=botman.cancel_menu(account.language)
             )
-        case BotMan.Commands.CHANNEL_CHANGE_FA | BotMan.Commands.CHANNEL_CHANGE_EN:
+        case BotMan.Commands.CHANNEL_CHANGE_FA.value | BotMan.Commands.CHANNEL_CHANGE_EN.value:
             account = Account.get(update.message.chat)
             if not (channel := Channel.getByOwner(account.chat_id)):
                 account.clear_cache()
@@ -1083,9 +1084,12 @@ async def handle_messages(update: Update, context: CallbackContext):
             account = Account.get(update.message.chat)
             prev_menu = account.get_cache("back")
             if prev_menu:
-                community = BotMan.CommunityType.which(account.get_cache("community"))
                 match prev_menu:
                     case BotMan.MenuSections.COMMUNITY_PANEL.value:
+                        community = BotMan.CommunityType.which(account.get_cache("community"))
+                        if not community:
+                            await unknown_command_handler(update, context)
+                            return
                         await go_to_community_panel(update, account, community)
                         account.delete_specific_cache("back")
                         return
@@ -1230,14 +1234,15 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 botman.error("bot_seems_not_admin", account.language),
                                 reply_markup=botman.action_inline_keyboard(
                                     botman.QueryActions.VERIFY_BOT_IS_ADMIN,
-                                    {msg: "verify"},
+                                    {msg: "verify"},  # FIXME: This has no code behind it. complete it.
                                     in_main_keyboard=False,
                                 ),
                             )
 
                     if channel_chat:
-                        await botman.select_post_interval_menu(
+                        await botman.use_input_channel_chat_info(
                             update,
+                            context,
                             account,
                             channel_chat,
                             Account.States.SELECT_POST_INTERVAL,
@@ -1249,7 +1254,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     except:
                         await update.message.reply_text(botman.error("unsupported_input_format", account.language))
                         return
-                    await botman.handle_interval_input(update, context, interval)
+                    await botman.handle_set_interval_outcome(update, context, interval)
                     try:
                         await context.bot.delete_message(
                             chat_id=account.chat_id,
@@ -1258,7 +1263,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     except:
                         pass
                     account.change_state(clear_cache=True)
-                case Account.States.SET_MESSAGE_FOOTER | Account.States.SET_MESSAGE_HEADER:
+                case Account.States.SET_MESSAGE_FOOTNOTE | Account.States.SET_MESSAGE_HEADER:
                     community_type = BotMan.CommunityType.which(account.get_cache("community"))
                     if not community_type:
                         await unknown_command_handler(update, context)
@@ -1271,7 +1276,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                         account.delete_specific_cache("community")
                         return
                     if account.state == Account.States.SET_MESSAGE_HEADER:
-                        community.message_header = msg
+                        community.message_header = msg  # FIXME: Handle the case which text has emojis
                     else:
                         community.message_footnote = msg
                     community.save()
@@ -1461,7 +1466,9 @@ async def handle_group_messages(update: Update, context: CallbackContext):
             )
             await update.message.reply_text(message)
 
-
+# TODO: disable old caching
+# FIXME: Write script for CROSS_Checking CMC api response with my coin list
+# FIXME: Empty Tags in Equalizing
 def main():
     app = BotApplicationBuilder().token(botman.token).build()
     app.add_handler(CommandHandler("start", cmd_welcome))

@@ -191,7 +191,7 @@ class Channel:
         self.name = new_chat.username
         self.title = new_chat.title
 
-        Channel.database().update_group(self.id, old_chat_id=old_chat_id)
+        Channel.database().update_channel(self, old_chat_id=old_chat_id)
         # if Channel.fastMemInstances[old_chat_id]:
         #     del Channel.fastMemInstances[old_chat_id]
         return self

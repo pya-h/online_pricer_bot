@@ -33,7 +33,7 @@ class Account:
         CHANGE_POST_INTERVAL = 11
         CONFIG_GROUP_MARKETS = 12
         CONFIG_CHANNEL_MARKETS = 13
-        SET_MESSAGE_FOOTER = 14
+        SET_MESSAGE_FOOTNOTE = 14
         SET_MESSAGE_HEADER = 15
         CHANGE_GROUP = 16
         CHANGE_CHANNEL = 17
@@ -61,7 +61,7 @@ class Account:
         States.CHANGE_POST_INTERVAL,
         States.CONFIG_GROUP_MARKETS,
         States.CONFIG_CHANNEL_MARKETS,
-        States.SET_MESSAGE_FOOTER,
+        States.SET_MESSAGE_FOOTNOTE,
         States.SET_MESSAGE_HEADER,
         States.CHANGE_GROUP,
         States.CHANGE_CHANNEL,
@@ -402,20 +402,21 @@ class Account:
             Account.getHardcodeAdmin()["account"],
         ]
 
+    def mayInteract(self):
+        long_time_no_see = self.no_interaction_duration() >= Account.FastMemGarbageCollectionInterval # TODO: Check out unit: Needs to convert to secs?
+        if long_time_no_see:
+            self.save()
+            return False
+        return True
+
     @staticmethod
     def garbageCollect():
         now = now_in_minute()
         if now - Account.PreviousFastMemGarbageCollectionTime <= Account.FastMemGarbageCollectionInterval:
             return
         Account.PreviousFastMemGarbageCollectionTime = now
-        interval_in_secs = Account.FastMemGarbageCollectionInterval * 60
-        garbage = filter(
-            lambda chat_id: Account.fastMemInstances[chat_id].no_interaction_duration() >= interval_in_secs,
-            Account.fastMemInstances,
-        )
-        for g in garbage:
-            Account.fastMemInstances[g].save()
-            del Account.fastMemInstances[g]
+
+        Account.fastMemInstances = {chat_id: account for chat_id, account in Account.fastMemInstances.items() if account.mayInteract()}
 
     @staticmethod
     def getFast(chat_id: int):

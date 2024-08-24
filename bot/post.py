@@ -38,7 +38,6 @@ class PostMan:
         desired_coins: list = None,
         desired_currencies: list = None,
         exactly_right_now: bool = True,
-        short_text: bool = True,
         for_channel: bool = True,
         interval: float = 10,
     ) -> str:
@@ -48,22 +47,22 @@ class PostMan:
             if desired_currencies or (not desired_coins and not desired_currencies):
                 # this condition is for preventing default values, when user has selected just cryptos
                 currencies = (
-                    await self.currency_service.get(desired_currencies, short_text=short_text)
+                    await self.currency_service.get(desired_currencies)
                     if exactly_right_now
                     else self.currency_service.get_latest(desired_currencies)
                 )
         except Exception as ex:
             log("Cannot obtain Currencies! ", ex, self.currency_service.Source)
-            currencies = self.currency_service.get_latest(desired_currencies, short_text=short_text)
+            currencies = self.currency_service.get_latest(desired_currencies)
         try:
             if desired_coins or (not desired_coins and not desired_currencies):
                 # this condition is for preventing default values, when user has selected just currencies
                 cryptos = (
-                    await self.crypto_service.get(desired_coins, short_text=short_text)
+                    await self.crypto_service.get(desired_coins)
                     if exactly_right_now
-                    else self.crypto_service.get_latest(desired_coins, short_text)
+                    else self.crypto_service.get_latest(desired_coins)
                 )
         except Exception as ex:
             log("Cannot obtain Cryptos! ", ex, self.crypto_service.Source)
-            cryptos = self.crypto_service.get_latest(desired_coins, short_text=short_text)
+            cryptos = self.crypto_service.get_latest(desired_coins)
         return self.sign_post(currencies + cryptos, for_channel=for_channel, interval=interval)

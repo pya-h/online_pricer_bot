@@ -120,17 +120,17 @@ class APIService(BaseAPIService):
     def get_desired_ones(self, desired_ones: list) -> List[str]:
         pass
 
-    def extract_api_response(self, desired_ones: list = None, short_text: bool = True, optional_api_data: list = None) -> str:
+    def extract_api_response(self, desired_ones: list = None) -> str:
         pass
 
-    async def get(self, desired_ones: list = None, short_text: bool = True) -> str:
+    async def get(self, desired_ones: list = None) -> str:
         self.latest_data = await self.get_request()  # update latest
-        return self.extract_api_response(desired_ones, short_text=short_text)
+        return self.extract_api_response(desired_ones)
 
-    def get_latest(self, desired_ones: list = None, short_text: bool = True) -> str:
-        return self.extract_api_response(desired_ones, short_text=short_text)
+    def get_latest(self, desired_ones: list = None) -> str:
+        return self.extract_api_response(desired_ones)
 
-    def get_desired_cache(self, desired_ones: list = None, short_text: bool = True, force_reload: bool = False) -> str:
+    def get_desired_cache(self, desired_ones: list = None, force_reload: bool = False) -> str:
         """This is for the channel planner bot"""
         try:
             if force_reload or not self.latest_data:
@@ -150,7 +150,7 @@ class APIService(BaseAPIService):
                     )
                     # TODO: send an email or notification or whatever to the admin?
 
-        return self.extract_api_response(desired_ones, short_text=short_text, optional_api_data=self.latest_data)
+        return self.extract_api_response(desired_ones)
 
     def to_irt_exact(self, price: float | int, tether_as_unit_price: bool = False) -> float | int:
         try:
