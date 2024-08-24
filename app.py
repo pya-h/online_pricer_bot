@@ -1421,7 +1421,7 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                     except:
                         pass
                     return
-
+                # FIXME: Prevent Group.Regi
                 group = Group.register(update.message.chat, owner.chat_id)
                 if group.is_active:  # FIXME: Update this is_active property since its causing circular dep
                     await context.bot.send_message(
