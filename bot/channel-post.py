@@ -13,7 +13,7 @@ class ChannelPostMan(PostMan):
         super().__init__(source_arena_api_key, aban_tether_api_key, coinmarketcap_api_key)
         self.bot_username = bot_username
 
-    def create_post(self, account: Account, channel: Channel = None, short_text: bool = True) -> str:
+    def create_post(self, account: Account, channel: Channel = None) -> str:
         currencies = cryptos = ""
 
         try:
@@ -22,14 +22,14 @@ class ChannelPostMan(PostMan):
                 currencies = self.currency_service.get_desired_cache(account.desired_currencies)
         except Exception as ex:
             manuwriter.log("Cannot obtain Currencies! ", ex, self.currency_service.Source)
-            # TODO: What to do here?
+
         try:
             if account.desired_coins or (not account.desired_coins and not account.desired_currencies):
                 # this condition is for preventing default values, when user has selected just currencies
-                cryptos = self.crypto_service.get_desired_cache(account.desired_coins, short_text)
+                cryptos = self.crypto_service.get_desired_cache(account.desired_coins)
         except Exception as ex:
             manuwriter.log("Cannot obtain Cryptos! ", ex, self.crypto_service.Source)
-            # TODO: What to do here?
+
         return self.sign_post(currencies + cryptos, channel=channel)
 
     def sign_post(self, message: str, channel: Channel) -> str:
@@ -42,7 +42,7 @@ class ChannelPostMan(PostMan):
         return post_text
 
     def update_latest_data(self):
-        """This will be called by plus robot as a job on a propper interval, so that channels use the most recent data gradually, alongside considering performance handling issues."""
+        """This will be called by plus robot as a job on a proper interval, so that channels use the most recent data gradually, alongside considering performance handling issues."""
         try:
             self.currency_service.load_cache()
         except Exception as ex:
