@@ -149,6 +149,7 @@ class BotMan:
         TRIGGER_DATE_TAG = 10
         TRIGGER_MARKET_TAGS = 11
         UPDATE_MESSAGE_SECTIONS = 12
+        DISCONNECT_COMMUNITY = 13
         NONE = 0
 
         @staticmethod
@@ -172,6 +173,7 @@ class BotMan:
         QueryActions.TRIGGER_DATE_TAG,
         QueryActions.TRIGGER_MARKET_TAGS,
         QueryActions.UPDATE_MESSAGE_SECTIONS,
+        QueryActions.DISCONNECT_COMMUNITY,
     )
 
     class CommunityType(Enum):

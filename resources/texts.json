@@ -580,5 +580,9 @@
     "add_bot_to_new_group": {
         "fa": "بسیار خب! هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است. برای این منظور، وارد گروه جدید خود شوید و ربات را در گروه جدید اضافه و ادمین کنید. باقی فرایند بصورت خودکار انجام می شود ...",
         "en": "Well! Now you should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete ..."
+    },
+    "r_u_sure_to_disconnect": {
+        "fa": "",
+        "en": ""
     }
 }

@@ -166,13 +166,13 @@ class Channel:
         Channel.database().set_channel_state(self.id, True)
         return True
 
-    def stop_plan(self) -> bool:
+    def delete(self) -> bool:
         try:
             Channel.database().delete_channel(self.id)
-            if self.id in Channel.Instances:
-                del Channel.Instances[self.id]
+            # if self.id in Channel.Instances:
+            #     del Channel.Instances[self.id]
         except Exception as ex:
-            manuwriter.log(f"Cannot remove channel:{self.id}", ex, category_name="PLUS_FATALITY")
+            manuwriter.log(f"Cannot remove channel:{self.id}", ex, category_name="Channels")
             return False
         return True
 

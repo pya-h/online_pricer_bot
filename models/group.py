@@ -4,7 +4,7 @@ from typing import List
 from telegram import Chat
 from .account import Account
 from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException
-
+from tools.manuwriter import log
 
 class Group:
     fastMemInstances = {}
@@ -73,7 +73,16 @@ class Group:
         if Group.fastMemInstances[old_chat_id]:
             del Group.fastMemInstances[old_chat_id]
         return self
-
+    
+    def delete(self) -> bool:
+        try:
+            Group.database().delete_group(self.id)
+            if self.id in Group.fastMemInstances:
+                del Group.fastMemInstances[self.id]
+        except Exception as ex:
+            log(f"Cannot remove Group:{self.id}", ex, category_name="Groups")
+            return False
+        return True
     @property
     def coins_as_str(self):
         return ";".join(self.selected_coins)

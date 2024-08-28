@@ -593,7 +593,7 @@ async def handle_action_queries(
                 account.delete_specific_cache("community")
             except:
                 await query.message.edit_text(botman.error("unexpected_error", account.language))
-        case BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
+        case BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value | BotMan.QueryActions.DISCONNECT_COMMUNITY.value:
             if not value:
                 await query.message.edit_text(botman.text("operation_canceled", account.language))
                 account.change_state()
@@ -605,25 +605,40 @@ async def handle_action_queries(
                 account.change_state(clear_cache=True)
                 return
 
-            community = community_type.to_class().getByOwner(account.chat_id)
-            if not community:
+            if not (community := community_type.to_class().getByOwner(account.chat_id)):
                 await query.message.reply_text(
                     botman.error(f"no_{community.__str__()}", account.language), reply_markup=botman.mainkeyboard(account)
                 )
                 await query.message.delete()
-                account.change_state(clear_cache=True)
-                return
-
-            if (section := params[1].lower()) != "footer" and section != "header":
-                await query.message.edit_text(botman.error("data_invalid"))
-            else:
-                if section != "footer":
-                    community.message_header = None
+                if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
+                    account.change_state(clear_cache=True)
                 else:
-                    community.message_footnote = None
-                community.save()
-            account.change_state()
-            await query.message.edit_text(botman.text("update_successful", account.language))
+                    account.delete_specific_cache('community')
+                return
+            if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
+                if (section := params[1].lower()) != "footer" and section != "header":
+                    await query.message.edit_text(botman.error("data_invalid", account.language))
+                else:
+                    if section != "footer":
+                        community.message_header = None
+                    else:
+                        community.message_footnote = None
+                    community.save()
+                account.change_state()
+                await query.message.edit_text(botman.text("update_successful", account.language))
+            else:
+                try:
+                    community_id = int(params[1])
+                    if community_id != community.id:
+                        await query.message.edit_text(botman.error(f"{community.__str__()}_not_yours_anymore", account.language))
+                        return
+                    if community.delete():
+                        await query.message.edit_text(botman.text(f"{community.__str__()}_removed", account.language),
+                                                    reply_markup='restore button inline') # TODO: Complete this
+                        return   
+                except:
+                    pass
+                await query.message.edit_text(botman.error("data_invalid", account.language)) # FIXME: Add text resource
         case _:
             if not account.authorization(context.args):
                 await query.message.edit_text(botman.error("what_the_fuck", account.language))
