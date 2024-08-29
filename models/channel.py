@@ -6,7 +6,7 @@ from typing import List
 from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException
 from telegram import Chat
 from .account import Account
-
+from tools.mathematix import now_in_minute
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
     def __init__(self, title: str | None = None, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
@@ -196,6 +196,30 @@ class Channel:
         #     del Channel.fastMemInstances[old_chat_id]
         return self
 
+    def throw_trash(self):
+        self.database().trash_sth(self.owner_id, DatabaseInterface.TrashType.CHANNEL, self.id, self.as_dict)
+
+    @property
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "owner_id": self.owner_id,
+            "name": self.name,
+            "title": self.title,
+            "coins": self.coins_as_str,
+            "currencies": self.currencies_as_str,
+            "message": {
+                "header": self.message_header,
+                "footnote": self.message_footnote,
+                "date_tag": self.message_show_date_tag,
+                "market_tags": self.message_show_market_tags,
+            },
+            "last_post_time": self.last_post_time,
+            "interval": self.interval,
+            "is_active": self.is_active,
+            "last_interaction": now_in_minute(),
+        }
+    
     @property
     def coins_as_str(self):
         return ";".join(self.selected_coins)

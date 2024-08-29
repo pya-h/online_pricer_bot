@@ -150,6 +150,7 @@ class BotMan:
         TRIGGER_MARKET_TAGS = 11
         UPDATE_MESSAGE_SECTIONS = 12
         DISCONNECT_COMMUNITY = 13
+        RECONNECT_COMMUNITY = 14
         NONE = 0
 
         @staticmethod
@@ -174,6 +175,7 @@ class BotMan:
         QueryActions.TRIGGER_MARKET_TAGS,
         QueryActions.UPDATE_MESSAGE_SECTIONS,
         QueryActions.DISCONNECT_COMMUNITY,
+        QueryActions.RECONNECT_COMMUNITY,
     )
 
     class CommunityType(Enum):
@@ -1140,7 +1142,7 @@ class BotMan:
 
     @staticmethod
     def getCommunity(community_type: int | CommunityType, owner_id: int) -> Group | Channel | None:
-        if not community_type or not community_type.value:
+        if not community_type or (isinstance(community_type, BotMan.CommunityType) and not community_type.value):
             return None
         return BotMan.CommunityType.toClass(
             community_type if not isinstance(community_type, BotMan.CommunityType) else community_type.value

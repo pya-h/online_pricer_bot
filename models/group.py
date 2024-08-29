@@ -83,6 +83,28 @@ class Group:
             log(f"Cannot remove Group:{self.id}", ex, category_name="Groups")
             return False
         return True
+    
+    def throw_trash(self):
+        self.database().trash_sth(self.owner_id, DatabaseInterface.TrashType.GROUP, self.id, self.as_dict)
+
+    @property
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "owner_id": self.owner_id,
+            "name": self.name,
+            "title": self.title,
+            "coins": self.coins_as_str,
+            "currencies": self.currencies_as_str,
+            "message": {
+                "header": self.message_header,
+                "footnote": self.message_footnote,
+                "date_tag": self.message_show_date_tag,
+                "market_tags": self.message_show_market_tags,
+            },
+            "last_interaction": self.last_interaction,
+        }
+    
     @property
     def coins_as_str(self):
         return ";".join(self.selected_coins)

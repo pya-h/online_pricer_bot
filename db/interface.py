@@ -6,6 +6,7 @@ from tools.mathematix import after_n_months
 from time import time
 from typing import List
 from decouple import config
+from enum import Enum
 
 
 class DatabaseInterface:
@@ -107,6 +108,34 @@ class DatabaseInterface:
         PRICE_ALARM_PRICE_UNIT,
     ) = ("id", "chat_id", "currency", "price", "change_dir", "unit")
 
+    TABLE_TRASH = "trash"
+    TRASH_COLUMNS = (TRASH_ID, TRASH_TYPE, TRASH_OWNER_ID, TRASH_IDENTIFIER, TRASH_DATA, TRASHED_AT) = ("id", "type", "owner_id", "trash_ident", "data", "trashed_at")
+
+    class TrashType(Enum):
+        CHANNEL = 1
+        GROUP = 2
+        ALARM = 3
+        MESSAGE = 4
+        USER = 5
+        NONE = 0
+
+        TrashTypeOptions = (
+            NONE,
+            CHANNEL,
+            GROUP,
+            ALARM,
+            MESSAGE,
+            USER,
+        )
+
+        @staticmethod
+        def which(value: int):
+            try:
+                return DatabaseInterface.TrashType.TrashTypeOptions[value]
+            except:
+                pass
+            return DatabaseInterface.TrashType.NONE
+
     @staticmethod
     def get():
         if not DatabaseInterface._instance:
@@ -145,10 +174,12 @@ class DatabaseInterface:
     def setup(self):
         try:
             cursor = self.connection.cursor()
-            # check if the table accounts was created
-            cursor.execute(
-                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_ACCOUNTS}'"
+            table_exist_query_start = (
+                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
             )
+
+            # check if the table accounts was created
+            cursor.execute(f"{table_exist_query_start}='{self.TABLE_ACCOUNTS}'")
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY,"
@@ -158,14 +189,12 @@ class DatabaseInterface:
                 )
                 # create table account
                 cursor.execute(query)
-                log(f"PLUS Database {self.TABLE_ACCOUNTS} table created successfully.", category_name="DatabaseInfo")
+                log(f"Table {self.TABLE_ACCOUNTS} created successfully.", category_name="DatabaseInfo")
             else:
                 # write any migration needed in the function called below
                 self.migrate()
 
-            cursor.execute(
-                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_CHANNELS}'"
-            )
+            cursor.execute(f"{table_exist_query_start}='{self.TABLE_CHANNELS}'")
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} BIGINT PRIMARY KEY, "
@@ -177,11 +206,9 @@ class DatabaseInterface:
                 )
                 # create table account
                 cursor.execute(query)
-                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name="DatabaseInfo")
+                log(f"Table {self.TABLE_CHANNELS} created successfully.", category_name="DatabaseInfo")
 
-            cursor.execute(
-                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_GROUPS}'"
-            )
+            cursor.execute(f"{table_exist_query_start}='{self.TABLE_GROUPS}'")
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} BIGINT PRIMARY KEY, "
@@ -193,11 +220,9 @@ class DatabaseInterface:
                 )
                 # create table account
                 cursor.execute(query)
-                log(f"PLUS Database {self.TABLE_CHANNELS} table created successfully.", category_name="DatabaseInfo")
+                log(f"Table {self.TABLE_GROUPS} created successfully.", category_name="DatabaseInfo")
 
-            cursor.execute(
-                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' and table_name='{self.TABLE_PRICE_ALARMS}'"
-            )
+            cursor.execute(f"{table_exist_query_start}='{self.TABLE_PRICE_ALARMS}'")
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_PRICE_ALARMS} ("
@@ -208,9 +233,20 @@ class DatabaseInterface:
                 )
 
                 cursor.execute(query)
-                log(f"plus Database {self.TABLE_PRICE_ALARMS} table created successfully.", category_name="DatabaseInfo")
+                log(f"Table {self.TABLE_PRICE_ALARMS} created successfully.", category_name="DatabaseInfo")
 
-            log("plus Database setup completed.", category_name="DatabaseInfo")
+            cursor.execute(f"{table_exist_query_start}='{self.TABLE_TRASH}'")
+            if not cursor.fetchone():
+                query = (
+                    f"CREATE TABLE {self.TABLE_TRASH} ("
+                    + f"{self.TRASH_ID} INTEGER PRIMARY KEY AUTO_INCREMENT, {self.TRASH_TYPE} TINYINT NOT NULL, {self.TRASH_OWNER_ID} BIGINT NOT NULL, {self.TRASH_IDENTIFIER} BIGINT, {self.TRASH_DATA} JSON, "
+                    + f"{self.TRASHED_AT} DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY({self.TRASH_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
+                )
+
+                cursor.execute(query)
+                log(f"Table {self.TABLE_TRASH} created successfully.", category_name="DatabaseInfo")
+
+            log("OnlinePricer Database setup completed.", category_name="DatabaseInfo")
             cursor.close()
         except Error as ex:
             log("Failed setting up database, app cannot continue...", ex, category_name="FUX")
@@ -617,6 +653,29 @@ class DatabaseInterface:
         columns_info = self.execute(True, f"PRAGMA table_info({table});")
         column_names = [column[1] for column in columns_info]
         return column_names
+
+    def trash_sth(self, owner_id: int, trash_type: int, trash_identifier: int, data: dict):
+        fields = ", ".join(self.TRASH_COLUMNS[1:])  # in creation mode admin just defines persian title and description
+        # if he wants to add english texts, he should go to edit menu
+        return self.execute(
+            False,
+            f"INSERT INTO {self.TABLE_TRASH} ({fields}) VALUES (%s{', %s' * (len(self.TRASH_COLUMNS) - 2)})",
+            trash_type,
+            owner_id,
+            trash_identifier,
+            data,
+        )
+
+    def get_trash(self, id: int):
+        rows = self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1", id)
+        return rows[0] if rows else None
+
+
+    def get_user_trash(self, owner_id: int):
+        return self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_OWNER_ID}=%s", owner_id)
+
+    def get_trash_by_identifier(self, trash_type: int, identifier: int):
+        return self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_IDENTIFIER}=%s LIMIT 1", trash_type, identifier)
 
     def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
         tables = (

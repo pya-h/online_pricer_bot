@@ -632,9 +632,12 @@ async def handle_action_queries(
                     if community_id != community.id:
                         await query.message.edit_text(botman.error(f"{community.__str__()}_not_yours_anymore", account.language))
                         return
+                    community.throw_trash()
                     if community.delete():
-                        await query.message.edit_text(botman.text(f"{community.__str__()}_removed", account.language),
-                                                    reply_markup='restore button inline') # TODO: Complete this
+                        await query.message.edit_text(botman.text("successfully_disconnected", account.language),
+                                                    reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.RECONNECT_COMMUNITY, {
+                                                        value: "reconnect"
+                                                    }, account.language, columns_in_a_row=1))
                         return   
                 except:
                     pass
@@ -1042,19 +1045,19 @@ async def handle_messages(update: Update, context: CallbackContext):
             await update.message.reply_text(botman.text("add_bot_as_channel_admin", account.language), reply_markup=botman.cancel_menu(account.language))
         case BotMan.Commands.COMMUNITY_DISCONNECT_FA.value | BotMan.Commands.COMMUNITY_DISCONNECT_EN.value:
             account = Account.get(update.message.chat)
-            if not (community := BotMan.getCommunity((community_type := account.get_cache('community')), account.chat_id)):
+            if not (community := BotMan.getCommunity((community_type := BotMan.CommunityType.which(account.get_cache('community'))), account.chat_id)):
                 account.delete_specific_cache('community')
                 await update.message.reply_text(botman.error(f'no_{community_type.__str__()}', 
                                                              account.language), 
                                                 reply_markup=botman.mainkeyboard(account))
                 return
 
-            await update.message.reply_text(botman.text('r_u_sure_to_disconnect', account.language),
+            await update.message.reply_text(botman.text(f'rusure_to_disconnect_{community_type.__str__()}', account.language),
                                             reply_markup=botman.action_inline_keyboard(
                                                 BotMan.QueryActions.DISCONNECT_COMMUNITY,
                                                 {
-                                                    None: "no",
-                                                    f"{community_type}{BotMan.CALLBACK_DATA_JOINER}{community.id}": "yes"
+                                                    None: "cancel",
+                                                    f"{community_type.value}{BotMan.CALLBACK_DATA_JOINER}{community.id}": "community_disconnect"
                                                 }
                                             ))
         # settings sub menu:

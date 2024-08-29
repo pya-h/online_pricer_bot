@@ -197,6 +197,10 @@
         "remove": {
             "fa": "حذف",
             "en": "Remove"
+        },
+        "reconnect": {
+            "fa": "اتصال مجدد",
+            "en": "Reconnect"
         }
     },
     "which_market": {
@@ -335,6 +339,14 @@
         "data_invalid": {
             "fa": "متاسفانه دیتای مربوط به این عملیات منقضی یا اشتباه می باشد. لطفا عملیات را از نو تکرار کنید.",
             "en": "Unfortunately data related to this operation seems curropted. Please retry this operation again, from scratch."
+        },
+        "group_not_yours_anymore": {
+            "fa": "طبق تنظیمات فعلی شما در این ربات، گروهی که قصد قطع اتصال آن را دارید به شما تعلق ندارد. احتمالا قبلا آن را قطع اتصال کرده اید.",
+            "en": "The group you're trying to disconnect doesn't belong to you, according to your current bot configurations. You may have disconnected it before."
+        },
+        "channel_not_yours_anymore": {
+            "fa": "طبق تنظیمات فعلی شما در این ربات، کانالی که قصد قطع اتصال آن را دارید به شما تعلق ندارد. احتمالا قبلا آن را قطع اتصال کرده اید.",
+            "en": "The channel you're trying to disconnect doesn't belong to you, according to your current bot configurations. You may have disconnected it before."
         }
     },
     "what_can_i_do": {
@@ -581,8 +593,16 @@
         "fa": "بسیار خب! هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است. برای این منظور، وارد گروه جدید خود شوید و ربات را در گروه جدید اضافه و ادمین کنید. باقی فرایند بصورت خودکار انجام می شود ...",
         "en": "Well! Now you should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete ..."
     },
-    "r_u_sure_to_disconnect": {
-        "fa": "",
-        "en": ""
+    "rusure_to_disconnect_group": {
+        "fa": "🔹 اگر می خواهید اتصال ربات با گروه شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n🔹 این کار باعث میشود اتصال گروه فعلی قطع شود و تمام تنظیمات این گروه در ربات لغو می شوند؛ پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
+        "en": "🔹 If you want to disconnect this bot from your group, click on the [ Disconnect ]:\n\n🔹 This will disconnect the current group, and clear its settings, so if you are not sure about this, click [ Cancel ]."
+    },
+    "rusure_to_disconnect_channel": {
+        "fa": "🔹 اگر می خواهید اتصال ربات با کانال شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n🔹 این کار باعث میشود اتصال کانال فعلی قطع شود و تمام تنظیمات این کانال در ربات لغو می شوند؛ پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
+        "en": "🔹 If you want to disconnect this bot from your channel, click on the [ Disconnect ]:\n\n🔹 This will disconnect the current channel, and clear its settings, so if you are not sure about this, click [ Cancel ]."
+    },
+    "successfully_disconnected": {
+        "fa": "✅ اتصال ربات به موفقیت قطع شد.",
+        "en": "✅ Bot successfully disconnected."
     }
 }
