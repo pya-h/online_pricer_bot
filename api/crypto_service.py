@@ -146,7 +146,7 @@ class CoinMarketCapService(CryptoCurrencyService):
                 manuwriter.log('No Price Data:', x, 'PriceData')
                 coin_equalized_price = '?'
             res += f"🔸 {coin_equalized_price} {CryptoCurrencyService.coinsInPersian[coin]}\n"
-        return f"📌#بازار_ارز_دیجیتال\n{res}"
+        return res
 
     def equalize(
         self, source_unit_symbol: str, amount: float | int, desired_cryptos: list = None
@@ -159,11 +159,6 @@ class CoinMarketCapService(CryptoCurrencyService):
         if source_unit_symbol not in self.latest_data or source_unit_symbol not in CryptoCurrencyService.coinsInPersian:
             raise InvalidInputException("Coin symbol!")
 
-        # text header
-        header: str = (
-            "✅ %s %s" % (mathematix.persianify(amount), CryptoCurrencyService.coinsInPersian[source_unit_symbol])
-        ) + " معادل است با:\n\n"
-
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         try:
             absolute_amount: float = amount * float(self.latest_data[source_unit_symbol]["price"])
@@ -171,7 +166,6 @@ class CoinMarketCapService(CryptoCurrencyService):
             raise ValueError(f"{source_unit_symbol} has not been received from the API.")
 
         return (
-            header,
             self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos),
             absolute_amount,
             self.to_irt_exact(absolute_amount, True),

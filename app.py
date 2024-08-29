@@ -147,7 +147,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
     await update.message.reply_text(
         botman.text("calculator_hint", account.language)
         + hint_examples
-        + botman.text("calculator_hint_foonote", account.language),
+        + botman.text("calculator_hint_footnote", account.language),
         reply_markup=botman.cancel_menu(account.language),
     )
 
@@ -1058,7 +1058,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             account.change_state(Account.States.CHANGE_GROUP, "changing_id", group.id)
             account.add_cache(
                 "back", BotMan.MenuSections.COMMUNITY_PANEL.value
-            )  # FIXME: DELETE back when operations success (in ops with back page)
+            )
             await update.message.reply_text(
                 botman.text("add_bot_to_new_group", account.language), reply_markup=botman.cancel_menu(account.language)
             )
@@ -1497,9 +1497,8 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                     except:
                         pass
                     return
-                # FIXME: Prevent Group.Regi
                 group = Group.register(update.message.chat, owner.chat_id)
-                if group.is_active:  # FIXME: Update this is_active property since its causing circular dep
+                if group.is_active:
                     await context.bot.send_message(
                         chat_id=owner.chat_id,
                         text=botman.text("group_is_active", owner.language) % (group.title,),
@@ -1539,6 +1538,7 @@ async def handle_group_messages(update: Update, context: CallbackContext):
                 group.selected_coins,
                 group.selected_currencies,
                 to_user.language,
+                group.message_show_market_tags,
             )
             await update.message.reply_text(message)
 

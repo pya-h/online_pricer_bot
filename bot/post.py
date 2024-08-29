@@ -2,7 +2,8 @@ from tools.mathematix import timestamp, persianify
 from tools.manuwriter import log
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from api.currency_service import NavasanService
-
+from models.group import Group
+from models.channel import Channel
 
 class PostMan:
     """This class wraps all necessary api services and make them work together, and constructs posts."""
@@ -66,3 +67,13 @@ class PostMan:
             log("Cannot obtain Cryptos! ", ex, self.crypto_service.Source)
             cryptos = self.crypto_service.get_latest(desired_coins)
         return self.sign_post(currencies + cryptos, for_channel=for_channel, interval=interval)
+
+    @staticmethod
+    def customizePost(post_body: str, community: Group | Channel, language: str = 'fa'):
+        if community.message_header:
+            post_body = f"{community.message_header}\n\n{post_body}"
+        if community.message_footnote:
+            post_body += f"\n\n{community.message_footnote}"
+        if community.message_show_date_tag:
+            return timestamp(language) + f"\n{post_body}"
+        return post_body

@@ -116,7 +116,7 @@ class Group:
     @property
     def is_active(self):
         """Check owner premium date is valid or not"""
-        owner = Account.getById(self.owner_id)  # FIXME: Account SEEMS AS A CIRCULAR DEPENDENCY
+        owner = Account.getById(self.owner_id)
         return owner.is_premium
 
     @staticmethod

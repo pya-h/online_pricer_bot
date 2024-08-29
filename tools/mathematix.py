@@ -74,10 +74,13 @@ def tz_today() -> datetime:  # today date in a specific timezone
 WEEKDAYS = ("دوشنبه", "سه شنبه", "چهارشنبه", "پنج شنبه", "جمعه", "شنبه", "یکشنبه")
 
 
-def timestamp() -> str:
+def timestamp(language: str = 'fa') -> str:
+    now = tz_today()  # timezone.localize(datetime.now())
+    if language != 'fa':
+        formatted_date = now.strftime("%Y/%m/%d %A %H:%M")
+        return f"📆 {formatted_date}"
     # today date and time as persian
     try:
-        now = tz_today()  # timezone.localize(datetime.now())
         year, month, day = gregorian_to_jalali(now.year, now.month, now.day)
         weekday = WEEKDAYS[now.weekday()]
         date = digits.en_to_fa(f"{year}/{month:02d}/{day:02d}")
@@ -89,7 +92,7 @@ def timestamp() -> str:
             now = tz_today()  # timezone.localize(datetime.now())
             return f'📆 {now.year}/{now.month:02d}/{now.day:02d} {weekday} {now.strftime("%H:%M")}'
         except:
-            return "تاریخ نامعلوم: دریافت تاریخ روز با مشکل مواجه شد!"
+            return None
 
 
 def short_timestamp(date_delimiter="-", time_delimiter=".", datetime_delimiter="_", show_minutes: bool = False) -> str:

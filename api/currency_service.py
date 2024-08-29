@@ -229,7 +229,7 @@ class NavasanService(CurrencyService):
 
     def irt_to_currencies(self, absolute_amount: float | int, source_unit_slug: str, currencies: list = None) -> str:
         currencies = self.get_desired_ones(currencies)
-        res_gold, res_curr = "", ""
+        res_gold, res_fiat = "", ""
 
         for slug in currencies:
             if slug == source_unit_slug:
@@ -241,14 +241,11 @@ class NavasanService(CurrencyService):
             )
             slug_equalized_price = mathematix.persianify(mathematix.cut_and_separate(slug_equalized_price))
             if slug in NavasanService.nationalCurrenciesInPersian:
-                res_curr += f"🔸 {slug_equalized_price} {NavasanService.currenciesInPersian[slug]}\n"
+                res_fiat += f"🔸 {slug_equalized_price} {NavasanService.currenciesInPersian[slug]}\n"
             else:
                 res_gold += f"🔸 {slug_equalized_price} {NavasanService.currenciesInPersian[slug]}\n"
 
-        return f"""📌#بازار_ارز
-{res_curr}
-📌#بازار_طلا
-{res_gold}"""
+        return res_fiat, res_gold
 
     def equalize(
         self, source_unit_symbol: str, amount: float | int, target_currencies: list = None
@@ -261,19 +258,15 @@ class NavasanService(CurrencyService):
         if source_unit_symbol not in NavasanService.currenciesInPersian:
             raise InvalidInputException("Currency/Gold symbol!")
 
-        # text header
-        header: str = (
-            "✅ %s %s" % (mathematix.persianify(amount), NavasanService.currenciesInPersian[source_unit_symbol])
-        ) + " معادل است با:\n\n"
-
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         try:
             absolute_amount: float = amount * float(self.latest_data[source_unit_symbol.lower()]["value"])
         except:
             raise ValueError(f"{source_unit_symbol} has not been received from the API.")
+        res_fiat, res_gold = self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies)
         return (
-            header,
-            self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies),
+            res_fiat,
+            res_gold,
             self.irt_to_usd(absolute_amount),
             absolute_amount,
         )

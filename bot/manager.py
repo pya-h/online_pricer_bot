@@ -935,6 +935,23 @@ class BotMan:
             i += word_count
         return crypto_amounts, currency_amounts
 
+    def construct_post(self, res_fiat: str, res_gold: str, res_crypto: str, language: str = 'fa', use_tags: bool = True):
+        if not use_tags:
+            return f"{res_fiat}\n\n{res_gold}\n\n{res_crypto}"
+        tags_fiat = self.text('market_fiat', language)
+        tags_gold = self.text('market_gold', language)
+        tags_crypto = self.text('market_crypto', language)
+
+        return f'''{tags_fiat}
+{res_fiat}
+
+{tags_gold}
+{res_gold}
+
+{tags_crypto}
+{res_crypto}
+'''
+
     def create_crypto_equalize_message(
         self,
         unit: str,
@@ -942,10 +959,13 @@ class BotMan:
         target_cryptos: List[str] | None,
         target_currencies: List[str] | None,
         language: str = "fa",
+        use_tags: bool = True
     ):
-        header, response, _, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos)
-        response = self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies) + "\n\n" + response
-        return header + response
+        res_crypto, _, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos)
+        res_fiat, res_gold = self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies)
+        post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
+        header = self.text('equalize_header', language) % (persianify(amount), self.crypto_serv.coinsInPersian[unit])
+        return f"{header}\n\n{post}"
 
     def create_currency_equalize_message(
         self,
@@ -954,10 +974,13 @@ class BotMan:
         target_cryptos: List[str] | None,
         target_currencies: List[str] | None,
         language: str = "fa",
+        use_tags: bool = True
     ):
-        header, response, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies)
-        response += "\n\n" + self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
-        return header + response
+        res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies)
+        res_crypto = self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
+        post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
+        header = self.text('equalize_header', language) % (persianify(amount), self.currency_serv.currenciesInPersian[unit])
+        return f"{header}\n\n{post}"
 
     async def prepare_channel(self, ctx: CallbackContext, owner: Account, channel_id: int, interval: int):
         try:
