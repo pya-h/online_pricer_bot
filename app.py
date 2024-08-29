@@ -613,7 +613,7 @@ async def handle_action_queries(
                 if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
                     account.change_state(clear_cache=True)
                 else:
-                    account.delete_specific_cache('community')
+                    account.delete_specific_cache("community")
                 return
             if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
                 if (section := params[1].lower()) != "footer" and section != "header":
@@ -630,18 +630,49 @@ async def handle_action_queries(
                 try:
                     community_id = int(params[1])
                     if community_id != community.id:
-                        await query.message.edit_text(botman.error(f"{community.__str__()}_not_yours_anymore", account.language))
+                        await query.message.edit_text(
+                            botman.error(f"{community.__str__()}_not_yours_anymore", account.language)
+                        )
                         return
                     community.throw_trash()
                     if community.delete():
-                        await query.message.edit_text(botman.text("successfully_disconnected", account.language),
-                                                    reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.RECONNECT_COMMUNITY, {
-                                                        value: "reconnect"
-                                                    }, account.language, columns_in_a_row=1))
-                        return   
+                        await query.message.edit_text(
+                            botman.text("successfully_disconnected", account.language),
+                            reply_markup=botman.action_inline_keyboard(
+                                BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY,
+                                {value: "reconnect"},
+                                account.language,
+                                columns_in_a_row=1,
+                            ),
+                        )
+                        return
                 except:
                     pass
-                await query.message.edit_text(botman.error("data_invalid", account.language)) # FIXME: Add text resource
+                await query.message.edit_text(botman.error("data_invalid", account.language))
+        case BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value | BotMan.QueryActions.RECONNECT_COMMUNITY.value:
+            if not value and action == BotMan.QueryActions.RECONNECT_COMMUNITY:
+                await query.message.edit_text(botman.text("operation_canceled", account.language))
+                return
+            params = value.split(BotMan.CALLBACK_DATA_JOINER)
+            if not params or len(params) < 2 or not (community_type := BotMan.CommunityType.which(params[0])):
+                await query.message.edit_text(botman.error("data_invalid", account.language))
+                return
+
+            if action  == BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value:
+                await query.message.edit_text(
+                    botman.text(f"rusure_to_reconnect_{community_type.__str__()}", account.language),
+                    reply_markup=botman.action_inline_keyboard(
+                        BotMan.QueryActions.RECONNECT_COMMUNITY, {None: "cancel", value: "reconnect"}, account.language
+                    ),
+                )
+            else:
+                # If user has verified the reconnection:
+                try:
+                    community_id = int(params[1])
+                    # TODO: Implement trash methods and their procedures in Models
+                except:
+                    pass
+
         case _:
             if not account.authorization(context.args):
                 await query.message.edit_text(botman.error("what_the_fuck", account.language))
@@ -932,7 +963,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             account = Account.get(update.message.chat)
             channel = Channel.getByOwner(account.chat_id)
             if not channel:
-                account.delete_specific_cache('community')
+                account.delete_specific_cache("community")
                 await update.message.reply_text(
                     botman.error("no_channels", account.language),
                     reply_markup=botman.mainkeyboard(account),
@@ -1018,7 +1049,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             account = Account.get(update.message.chat)
             group = Group.getByOwner(account.chat_id)
             if not group:
-                account.delete_specific_cache('community')
+                account.delete_specific_cache("community")
                 await update.message.reply_text(
                     botman.error("no_groups", account.language),
                     reply_markup=botman.mainkeyboard(account),
@@ -1034,7 +1065,7 @@ async def handle_messages(update: Update, context: CallbackContext):
         case BotMan.Commands.CHANNEL_CHANGE_FA.value | BotMan.Commands.CHANNEL_CHANGE_EN.value:
             account = Account.get(update.message.chat)
             if not (channel := Channel.getByOwner(account.chat_id)):
-                account.delete_specific_cache('community')
+                account.delete_specific_cache("community")
                 await update.message.reply_text(
                     botman.error("no_channels", account.language),
                     reply_markup=botman.mainkeyboard(account),
@@ -1042,24 +1073,32 @@ async def handle_messages(update: Update, context: CallbackContext):
                 return
             account.change_state(Account.States.ADD_BOT_AS_ADMIN, "community", BotMan.CommunityType.CHANNEL.value)
             account.add_cache("back", BotMan.MenuSections.COMMUNITY_PANEL.value)
-            await update.message.reply_text(botman.text("add_bot_as_channel_admin", account.language), reply_markup=botman.cancel_menu(account.language))
+            await update.message.reply_text(
+                botman.text("add_bot_as_channel_admin", account.language), reply_markup=botman.cancel_menu(account.language)
+            )
         case BotMan.Commands.COMMUNITY_DISCONNECT_FA.value | BotMan.Commands.COMMUNITY_DISCONNECT_EN.value:
             account = Account.get(update.message.chat)
-            if not (community := BotMan.getCommunity((community_type := BotMan.CommunityType.which(account.get_cache('community'))), account.chat_id)):
-                account.delete_specific_cache('community')
-                await update.message.reply_text(botman.error(f'no_{community_type.__str__()}', 
-                                                             account.language), 
-                                                reply_markup=botman.mainkeyboard(account))
+            if not (
+                community := BotMan.getCommunity(
+                    (community_type := BotMan.CommunityType.which(account.get_cache("community"))), account.chat_id
+                )
+            ):
+                account.delete_specific_cache("community")
+                await update.message.reply_text(
+                    botman.error(f"no_{community_type.__str__()}", account.language), reply_markup=botman.mainkeyboard(account)
+                )
                 return
 
-            await update.message.reply_text(botman.text(f'rusure_to_disconnect_{community_type.__str__()}', account.language),
-                                            reply_markup=botman.action_inline_keyboard(
-                                                BotMan.QueryActions.DISCONNECT_COMMUNITY,
-                                                {
-                                                    None: "cancel",
-                                                    f"{community_type.value}{BotMan.CALLBACK_DATA_JOINER}{community.id}": "community_disconnect"
-                                                }
-                                            ))
+            await update.message.reply_text(
+                botman.text(f"rusure_to_disconnect_{community_type.__str__()}", account.language),
+                reply_markup=botman.action_inline_keyboard(
+                    BotMan.QueryActions.DISCONNECT_COMMUNITY,
+                    {
+                        None: "cancel",
+                        f"{community_type.value}{BotMan.CALLBACK_DATA_JOINER}{community.id}": "community_disconnect",
+                    },
+                ),
+            )
         # settings sub menu:
         case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
             account = Account.get(update.message.chat)
@@ -1502,6 +1541,7 @@ async def handle_group_messages(update: Update, context: CallbackContext):
                 to_user.language,
             )
             await update.message.reply_text(message)
+
 
 # TODO: disable old caching
 # FIXME: Write script for CROSS_Checking CMC api response with my coin list

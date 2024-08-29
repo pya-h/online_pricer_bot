@@ -150,7 +150,8 @@ class BotMan:
         TRIGGER_MARKET_TAGS = 11
         UPDATE_MESSAGE_SECTIONS = 12
         DISCONNECT_COMMUNITY = 13
-        RECONNECT_COMMUNITY = 14
+        REQUEST_RECONNECT_COMMUNITY = 14
+        RECONNECT_COMMUNITY = 15
         NONE = 0
 
         @staticmethod
@@ -175,6 +176,7 @@ class BotMan:
         QueryActions.TRIGGER_MARKET_TAGS,
         QueryActions.UPDATE_MESSAGE_SECTIONS,
         QueryActions.DISCONNECT_COMMUNITY,
+        QueryActions.REQUEST_RECONNECT_COMMUNITY,
         QueryActions.RECONNECT_COMMUNITY,
     )
 

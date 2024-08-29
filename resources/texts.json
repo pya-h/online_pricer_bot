@@ -604,5 +604,13 @@
     "successfully_disconnected": {
         "fa": "✅ اتصال ربات به موفقیت قطع شد.",
         "en": "✅ Bot successfully disconnected."
+    },
+    "rusure_to_reconnect_group": {
+        "fa": "🔹 اگر می خواهید ربات به این گروه دوباره متصل شود و تنظیماتش بازگردد، روی گزینه [ اتصال مجدد ] کلیک کنید:\n\n🔹 اگر از اینکار منصرف شده اید روی گزینه [ لغو ] کلیک کنید.\n\n🔹 توجه: درصورتی که هم اکنون ربات را به گروه دیگری متصل کرده باشید، عملیات اتصال مجدد صرفا تنظیمات گذشته ی شما را بازنشانی می کند و گروه را نغییر نمی دهد.",
+        "en": "🔹 If you want bot to reconnect to your group, click [ Reconnect ]:\n\n🔹 If you have given up on this, click on the [ Cancel ] option.\n\n🔹Notice: If you have already connected the bot to a new group, performing this action will only bring back the configurations of the previous group, and bot will be still connected to your new group."
+    },
+    "rusure_to_reconnect_channel": {
+        "fa": "🔹 اگر می خواهید ربات به این کانال دوباره متصل شود و تنظیماتش بازگردد، روی گزینه [ اتصال مجدد ] کلیک کنید:\n\n🔹 اگر از اینکار منصرف شده اید روی گزینه [ لغو ] کلیک کنید.\n\n🔹 توجه: درصورتی که هم اکنون ربات را به کانال دیگری متصل کرده باشید، عملیات اتصال مجدد صرفا تنظیمات گذشته ی شما را بازنشانی می کند و کانال را نغییر نمی دهد.",
+        "en": "🔹 If you want bot to reconnect to your channel, click [ Reconnect ]:\n\n🔹 If you have given up on this, click on the [ Cancel ] option.\n\n🔹Notice: If you have already connected the bot to a new channel, performing this action will only bring back the configurations of the previous group, and bot will be still connected to your new group."
     }
 }
