@@ -2,7 +2,7 @@ import requests, json
 from tools import mathematix, manuwriter
 from tools.exceptions import CacheFailureException
 import api.api_async as api
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 CACHE_FOLDER_PATH = "api.cache"
 CACHE_ARCHIVE_FOLDER_PATH = "archives"
@@ -120,14 +120,14 @@ class APIService(BaseAPIService):
     def get_desired_ones(self, desired_ones: list) -> List[str]:
         pass
 
-    def extract_api_response(self, desired_ones: list = None) -> str:
+    def extract_api_response(self, desired_ones: list = None) -> Tuple[str, str]:
         pass
 
-    async def get(self, desired_ones: list = None) -> str:
+    async def get(self, desired_ones: list = None) -> Tuple[str, str]:
         self.latest_data = await self.get_request()  # update latest
         return self.extract_api_response(desired_ones)
 
-    def get_latest(self, desired_ones: list = None) -> str:
+    def get_latest(self, desired_ones: list = None) -> Tuple[str, str]:
         return self.extract_api_response(desired_ones)
 
     def get_desired_cache(self, desired_ones: list = None, force_reload: bool = False) -> str:

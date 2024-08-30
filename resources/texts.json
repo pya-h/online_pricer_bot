@@ -628,5 +628,33 @@
     "equalize_header": {
         "fa": "✅ %s %s معال است با:",
         "en": "✅ %s %s is equivalent to:"
+    },
+    "announcement_fiat_header": {
+        "fa": "📌 #قیمت_لحظه_ای #بازار_ارز",
+        "en": "📌 #Instant_Price #Currency_Market"
+    },
+    "announcement_gold_header": {
+        "fa": "📌 #قیمت_لحظه_ای #بازار_طلا",
+        "en": "📌 #Instant_Price #Gold_Market"
+    },
+    "announcement_crypto_header": {
+        "fa": "📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال",
+        "en": "📌 #Instant_Price #Cryptocurrency_Market"
+    },
+    "announcement_post_interval": {
+        "fa": "✅ بروزرسانی قیمت ها (هر %s دقیقه)",
+        "en": "✅ Prices will be updated every %s minutes."
+    },
+    "trash_restored": {
+        "fa": "✅ اتصال مجدد و بازگردانی شخصی سازی های آن با موفقیت انجام شد.",
+        "en": "✅ Reconnecting and restoring your customization completed successfully."
+    },
+    "trash_replaced_group_data": {
+        "fa": "با توجه به این که شما ربات را به گروه دیگری متصل کرده اید، امکان اتصال به گروه قبلی وجود ندارد.\n\n* با این وجود تنظیمات مربوط به گروه قدیمی بازیابی شده و بعنوان تنظیمات گروه فعلی ثبت شد..",
+        "en": "Reconnecting previous group can not happen, since you've connected the bot to another group.\n\n* But the customization of the old group has been restored and is now applied on your current group."
+    },
+    "trash_replaced_channel_data": {
+        "fa": "با توجه به این که شما ربات را به کانال دیگری متصل کرده اید، امکان اتصال به کانال قبلی وجود ندارد.\n\n* با این وجود تنظیمات مربوط به کانال قدیمی بازیابی شده و بعنوان تنظیمات کانال فعلی ثبت شد..",
+        "en": "Reconnecting previous channel can not happen, since you've connected the bot to another channel.\n\n* But the customization of the old channel has been restored and is now applied on your current channel."
     }
 }

@@ -2,11 +2,12 @@ from tools import manuwriter
 from db.interface import DatabaseInterface
 from json import dumps as jsonify
 from bot.types import GroupInlineKeyboardButtonTemplate
-from typing import List
-from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException
+from typing import List, Dict
+from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException, NoSuchThingException
 from telegram import Chat
 from .account import Account
 from tools.mathematix import now_in_minute
+
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
     def __init__(self, title: str | None = None, minutes: int = 0, hours: int = 0, days: int = 0) -> None:
@@ -120,6 +121,7 @@ class Channel:
         message_footnote: str | None = None,
         message_show_date_tag: bool = False,
         message_show_market_tags: bool = True,
+        language: str | None = "fa",
     ) -> None:
         self.owner_id: int = int(owner_id)
         self.id: int = int(channel_id)
@@ -134,7 +136,7 @@ class Channel:
         self.message_show_date_tag: bool = message_show_date_tag
         self.message_show_market_tags: bool = message_show_market_tags
         self.last_post_time: int | None = last_post_time  # don't forget database has this
-
+        self.language = language
         self.owner: Account | None = Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
     def create(self, allowed_channels_count: int = 1):
@@ -196,8 +198,38 @@ class Channel:
         #     del Channel.fastMemInstances[old_chat_id]
         return self
 
-    def throw_trash(self):
+    def throw_in_trashcan(self):
         self.database().trash_sth(self.owner_id, DatabaseInterface.TrashType.CHANNEL, self.id, self.as_dict)
+
+    def getTrashedCustomization(trash_identifier: int) -> Dict[str, int | float | str | bool]:
+        trash = Channel.database().get_trash_by_identifier(DatabaseInterface.TrashType.CHANNEL, trash_identifier)
+        try:
+            return trash[-2]
+        except:
+            pass
+        return None
+
+    def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
+        try:
+            self.selected_coins = DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else []
+            self.selected_currencies = DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else []
+            self.name = trash["name"] if "name" in trash else None
+            self.title = trash["title"] if "title" in trash else None
+            self.name = trash["name"] if "name" in trash else None
+            self.interval = trash["interval"] if "interval" in trash else 0
+            self.is_active = trash["is_active"] if "is_active" in trash else 0
+            self.last_post_time = trash["last_post_time"] if "last_post_time" in trash else 0
+            self.language = trash["language"] if "language" in trash else "fa"
+
+            msg_settings = trash["message"] if "message" in trash else None
+            if msg_settings:
+                self.message_header = msg_settings["header"] if "header" in msg_settings else None
+                self.message_footnote = msg_settings["footnote"] if "footnote" in msg_settings else None
+                self.message_show_date_tag = msg_settings["date_tag"] if "date_tag" in msg_settings else False
+                self.message_show_market_tags = msg_settings["market_tags"] if "market_tags" in msg_settings else False
+        except:
+            pass
+        return self
 
     @property
     def as_dict(self):
@@ -217,9 +249,10 @@ class Channel:
             "last_post_time": self.last_post_time,
             "interval": self.interval,
             "is_active": self.is_active,
+            "language": self.language,
             "last_interaction": now_in_minute(),
         }
-    
+
     @property
     def coins_as_str(self):
         return ";".join(self.selected_coins)
@@ -240,6 +273,14 @@ class Channel:
         return None
 
     @staticmethod
+    def all():
+        return list(map(Channel.extractQueryRowData, Channel.database().get_all_channels()))
+
+    @staticmethod
+    def actives():
+        return list(map(Channel.extractQueryRowData, Channel.database().get_all_active_channels()))
+
+    @staticmethod
     def extractQueryRowData(row: tuple):
         return Channel(
             channel_id=int(row[0]),
@@ -253,6 +294,7 @@ class Channel:
             message_footnote=row[8],
             message_show_date_tag=bool(row[9]),
             message_show_market_tags=bool(row[10]),
+            language=row[-3],
             last_post_time=int(row[-2] or 0),
             owner_id=int(row[-1]),
         )
@@ -266,7 +308,6 @@ class Channel:
             return Channel.extractQueryRowData(rows[0])
         return list(map(Channel.extractQueryRowData, rows))
 
-
     @staticmethod
     def usersChannelsCount(user_chat_id: int) -> int:
         return Channel.database().user_channels_count(user_chat_id)
@@ -274,3 +315,18 @@ class Channel:
     @staticmethod
     def userHasAnyChannels(user_chat_id: int) -> bool:
         return bool(Channel.database().get_user_channels(user_chat_id, take=1))
+
+    @staticmethod
+    def restoreTrash(trash_identifier: int):
+        db = Channel.database()
+        trash = db.get_trash_by_identifier(DatabaseInterface.TrashType.CHANNEL, trash_identifier)
+        if not trash:
+            raise NoSuchThingException(trash_identifier, "Trashed Channel")
+        try:
+            data = trash[-2]
+            group = Channel(trash[2], trash_identifier).use_trash_data(data).save()
+            db.throw_trash_away(trash[0])
+            return group
+        except Exception as x:
+            manuwriter.log("Returning trashed channel failed!", x, "Channel")
+        return None

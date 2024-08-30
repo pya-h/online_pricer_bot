@@ -22,34 +22,16 @@ from bot.post import PostMan
 from models.account import Account
 from models.channel import Channel, PostInterval
 from models.group import Group
-from tools.manuwriter import log, load_json
-from tools.mathematix import persianify, cut_and_separate
+from tools.manuwriter import log
+from tools.mathematix import persianify, cut_and_separate, now_in_minute
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
 from .types import GroupInlineKeyboardButtonTemplate, SelectionListTypes, MarketOptions
 from math import ceil as math_ceil
-
-
-class ResourceManager:
-
-    def __init__(self, source_filename: str, source_foldername: str):
-        self.source = load_json(source_filename, source_foldername)
-
-    def mainkeyboard(self, key: str, language: str = "fa") -> str:
-        return self.source["main_keyboard"][key][language]
-
-    def text(self, text_key: str, language: str = "fa") -> str:
-        return self.source[text_key][language]
-
-    def error(self, text_key: str, language: str = "fa") -> str:
-        return self.source["errors"][text_key][language]
-
-    def keyboard(self, key: str, language: str = "fa") -> str:
-        return self.source["keyboard"][key][language]
+from .types import ResourceManager
 
 
 resourceman = ResourceManager("texts", "resources")
-
 
 class BotMan:
     """This class is defined to collect all common and handy options, fields and features of online pricer bot"""
@@ -241,7 +223,7 @@ class BotMan:
         ABAN_TETHER_TOKEN = config("ABAN_TETHER_TOKEN")
 
         self.postman = PostMan(
-            CURRENCY_TOKEN, CMC_API_KEY, aban_tether_api_token=ABAN_TETHER_TOKEN, nobitex_api_token=NOBITEX_TOKEN
+            resourceman, CURRENCY_TOKEN, CMC_API_KEY, aban_tether_api_token=ABAN_TETHER_TOKEN, nobitex_api_token=NOBITEX_TOKEN
         )
 
         self.channels = [
@@ -1172,3 +1154,24 @@ class BotMan:
         return BotMan.CommunityType.toClass(
             community_type if not isinstance(community_type, BotMan.CommunityType) else community_type.value
         ).getByOwner(owner_id)
+
+    async def process_channels(self, context: CallbackContext):
+        '''loop through channels and send post in ones that their interval due has reached.'''
+        channels = Channel.actives()
+        now = now_in_minute()
+        # FIXME: Find ways to optimize this mf
+        for channel in channels:
+            if channel.last_post_time - now >= channel.interval:
+                try:
+                    post = self.postman.create_channel_post(channel)
+                    await context.bot.send_message(chat_id=channel.id, text=post)
+                    channel.last_post_time = now  # TODO: Or use BULK_UPDATE?
+                    channel.save()
+                except Exception as x:
+                    pass # TODO: Disable the channel? Maybe find out which Exception is for Banned Bot and then active those
+    async def processDailyRefresh(context: CallbackContext):
+        '''Garbage collect fast mems, remove messages supposed to be removed, etc.'''
+        Account.garbageCollect()
+        Group.garbageCollect()
+
+        '''TODO: loop through trash messages, and remove ones that their time has passed.'''

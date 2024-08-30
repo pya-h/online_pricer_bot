@@ -1,9 +1,9 @@
 from tools.mathematix import now_in_minute, from_now_time_diff
 from db.interface import DatabaseInterface
-from typing import List
+from typing import List, Dict
 from telegram import Chat
 from .account import Account
-from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException
+from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException, NoSuchThingException
 from tools.manuwriter import log
 
 class Group:
@@ -84,8 +84,35 @@ class Group:
             return False
         return True
     
-    def throw_trash(self):
+    def throw_in_trashcan(self):
         self.database().trash_sth(self.owner_id, DatabaseInterface.TrashType.GROUP, self.id, self.as_dict)
+
+    def getTrashedCustomization(trash_identifier: int) -> Dict[str, int | float | str | bool]:
+        trash = Group.database().get_trash_by_identifier(DatabaseInterface.TrashType.GROUP, trash_identifier)
+        try:
+            return trash[-2] 
+        except:
+            pass
+        return None
+
+    def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
+        try:
+            self.selected_coins = DatabaseInterface.stringToList(trash['coins']) if 'coins' in trash else []
+            self.selected_currencies = DatabaseInterface.stringToList(trash['currencies']) if 'currencies' in trash else []
+            self.name = trash['name'] if 'name' in trash else None
+            self.title = trash['title'] if 'title' in trash else None
+            self.name = trash['name'] if 'name' in trash else None
+            msg_settings = trash['message'] if 'message' in trash else None
+            if msg_settings:
+                self.message_header = msg_settings['header'] if 'header' in msg_settings else None
+                self.message_footnote = msg_settings['footnote'] if 'footnote' in msg_settings else None
+                self.message_show_date_tag = msg_settings['date_tag'] if 'date_tag' in msg_settings else False
+                self.message_show_market_tags = msg_settings['market_tags'] if 'market_tags' in msg_settings else False
+
+            self.last_interaction = now_in_minute()
+        except:
+            pass
+        return self
 
     @property
     def as_dict(self):
@@ -205,3 +232,18 @@ class Group:
     @staticmethod
     def getFast(group_id: int):
         return Group.fastMemInstances[group_id] if group_id in Group.fastMemInstances else None
+    
+    @staticmethod
+    def restoreTrash(trash_identifier: int):
+        db = Group.database()
+        trash = db.get_trash_by_identifier(DatabaseInterface.TrashType.GROUP, trash_identifier)
+        if not trash:
+            raise NoSuchThingException(trash_identifier, 'Trashed Group')
+        try:
+            data = trash[-2]
+            group = Group(trash[2], trash_identifier).use_trash_data(data).save()
+            db.throw_trash_away(trash[0])
+            return group
+        except Exception as x:
+            log('Returning trashed group failed!', x, 'Group')
+        return None

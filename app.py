@@ -20,6 +20,8 @@ from typing import List
 from tools.exceptions import NoLatestDataException, InvalidInputException, MaxAddedCommunityException, NoSuchThingException
 from models.group import Group
 from models.channel import Channel, PostInterval
+from bot.post import PostMan
+
 
 botman = BotMan()
 
@@ -126,8 +128,8 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
     message = await botman.postman.create_post(
         desired_coins=account.desired_cryptos,
         desired_currencies=account.desired_currencies,
-        for_channel=False,
-        exactly_right_now=not is_latest_data_valid,
+        get_most_recent_price=not is_latest_data_valid,
+        language=account.language
     )
 
     await update.message.reply_text(message)
@@ -634,7 +636,7 @@ async def handle_action_queries(
                             botman.error(f"{community.__str__()}_not_yours_anymore", account.language)
                         )
                         return
-                    community.throw_trash()
+                    community.throw_in_trashcan()
                     if community.delete():
                         await query.message.edit_text(
                             botman.text("successfully_disconnected", account.language),
@@ -666,12 +668,17 @@ async def handle_action_queries(
                     ),
                 )
             else:
-                # If user has verified the reconnection:
-                try:
-                    community_id = int(params[1])
-                    # TODO: Implement trash methods and their procedures in Models
-                except:
-                    pass
+                # If user has verified the reconnection request:
+                community_id = int(params[1])
+                current_community: Group | Channel | None = BotMan.getCommunity(community_type, account.chat_id)
+                if current_community:
+                    trash_data = community_type.to_class().getTrashedCustomization(community_id)
+                    current_community.use_trash_data(trash_data)
+                    current_community.save()
+                    await query.message.edit_text(botman.text(f'trash_replaced_{community_type.__str__()}_data', account.language))
+                    return
+                community = community_type.to_class().restoreTrash(community_id)
+                await query.message.edit_text(botman.text('trash_restored', account.language))
 
         case _:
             if not account.authorization(context.args):
@@ -1540,7 +1547,10 @@ async def handle_group_messages(update: Update, context: CallbackContext):
                 to_user.language,
                 group.message_show_market_tags,
             )
-            await update.message.reply_text(message)
+
+            await update.message.reply_text(
+                PostMan.customizePost(message, group, to_user.language)
+            )
 
 
 # TODO: disable old caching
@@ -1556,7 +1566,6 @@ def main():
     app.add_handler(CommandHandler("equalizer", cmd_equalizer))
     app.add_handler(CommandHandler("lang", cmd_switch_language))
     app.add_handler(CommandHandler("useinchannel", cmd_start_using_in_channel))
-
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
     app.add_handler(CommandHandler("up", cmd_upgrade_user))
@@ -1581,6 +1590,18 @@ def main():
     )  # TODO: Is private filter required?
     app.add_handler(MessageHandler(filters.COMMAND, unknown_command_handler))
     # app.add_error_handler() # TODO:Check this out
+
+    app.job_queue.run_repeating(
+        botman.process_channels,
+        interval=60,
+        first=60,
+        name='PLUS_CHANNELS'
+    )
+
+    app.job_queue.run_daily(
+        BotMan.processDailyRefresh,
+        name='DAILY_REFRESH',
+    )
 
     print("Server is up and running...")
     app.run_polling(poll_interval=0.25, timeout=10)

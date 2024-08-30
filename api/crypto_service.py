@@ -128,8 +128,6 @@ class CoinMarketCapService(CryptoCurrencyService):
         res = ""
         for coin in desired_coins:
             res += self.get_price_description_row(coin.upper())
-        if res:
-            res = f"📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال \n{res}"
         return res
 
     def usd_to_cryptos(self, absolute_amount: float | int, source_unit_symbol: str, cryptos: list = None) -> str:

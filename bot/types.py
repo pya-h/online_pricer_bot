@@ -1,4 +1,5 @@
 from enum import Enum
+from tools.manuwriter import load_json
 
 
 class MarketOptions(Enum):
@@ -51,3 +52,24 @@ class GroupInlineKeyboardButtonTemplate:
     @property
     def title(self) -> str:
         pass
+
+
+class ResourceManager:
+
+    def __init__(self, source_filename: str, source_foldername: str):
+        self.source = load_json(source_filename, source_foldername)
+
+    def mainkeyboard(self, key: str, language: str = "fa") -> str:
+        return self.source["main_keyboard"][key][language]
+
+    def text(self, text_key: str, language: str = "fa") -> str:
+        return self.source[text_key][language]
+
+    def get(self, text_key: str):
+        return self.source[text_key]
+
+    def error(self, text_key: str, language: str = "fa") -> str:
+        return self.source["errors"][text_key][language]
+
+    def keyboard(self, key: str, language: str = "fa") -> str:
+        return self.source["keyboard"][key][language]

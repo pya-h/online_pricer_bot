@@ -179,13 +179,7 @@ class NavasanService(CurrencyService):
                 res_curr += f"🔸 {row}\n"
             else:
                 res_gold += f"🔸 {row}\n"
-
-        if res_curr:
-            res_curr = f"📌 #قیمت_لحظه_ای #بازار_ارز \n{res_curr}\n"
-        if res_gold:
-            res_gold = f"📌 #قیمت_لحظه_ای #بازار_طلا \n{res_gold}\n"
-
-        return res_curr + res_gold
+        return res_curr, res_gold
 
     async def update_services(self):
         try:

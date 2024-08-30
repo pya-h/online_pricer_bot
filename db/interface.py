@@ -479,6 +479,12 @@ class DatabaseInterface:
         """Finds all the channels with plan interval > min_interval"""
         return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_INTERVAL} > %s", min_interval)
 
+    def get_all_channels(self) -> list:
+        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS}")
+
+    def get_all_active_channels(self) -> list:
+        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_IS_ACTIVE}=1 AND {self.CHANNEL_INTERVAL} > 0")
+
     def set_channel_state(self, channel_id: int, is_active: bool = True):
         """Delete channel and its planning"""
         self.execute(
@@ -490,7 +496,7 @@ class DatabaseInterface:
 
     def delete_channel(self, channel_id: int):
         """Delete channel and its planning"""
-        self.execute(False, f"DELETE FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID} = %s", channel_id)
+        self.execute(False, f"DELETE FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID} = %s LIMIT 1", channel_id)
 
     def add_group(self, group):
         if not group:
@@ -586,7 +592,7 @@ class DatabaseInterface:
 
     def delete_group(self, group_id: int):
         """Delete group and its planning"""
-        self.execute(False, f"DELETE FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID} = %s", group_id)
+        self.execute(False, f"DELETE FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID} = %s LIMIT 1", group_id)
 
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesn't return result such as insert or delete"""
@@ -647,7 +653,7 @@ class DatabaseInterface:
         return 0
 
     def delete_alarm(self, id: int):
-        self.execute(False, f"DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s", id)
+        self.execute(False, f"DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s LIMIT 1", id)
 
     def get_table_columns(self, table: str):
         columns_info = self.execute(True, f"PRAGMA table_info({table});")
@@ -670,12 +676,14 @@ class DatabaseInterface:
         rows = self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1", id)
         return rows[0] if rows else None
 
-
     def get_user_trash(self, owner_id: int):
         return self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_OWNER_ID}=%s", owner_id)
 
     def get_trash_by_identifier(self, trash_type: int, identifier: int):
         return self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_IDENTIFIER}=%s LIMIT 1", trash_type, identifier)
+
+    def throw_trash_away(self, id: int):
+        return self.execute(False, f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1", id)
 
     def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
         tables = (
