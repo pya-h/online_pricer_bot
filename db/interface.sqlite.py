@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 from tools.manuwriter import log, prepare_folder, fwrite_from_scratch
-from tools.mathematix import after_n_months
+from tools.mathematix import n_months_later
 from time import time
 from typing import List
 
@@ -269,7 +269,7 @@ class DatabaseInterface:
         )
 
     def upgrade_account(self, account, duration_in_months: int):
-        account.plus_end_date = after_n_months(duration_in_months)
+        account.plus_end_date = n_months_later(duration_in_months)
         str_plus_end_date = account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None
         self.execute(
             False,

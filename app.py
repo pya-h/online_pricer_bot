@@ -11,7 +11,7 @@ from telegram.error import BadRequest
 from models.account import Account
 import json
 from tools.manuwriter import log
-from tools.mathematix import cut_and_separate, persianify
+from tools.mathematix import cut_and_separate, persianify, n_days_later_timestamp
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
@@ -129,7 +129,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
         desired_coins=account.desired_cryptos,
         desired_currencies=account.desired_currencies,
         get_most_recent_price=not is_latest_data_valid,
-        language=account.language
+        language=account.language,
     )
 
     await update.message.reply_text(message)
@@ -292,7 +292,7 @@ async def cmd_send_post(update: Update, context: CallbackContext):
 
     account.change_state(Account.States.SEND_POST)
     await update.message.reply_text(
-        botman.text("send_48h_post", account.language),
+        botman.text("enter_remove_interval_in_days", account.language),
         reply_markup=botman.cancel_menu[account.language],
     )
 
@@ -669,7 +669,7 @@ async def handle_action_queries(
                 await query.message.edit_text(botman.error("data_invalid", account.language))
                 return
 
-            if action  == BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value:
+            if action == BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value:
                 await query.message.edit_text(
                     botman.text(f"rusure_to_reconnect_{community_type.__str__()}", account.language),
                     reply_markup=botman.action_inline_keyboard(
@@ -684,10 +684,12 @@ async def handle_action_queries(
                     trash_data = community_type.to_class().getTrashedCustomization(community_id)
                     current_community.use_trash_data(trash_data)
                     current_community.save()
-                    await query.message.edit_text(botman.text(f'trash_replaced_{community_type.__str__()}_data', account.language))
+                    await query.message.edit_text(
+                        botman.text(f"trash_replaced_{community_type.__str__()}_data", account.language)
+                    )
                     return
                 community = community_type.to_class().restoreTrash(community_id)
-                await query.message.edit_text(botman.text('trash_restored', account.language))
+                await query.message.edit_text(botman.text("trash_restored", account.language))
 
         case _:
             if not account.authorization(context.args):
@@ -1072,9 +1074,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 )
                 return
             account.change_state(Account.States.CHANGE_GROUP, "changing_id", group.id)
-            account.add_cache(
-                "back", BotMan.MenuSections.COMMUNITY_PANEL.value
-            )
+            account.add_cache("back", BotMan.MenuSections.COMMUNITY_PANEL.value)
             await update.message.reply_text(
                 botman.text("add_bot_to_new_group", account.language), reply_markup=botman.cancel_menu(account.language)
             )
@@ -1443,20 +1443,35 @@ async def handle_messages(update: Update, context: CallbackContext):
                             await send_r_u_sure_to_downgrade_message(context, account, user)
                         case Account.States.SEND_POST:
                             # admin is trying to send post
+                            if update.message.text.isnumeric():
+                                try:
+                                    days = int(update.message.text)
+                                    account.add_cache("offset", days)
+                                    str_days = str(days) if account.language.lower() != "fa" else persianify(days)
+                                    suffix = botman.text("this_message_will_be_removed_after", account.language) % (str_days,)
+                                    await update.message.reply_text(
+                                        botman.text("type_your_post_text", account.language) + suffix,
+                                        reply_markup=botman.cancel_menu[account.language],
+                                    )
+                                    return
+                                except:
+                                    pass
                             all_accounts = Account.everybody()
                             progress_text = botman.text("sending_your_post", account.language)
-                            telegram_response = await update.message.reply_text(progress_text)
+                            telegram_response: Message = await update.message.reply_text(progress_text)
                             message_id: int | None = None
-                            removal_time_offset: int | None = None
+                            removal_time: int | None = None
                             try:
-                                message_id = int(str(telegram_response["message_id"]))
-                                removal_time_offset = account.get_cache('offset')
+                                message_id = int(str(telegram_response.message_id))
+                                offset = int(account.get_cache("offset"))
+                                removal_time = n_days_later_timestamp(offset)
                             except:
                                 pass
                             number_of_accounts = len(all_accounts)
-                            trashes: List[Tuple[int, int]] = [None] * number_of_accounts
+                            trashes: List[Tuple[int, int, int]] = [None] * number_of_accounts
                             progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
                             post_index = 0
+                            trash_message_type = Account.database().TrashType.MESSAGE.value
                             for index, chat_id in enumerate(all_accounts):
                                 try:
                                     if message_id and index % progress_update_trigger == 0:
@@ -1468,8 +1483,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                                         )
                                     if chat_id != account.chat_id:
                                         post = await update.message.copy(chat_id)
-                                        if removal_time_offset:
-                                            trashes[post_index] = (chat_id, post.message_id)
+                                        if removal_time:
+                                            trashes[post_index] = (trash_message_type, chat_id, post.message_id, removal_time)
                                             post_index += 1
                                 except:
                                     pass  # maybe remove the account from database ?
@@ -1480,6 +1495,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 reply_markup=botman.get_admin_keyboard(account.language),
                             )
                             account.change_state(clear_cache=True)  # reset .state and .state_data
+                            if removal_time:
+                                try:
+                                    Account.schedulePostsForRemoval(trashes[:post_index])
+                                    await update.message.reply_text("posts_scheduled_for_removal", account.language)
+                                except:
+                                    pass
 
 
 async def handle_new_group_members(update: Update, context: CallbackContext):
@@ -1562,9 +1583,7 @@ async def handle_group_messages(update: Update, context: CallbackContext):
                 group.message_show_market_tags,
             )
 
-            await update.message.reply_text(
-                PostMan.customizePost(message, group, to_user.language)
-            )
+            await update.message.reply_text(PostMan.customizePost(message, group, to_user.language))
 
 
 # TODO: disable old caching
@@ -1605,16 +1624,11 @@ def main():
     app.add_handler(MessageHandler(filters.COMMAND, unknown_command_handler))
     # app.add_error_handler() # TODO:Check this out
 
-    app.job_queue.run_repeating(
-        botman.process_channels,
-        interval=60,
-        first=60,
-        name='PLUS_CHANNELS'
-    )
+    app.job_queue.run_repeating(botman.process_channels, interval=60, first=60, name="PLUS_CHANNELS")
 
     app.job_queue.run_daily(
         BotMan.doDailyCheck,
-        name='DAILY_REFRESH',
+        name="DAILY_REFRESH",
     )
 
     print("Server is up and running...")

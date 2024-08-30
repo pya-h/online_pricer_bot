@@ -166,17 +166,24 @@ def jalali_to_gregorian(jy: int, jm: int, jd: int):
     return gy, gm, gd
 
 
-def extend_date(date: datetime, months_count: int) -> datetime:
-    return date + relativedelta(months=months_count)
+def now_in_minute() -> int:
+    return int(time() / 60)
 
-
-def after_n_months(n: int = 2) -> datetime:
+def n_months_later(n: int = 1) -> datetime:
     # this is used for plus end date calculation
-    return extend_date(date=datetime.now(), months_count=n)
+    return datetime.now() + relativedelta(months=n)
+
+def n_days_later(n: int = 1) -> datetime:
+    # this is used for plus end date calculation
+    return datetime.now() + relativedelta(days=n)
+
+def n_days_later_timestamp(n: int = 1) -> int:
+    # this is used for plus end date calculation
+    return now_in_minute() + n * 24 * 60
 
 
 def force_cast(value: str) -> int | float | str:
-    """Convert a numric string to a number type variable, or return the string itself if its not numeric"""
+    """Convert a numeric string to a number type variable, or return the string itself if its not numeric"""
     try:
         value = int(value)
     except:
@@ -203,11 +210,6 @@ def minutes_to_timestamp(minutes: int) -> str:
             # if
         # else:
     return timestamp
-
-
-def now_in_minute() -> int:
-    return time() // 60
-
 
 def from_now_time_diff(dt: datetime):
     """time passed from time:t in minutes"""

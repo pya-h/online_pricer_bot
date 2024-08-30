@@ -2,9 +2,9 @@ import mysql.connector
 from mysql.connector import Error, MySQLConnection
 from datetime import datetime
 from tools.manuwriter import log, prepare_folder, fwrite_from_scratch
-from tools.mathematix import after_n_months
+from tools.mathematix import n_months_later
 from time import time
-from typing import List
+from typing import List, Tuple
 from decouple import config
 from enum import Enum
 
@@ -111,7 +111,7 @@ class DatabaseInterface:
     ) = ("id", "chat_id", "currency", "price", "change_dir", "unit")
 
     TABLE_TRASH = "trash"
-    TRASH_COLUMNS = (TRASH_ID, TRASH_TYPE, TRASH_OWNER_ID, TRASH_IDENTIFIER, TRASH_DATA, TRASHED_AT) = ("id", "type", "owner_id", "trash_ident", "data", "trashed_at")
+    TRASH_COLUMNS = (TRASH_ID, TRASH_TYPE, TRASH_OWNER_ID, TRASH_IDENTIFIER, TRASH_DELETE_AT, TRASH_DATA, TRASH_TRASHED_AT) = ("id", "type", "owner_id", "trash_ident", "delete_at", "data", "TRASH_trashed_at")
 
     class TrashType(Enum):
         CHANNEL = 1
@@ -243,7 +243,7 @@ class DatabaseInterface:
                 query = (
                     f"CREATE TABLE {self.TABLE_TRASH} ("
                     + f"{self.TRASH_ID} INTEGER PRIMARY KEY AUTO_INCREMENT, {self.TRASH_TYPE} TINYINT NOT NULL, {self.TRASH_OWNER_ID} BIGINT NOT NULL, {self.TRASH_IDENTIFIER} BIGINT, {self.TRASH_DATA} JSON, "
-                    + f"{self.TRASHED_AT} DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY({self.TRASH_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
+                    + f"{self.TRASH_TRASHED_AT} DATETIME DEFAULT CURRENT_TIMESTAMP, {self.TRASH_DELETE_AT} BIGINT DEFAULT NULL, FOREIGN KEY({self.TRASH_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
                 )
 
                 cursor.execute(query)
@@ -354,7 +354,7 @@ class DatabaseInterface:
         )
 
     def upgrade_account(self, account, duration_in_months: int):
-        account.plus_end_date = after_n_months(duration_in_months)
+        account.plus_end_date = n_months_later(duration_in_months)
         self.execute(
             False,
             f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=%s WHERE {self.ACCOUNT_ID}=%s",
@@ -663,7 +663,7 @@ class DatabaseInterface:
         column_names = [column[1] for column in columns_info]
         return column_names
 
-    def trash_sth(self, owner_id: int, trash_type: int, trash_identifier: int, data: dict):
+    def trash_sth(self, owner_id: int, trash_type: int, trash_identifier: int, data: dict, delete_at: datetime | None = None):
         fields = ", ".join(self.TRASH_COLUMNS[1:])  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
         return self.execute(
@@ -672,6 +672,7 @@ class DatabaseInterface:
             trash_type,
             owner_id,
             trash_identifier,
+            delete_at,
             data,
         )
 
@@ -687,6 +688,13 @@ class DatabaseInterface:
 
     def throw_trash_away(self, id: int):
         return self.execute(False, f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1", id)
+
+    def schedule_messages_for_removal(self, messages_data: List[Tuple[int, int, int, int]]):
+        cursor = self.connection.cursor()
+        res = cursor.execute(f"INSERT INTO {self.TABLE_TRASH} ({self.TRASH_TYPE}, {self.TRASH_OWNER_ID}, {self.TRASH_IDENTIFIER}, {self.TRASH_DELETE_AT}) VALUES (%s, %s, %s, %s)", (messages_data,))
+        self.connection.commit()
+        cursor.close()
+        return res
 
     def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
         tables = (

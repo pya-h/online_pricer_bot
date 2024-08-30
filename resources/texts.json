@@ -581,9 +581,9 @@
         "fa": "تبریک! اکانت شما هم اکنون به سطح کاربری ادمین ارتقا یافت.",
         "en": "Congarts! Yo're account is now upgraded to admin mode."
     },
-    "send_48h_post": {
-        "fa": "🔹 متن پست را تایپ کرده و ارسال کنید:\n\n(این پست برای تمامی کاربران ربات ارسال میشود و بعد از ۴۸ ساعت پاک خواهد شد)",
-        "en": "🔹 Write your post and send it.\n\n*It will automatically delete after 48 hours."
+    "type_your_post_text": {
+        "fa": "🔹 متن پست را تایپ کرده و ارسال کنید:",
+        "en": "🔹 Type out your post and send it: "
     },
     "farewell_my_friends": {
         "fa": "متاسفانه فعال کننده من، تصمیم گرفته که از این به بعد در اینجا فعالیتی نکنم.\n!🫡👋 پس خداحافظ همگی دوستان عزیزم",
@@ -656,5 +656,17 @@
     "trash_replaced_channel_data": {
         "fa": "با توجه به این که شما ربات را به کانال دیگری متصل کرده اید، امکان اتصال به کانال قبلی وجود ندارد.\n\n* با این وجود تنظیمات مربوط به کانال قدیمی بازیابی شده و بعنوان تنظیمات کانال فعلی ثبت شد..",
         "en": "Reconnecting previous channel can not happen, since you've connected the bot to another channel.\n\n* But the customization of the old channel has been restored and is now applied on your current channel."
+    },
+    "posts_scheduled_for_removal": {
+        "fa": "✅ زمان بندی حذف خودکار پست ها با موفقیت انجام گرفت.",
+        "en": "✅ Scheduling posts for removal completed successfully."
+    },
+    "enter_remove_interval_in_days": {
+        "fa": "ابتدا مشخص کنید که می خواهید این پست چند روز بعد پاک شود؟ تعداد روزها را به صورت عددی وارد کنید.\n\n* توجه: درصورتی که این یک پست دائمی است: یا عدد صفر را وارد کنید و یا اینکه این مرحله را نادیده بگیرید و مستقیما متن پیام را تایپ کنید تا برای همه کاربران بصورت دایمی ارسال شود..",
+        "en": "Enter the number of days you wish the message to be deleted after?\n* Notice: If this is a permenant post: you can either enter zero [0] here, or you simply ignore this step and directly type your post text to sent it automatically to all users..."
+    },
+    "this_message_will_be_removed_after": {
+        "fa": "(این پیام پس از %s روز بصورت خودکار از صفحه چت ربات تمام کاربران فعال پاک می گردد.)",
+        "en": "This message will be automatically removed after %s days from all active users chat."
     }
 }

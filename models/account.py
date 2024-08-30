@@ -421,3 +421,7 @@ class Account:
     @staticmethod
     def getFast(chat_id: int):
         return Account.fastMemInstances[chat_id] if chat_id in Account.fastMemInstances else None
+    
+    @staticmethod
+    def schedulePostsForRemoval(posts: List[Tuple[int, int, int, int]]):
+        return Account.database().schedule_messages_for_removal(posts)
