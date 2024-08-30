@@ -974,6 +974,7 @@ class BotMan:
                 int(interval),
                 channel_response.chat.username or None,
                 channel_response.chat.title or "Unnamed",
+                language=owner.language
             )
             channel.create()
             post_interval, desc_en, desc_fa = PostInterval(minutes=interval).timestamps
@@ -983,7 +984,6 @@ class BotMan:
                 interval_description = persianify(desc_fa)
             else:
                 interval_description = desc_en
-            # FIXME: Complete this, also handle premium check
             await ctx.bot.send_message(
                 chat_id=owner.chat_id,
                 text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
@@ -1169,6 +1169,7 @@ class BotMan:
                     channel.save()
                 except Exception as x:
                     pass # TODO: Disable the channel? Maybe find out which Exception is for Banned Bot and then active those
+
     async def processDailyRefresh(context: CallbackContext):
         '''Garbage collect fast mems, remove messages supposed to be removed, etc.'''
         Account.garbageCollect()

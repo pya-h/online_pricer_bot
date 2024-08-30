@@ -455,6 +455,15 @@ async def handle_action_queries(
                 return
             account.language = lang
             account.save()
+            channel = Channel.getByOwner(account.chat_id)
+            if channel:
+                if isinstance(channel, Channel):
+                    channel.language = account.language
+                    channel.save()
+                elif isinstance(channel, list):
+                    for each in channel:
+                        each.language = account.language
+                        each.save()
             await context.bot.send_message(
                 text=botman.text("language_switched", account.language),
                 chat_id=account.chat_id,

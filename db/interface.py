@@ -55,6 +55,7 @@ class DatabaseInterface:
         CHANNEL_MESSAGE_FOOTNOTE,
         CHANNEL_MESSAGE_SHOW_DATE_TAG,
         CHANNEL_MESSAGE_SHOW_MARKET_TAGS,
+        CHANNEL_LANGUAGE,
         CHANNEL_LAST_POST_TIME,
         CHANNEL_OWNER_ID,
     ) = (
@@ -69,6 +70,7 @@ class DatabaseInterface:
         "msg_footnote",
         "msg_date_tag",
         "msg_market_tags",
+        "language",
         "last_post_time",
         "owner_id",
     )
@@ -177,7 +179,7 @@ class DatabaseInterface:
             table_exist_query_start = (
                 f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
             )
-
+            tables_common_charset = 'CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci'
             # check if the table accounts was created
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_ACCOUNTS}'")
             if not cursor.fetchone():
@@ -185,7 +187,7 @@ class DatabaseInterface:
                     f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY,"
                     + f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), "
                     + f"{self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} VARCHAR(256) DEFAULT NULL, "
-                    + f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
+                    + f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) {tables_common_charset};"
                 )
                 # create table account
                 cursor.execute(query)
@@ -201,8 +203,9 @@ class DatabaseInterface:
                     + f"{self.CHANNEL_NAME} VARCHAR(32), {self.CHANNEL_TITLE} VARCHAR(128), {self.CHANNEL_INTERVAL} INTEGER NOT NULL,"
                     + f"{self.CHANNEL_IS_ACTIVE} TINYINT DEFAULT 0, {self.CHANNEL_COINS} VARCHAR(1024), {self.CHANNEL_CURRENCIES} VARCHAR(1024), "
                     + f"{self.CHANNEL_MESSAGE_HEADER} VARCHAR(256), {self.CHANNEL_MESSAGE_FOOTNOTE} VARCHAR(256), "
-                    + f"{self.CHANNEL_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, {self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, "
-                    + f"{self.CHANNEL_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
+                    + f"{self.CHANNEL_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, "
+                    + f"{self.CHANNEL_LANGUAGE} CHAR(2),{self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, "
+                    + f"{self.CHANNEL_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
                 )
                 # create table account
                 cursor.execute(query)
@@ -216,7 +219,7 @@ class DatabaseInterface:
                     + f"{self.GROUP_COINS} VARCHAR(1024), {self.GROUP_CURRENCIES} VARCHAR(1024), "
                     + f"{self.GROUP_MESSAGE_HEADER} VARCHAR(256), {self.GROUP_MESSAGE_FOOTNOTE} VARCHAR(256), "
                     + f"{self.GROUP_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, "
-                    + f"{self.GROUP_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
+                    + f"{self.GROUP_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
                 )
                 # create table account
                 cursor.execute(query)
@@ -229,7 +232,7 @@ class DatabaseInterface:
                     + f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTO_INCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} BIGINT NOT NULL, "
                     + f"{self.PRICE_ALARM_TARGET_PRICE} DOUBLE NOT NULL, {self.PRICE_ALARM_TARGET_CURRENCY} VARCHAR(16) NOT NULL, "
                     + f"{self.PRICE_ALARM_CHANGE_DIRECTION} TINYINT(2), {self.PRICE_ALARM_PRICE_UNIT} VARCHAR(16) NOT NULL, "
-                    + f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
+                    + f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
                 )
 
                 cursor.execute(query)
@@ -240,7 +243,7 @@ class DatabaseInterface:
                 query = (
                     f"CREATE TABLE {self.TABLE_TRASH} ("
                     + f"{self.TRASH_ID} INTEGER PRIMARY KEY AUTO_INCREMENT, {self.TRASH_TYPE} TINYINT NOT NULL, {self.TRASH_OWNER_ID} BIGINT NOT NULL, {self.TRASH_IDENTIFIER} BIGINT, {self.TRASH_DATA} JSON, "
-                    + f"{self.TRASHED_AT} DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY({self.TRASH_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci;"
+                    + f"{self.TRASHED_AT} DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY({self.TRASH_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
                 )
 
                 cursor.execute(query)
