@@ -347,6 +347,10 @@
         "channel_not_yours_anymore": {
             "fa": "طبق تنظیمات فعلی شما در این ربات، کانالی که قصد قطع اتصال آن را دارید به شما تعلق ندارد. احتمالا قبلا آن را قطع اتصال کرده اید.",
             "en": "The channel you're trying to disconnect doesn't belong to you, according to your current bot configurations. You may have disconnected it before."
+        },
+        "unhandled_error_happened": {
+            "fa": "❗️ متاسفانه با یک خطای نامشخص مواجه شدیم. لطفا از نو تلاش کنید.",
+            "en": "❗️ Unfortunately an unrecognized error happened. Please retry your operation from start again."
         }
     },
     "what_can_i_do": {
@@ -668,5 +672,13 @@
     "this_message_will_be_removed_after": {
         "fa": "(این پیام پس از %s روز بصورت خودکار از صفحه چت ربات تمام کاربران فعال پاک می گردد.)",
         "en": "This message will be automatically removed after %s days from all active users chat."
+    },
+    "plan_expired": {
+        "fa": "⚠️ اشتراک شما به پایان رسید.\n\nبرای تمدید اشتراک کافیست به ادمین پاسخگویی پیام دهید:\n👩‍💻 @KSA_Admin",
+        "en": "⚠️ Your premium subscription has ended just now.\n\nTo renew it, you can send a message to the Admin and Support account:👩‍💻 @KSA_Admin"
+    },
+    "premium_expiry_is_close": {
+        "fa": "⚠️ تنها %s روز تا پایان اشتراک شما باقی مانده است.\n\n❗️ قبل از اتمام اشتراکتان برای تمدید آن اقدام کنید.\n\nبرای تمدید اشتراک کافیست به ادمین پاسخگویی پیام دهید:\n👩‍💻 @KSA_Admin",
+        "en": "⚠️ There's only %s day(s) left until the end of your premium subscription.\n\n❗️ You can contact admin to extend your subscription due before it ends.\n\nFor this purpose, you can contact the our Admin & Support account:\n👩‍💻 @KSA_Admin"
     }
 }

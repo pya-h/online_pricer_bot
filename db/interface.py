@@ -2,7 +2,7 @@ import mysql.connector
 from mysql.connector import Error, MySQLConnection
 from datetime import datetime
 from tools.manuwriter import log, prepare_folder, fwrite_from_scratch
-from tools.mathematix import n_months_later
+from tools.mathematix import n_months_later, now_in_minute
 from time import time
 from typing import List, Tuple
 from decouple import config
@@ -111,7 +111,15 @@ class DatabaseInterface:
     ) = ("id", "chat_id", "currency", "price", "change_dir", "unit")
 
     TABLE_TRASH = "trash"
-    TRASH_COLUMNS = (TRASH_ID, TRASH_TYPE, TRASH_OWNER_ID, TRASH_IDENTIFIER, TRASH_DELETE_AT, TRASH_DATA, TRASH_TRASHED_AT) = ("id", "type", "owner_id", "trash_ident", "delete_at", "data", "TRASH_trashed_at")
+    TRASH_COLUMNS = (TRASH_ID, TRASH_TYPE, TRASH_OWNER_ID, TRASH_IDENTIFIER, TRASH_DELETE_AT, TRASH_DATA, TRASH_TRASHED_AT) = (
+        "id",
+        "type",
+        "owner_id",
+        "trash_ident",
+        "delete_at",
+        "data",
+        "TRASH_trashed_at",
+    )
 
     class TrashType(Enum):
         CHANNEL = 1
@@ -173,13 +181,33 @@ class DatabaseInterface:
 
         return self.__connection_instance
 
+    def execute(self, is_fetch_query: bool, query: str, *params):
+        """Execute queries that doesn't return result such as insert or delete"""
+        result = None
+        cursor = self.connection.cursor()
+        r = cursor.execute(query, (*params,))
+        if is_fetch_query:
+            result = cursor.fetchall()
+        else:
+            result = cursor.lastrowid
+            self.connection.commit()
+        cursor.close()
+        return result
+
+    def bulk_query(self, query: str, param: list):
+        cursor = self.connection.cursor()
+        res = cursor.execute(query, (tuple(param),))
+        self.connection.commit()
+        cursor.close()
+        return res
+
     def setup(self):
         try:
             cursor = self.connection.cursor()
             table_exist_query_start = (
                 f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
             )
-            tables_common_charset = 'CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci'
+            tables_common_charset = "CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci"
             # check if the table accounts was created
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_ACCOUNTS}'")
             if not cursor.fetchone():
@@ -295,6 +323,10 @@ class DatabaseInterface:
     def get_premium_accounts(self, from_date: datetime | None = None) -> list:
         from_date = from_date or datetime.now()
         return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > %s", from_date)
+
+    def get_possible_premium_accounts(self) -> list:
+        from_date = from_date or datetime.now()
+        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL")
 
     def update_account(self, account):
         cursor = self.connection.cursor()
@@ -486,7 +518,9 @@ class DatabaseInterface:
         return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS}")
 
     def get_all_active_channels(self) -> list:
-        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_IS_ACTIVE}=1 AND {self.CHANNEL_INTERVAL} > 0")
+        return self.execute(
+            True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_IS_ACTIVE}=1 AND {self.CHANNEL_INTERVAL} > 0"
+        )
 
     def set_channel_state(self, channel_id: int, is_active: bool = True):
         """Delete channel and its planning"""
@@ -495,6 +529,12 @@ class DatabaseInterface:
             f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_IS_ACTIVE}=%s WHERE {self.CHANNEL_ID} = %s",
             int(is_active),
             channel_id,
+        )
+
+    def update_channels_last_post_times(self, id_list: List[int]):
+        return self.bulk_query(
+            f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_LAST_POST_TIME}={now_in_minute()} WHERE {self.CHANNEL_ID} IN %s",
+            id_list,
         )
 
     def delete_channel(self, channel_id: int):
@@ -597,19 +637,6 @@ class DatabaseInterface:
         """Delete group and its planning"""
         self.execute(False, f"DELETE FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID} = %s LIMIT 1", group_id)
 
-    def execute(self, is_fetch_query: bool, query: str, *params):
-        """Execute queries that doesn't return result such as insert or delete"""
-        result = None
-        cursor = self.connection.cursor()
-        r = cursor.execute(query, (*params,))
-        if is_fetch_query:
-            result = cursor.fetchall()
-        else:
-            result = cursor.lastrowid
-            self.connection.commit()
-        cursor.close()
-        return result
-
     def create_new_alarm(self, alarm):
         fields = ", ".join(self.PRICE_ALARMS_COLUMNS[1:])  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
@@ -684,17 +711,39 @@ class DatabaseInterface:
         return self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_OWNER_ID}=%s", owner_id)
 
     def get_trash_by_identifier(self, trash_type: int, identifier: int):
-        return self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_IDENTIFIER}=%s LIMIT 1", trash_type, identifier)
+        return self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_IDENTIFIER}=%s LIMIT 1",
+            trash_type,
+            identifier,
+        )
 
     def throw_trash_away(self, id: int):
         return self.execute(False, f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1", id)
 
     def schedule_messages_for_removal(self, messages_data: List[Tuple[int, int, int, int]]):
-        cursor = self.connection.cursor()
-        res = cursor.execute(f"INSERT INTO {self.TABLE_TRASH} ({self.TRASH_TYPE}, {self.TRASH_OWNER_ID}, {self.TRASH_IDENTIFIER}, {self.TRASH_DELETE_AT}) VALUES (%s, %s, %s, %s)", (messages_data,))
-        self.connection.commit()
-        cursor.close()
-        return res
+        return self.bulk_query(
+            f"INSERT INTO {self.TABLE_TRASH} ({self.TRASH_TYPE}, {self.TRASH_OWNER_ID}, {self.TRASH_IDENTIFIER}, {self.TRASH_DELETE_AT}) VALUES (%s, %s, %s, %s)",
+            messages_data,
+        )
+
+    def get_messages_passed_their_due(self):
+        return self.execute(
+            True,
+            f"SELECT ({self.TRASH_ID, self.TRASH_OWNER_ID, self.TRASH_IDENTIFIER}) FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_DELETE_AT} >= %s",
+            DatabaseInterface.TrashType.MESSAGE,
+            now_in_minute(),
+        )
+
+    def throw_away_messages_passed_time(self, from_time: int):
+        if not from_time:
+            from_time = now_in_minute()
+        return self.execute(
+            False,
+            f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_DELETE_AT} >= %s",
+            DatabaseInterface.TrashType.MESSAGE,
+            from_time,
+        )
 
     def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
         tables = (

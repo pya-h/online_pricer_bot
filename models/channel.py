@@ -330,3 +330,7 @@ class Channel:
         except Exception as x:
             manuwriter.log("Returning trashed channel failed!", x, "Channel")
         return None
+    
+    @staticmethod
+    def updateLastPostTimes(channel_ids: List[int]):
+        return Channel.database().update_channels_last_post_times(channel_ids)

@@ -23,15 +23,17 @@ from models.account import Account
 from models.channel import Channel, PostInterval
 from models.group import Group
 from tools.manuwriter import log
-from tools.mathematix import persianify, cut_and_separate, now_in_minute
+from tools.mathematix import persianify, cut_and_separate, now_in_minute, tz_today
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
 from .types import GroupInlineKeyboardButtonTemplate, SelectionListTypes, MarketOptions
 from math import ceil as math_ceil
 from .types import ResourceManager
+from datetime import datetime
 
 
 resourceman = ResourceManager("texts", "resources")
+
 
 class BotMan:
     """This class is defined to collect all common and handy options, fields and features of online pricer bot"""
@@ -447,7 +449,6 @@ class BotMan:
                 else [
                     [
                         KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value),
-                        KeyboardButton(BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN.value),
                     ],
                     [
                         KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value),
@@ -734,11 +735,10 @@ class BotMan:
         self.postman.crypto_service = value
 
     async def next_post(self):
-        return await self.postman.create_post(interval=self.main_plan_interval)
+        return await self.postman.create_post(channel_interval=self.main_plan_interval)
 
     def check_price_alarms(self) -> List[PriceAlarm]:
         """Checks all user alarms and finds alarms that has gone off"""
-        print("ALARM CHECK:")
         alarms = PriceAlarm.get()
         # TODO: Define a pre_latest_data, check for currencies that have changed in 10m and then get alarms by currencies
         triggered_alarms = []
@@ -917,22 +917,14 @@ class BotMan:
             i += word_count
         return crypto_amounts, currency_amounts
 
-    def construct_post(self, res_fiat: str, res_gold: str, res_crypto: str, language: str = 'fa', use_tags: bool = True):
+    def construct_post(self, res_fiat: str, res_gold: str, res_crypto: str, language: str = "fa", use_tags: bool = True):
         if not use_tags:
-            return f"{res_fiat}\n\n{res_gold}\n\n{res_crypto}"
-        tags_fiat = self.text('market_fiat', language)
-        tags_gold = self.text('market_gold', language)
-        tags_crypto = self.text('market_crypto', language)
+            return f"{res_fiat}\n{res_gold}\n{res_crypto}"
+        tags_fiat = self.text("markets_fiat", language)
+        tags_gold = self.text("markets_gold", language)
+        tags_crypto = self.text("markets_crypto", language)
 
-        return f'''{tags_fiat}
-{res_fiat}
-
-{tags_gold}
-{res_gold}
-
-{tags_crypto}
-{res_crypto}
-'''
+        return f"{tags_fiat}\n{res_fiat}\n{tags_gold}\n{res_gold}\n{tags_crypto}\n{res_crypto}"
 
     def create_crypto_equalize_message(
         self,
@@ -941,12 +933,15 @@ class BotMan:
         target_cryptos: List[str] | None,
         target_currencies: List[str] | None,
         language: str = "fa",
-        use_tags: bool = True
+        use_tags: bool = True,
     ):
         res_crypto, _, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos)
         res_fiat, res_gold = self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies)
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
-        header = self.text('equalize_header', language) % (persianify(amount), self.crypto_serv.coinsInPersian[unit])
+        header = self.text("equalize_header", language) % (
+            str(amount) if language != "fa" else persianify(amount),
+            self.crypto_serv.coinsInPersian[unit],
+        )
         return f"{header}\n\n{post}"
 
     def create_currency_equalize_message(
@@ -956,12 +951,15 @@ class BotMan:
         target_cryptos: List[str] | None,
         target_currencies: List[str] | None,
         language: str = "fa",
-        use_tags: bool = True
+        use_tags: bool = True,
     ):
         res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies)
         res_crypto = self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
-        header = self.text('equalize_header', language) % (persianify(amount), self.currency_serv.currenciesInPersian[unit])
+        header = self.text("equalize_header", language) % (
+            str(amount) if language != "fa" else persianify(amount),
+            self.currency_serv.currenciesInPersian[unit],
+        )
         return f"{header}\n\n{post}"
 
     async def prepare_channel(self, ctx: CallbackContext, owner: Account, channel_id: int, interval: int):
@@ -974,7 +972,7 @@ class BotMan:
                 int(interval),
                 channel_response.chat.username or None,
                 channel_response.chat.title or "Unnamed",
-                language=owner.language
+                language=owner.language,
             )
             channel.create()
             post_interval, desc_en, desc_fa = PostInterval(minutes=interval).timestamps
@@ -1018,9 +1016,9 @@ class BotMan:
                     self.text("update_successful", account.language),
                     reply_markup=self.get_community_config_keyboard(BotMan.CommunityType.CHANNEL, account.language),
                 )
-                account.change_state(cache_key='community', data=BotMan.CommunityType.GROUP.value, clear_cache=True)
+                account.change_state(cache_key="community", data=BotMan.CommunityType.GROUP.value, clear_cache=True)
             except Exception as x:
-                log('sth went wrong while changing channel:', x, 'Channel')
+                log("sth went wrong while changing channel:", x, "Channel")
             return
         await self.prepare_set_interval_interface(update, account, channel_chat.id, next_state)
 
@@ -1156,28 +1154,64 @@ class BotMan:
         ).getByOwner(owner_id)
 
     async def process_channels(self, context: CallbackContext):
-        '''loop through channels and send post in ones that their interval due has reached.'''
+        """loop through channels and send post in ones that their interval due has reached."""
         channels = Channel.actives()
         now = now_in_minute()
         # FIXME: Find ways to optimize this mf
+        update_last_post_time_targets = []
         for channel in channels:
             if channel.last_post_time - now >= channel.interval:
                 try:
                     post = self.postman.create_channel_post(channel)
                     await context.bot.send_message(chat_id=channel.id, text=post)
-                    channel.last_post_time = now  # TODO: Or use BULK_UPDATE?
-                    channel.save()
+                    update_last_post_time_targets.append(channel.id)
                 except Exception as x:
-                    pass # TODO: Disable the channel? Maybe find out which Exception is for Banned Bot and then active those
+                    pass  # TODO: Disable the channel? Maybe find out which Exception is for Banned Bot and then active those
+        if update_last_post_time_targets:
+            Channel.updateLastPostTimes(update_last_post_time_targets)
 
-    async def processDailyRefresh(context: CallbackContext):
-        '''Garbage collect fast mems, remove messages supposed to be removed, etc.'''
+    async def do_daily_check(self, context: CallbackContext):
+        """Garbage collect fast mems, remove messages supposed to be removed, etc."""
         Account.garbageCollect()
         Group.garbageCollect()
 
-        '''TODO: loop through trash messages, and remove ones that their time has passed.'''
-        # remove temporary messages which have passed their due (trash table)
+        today = tz_today().date()
+        possible_premiums = Account.getPremiumUsers(even_possibles=True)
+        for user in possible_premiums:
+            try:
+                user_premium_end_date = (
+                    user.plus_end_date.date() if isinstance(user.plus_end_date, datetime) else user.plus_end_date
+                )
+                if user_premium_end_date > today:
+                    user.plus_end_date = None
+                    user.save()
+                    await context.bot.send_message(chat_id=user.chat_id, text=self.text("plan_expired", user.language))
+                    log('1 new user premium plan expired', category_name='PremiumNews')
+                    channel_s = Channel.getByOwner(user.chat_id)
+                    if not channel_s:
+                        channels = [channel_s] if isinstance(channel_s, Channel) else channel_s
+                        log(f'\twhich had also {len(channels)} active channels which are now disabled.', category_name='PremiumNews')
+                        for chan in channels:
+                            chan.is_active = False
+                            chan.save()
+                else:
+                    days_remaining = (today - user_premium_end_date).days
+                    if days_remaining in (7, 3, 1):
+                        days_remaining = str(days_remaining) if user.language != "fa" else persianify(days_remaining)
+                        await context.bot.send_message(
+                            chat_id=user.chat_id, text=self.text("premium_expiry_is_close", user.language) % (days_remaining,)
+                        )
+            except Exception as x:
+                log('User daily checkout failed', x, category_name='Checkouts')
 
-        # check premium users for which their plan has ended or not (users table), put expired ones in a list
-        # clear their plan date, and send notification message regarding the premium due.
-        # loop through expired users, amd deactivate their channel (if they have one)
+        db = Account.database()
+        now = now_in_minute()
+        deleting_messages = db.get_messages_passed_their_due()
+        if deleting_messages:
+            for msg in deleting_messages:
+                try:
+                    (_, chat_id, msg_id) = msg
+                    await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+                except:
+                    pass
+            db.throw_away_messages_passed_time(from_time=now)

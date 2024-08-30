@@ -6,7 +6,7 @@ from telegram.ext import (
     MessageHandler,
     CallbackQueryHandler,
 )
-from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, Chat
+from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, Chat, ReplyKeyboardRemove
 from telegram.error import BadRequest
 from models.account import Account
 import json
@@ -21,6 +21,7 @@ from tools.exceptions import NoLatestDataException, InvalidInputException, MaxAd
 from models.group import Group
 from models.channel import Channel, PostInterval
 from bot.post import PostMan
+from datetime import time
 
 
 botman = BotMan()
@@ -78,8 +79,8 @@ async def select_gold_menu(update: Update, context: CallbackContext):
     await prepare_market_selection_menu(update, context, MarketOptions.GOLD)
 
 
-async def say_youre_not_allowed(reply, language: str = "fa"):
-    await reply(botman.error("not_allowed", language), reply_markup=botman.menu_main(language))
+async def say_youre_not_allowed(reply, account: Account):
+    await reply(botman.error("not_allowed", account.language), reply_markup=botman.get_main_keyboard(account))
     return None
 
 
@@ -132,7 +133,7 @@ async def cmd_get_prices(update: Update, context: CallbackContext):
         language=account.language,
     )
 
-    await update.message.reply_text(message)
+    await update.message.reply_text(message, reply_markup=botman.mainkeyboard(account))
 
 
 async def cmd_equalizer(update: Update, context: CallbackContext):
@@ -157,7 +158,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     try:
         if context.args:
@@ -186,7 +187,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
 async def cmd_premium_plan(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     try:
         if context.args:
@@ -215,7 +216,7 @@ async def cmd_premium_plan(update: Update, context: CallbackContext):
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     current_jobs = context.job_queue.get_jobs_by_name(botman.main_queue_id)
     for job in current_jobs:
@@ -228,7 +229,7 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     botman.crypto_serv = CoinGeckoService()
     await update.message.reply_text(
@@ -241,7 +242,7 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     botman.crypto_serv = CoinMarketCapService(botman.postman.coinmarketcap_api_key)
     await update.message.reply_text(
@@ -253,7 +254,7 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
 async def cmd_admin_login(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     await update.message.reply_text(
         botman.text("congrats_admin", account.language),
@@ -264,7 +265,7 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
 async def cmd_upgrade_user(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
     account.change_state(Account.States.UPGRADE_USER, clear_cache=True)
     await update.message.reply_text(
         botman.text("specify_user", account.language),
@@ -275,7 +276,7 @@ async def cmd_upgrade_user(update: Update, context: CallbackContext):
 async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     account.change_state(Account.States.DOWNGRADE_USER)
     await update.message.reply_text(
@@ -288,7 +289,7 @@ async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
 async def cmd_send_post(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     account.change_state(Account.States.SEND_POST)
     await update.message.reply_text(
@@ -300,7 +301,7 @@ async def cmd_send_post(update: Update, context: CallbackContext):
 async def cmd_report_statistics(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account.language)
+        return await say_youre_not_allowed(update.message.reply_text, account)
 
     stats = Account.statistics()
     await update.message.reply_text(
@@ -911,7 +912,7 @@ async def unknown_command_handler(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     await update.message.reply_text(
         botman.error("what_the_fuck", account.language),
-        reply_markup=botman.mainkeyboard(account),
+        reply_markup=botman.mainkeyboard(account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove(),
     )
 
 
@@ -1019,6 +1020,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                         f"{community_type}{BotMan.CALLBACK_DATA_JOINER}0": "no_hide_tag",
                         f"{community_type}{BotMan.CALLBACK_DATA_JOINER}1": "yes_show_tag",
                     },
+                    account.language,
                 ),
             )
         case BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value | BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value:
@@ -1035,6 +1037,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                         f"{community_type}{BotMan.CALLBACK_DATA_JOINER}0": "no_hide_tag",
                         f"{community_type}{BotMan.CALLBACK_DATA_JOINER}1": "yes_show_tag",
                     },
+                    account.language,
                 ),
             )
         case (
@@ -1468,7 +1471,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             except:
                                 pass
                             number_of_accounts = len(all_accounts)
-                            trashes: List[Tuple[int, int, int]] = [None] * number_of_accounts
+                            trashes: List[Tuple[int, int, int, int]] = [None] * number_of_accounts
                             progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
                             post_index = 0
                             trash_message_type = Account.database().TrashType.MESSAGE.value
@@ -1583,7 +1586,18 @@ async def handle_group_messages(update: Update, context: CallbackContext):
                 group.message_show_market_tags,
             )
 
-            await update.message.reply_text(PostMan.customizePost(message, group, to_user.language))
+            await update.message.reply_text(
+                PostMan.customizePost(message, group, to_user.language), reply_markup=ReplyKeyboardRemove()
+            )
+
+
+async def unhandled_error_happened(update: Update, context: CallbackContext):
+    account = Account.get(update.message.chat)
+    account.change_state(clear_cache=True)
+    await update.message.reply_text(
+        botman.error("unhandled_error_happened", account.language),
+        reply_markup=botman.mainkeyboard(account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove(),
+    )
 
 
 # TODO: disable old caching
@@ -1614,22 +1628,16 @@ def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_group_members))
     app.add_handler(
         MessageHandler(
-            filters.ChatType.GROUPS & filters.TEXT & ~filters.COMMAND,
+            filters.ChatType.GROUPS,
             handle_group_messages,
         )
     )
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_messages)
-    )  # TODO: Is private filter required?
-    app.add_handler(MessageHandler(filters.COMMAND, unknown_command_handler))
-    # app.add_error_handler() # TODO:Check this out
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_messages))
+    app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
+    app.add_error_handler(unhandled_error_happened)
 
     app.job_queue.run_repeating(botman.process_channels, interval=60, first=60, name="PLUS_CHANNELS")
-
-    app.job_queue.run_daily(
-        BotMan.doDailyCheck,
-        name="DAILY_REFRESH",
-    )
+    app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))
 
     print("Server is up and running...")
     app.run_polling(poll_interval=0.25, timeout=10)

@@ -36,7 +36,7 @@ class PostMan:
         post: str = ""
         if channel_interval:
             channel_interval = str(int(channel_interval)) if language != 'fa' else persianify(channel_interval.__str__()) 
-            post = self.resourceman.text('announcement_post_interval', language) % (channel_interval, )
+            post = self.resourceman.text('announcement_post_interval', language) % (channel_interval, ) + "\n"
         post += timestamp(language)
         if fiat_body:
             tags_fiat = self.resourceman.text('announcement_fiat_header', language)

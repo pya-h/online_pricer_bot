@@ -261,8 +261,8 @@ class Account:
         return 1 if self.is_premium else 0
 
     @staticmethod
-    def getPremiumUsers(from_date: datetime | None = None):
-        rows = Account.database().get_premium_accounts(from_date if from_date else datetime.now())
+    def getPremiumUsers(from_date: datetime | None = None, even_possibles: bool = False):
+        rows = Account.database().get_premium_accounts(from_date if from_date else datetime.now()) if not even_possibles else Account.database().get_possible_premium_accounts()
         return [Account.extractQueryRowData(row) for row in rows]
 
     @staticmethod
