@@ -1176,3 +1176,8 @@ class BotMan:
         Group.garbageCollect()
 
         '''TODO: loop through trash messages, and remove ones that their time has passed.'''
+        # remove temporary messages which have passed their due (trash table)
+
+        # check premium users for which their plan has ended or not (users table), put expired ones in a list
+        # clear their plan date, and send notification message regarding the premium due.
+        # loop through expired users, amd deactivate their channel (if they have one)

@@ -16,7 +16,7 @@ from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from models.alarms import PriceAlarm
-from typing import List
+from typing import List, Tuple
 from tools.exceptions import NoLatestDataException, InvalidInputException, MaxAddedCommunityException, NoSuchThingException
 from models.group import Group
 from models.channel import Channel, PostInterval
@@ -1446,15 +1446,17 @@ async def handle_messages(update: Update, context: CallbackContext):
                             all_accounts = Account.everybody()
                             progress_text = botman.text("sending_your_post", account.language)
                             telegram_response = await update.message.reply_text(progress_text)
-                            message_id = None
-
+                            message_id: int | None = None
+                            removal_time_offset: int | None = None
                             try:
                                 message_id = int(str(telegram_response["message_id"]))
+                                removal_time_offset = account.get_cache('offset')
                             except:
                                 pass
-
                             number_of_accounts = len(all_accounts)
+                            trashes: List[Tuple[int, int]] = [None] * number_of_accounts
                             progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
+                            post_index = 0
                             for index, chat_id in enumerate(all_accounts):
                                 try:
                                     if message_id and index % progress_update_trigger == 0:
@@ -1465,7 +1467,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                                             text=f"{progress_text}{progress:.2f} %",
                                         )
                                     if chat_id != account.chat_id:
-                                        await update.message.copy(chat_id)
+                                        post = await update.message.copy(chat_id)
+                                        if removal_time_offset:
+                                            trashes[post_index] = (chat_id, post.message_id)
+                                            post_index += 1
                                 except:
                                     pass  # maybe remove the account from database ?
                             if message_id:
@@ -1608,7 +1613,7 @@ def main():
     )
 
     app.job_queue.run_daily(
-        BotMan.processDailyRefresh,
+        BotMan.doDailyCheck,
         name='DAILY_REFRESH',
     )
 
