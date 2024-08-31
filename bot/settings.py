@@ -1,4 +1,4 @@
-from tools.manuwriter import load_json
+from tools.manuwriter import load_json, fwrite_from_scratch
 from typing import Self, Dict
 from enum import Enum
 
@@ -27,10 +27,12 @@ class BotSettings:
         return BotSettings.singleInstance
 
     def __init__(self, resource_folder: str = 'resources', settings_file_name: str = 'settings.json') -> None:
-        settings = load_json(settings_file_name, parent_folder=resource_folder)
-        self.rules: Dict[str, int | float] = settings['rules']
-        self.premium_plans_post_text: Dict[str, str] = settings['premiums_plans_text']
-        self.premium_plans_post_file_id: Dict[str, str] = settings['premiums_plans_file_id']
+        self.resource_folder = resource_folder
+        self.settings_file_name = settings_file_name
+        self.settings = load_json(settings_file_name, parent_folder=resource_folder)
+        self.rules: Dict[str, int | float] = self.settings['rules']
+        self.premium_plans_post_text: Dict[str, str] = self.settings['premiums_plans_text']
+        self.premium_plans_post_file_id: Dict[str, str] = self.settings['premiums_plans_file_id']
 
     def TOKENS_COUNT_LIMIT(self, user_type: UserTypes = UserTypes.FREE):
         return BotSettings.singleInstance.rules['token_selection'][user_type.value]
@@ -58,4 +60,7 @@ class BotSettings:
         file_id = BotSettings.singleInstance.premium_plans_post_file_id[language] or None
         return (text, file_id)
 
-
+    def update_premium_plans_post(self, text: str, file_id: str | None = None, language: Language = Language.FA):
+        self.settings['premiums_plans_text'][language.value] = text
+        self.settings['premiums_plans_file_id'][language.value] = file_id
+        fwrite_from_scratch(f'./{self.resource_folder}/{self.settings_file_name}', self.settings, source='Settings')
