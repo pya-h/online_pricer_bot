@@ -22,7 +22,7 @@ from bot.post import PostMan
 from models.account import Account
 from models.channel import Channel, PostInterval
 from models.group import Group
-from tools.manuwriter import log
+from tools.manuwriter import log, load_json
 from tools.mathematix import persianify, cut_and_separate, now_in_minute, tz_today
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
@@ -30,10 +30,11 @@ from .types import GroupInlineKeyboardButtonTemplate, SelectionListTypes, Market
 from math import ceil as math_ceil
 from .types import ResourceManager
 from datetime import datetime
+from .settings import BotSettings
+
 
 
 resourceman = ResourceManager("texts", "resources")
-
 
 class BotMan:
     """This class is defined to collect all common and handy options, fields and features of online pricer bot"""
@@ -93,8 +94,8 @@ class BotMan:
         COMMUNITY_TRIGGER_MARKET_TAGS_EN = resourceman.keyboard("community_trigger_market_tags", "en")
         COMMUNITY_SET_MESSAGE_HEADER_FA = resourceman.keyboard("community_set_message_header", "fa")
         COMMUNITY_SET_MESSAGE_HEADER_EN = resourceman.keyboard("community_set_message_header", "en")
-        COMMUNITY_SET_MESSAGE_FOOTNOTE_FA = resourceman.keyboard("community_set_message_foonote", "fa")
-        COMMUNITY_SET_MESSAGE_FOOTNOTE_EN = resourceman.keyboard("community_set_message_foonote", "en")
+        COMMUNITY_SET_MESSAGE_FOOTNOTE_FA = resourceman.keyboard("community_set_message_footnote", "fa")
+        COMMUNITY_SET_MESSAGE_FOOTNOTE_EN = resourceman.keyboard("community_set_message_footnote", "en")
         CHANNEL_CHANGE_FA = resourceman.keyboard("channel_change", "fa")
         CHANNEL_CHANGE_EN = resourceman.keyboard("channel_change", "en")
         GROUP_CHANGE_FA = resourceman.keyboard("change_group", "fa")
@@ -254,6 +255,12 @@ class BotMan:
 
         self.setup_main_keyboards()
         self.is_main_plan_on: bool = False
+
+        self.bot_settings: Dict[str, str | int | float | Dict[str, int | float | str]] = None
+        self.load_settings()
+
+    def load_settings(self):
+        BotSettings.init()
 
     def setup_main_keyboards(self):
         self.common_menu_main_keys = [
@@ -864,7 +871,7 @@ class BotMan:
         if update.message.forward_from:
             upgrading_chat_id = update.message.forward_from.id
             user = Account.getById(upgrading_chat_id)
-            user.current_username = update.message.forward_from.username
+            user.name = update.message.forward_from
             user.firstname = update.message.forward_from.first_name
         elif update.message.text[0] == "@":
             try:
@@ -1186,7 +1193,7 @@ class BotMan:
                     user.plus_end_date = None
                     user.save()
                     await context.bot.send_message(chat_id=user.chat_id, text=self.text("plan_expired", user.language))
-                    log('1 new user premium plan expired', category_name='PremiumNews')
+                    log(f'1 new user premium plan expired: {user.chat_id} @{user.username or user.firstname}', category_name='PremiumNews')
                     channel_s = Channel.getByOwner(user.chat_id)
                     if not channel_s:
                         channels = [channel_s] if isinstance(channel_s, Channel) else channel_s

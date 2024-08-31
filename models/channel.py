@@ -7,6 +7,7 @@ from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException
 from telegram import Chat
 from .account import Account
 from tools.mathematix import now_in_minute
+from bot.settings import BotSettings
 
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
@@ -139,7 +140,12 @@ class Channel:
         self.language = language
         self.owner: Account | None = Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
-    def create(self, allowed_channels_count: int = 1):
+    def create(self):
+        if not self.owner:
+            self.owner = Account.get(self.owner_id)
+        allowed_channels_count = BotSettings.get().EACH_COMMUNITY_COUNT_LIMIT(
+            self.owner.user_type
+        )
         db = Channel.database()
         channel_columns = db.get_channel(self.id)
         if channel_columns:

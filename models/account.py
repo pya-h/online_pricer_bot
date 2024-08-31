@@ -8,6 +8,7 @@ from typing import List, Dict
 from bot.types import SelectionListTypes
 from json import loads as json_parse, dumps as jsonify
 from telegram import Chat, User
+from bot.settings import BotSettings
 
 
 ADMIN_USERNAME = config("ADMIN_USERNAME")
@@ -71,6 +72,7 @@ class Account:
     FastMemGarbageCollectionInterval = 5
     PreviousFastMemGarbageCollectionTime: int = now_in_minute()  # in minutes
     fastMemInstances: dict = {}  # active accounts will cache into this; so there's no need to access database every time
+    botSettings: BotSettings | None = None
 
     def no_interaction_duration(self):
         diff, _ = from_now_time_diff(self.last_interaction)
@@ -112,6 +114,9 @@ class Account:
         if not no_fastmem:
             self.organize_fastmem()
 
+        if not Account.botSettings:
+            Account.botSettings = BotSettings.get()
+
     def change_state(self, state: States = States.NONE, cache_key: str = None, data: any = None, clear_cache: bool = False):
         self.state = state
         self.add_cache(cache_key, data, clear_cache)
@@ -145,9 +150,18 @@ class Account:
             username = args[0]
             password = args[1]
             self.is_admin = password == ADMIN_PASSWORD and username == ADMIN_USERNAME
+            if self.is_admin:
+                self.save()
             return self.is_admin
 
         return False
+
+
+    def upgrade(self, duration_in_months: int):
+        Account.database().upgrade_account(self, duration_in_months)
+
+    def downgrade(self):
+        Account.database().downgrade_account(self)
 
     @property
     def desired_cryptos_as_str(self):
@@ -165,21 +179,10 @@ class Account:
     def calc_currencies_as_str(self):
         return ";".join(self.calc_currencies)
 
-    def set_extra_info(self, firstname: str, username: str = None) -> None:
-        """This extra info are just for temporary messaging purposes and won't be saved in database."""
-        self.firstname = firstname
-        self.username = username
-
     @property
     def is_premium(self) -> bool:
         """Check if the account has still plus subscription."""
         return self.is_admin or ((self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
-
-    def upgrade(self, duration_in_months: int):
-        Account.database().upgrade_account(self, duration_in_months)
-
-    def downgrade(self):
-        Account.database().downgrade_account(self)
 
     @property
     def cache_as_str(self) -> str | None:
@@ -226,18 +229,32 @@ class Account:
         return detail
 
     @property
-    def current_username(self):
-        return self.username
+    def name(self):
+        return f'@{self.username}' if self.username else self.firstname
 
-    @current_username.setter
-    def current_username(self, username: str):
-        if not username:
+    @name.setter
+    def name(self, chat: Chat):
+        if not chat:
             return
+        data_changed: bool = False
+        username = chat.username
         if username[0] == "@":
             username = username[1:]
         if username != self.username:
             self.username = username
+            data_changed = True
+        if chat.first_name != self.firstname:
+            self.firstname = chat.first_name
+            data_changed = True
+
+        if data_changed:
             self.database().update_username(self)
+
+    @property
+    def user_type(self) -> BotSettings.UserTypes:
+        if self.is_admin:
+            BotSettings.UserTypes.ADMIN
+        return BotSettings.UserTypes.FREE if not self.is_premium else BotSettings.UserTypes.PREMIUM
 
     @property
     def alarms_count(self):
@@ -245,7 +262,7 @@ class Account:
 
     @property
     def can_create_new_alarm(self):
-        return self.alarms_count < self.max_alarms_count
+        return self.alarms_count < self.botSettings.ALARM_COUNT_LIMIT(self.user_type)
 
     # user privileges:
     @property
@@ -304,10 +321,7 @@ class Account:
     @staticmethod
     def get(chat: Chat | User, no_fastmem: bool = False):
         account = Account.getById(chat.id, no_fastmem=no_fastmem)
-        account.current_username = chat.username
-        account.firstname = (
-            chat.first_name
-        )  # It doesn't going to be saved in database, but its picked from Chat in case its needed in code.
+        account.name = chat
         return account
 
     @staticmethod

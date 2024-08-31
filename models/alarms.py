@@ -63,15 +63,15 @@ class PriceAlarm:
             )
         self.current_price: int | None = None
         self.full_currency_name: Dict[str, str] | None = None
-        self.owner: Account | None = Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
+        self.owner: Account | None = Account.getFast(self.chat_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
     def extractQueryRowData(row: tuple):
         return PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0])
 
     @staticmethod
     def getAlarms(id: int):
-        # FIXME: This must get all alarms
-        return PriceAlarm.getUserAlarms(id)
+        alarms_rows = PriceAlarm.database().get_alarms(None)
+        return list(map(PriceAlarm.extractQueryRowData, alarms_rows))
 
     @staticmethod
     def getUserAlarms(chat_id: int):

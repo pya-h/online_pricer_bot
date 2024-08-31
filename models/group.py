@@ -5,6 +5,8 @@ from telegram import Chat
 from .account import Account
 from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException, NoSuchThingException
 from tools.manuwriter import log
+from bot.settings import BotSettings
+
 
 class Group:
     fastMemInstances = {}
@@ -31,6 +33,7 @@ class Group:
         message_show_date_tag: bool = False,
         message_show_market_tags: bool = True,
         no_fastmem: bool = False,
+        owner: Account = None,
     ) -> None:
         self.owner_id: int = int(owner_id)
         self.id: int = int(group_id)
@@ -44,7 +47,7 @@ class Group:
         self.message_show_market_tags: bool = message_show_market_tags
         self.last_interaction: int = now_in_minute()
 
-        self.owner: Account | None = Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
+        self.owner: Account | None = owner or Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
         if not no_fastmem:
             self.organize_fastmem()
         # TODO: Maybe create a MessageSetting class? to use in group/channel
@@ -73,7 +76,7 @@ class Group:
         if Group.fastMemInstances[old_chat_id]:
             del Group.fastMemInstances[old_chat_id]
         return self
-    
+
     def delete(self) -> bool:
         try:
             Group.database().delete_group(self.id)
@@ -83,31 +86,31 @@ class Group:
             log(f"Cannot remove Group:{self.id}", ex, category_name="Groups")
             return False
         return True
-    
+
     def throw_in_trashcan(self):
         self.database().trash_sth(self.owner_id, DatabaseInterface.TrashType.GROUP, self.id, self.as_dict)
 
     def getTrashedCustomization(trash_identifier: int) -> Dict[str, int | float | str | bool]:
         trash = Group.database().get_trash_by_identifier(DatabaseInterface.TrashType.GROUP, trash_identifier)
         try:
-            return trash[-2] 
+            return trash[-2]
         except:
             pass
         return None
 
     def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
         try:
-            self.selected_coins = DatabaseInterface.stringToList(trash['coins']) if 'coins' in trash else []
-            self.selected_currencies = DatabaseInterface.stringToList(trash['currencies']) if 'currencies' in trash else []
-            self.name = trash['name'] if 'name' in trash else None
-            self.title = trash['title'] if 'title' in trash else None
-            self.name = trash['name'] if 'name' in trash else None
-            msg_settings = trash['message'] if 'message' in trash else None
+            self.selected_coins = DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else []
+            self.selected_currencies = DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else []
+            self.name = trash["name"] if "name" in trash else None
+            self.title = trash["title"] if "title" in trash else None
+            self.name = trash["name"] if "name" in trash else None
+            msg_settings = trash["message"] if "message" in trash else None
             if msg_settings:
-                self.message_header = msg_settings['header'] if 'header' in msg_settings else None
-                self.message_footnote = msg_settings['footnote'] if 'footnote' in msg_settings else None
-                self.message_show_date_tag = msg_settings['date_tag'] if 'date_tag' in msg_settings else False
-                self.message_show_market_tags = msg_settings['market_tags'] if 'market_tags' in msg_settings else False
+                self.message_header = msg_settings["header"] if "header" in msg_settings else None
+                self.message_footnote = msg_settings["footnote"] if "footnote" in msg_settings else None
+                self.message_show_date_tag = msg_settings["date_tag"] if "date_tag" in msg_settings else False
+                self.message_show_market_tags = msg_settings["market_tags"] if "market_tags" in msg_settings else False
 
             self.last_interaction = now_in_minute()
         except:
@@ -131,7 +134,7 @@ class Group:
             },
             "last_interaction": self.last_interaction,
         }
-    
+
     @property
     def coins_as_str(self):
         return ";".join(self.selected_coins)
@@ -159,7 +162,7 @@ class Group:
         return None
 
     @staticmethod
-    def extractQueryRowData(row: tuple, no_fastmem: bool = False):
+    def extractQueryRowData(row: tuple, owner: Account | None = None, no_fastmem: bool = False):
         return Group(
             group_id=int(row[0]),
             group_name=row[1],
@@ -172,6 +175,7 @@ class Group:
             message_show_market_tags=bool(row[8]),
             owner_id=int(row[-1]),
             no_fastmem=no_fastmem,
+            owner=owner,
         )
 
     @staticmethod
@@ -184,13 +188,17 @@ class Group:
         return list(map(Group.extractQueryRowData, rows))
 
     @staticmethod
-    def register(chat: Chat, owner_id: int, allowed_group_count: int = 1):
+    def register(chat: Chat, owner_id: int):
         """Create group model and save into database. set its active_until field same as user premium date.
         return the database data if group is existing from before (just update its owner id)."""
         db = Group.database()
+        owner = Account.get(owner_id)
+        allowed_group_count = BotSettings.get().EACH_COMMUNITY_COUNT_LIMIT(
+            owner.user_type
+        )
         group_columns = db.get_group(chat.id)
         if group_columns:
-            group = Group.extractQueryRowData(group_columns)
+            group = Group.extractQueryRowData(group_columns, owner=owner)
             group.name = chat.username
             group.title = chat.title
             group.owner_id = owner_id
@@ -207,7 +215,7 @@ class Group:
         elif not allowed_group_count:
             raise UserNotAllowedException(owner_id, "have groups")
 
-        group = Group(owner_id=owner_id, group_id=chat.id, group_title=chat.title, group_name=chat.username)
+        group = Group(owner_id=owner_id, group_id=chat.id, group_title=chat.title, group_name=chat.username, owner=owner)
         db.add_group(group)
         return group
 
@@ -217,7 +225,11 @@ class Group:
         if now - Group.PreviousFastMemGarbageCollectionTime <= Group.FastMemGarbageCollectionInterval:
             return
 
-        Group.fastMemInstances = {chat_id: group for chat_id, group in Group.fastMemInstances.items() if group.last_interaction < Group.FastMemGarbageCollectionInterval }
+        Group.fastMemInstances = {
+            chat_id: group
+            for chat_id, group in Group.fastMemInstances.items()
+            if group.last_interaction < Group.FastMemGarbageCollectionInterval
+        }
 
         Group.PreviousFastMemGarbageCollectionTime = now
 
@@ -232,18 +244,18 @@ class Group:
     @staticmethod
     def getFast(group_id: int):
         return Group.fastMemInstances[group_id] if group_id in Group.fastMemInstances else None
-    
+
     @staticmethod
     def restoreTrash(trash_identifier: int):
         db = Group.database()
         trash = db.get_trash_by_identifier(DatabaseInterface.TrashType.GROUP, trash_identifier)
         if not trash:
-            raise NoSuchThingException(trash_identifier, 'Trashed Group')
+            raise NoSuchThingException(trash_identifier, "Trashed Group")
         try:
             data = trash[-2]
             group = Group(trash[2], trash_identifier).use_trash_data(data).save()
             db.throw_trash_away(trash[0])
             return group
         except Exception as x:
-            log('Returning trashed group failed!', x, 'Group')
+            log("Returning trashed group failed!", x, "Group")
         return None
