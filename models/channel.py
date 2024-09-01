@@ -8,6 +8,7 @@ from telegram import Chat
 from .account import Account
 from tools.mathematix import now_in_minute
 from bot.settings import BotSettings
+from json import loads as load_json
 
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
@@ -228,8 +229,8 @@ class Channel:
 
     def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
         try:
-            self.selected_coins = DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else []
-            self.selected_currencies = DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else []
+            self.selected_coins = (DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else None) or []
+            self.selected_currencies = (DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else None) or []
             self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
             self.name = trash["name"] if "name" in trash else None
@@ -272,11 +273,11 @@ class Channel:
 
     @property
     def coins_as_str(self):
-        return ";".join(self.selected_coins)
+        return ";".join(self.selected_coins) if self.selected_coins else ''
 
     @property
     def currencies_as_str(self):
-        return ";".join(self.selected_currencies)
+        return ";".join(self.selected_currencies) if self.selected_currencies else ''
 
     @staticmethod
     def get(channel_id):
@@ -340,10 +341,10 @@ class Channel:
         if not trash:
             raise NoSuchThingException(trash_identifier, "Trashed Channel")
         try:
-            data = trash[-2]
-            group = Channel(trash[2], trash_identifier).use_trash_data(data).save()
+            data = load_json(trash[-3])
+            channel = Channel(trash[2], trash_identifier).use_trash_data(data).save()
             db.throw_trash_away(trash[0])
-            return group
+            return channel
         except Exception as x:
             manuwriter.log("Returning trashed channel failed!", x, "Channel")
         return None

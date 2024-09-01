@@ -630,7 +630,7 @@
         "en": "🔹 If you want bot to reconnect to your channel, click [ Reconnect ]:\n\n🔹 If you have given up on this, click on the [ Cancel ] option.\n\n🔹Notice: If you have already connected the bot to a new channel, performing this action will only bring back the configurations of the previous group, and bot will be still connected to your new group."
     },
     "equalize_header": {
-        "fa": "✅ %s %s معال است با:",
+        "fa": "✅ %s %s معادل است با:",
         "en": "✅ %s %s is equivalent to:"
     },
     "announcement_fiat_header": {

@@ -6,7 +6,8 @@ from .account import Account
 from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException, NoSuchThingException
 from tools.manuwriter import log
 from bot.settings import BotSettings
-
+import gc
+from json import loads as load_json
 
 class Group:
     fastMemInstances = {}
@@ -100,8 +101,8 @@ class Group:
 
     def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
         try:
-            self.selected_coins = DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else []
-            self.selected_currencies = DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else []
+            self.selected_coins = (DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else None) or []
+            self.selected_currencies = (DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else None) or []
             self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
             self.name = trash["name"] if "name" in trash else None
@@ -137,11 +138,11 @@ class Group:
 
     @property
     def coins_as_str(self):
-        return ";".join(self.selected_coins)
+        return ";".join(self.selected_coins) if self.selected_coins else ''
 
     @property
     def currencies_as_str(self):
-        return ";".join(self.selected_currencies)
+        return ";".join(self.selected_currencies) if self.selected_currencies else ''
 
     @property
     def is_active(self):
@@ -192,7 +193,7 @@ class Group:
         """Create group model and save into database. set its active_until field same as user premium date.
         return the database data if group is existing from before (just update its owner id)."""
         db = Group.database()
-        owner = Account.get(owner_id)
+        owner = Account.getById(owner_id)
         allowed_group_count = BotSettings.get().EACH_COMMUNITY_COUNT_LIMIT(
             owner.user_type
         )
@@ -232,6 +233,12 @@ class Group:
         }
 
         Group.PreviousFastMemGarbageCollectionTime = now
+        gc.collect()
+
+    @staticmethod
+    def refreshFastMem():
+        Group.fastMemInstances.clear()
+        gc.collect()
 
     @staticmethod
     def usersGroupCount(user_chat_id: int) -> int:
@@ -252,7 +259,7 @@ class Group:
         if not trash:
             raise NoSuchThingException(trash_identifier, "Trashed Group")
         try:
-            data = trash[-2]
+            data = load_json(trash[-3])
             group = Group(trash[2], trash_identifier).use_trash_data(data).save()
             db.throw_trash_away(trash[0])
             return group

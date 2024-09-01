@@ -441,7 +441,6 @@ async def handle_action_queries(
             await query.message.delete()
 
         return await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id) if message_id else None
-
     match action:
         case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
             if not value:
@@ -658,15 +657,15 @@ async def handle_action_queries(
                             ),
                         )
                         return
-                except:
-                    pass
+                except Exception as x:
+                    print(x)
                 await query.message.edit_text(botman.error("data_invalid", account.language))
         case BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value | BotMan.QueryActions.RECONNECT_COMMUNITY.value:
-            if not value and action == BotMan.QueryActions.RECONNECT_COMMUNITY:
+            if not value and (action == BotMan.QueryActions.RECONNECT_COMMUNITY.value):
                 await query.message.edit_text(botman.text("operation_canceled", account.language))
                 return
             params = value.split(BotMan.CALLBACK_DATA_JOINER)
-            if not params or len(params) < 2 or not (community_type := BotMan.CommunityType.which(params[0])):
+            if not params or (len(params) < 2) or (not (community_type := BotMan.CommunityType.which(int(params[0]))).value):
                 await query.message.edit_text(botman.error("data_invalid", account.language))
                 return
 
@@ -1575,7 +1574,24 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
             return
 
 
+async def cmd_refresh(update: Update, context: CallbackContext):
+    account = Account.get(update.message.chat)
+    if not account.authorization(context.args):
+        await update.message.reply_text(
+            botman.error("what_the_fuck", account.language),
+            reply_markup=botman.mainkeyboard(account),
+        )
+        return
+    botman.refreshMemory()
+    account = Account.get(update.message.chat)
+    await update.message.reply_text(
+        "Successfully refreshed.",
+        reply_markup=botman.mainkeyboard(account),
+    )
+
 async def handle_group_messages(update: Update, context: CallbackContext):
+    if not update.message or not update.message.text:
+        return
     crypto_amounts, currency_amounts = botman.extract_symbols_and_amounts(update.message.text)
     group: Group = Group.get(update.message.chat.id)
     to_user: Account = Account.getById(update.message.from_user.id)
@@ -1613,7 +1629,6 @@ async def unhandled_error_happened(update: Update, context: CallbackContext):
         reply_markup=botman.mainkeyboard(account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove(),
     )
 
-
 # TODO: disable old caching
 # FIXME: Write script for CROSS_Checking CMC api response with my coin list
 # FIXME: Empty Tags in Equalizing
@@ -1628,6 +1643,7 @@ def main():
     app.add_handler(CommandHandler("lang", cmd_switch_language))
     app.add_handler(CommandHandler("useinchannel", cmd_start_using_in_channel))
     app.add_handler(CommandHandler("myplan", cmd_show_my_plan_status))
+    app.add_handler(CommandHandler("refresh", cmd_refresh))
     
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
@@ -1656,7 +1672,7 @@ def main():
     app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))
 
     print("Server is up and running...")
-    app.run_polling(poll_interval=0.25, timeout=10)
+    app.run_polling(poll_interval=0.2, timeout=10)
 
     # Run as webhook
     # app.run_webhook(

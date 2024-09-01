@@ -19,8 +19,8 @@
       "admin": 200
     },
     "community_count_limit": {
-      "free": 0,
-      "plan": 1,
+      "free": 1,
+      "plus": 1,
       "admin": 1
     },
     "community_token_selection": {

@@ -1,7 +1,7 @@
 from tools.manuwriter import load_json, fwrite_from_scratch
 from typing import Self, Dict
 from enum import Enum
-
+import gc
 
 class BotSettings:
     class UserTypes(Enum):
@@ -64,3 +64,9 @@ class BotSettings:
         self.settings['premiums_plans_text'][language.value] = text
         self.settings['premiums_plans_file_id'][language.value] = file_id
         fwrite_from_scratch(f'./{self.resource_folder}/{self.settings_file_name}', self.settings, source='Settings')
+
+    @staticmethod
+    def refresh():
+        BotSettings.singleInstance = None
+        gc.collect()
+        BotSettings.init()

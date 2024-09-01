@@ -9,6 +9,7 @@ from bot.types import SelectionListTypes
 from json import loads as json_parse, dumps as jsonify
 from telegram import Chat, User
 from bot.settings import BotSettings
+import gc
 
 
 ADMIN_USERNAME = config("ADMIN_USERNAME")
@@ -120,6 +121,7 @@ class Account:
     def change_state(self, state: States = States.NONE, cache_key: str = None, data: any = None, clear_cache: bool = False):
         self.state = state
         self.add_cache(cache_key, data, clear_cache)
+        self.save()
 
     def add_cache(self, cache_key: str = None, data: any = None, clear_cache: bool = False):
         if clear_cache:
@@ -181,19 +183,19 @@ class Account:
 
     @property
     def desired_cryptos_as_str(self):
-        return ";".join(self.desired_cryptos)
+        return ";".join(self.desired_cryptos) if self.desired_cryptos else ''
 
     @property
     def desired_currencies_as_str(self):
-        return ";".join(self.desired_currencies)
+        return ";".join(self.desired_currencies) if self.desired_currencies else ''
 
     @property
     def calc_cryptos_as_str(self):
-        return ";".join(self.calc_cryptos)
+        return ";".join(self.calc_cryptos) if self.calc_cryptos else ''
 
     @property
     def calc_currencies_as_str(self):
-        return ";".join(self.calc_currencies)
+        return ";".join(self.calc_currencies) if self.calc_currencies else ''
 
     @property
     def is_premium(self) -> bool:
@@ -207,9 +209,6 @@ class Account:
     def save(self):
         self.database().update_account(self)
         return self
-
-    def __del__(self):
-        self.save()
 
     def match_state_with_selection_type(self):
         match self.state:
@@ -447,6 +446,12 @@ class Account:
         Account.PreviousFastMemGarbageCollectionTime = now
 
         Account.fastMemInstances = {chat_id: account for chat_id, account in Account.fastMemInstances.items() if account.mayInteract()}
+        gc.collect()
+
+    @staticmethod
+    def refreshFastMem():
+        Account.fastMemInstances.clear()
+        gc.collect()
 
     @staticmethod
     def getFast(chat_id: int):

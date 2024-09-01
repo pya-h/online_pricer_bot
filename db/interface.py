@@ -7,7 +7,7 @@ from time import time
 from typing import List, Tuple
 from decouple import config
 from enum import Enum
-
+import json
 
 class DatabaseInterface:
     _instance = None
@@ -690,17 +690,17 @@ class DatabaseInterface:
         column_names = [column[1] for column in columns_info]
         return column_names
 
-    def trash_sth(self, owner_id: int, trash_type: int, trash_identifier: int, data: dict, delete_at: datetime | None = None):
-        fields = ", ".join(self.TRASH_COLUMNS[1:])  # in creation mode admin just defines persian title and description
+    def trash_sth(self, owner_id: int, trash_type: TrashType, trash_identifier: int, data: dict, delete_at: datetime | None = None):
+        fields = ", ".join(self.TRASH_COLUMNS[1:-1])  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
         return self.execute(
             False,
-            f"INSERT INTO {self.TABLE_TRASH} ({fields}) VALUES (%s{', %s' * (len(self.TRASH_COLUMNS) - 2)})",
-            trash_type,
+            f"INSERT INTO {self.TABLE_TRASH} ({fields}) VALUES (%s{', %s' * (len(self.TRASH_COLUMNS) - 3)})",
+            trash_type.value,
             owner_id,
             trash_identifier,
             delete_at,
-            data,
+            json.dumps(data),
         )
 
     def get_trash(self, id: int):
@@ -710,13 +710,14 @@ class DatabaseInterface:
     def get_user_trash(self, owner_id: int):
         return self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_OWNER_ID}=%s", owner_id)
 
-    def get_trash_by_identifier(self, trash_type: int, identifier: int):
-        return self.execute(
+    def get_trash_by_identifier(self, trash_type: TrashType, identifier: int):
+        rows = self.execute(
             True,
             f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_IDENTIFIER}=%s LIMIT 1",
-            trash_type,
+            trash_type.value,
             identifier,
         )
+        return rows[0] if rows else None
 
     def throw_trash_away(self, id: int):
         return self.execute(False, f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1", id)

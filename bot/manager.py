@@ -256,10 +256,6 @@ class BotMan:
         self.setup_main_keyboards()
         self.is_main_plan_on: bool = False
 
-        self.bot_settings: Dict[str, str | int | float | Dict[str, int | float | str]] = None
-        self.load_settings()
-
-    def load_settings(self):
         BotSettings.init()
 
     def setup_main_keyboards(self):
@@ -1219,3 +1215,9 @@ class BotMan:
                 except:
                     pass
             db.throw_away_messages_passed_time(from_time=now)
+
+    @staticmethod
+    def refreshMemory():
+        Account.fastMemInstances.clear()
+        Group.fastMemInstances.clear()
+        BotSettings.refresh() # this one calls gc.collect too
