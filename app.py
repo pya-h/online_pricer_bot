@@ -745,7 +745,7 @@ async def handle_action_queries(
                     if len(values) > 1:
                         if values[1] == "y":
                             if target_user.is_premium:
-                                target_user.downgrade()
+                                botman.downgrade_user(target_user, context=context)
                                 await query.message.edit_text(botman.text("account_downgraded", account.language))
                                 return
                             await query.message.edit_text(botman.text("not_a_premium", account.language))
@@ -907,6 +907,19 @@ async def cmd_start_using_in_channel(update: Update, context: CallbackContext):
         reply_markup=botman.cancel_menu(account.language),
     )
 
+async def cmd_show_my_plan_status(update: Update, context: CallbackContext):
+    account = Account.get(update.message.chat)
+    days_remaining = account.premium_days_remaining
+    if days_remaining < 0:
+        await botman.send_message_with_premium_button(update, botman.text('ur_using_free_plan', account.language))
+        if account.plus_end_date is not None:
+            await botman.downgrade_user(account)
+        return
+    days_remaining = str(days_remaining) if account.language.lower() != 'fa' else persianify(days_remaining)
+    await update.message.reply_text(
+        botman.text("ur_plan_duration", account.language) % (days_remaining,),
+        reply_markup=botman.mainkeyboard(account)
+    )
 
 async def unknown_command_handler(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
@@ -914,7 +927,6 @@ async def unknown_command_handler(update: Update, context: CallbackContext):
         botman.error("what_the_fuck", account.language),
         reply_markup=botman.mainkeyboard(account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove(),
     )
-
 
 async def go_to_community_panel(update: Update, account: Account, community: BotMan.CommunityType):
     account.add_cache("community", community.value)
@@ -966,6 +978,8 @@ async def handle_messages(update: Update, context: CallbackContext):
             await update.message.delete()
             await botman.show_settings_menu(update)
 
+        case BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA.value | BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN.value:
+            await cmd_show_my_plan_status(update, context)
         # Select market sub menu
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
             if await list_type_is_selected(update):
@@ -1613,6 +1627,8 @@ def main():
     app.add_handler(CommandHandler("equalizer", cmd_equalizer))
     app.add_handler(CommandHandler("lang", cmd_switch_language))
     app.add_handler(CommandHandler("useinchannel", cmd_start_using_in_channel))
+    app.add_handler(CommandHandler("myplan", cmd_show_my_plan_status))
+    
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
     app.add_handler(CommandHandler("up", cmd_upgrade_user))

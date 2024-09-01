@@ -401,7 +401,7 @@ class DatabaseInterface:
             f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=%s",
             account.chat_id,
         )
-        log(f"Account with chat_id={account.chat_id} downgraded to free user.")
+        log(f"Account with chat_id={account.chat_id} downgraded to free user.", category_name="Premiums")
 
     def add_channel(self, channel):
         if not channel:

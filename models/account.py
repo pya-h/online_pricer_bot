@@ -161,7 +161,23 @@ class Account:
         Account.database().upgrade_account(self, duration_in_months)
 
     def downgrade(self):
+        self.plus_end_date = None
         Account.database().downgrade_account(self)
+
+    @property
+    def premium_date(self):
+        return self.plus_end_date.date() if isinstance(self.plus_end_date, datetime) else self.plus_end_date
+
+    @property        
+    def premium_days_remaining(self) -> int:
+        try:
+            if not self.plus_end_date:
+                return -1
+            delta = tz_today().date() - self.premium_date
+            return delta.days
+        except Exception as x:
+            log(f'Failed to calculate remaining days of user premium plan, chat_id={self.chat_id}', 'Premiums')
+        return 0
 
     @property
     def desired_cryptos_as_str(self):

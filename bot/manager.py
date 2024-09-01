@@ -33,8 +33,8 @@ from datetime import datetime
 from .settings import BotSettings
 
 
-
 resourceman = ResourceManager("texts", "resources")
+
 
 class BotMan:
     """This class is defined to collect all common and handy options, fields and features of online pricer bot"""
@@ -804,13 +804,16 @@ class BotMan:
 
     async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
         if not account.is_premium:
-            link = f"https://t.me/{Account.getHardcodeAdmin()['username']}"
-            await telegram_handle.message.reply_text(
-                text=self.error("max_selection", account.language) % (max_value,) + self.error("get_premium", account.language),
-                reply_markup=self.inline_url([{"text_key": "premium", "url": link}]),
-            )
+            await self.send_message_with_premium_button(telegram_handle, text=self.error("max_selection", account.language) % (max_value,) + self.error("get_premium", account.language))
         else:
             await telegram_handle.message.reply_text(text=self.error("max_selection", account.language) % (max_value,))
+
+    async def send_message_with_premium_button(self, update: Update | CallbackQuery, text: str):
+        link = f"https://t.me/{Account.getHardcodeAdmin()['username']}"
+        await update.message.reply_text(
+            text=text,
+            reply_markup=self.inline_url([{"text_key": "premium", "url": link}]),
+        )
 
     async def show_settings_menu(self, update: Update):
         account = Account.get(update.message.chat)
@@ -1177,6 +1180,12 @@ class BotMan:
         if update_last_post_time_targets:
             Channel.updateLastPostTimes(update_last_post_time_targets)
 
+    async def downgrade_user(self, user: Account, context: CallbackContext | None = None):
+        user.downgrade()
+        if context:
+            await context.bot.send_message(chat_id=user.chat_id, text=self.text("plan_expired", user.language))
+        Channel.deactivateUserChannels(user.chat_id)
+
     async def do_daily_check(self, context: CallbackContext):
         """Garbage collect fast mems, remove messages supposed to be removed, etc."""
         Account.garbageCollect()
@@ -1186,21 +1195,9 @@ class BotMan:
         possible_premiums = Account.getPremiumUsers(even_possibles=True)
         for user in possible_premiums:
             try:
-                user_premium_end_date = (
-                    user.plus_end_date.date() if isinstance(user.plus_end_date, datetime) else user.plus_end_date
-                )
-                if user_premium_end_date > today:
-                    user.plus_end_date = None
-                    user.save()
-                    await context.bot.send_message(chat_id=user.chat_id, text=self.text("plan_expired", user.language))
-                    log(f'1 new user premium plan expired: {user.chat_id} @{user.username or user.firstname}', category_name='PremiumNews')
-                    channel_s = Channel.getByOwner(user.chat_id)
-                    if not channel_s:
-                        channels = [channel_s] if isinstance(channel_s, Channel) else channel_s
-                        log(f'\twhich had also {len(channels)} active channels which are now disabled.', category_name='PremiumNews')
-                        for chan in channels:
-                            chan.is_active = False
-                            chan.save()
+                user_premium_end_date = user.premium_date
+                if user_premium_end_date < today:
+                    await self.downgrade_user(user, context)
                 else:
                     days_remaining = (today - user_premium_end_date).days
                     if days_remaining in (7, 3, 1):
@@ -1209,7 +1206,7 @@ class BotMan:
                             chat_id=user.chat_id, text=self.text("premium_expiry_is_close", user.language) % (days_remaining,)
                         )
             except Exception as x:
-                log('User daily checkout failed', x, category_name='Checkouts')
+                log("User daily checkout failed", x, category_name="Checkouts")
 
         db = Account.database()
         now = now_in_minute()

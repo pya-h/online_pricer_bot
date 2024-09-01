@@ -177,12 +177,23 @@ class Channel:
     def delete(self) -> bool:
         try:
             Channel.database().delete_channel(self.id)
-            # if self.id in Channel.Instances:
-            #     del Channel.Instances[self.id]
         except Exception as ex:
             manuwriter.log(f"Cannot remove channel:{self.id}", ex, category_name="Channels")
             return False
         return True
+
+    @staticmethod
+    def deactivateUserChannels(owner_id: int):
+        channel_s = Channel.getByOwner(owner_id)
+        if not channel_s:
+            channels = [channel_s] if isinstance(channel_s, Channel) else channel_s
+            manuwriter.log(
+                f"\tUser had {len(channels)} active channels which are now disabled.",
+                category_name="Premiums",
+            )
+            for chan in channels:
+                chan.is_active = False
+                chan.save()
 
     def __str__(self) -> str:
         return f"Username:{self.name}\nTitle: {self.title}\nId: {self.id}\nInterval: {self.interval}\nOwner Id: {self.owner_id}"

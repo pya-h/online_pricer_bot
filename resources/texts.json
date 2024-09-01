@@ -680,5 +680,13 @@
     "premium_expiry_is_close": {
         "fa": "⚠️ تنها %s روز تا پایان اشتراک شما باقی مانده است.\n\n❗️ قبل از اتمام اشتراکتان برای تمدید آن اقدام کنید.\n\nبرای تمدید اشتراک کافیست به ادمین پاسخگویی پیام دهید:\n👩‍💻 @KSA_Admin",
         "en": "⚠️ There's only %s day(s) left until the end of your premium subscription.\n\n❗️ You can contact admin to extend your subscription due before it ends.\n\nFor this purpose, you can contact the our Admin & Support account:\n👩‍💻 @KSA_Admin"
+    },
+    "ur_using_free_plan": {
+        "fa": "در حال حاضر شما در حال استفاده از تعرفه عادی ربات هستید.",
+        "en": "You're using bot's free plan for now."
+    },
+    "ur_plan_duration": {
+        "fa": "⏳ مدت اشتراک شما: %s روز\n\nبرای تمدید اشتراک کافیست به ادمین پاسخگویی پیام دهید:\n👩‍💻 @KSA_Admin",
+        "en": "⏳ Your subscription time: %s days\n\nTo renew the subscription, you can contact our support account:\n👩‍💻 @KSA_Admin"
     }
 }
