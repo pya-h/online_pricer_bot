@@ -9,6 +9,7 @@ from decouple import config
 from enum import Enum
 import json
 
+
 class DatabaseInterface:
     _instance = None
     TABLE_ACCOUNTS = "accounts"
@@ -111,7 +112,15 @@ class DatabaseInterface:
     ) = ("id", "chat_id", "currency", "price", "change_dir", "unit")
 
     TABLE_TRASH = "trash"
-    TRASH_COLUMNS = (TRASH_ID, TRASH_TYPE, TRASH_OWNER_ID, TRASH_IDENTIFIER, TRASH_DELETE_AT, TRASH_DATA, TRASH_TRASHED_AT) = (
+    TRASH_COLUMNS = (
+        TRASH_ID,
+        TRASH_TYPE,
+        TRASH_OWNER_ID,
+        TRASH_IDENTIFIER,
+        TRASH_DELETE_AT,
+        TRASH_DATA,
+        TRASH_TRASHED_AT,
+    ) = (
         "id",
         "type",
         "owner_id",
@@ -176,7 +185,10 @@ class DatabaseInterface:
 
     @property
     def connection(self):
-        if not self.__connection_instance or not self.__connection_instance.is_connected:
+        if (
+            not self.__connection_instance
+            or not self.__connection_instance.is_connected
+        ):
             self.connect()
 
         return self.__connection_instance
@@ -204,9 +216,7 @@ class DatabaseInterface:
     def setup(self):
         try:
             cursor = self.connection.cursor()
-            table_exist_query_start = (
-                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
-            )
+            table_exist_query_start = f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
             tables_common_charset = "CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci"
             # check if the table accounts was created
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_ACCOUNTS}'")
@@ -219,7 +229,10 @@ class DatabaseInterface:
                 )
                 # create table account
                 cursor.execute(query)
-                log(f"Table {self.TABLE_ACCOUNTS} created successfully.", category_name="DatabaseInfo")
+                log(
+                    f"Table {self.TABLE_ACCOUNTS} created successfully.",
+                    category_name="DatabaseInfo",
+                )
             else:
                 # write any migration needed in the function called below
                 self.migrate()
@@ -237,7 +250,10 @@ class DatabaseInterface:
                 )
                 # create table account
                 cursor.execute(query)
-                log(f"Table {self.TABLE_CHANNELS} created successfully.", category_name="DatabaseInfo")
+                log(
+                    f"Table {self.TABLE_CHANNELS} created successfully.",
+                    category_name="DatabaseInfo",
+                )
 
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_GROUPS}'")
             if not cursor.fetchone():
@@ -251,7 +267,10 @@ class DatabaseInterface:
                 )
                 # create table account
                 cursor.execute(query)
-                log(f"Table {self.TABLE_GROUPS} created successfully.", category_name="DatabaseInfo")
+                log(
+                    f"Table {self.TABLE_GROUPS} created successfully.",
+                    category_name="DatabaseInfo",
+                )
 
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_PRICE_ALARMS}'")
             if not cursor.fetchone():
@@ -264,7 +283,10 @@ class DatabaseInterface:
                 )
 
                 cursor.execute(query)
-                log(f"Table {self.TABLE_PRICE_ALARMS} created successfully.", category_name="DatabaseInfo")
+                log(
+                    f"Table {self.TABLE_PRICE_ALARMS} created successfully.",
+                    category_name="DatabaseInfo",
+                )
 
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_TRASH}'")
             if not cursor.fetchone():
@@ -275,12 +297,19 @@ class DatabaseInterface:
                 )
 
                 cursor.execute(query)
-                log(f"Table {self.TABLE_TRASH} created successfully.", category_name="DatabaseInfo")
+                log(
+                    f"Table {self.TABLE_TRASH} created successfully.",
+                    category_name="DatabaseInfo",
+                )
 
             log("OnlinePricer Database setup completed.", category_name="DatabaseInfo")
             cursor.close()
         except Error as ex:
-            log("Failed setting up database, app cannot continue...", ex, category_name="FUX")
+            log(
+                "Failed setting up database, app cannot continue...",
+                ex,
+                category_name="FUX",
+            )
 
     def add_account(self, account):
         if not account:
@@ -304,34 +333,60 @@ class DatabaseInterface:
                 account.is_admin,
                 account.language,
             )
-            log(f"New account: {account} saved into database successfully.", category_name="DatabaseInfo")
+            log(
+                f"New account: {account} saved into database successfully.",
+                category_name="DatabaseInfo",
+            )
         except Exception as ex:
-            log(f"Cannot save this account:{account}", ex, category_name=f"DatabaseError")
+            log(
+                f"Cannot save this account:{account}",
+                ex,
+                category_name=f"DatabaseError",
+            )
             raise ex  # custom ex needed here too
 
     def get_account(self, chat_id):
-        accounts = self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s LIMIT 1", chat_id)
+        accounts = self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s LIMIT 1",
+            chat_id,
+        )
         return accounts[0] if accounts else None
 
     def get_all_accounts(self, by_column: str = ACCOUNT_ID) -> list:
         rows = self.execute(True, f"SELECT ({by_column}) FROM {self.TABLE_ACCOUNTS}")
         return [row[0] for row in rows]  # just return a list of ids
 
-    def get_special_accounts(self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
-        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s", value)
+    def get_special_accounts(
+        self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1
+    ) -> list:
+        return self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s",
+            value,
+        )
 
     def get_premium_accounts(self, from_date: datetime | None = None) -> list:
         from_date = from_date or datetime.now()
-        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > %s", from_date)
+        return self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > %s",
+            from_date,
+        )
 
     def get_possible_premium_accounts(self) -> list:
         from_date = from_date or datetime.now()
-        return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL")
+        return self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL",
+        )
 
     def update_account(self, account):
         cursor = self.connection.cursor()
 
-        columns_to_set = ", ".join([f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]])
+        columns_to_set = ", ".join(
+            [f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]]
+        )
         cursor.execute(
             f"UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s",
             (
@@ -351,7 +406,10 @@ class DatabaseInterface:
         )
 
         if not cursor.rowcount:
-            cursor.execute(f"SELECT 1 FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s", (account.chat_id,))
+            cursor.execute(
+                f"SELECT 1 FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s",
+                (account.chat_id,),
+            )
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()
                 return
@@ -373,7 +431,11 @@ class DatabaseInterface:
                     account.language,
                 ),
             )
-            log("New account started using this bot with chat_id=: " + account.__str__(), category_name="DatabaseInfo")
+            log(
+                "New account started using this bot with chat_id=: "
+                + account.__str__(),
+                category_name="DatabaseInfo",
+            )
         self.connection.commit()
         cursor.close()
 
@@ -393,7 +455,9 @@ class DatabaseInterface:
             account.plus_end_date,
             account.chat_id,
         )
-        log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {account.plus_end_date}")
+        log(
+            f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {account.plus_end_date}"
+        )
 
     def downgrade_account(self, account):
         self.execute(
@@ -401,7 +465,10 @@ class DatabaseInterface:
             f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=%s",
             account.chat_id,
         )
-        log(f"Account with chat_id={account.chat_id} downgraded to free user.", category_name="Premiums")
+        log(
+            f"Account with chat_id={account.chat_id} downgraded to free user.",
+            category_name="Premiums",
+        )
 
     def add_channel(self, channel):
         if not channel:
@@ -423,12 +490,18 @@ class DatabaseInterface:
                 channel.message_footnote,
                 int(channel.message_show_date_tag),
                 int(channel.message_show_market_tags),
+                channel.owner.language,
                 channel.last_post_time,
                 channel.owner_id,
             )
-            log(f"New channel: {channel} saved into database successfully.", category_name="DatabaseInfo")
+            log(
+                f"New channel: {channel} saved into database successfully.",
+                category_name="DatabaseInfo",
+            )
         except Exception as ex:
-            log(f"Cannot save this channel:{channel}", ex, category_name="DatabaseError")
+            log(
+                f"Cannot save this channel:{channel}", ex, category_name="DatabaseError"
+            )
             raise ex  # custom ex needed here too
 
     def update_channel(self, channel, old_chat_id: int = None):
@@ -461,7 +534,10 @@ class DatabaseInterface:
                 category_name="DatabaseInfo",
             )
         elif not old_chat_id:
-            cursor.execute(f"SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s", (channel.id,))
+            cursor.execute(
+                f"SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s",
+                (channel.id,),
+            )
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()
                 return
@@ -492,34 +568,47 @@ class DatabaseInterface:
         cursor.close()
 
     def get_channel(self, channel_id: int):
-        channels = self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s LIMIT 1", channel_id)
+        channels = self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s LIMIT 1",
+            channel_id,
+        )
         return channels[0] if channels else None
 
     def get_user_channels(self, owner_chat_id: int, take: int | None = 1) -> list:
         """Get all channels owned by this account"""
         limitation = f"LIMIT {take}" if take else ""
         return self.execute(
-            True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s {limitation}", owner_chat_id
+            True,
+            f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s {limitation}",
+            owner_chat_id,
         )
 
     def user_channels_count(self, owner_chat_id: int) -> int:
         """Get count of channels owned by this account"""
         result = self.execute(
-            True, f"SELECT COUNT(id) as cnt FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s", owner_chat_id
+            True,
+            f"SELECT COUNT(id) as cnt FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID}=%s",
+            owner_chat_id,
         )
         count = result[0][0] if result and result[0] else 0
         return count
 
     def get_channels_by_interval(self, min_interval: int = 0) -> list:
         """Finds all the channels with plan interval > min_interval"""
-        return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_INTERVAL} > %s", min_interval)
+        return self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_INTERVAL} > %s",
+            min_interval,
+        )
 
     def get_all_channels(self) -> list:
         return self.execute(True, f"SELECT * FROM {self.TABLE_CHANNELS}")
 
     def get_all_active_channels(self) -> list:
         return self.execute(
-            True, f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_IS_ACTIVE}=1 AND {self.CHANNEL_INTERVAL} > 0"
+            True,
+            f"SELECT * FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_IS_ACTIVE}=1 AND {self.CHANNEL_INTERVAL} > 0",
         )
 
     def set_channel_state(self, channel_id: int, is_active: bool = True):
@@ -537,9 +626,21 @@ class DatabaseInterface:
             id_list,
         )
 
+    def update_user_channels_language(self, owner):
+        return self.execute(
+            False,
+            f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_LANGUAGE}=%s WHERE {self.CHANNEL_OWNER_ID}=%s",
+            owner.language,
+            owner.chat_id,
+        )
+
     def delete_channel(self, channel_id: int):
         """Delete channel and its planning"""
-        self.execute(False, f"DELETE FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID} = %s LIMIT 1", channel_id)
+        self.execute(
+            False,
+            f"DELETE FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID} = %s LIMIT 1",
+            channel_id,
+        )
 
     def add_group(self, group):
         if not group:
@@ -561,7 +662,10 @@ class DatabaseInterface:
                 int(group.message_show_market_tags),
                 group.owner_id,
             )
-            log(f"New group: {group} saved into database successfully.", category_name="DatabaseInfo")
+            log(
+                f"New group: {group} saved into database successfully.",
+                category_name="DatabaseInfo",
+            )
         except Exception as ex:
             log(f"Cannot save this group:{group}", ex, category_name="DatabaseError")
             raise ex  # custom ex needed here too
@@ -590,7 +694,10 @@ class DatabaseInterface:
         )
 
         if not cursor.rowcount and not old_chat_id:
-            cursor.execute(f"SELECT 1 FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s", (group.id,))
+            cursor.execute(
+                f"SELECT 1 FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s",
+                (group.id,),
+            )
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()
                 return
@@ -610,35 +717,52 @@ class DatabaseInterface:
                     group.owner_id,
                 ),
             )
-            log("New group started using this bot with id=: " + group.__str__(), category_name="DatabaseInfo")
+            log(
+                "New group started using this bot with id=: " + group.__str__(),
+                category_name="DatabaseInfo",
+            )
         self.connection.commit()
         cursor.close()
 
     def get_group(self, group_id: int):
-        groups = self.execute(True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s LIMIT 1", group_id)
+        groups = self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s LIMIT 1",
+            group_id,
+        )
         return groups[0] if groups else None
 
     def get_user_groups(self, owner_chat_id: int, take: int | None = 1) -> list:
         """Get all groups/supergroups owned by this account"""
         limitation = f"LIMIT {take}" if take else ""
         return self.execute(
-            True, f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s {limitation}", owner_chat_id
+            True,
+            f"SELECT * FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s {limitation}",
+            owner_chat_id,
         )
 
     def user_groups_count(self, owner_chat_id: int) -> int:
         """Get count of groups owned by this account"""
         result = self.execute(
-            True, f"SELECT COUNT(id) as cnt FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s", owner_chat_id
+            True,
+            f"SELECT COUNT(id) as cnt FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID}=%s",
+            owner_chat_id,
         )
         count = result[0][0] if result and result[0] else 0
         return count
 
     def delete_group(self, group_id: int):
         """Delete group and its planning"""
-        self.execute(False, f"DELETE FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID} = %s LIMIT 1", group_id)
+        self.execute(
+            False,
+            f"DELETE FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID} = %s LIMIT 1",
+            group_id,
+        )
 
     def create_new_alarm(self, alarm):
-        fields = ", ".join(self.PRICE_ALARMS_COLUMNS[1:])  # in creation mode admin just defines persian title and description
+        fields = ", ".join(
+            self.PRICE_ALARMS_COLUMNS[1:]
+        )  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
         return self.execute(
             False,
@@ -651,25 +775,35 @@ class DatabaseInterface:
         )
 
     def get_single_alarm(self, id: int):
-        return self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s", id)
+        return self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s",
+            id,
+        )
 
     def get_alarms(self, currency: str | None = None):
         return (
             self.execute(True, f"SELECT * from {self.TABLE_PRICE_ALARMS}")
             if not currency
             else self.execute(
-                True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY}=%s", currency
+                True,
+                f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY}=%s",
+                currency,
             )
         )
 
     def get_alarms_by_currencies(self, currencies: List[str]):
         targets = "n".join([f"'{curr}'" for curr in currencies])
         return self.execute(
-            True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY} IN ({targets})"
+            True,
+            f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY} IN ({targets})",
         )
 
     def get_user_alarms(self, chat_id: int):
-        return self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CHAT_ID}={chat_id}")
+        return self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CHAT_ID}={chat_id}",
+        )
 
     def get_number_of_user_alarms(self, chat_id: int) -> int:
         result = self.execute(
@@ -683,15 +817,28 @@ class DatabaseInterface:
         return 0
 
     def delete_alarm(self, id: int):
-        self.execute(False, f"DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s LIMIT 1", id)
+        self.execute(
+            False,
+            f"DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s LIMIT 1",
+            id,
+        )
 
     def get_table_columns(self, table: str):
         columns_info = self.execute(True, f"PRAGMA table_info({table});")
         column_names = [column[1] for column in columns_info]
         return column_names
 
-    def trash_sth(self, owner_id: int, trash_type: TrashType, trash_identifier: int, data: dict, delete_at: datetime | None = None):
-        fields = ", ".join(self.TRASH_COLUMNS[1:-1])  # in creation mode admin just defines persian title and description
+    def trash_sth(
+        self,
+        owner_id: int,
+        trash_type: TrashType,
+        trash_identifier: int,
+        data: dict,
+        delete_at: datetime | None = None,
+    ):
+        fields = ", ".join(
+            self.TRASH_COLUMNS[1:-1]
+        )  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
         return self.execute(
             False,
@@ -704,11 +851,19 @@ class DatabaseInterface:
         )
 
     def get_trash(self, id: int):
-        rows = self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1", id)
+        rows = self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1",
+            id,
+        )
         return rows[0] if rows else None
 
     def get_user_trash(self, owner_id: int):
-        return self.execute(True, f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_OWNER_ID}=%s", owner_id)
+        return self.execute(
+            True,
+            f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_OWNER_ID}=%s",
+            owner_id,
+        )
 
     def get_trash_by_identifier(self, trash_type: TrashType, identifier: int):
         rows = self.execute(
@@ -720,9 +875,15 @@ class DatabaseInterface:
         return rows[0] if rows else None
 
     def throw_trash_away(self, id: int):
-        return self.execute(False, f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1", id)
+        return self.execute(
+            False,
+            f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1",
+            id,
+        )
 
-    def schedule_messages_for_removal(self, messages_data: List[Tuple[int, int, int, int]]):
+    def schedule_messages_for_removal(
+        self, messages_data: List[Tuple[int, int, int, int]]
+    ):
         return self.bulk_query(
             f"INSERT INTO {self.TABLE_TRASH} ({self.TRASH_TYPE}, {self.TRASH_OWNER_ID}, {self.TRASH_IDENTIFIER}, {self.TRASH_DELETE_AT}) VALUES (%s, %s, %s, %s)",
             messages_data,
@@ -746,9 +907,13 @@ class DatabaseInterface:
             from_time,
         )
 
-    def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
+    def backup(
+        self, single_table_name: str = None, output_filename_suffix: str = "backup"
+    ):
         tables = (
-            [single_table_name] if single_table_name else [self.TABLE_ACCOUNTS, self.TABLE_CHANNELS, self.TABLE_PRICE_ALARMS]
+            [single_table_name]
+            if single_table_name
+            else [self.TABLE_ACCOUNTS, self.TABLE_CHANNELS, self.TABLE_PRICE_ALARMS]
         )
         backup_folder_created, _ = prepare_folder(self.BACKUP_FOLDER)
 
@@ -759,7 +924,10 @@ class DatabaseInterface:
             # add column names of a table as the first row
             rows.insert(0, self.get_table_columns(table))
 
-            fwrite_from_scratch(f"{filename_prefix}{table}_{output_filename_suffix}.txt", "\n".join(rows))
+            fwrite_from_scratch(
+                f"{filename_prefix}{table}_{output_filename_suffix}.txt",
+                "\n".join(rows),
+            )
 
     def __init__(self):
         self.__host = config("DATABASE_HOST", "localhost")

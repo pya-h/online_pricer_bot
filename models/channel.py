@@ -352,3 +352,7 @@ class Channel:
     @staticmethod
     def updateLastPostTimes(channel_ids: List[int]):
         return Channel.database().update_channels_last_post_times(channel_ids)
+
+    @staticmethod
+    def updateUserChannels(user: Account):
+        Channel.database().update_user_channels_language(user)

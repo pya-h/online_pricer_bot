@@ -6,6 +6,7 @@
         "curreny",
         "currs",
         "dateutil",
+        "fastmem",
         "fdata",
         "fotenote",
         "fwrite",

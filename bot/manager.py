@@ -120,6 +120,9 @@ class BotMan:
         ADMIN_UPGRADE_TO_PREMIUM_EN = resourceman.keyboard("admin_upgrade_to_premium", "en")
         ADMIN_DOWNGRADE_USER_FA = resourceman.keyboard("admin_downgrade_user", "fa")
         ADMIN_DOWNGRADE_USER_EN = resourceman.keyboard("admin_downgrade_user", "en")
+        ADMIN_CHANGE_PREMIUM_PLANS_FA = resourceman.keyboard("change_premium_plans", "fa")
+        ADMIN_CHANGE_PREMIUM_PLANS_EN = resourceman.keyboard("change_premium_plans", "en")
+
 
     class QueryActions(Enum):
         CHOOSE_LANGUAGE = 1
@@ -1022,7 +1025,7 @@ class BotMan:
                     self.text("update_successful", account.language),
                     reply_markup=self.get_community_config_keyboard(BotMan.CommunityType.CHANNEL, account.language),
                 )
-                account.change_state(cache_key="community", data=BotMan.CommunityType.GROUP.value, clear_cache=True)
+                account.change_state(cache_key="community", data=BotMan.CommunityType.CHANNEL.value, clear_cache=True)
             except Exception as x:
                 log("sth went wrong while changing channel:", x, "Channel")
             return
@@ -1166,13 +1169,14 @@ class BotMan:
         # FIXME: Find ways to optimize this mf
         update_last_post_time_targets = []
         for channel in channels:
-            if channel.last_post_time - now >= channel.interval:
+            print(channel.id, channel.last_post_time)
+            if not channel.last_post_time or (channel.last_post_time - now >= channel.interval):
                 try:
                     post = self.postman.create_channel_post(channel)
                     await context.bot.send_message(chat_id=channel.id, text=post)
                     update_last_post_time_targets.append(channel.id)
                 except Exception as x:
-                    pass  # TODO: Disable the channel? Maybe find out which Exception is for Banned Bot and then active those
+                    print(x)  # TODO: Disable the channel? Maybe find out which Exception is for Banned Bot and then active those
         if update_last_post_time_targets:
             Channel.updateLastPostTimes(update_last_post_time_targets)
 

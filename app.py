@@ -314,6 +314,12 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 🔹 تعداد کل کاربران ربات: {stats['all']}"""
     )
 
+async def cmd_send_plans_post(update: Update, context: CallbackContext):
+    account = Account.get(update.message.chat)
+    if not account.authorization(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account)
+    await update.message.reply_text(botman.text('send_premium_plans_post', account.language))
+
 
 async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
     if not isinstance(botman.crypto_serv, CoinMarketCapService):
@@ -574,7 +580,6 @@ async def handle_action_queries(
                     reply_markup=botman.mainkeyboard(account),
                 )
                 await query.message.delete()
-                # TODO: Write the post job part.
             except:
                 await query.message.reply_text(
                     botman.error("error_while_planning_channel", account.language),
@@ -658,7 +663,7 @@ async def handle_action_queries(
                         )
                         return
                 except Exception as x:
-                    print(x)
+                    log(f'Disconnecting {community.__str__()} failed, callback_data={value}', x, category_name='Community')
                 await query.message.edit_text(botman.error("data_invalid", account.language))
         case BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value | BotMan.QueryActions.RECONNECT_COMMUNITY.value:
             if not value and (action == BotMan.QueryActions.RECONNECT_COMMUNITY.value):
@@ -875,8 +880,9 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 async def cmd_switch_language(update: Update, context: CallbackContext):
     acc = Account.get(update.message.chat)
     acc.language = "en" if acc.language == "fa" else "fa"
-    await update.message.reply_text(botman.text("language_switched", acc.language))
     acc.save()
+    Channel.updateUserChannels(acc)
+    await update.message.reply_text(botman.text("language_switched", acc.language))
 
 
 async def list_type_is_selected(update: Update):
@@ -1220,7 +1226,6 @@ async def handle_messages(update: Update, context: CallbackContext):
             # check account state first, to see if he/she is in input state
             account = Account.get(update.message.chat)
             msg = update.message.text
-
             if account.is_admin:
                 # admin options:
                 match msg:
@@ -1242,7 +1247,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                     case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
                         await cmd_report_statistics(update, context)
                         return
-
+                    case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
+                        await cmd_send_plans_post(update, context)
+                        return
+                    
             match account.state:
                 case Account.States.INPUT_EQUALIZER_AMOUNT:
                     params = msg.split()
@@ -1628,6 +1636,8 @@ async def unhandled_error_happened(update: Update, context: CallbackContext):
         botman.error("unhandled_error_happened", account.language),
         reply_markup=botman.mainkeyboard(account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove(),
     )
+
+# FIXME: Some cmd_ methods are re-getting accounts, (admin or non-admin commands), do a full check on them, and check if they need changing, (cause we have fastmem of course)
 
 # TODO: disable old caching
 # FIXME: Write script for CROSS_Checking CMC api response with my coin list

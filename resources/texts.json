@@ -201,6 +201,10 @@
         "reconnect": {
             "fa": "اتصال مجدد",
             "en": "Reconnect"
+        },
+        "change_premium_plans": {
+            "fa": "تغییر تعرفه ها",
+            "en": "Change Premium Plans"
         }
     },
     "which_market": {
@@ -688,5 +692,9 @@
     "ur_plan_duration": {
         "fa": "⏳ مدت اشتراک شما: %s روز\n\nبرای تمدید اشتراک کافیست به ادمین پاسخگویی پیام دهید:\n👩‍💻 @KSA_Admin",
         "en": "⏳ Your subscription time: %s days\n\nTo renew the subscription, you can contact our support account:\n👩‍💻 @KSA_Admin"
+    },
+    "send_premium_plans_post": {
+        "fa": "حالا پست مربوط به تعرفه های جدید را همراه با عکس آن (اختیاری) بفرستید.\n\n* کاراکتر اول متن مشخص کننده زبان پست است. اگر کاراکتر انگلیسی بود، متن برای زبان انگلیسی و درغیر اینصورت برای زبان فارسی تنظیم می شود.",
+        "en": "Now send the New Premium Plans post with post image[optional].\n\n* The first letter of the text specifies the Post Language: First english character means this post is for english language, and otherwise it's for persians."
     }
 }
