@@ -22,6 +22,7 @@ class DatabaseInterface:
         ACCOUNT_CALC_CURRENCIES,
         ACCOUNT_CALC_CRYPTOS,
         ACCOUNT_USERNAME,
+        ACCOUNT_JOIN_DATE,
         ACCOUNT_LAST_INTERACTION,
         ACCOUNT_PLUS_START_DATE,
         ACCOUNT_PLUS_END_DATE,
@@ -36,6 +37,7 @@ class DatabaseInterface:
         "calc_cryptos",
         "calc_currencies",
         "username",
+        "join_date",
         "last_interaction",
         "plus_start_date",
         "plus_end_date",
@@ -226,7 +228,7 @@ class DatabaseInterface:
                 query = (
                     f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY,"
                     + f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), "
-                    + f"{self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_START_DATE} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} VARCHAR(256) DEFAULT NULL, "
+                    + f"{self.ACCOUNT_JOIN_DATE} DATETIME, {self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_START_DATE} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} VARCHAR(256) DEFAULT NULL, "
                     + f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) {tables_common_charset};"
                 )
                 # create table account
@@ -328,6 +330,7 @@ class DatabaseInterface:
                 account.calc_currencies_as_str,
                 account.calc_cryptos_as_str,
                 account.username,
+                account.join_date or tz_today(),
                 account.last_interaction,
                 account.plus_start_date,
                 account.plus_end_date,
@@ -398,6 +401,7 @@ class DatabaseInterface:
                 account.calc_currencies_as_str,
                 account.calc_cryptos_as_str,
                 account.username,
+                account.join_date,
                 account.last_interaction,
                 account.plus_start_date,
                 account.plus_end_date,
@@ -427,6 +431,7 @@ class DatabaseInterface:
                     account.calc_currencies_as_str,
                     account.calc_cryptos_as_str,
                     account.username,
+                    account.join_date,
                     account.last_interaction,
                     account.plus_start_date,
                     account.plus_end_date,
@@ -921,6 +926,10 @@ class DatabaseInterface:
             DatabaseInterface.TrashType.MESSAGE,
             from_time,
         )
+
+    def count_query(self, table: str, where: str | None= None):
+        res = self.execute(True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else '')
+        return res[0] if res else 0
 
     def backup(
         self, single_table_name: str = None, output_filename_suffix: str = "backup"

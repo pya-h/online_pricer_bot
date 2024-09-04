@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List, Dict
 from db.interface import DatabaseInterface
 from .account import Account
-
+from tools.exceptions import InvalidInputException
 
 class PriceAlarm:
     _database: DatabaseInterface = None
@@ -50,6 +50,7 @@ class PriceAlarm:
         self.currency = currency
         self.target_price = target_price
         self.target_unit = target_unit
+        self.current_price: int | None = current_price
         if change_direction is None and current_price is not None:
             if current_price < target_price:
                 self.change_direction = PriceAlarm.ChangeDirection.UP
@@ -61,10 +62,29 @@ class PriceAlarm:
                 if isinstance(change_direction, PriceAlarm.ChangeDirection)
                 else PriceAlarm.ChangeDirection.which(change_direction)
             )
-        self.current_price: int | None = None
+            if (self.current_price) and not self.is_reasonable:
+                raise InvalidInputException("specified change direction and target price doesn't match with token's current price.")
         self.full_currency_name: Dict[str, str] | None = None
         self.owner: Account | None = Account.getFast(self.chat_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
+    def set(self):
+        db = self.database()
+        if self.id:
+            rows = db.get_single_alarm(self.id)
+            if rows and len(rows):
+                return
+        self.id = db.create_new_alarm(self)
+
+    def __str__(self) -> str:
+        return f"Alarm for when {self.currency} {self.change_direction} {self.target_price} {self.target_unit}"
+
+    @property
+    def is_reasonable(self):
+        return (self.change_direction == PriceAlarm.ChangeDirection.UP and self.current_price < self.target_price) \
+            or (self.change_direction == PriceAlarm.ChangeDirection.DOWN and self.current_price > self.target_price) \
+            or (self.change_direction == PriceAlarm.ChangeDirection.EXACT and self.current_price != self.target_price)
+
+    @staticmethod
     def extractQueryRowData(row: tuple):
         return PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0])
 
@@ -91,14 +111,3 @@ class PriceAlarm:
     def disableById(alarm_id):
         """Efficient way to disable alarms when there is just an id available"""
         PriceAlarm.database().delete_alarm(alarm_id)
-
-    def set(self):
-        db = self.database()
-        if self.id:
-            rows = db.get_single_alarm(self.id)
-            if rows and len(rows):
-                return
-        self.id = db.create_new_alarm(self)
-
-    def __str__(self) -> str:
-        return f"Alarm for when {self.currency} {self.change_direction} {self.target_price} {self.target_unit}"

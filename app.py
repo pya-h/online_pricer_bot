@@ -593,6 +593,7 @@ async def handle_action_queries(
                             target_unit=price_unit,
                             current_price=current_price,
                         )
+
                         alarm.set()
                         price_unit_str = botman.text(
                             f"price_unit_{price_unit.lower()}",
@@ -602,6 +603,7 @@ async def handle_action_queries(
                         lang = account.language
                         if lang == "fa":
                             current_price = persianify(current_price)
+                        # TODO: WHY current_price is not used?
                         await query.message.edit_text(
                             text=botman.text("alarm_set", lang)
                             % (

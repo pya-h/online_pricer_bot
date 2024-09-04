@@ -92,6 +92,7 @@ class Account:
         calc_cryptos: List[str] = None,
         calc_currencies: List[str] = None,
         language: str = "fa",
+        join_date: datetime = None,
         plus_start_date: datetime = None,
         plus_end_date: datetime = None,
         state: States = States.NONE,
@@ -110,6 +111,7 @@ class Account:
         self.language: str = language
         self.state: Account.States = state
         self.cache: Dict[str, any] = cache or {}
+        self.join_date = join_date
         self.plus_start_date: datetime = plus_start_date
         self.plus_end_date: datetime = plus_end_date
         self.username: str | None = username[1:] if username and (username[0] == "@") else username
@@ -314,7 +316,7 @@ class Account:
         calc_cryptos = row[4]
 
         username = row[5]
-
+        join_date = row[6]
         # add new rows here
         plus_start_date = row[-6]
         plus_end_date = row[-5]
@@ -326,6 +328,7 @@ class Account:
             chat_id=int(row[0]),
             currencies=DatabaseInterface.stringToList(currs),
             cryptos=DatabaseInterface.stringToList(cryptos),
+            join_date=join_date,
             plus_end_date=plus_end_date,
             plus_start_date=plus_start_date,
             calc_currencies=DatabaseInterface.stringToList(calc_currs),
@@ -356,7 +359,7 @@ class Account:
             account = Account.extractQueryRowData(row, no_fastmem=no_fastmem)
             return account
 
-        return Account(chat_id=chat_id, no_fastmem=no_fastmem).save()
+        return Account(chat_id=chat_id, join_date=tz_today(), no_fastmem=no_fastmem).save()
 
     @staticmethod
     def getByUsername(username: str):
