@@ -92,6 +92,7 @@ class Account:
         calc_cryptos: List[str] = None,
         calc_currencies: List[str] = None,
         language: str = "fa",
+        plus_start_date: datetime = None,
         plus_end_date: datetime = None,
         state: States = States.NONE,
         cache=None,
@@ -109,7 +110,8 @@ class Account:
         self.language: str = language
         self.state: Account.States = state
         self.cache: Dict[str, any] = cache or {}
-        self.plus_end_date = plus_end_date
+        self.plus_start_date: datetime = plus_start_date
+        self.plus_end_date: datetime = plus_end_date
         self.username: str | None = username[1:] if username and (username[0] == "@") else username
         self.firstname: str | None = None
         self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
@@ -163,7 +165,6 @@ class Account:
         Account.database().upgrade_account(self, duration_in_months)
 
     def downgrade(self):
-        self.plus_end_date = None
         Account.database().downgrade_account(self)
 
     @property
@@ -313,8 +314,9 @@ class Account:
         calc_cryptos = row[4]
 
         username = row[5]
-        # add new rows here
 
+        # add new rows here
+        plus_start_date = row[-6]
         plus_end_date = row[-5]
         state = Account.States.which(row[-4])
         cache = Account.loadCache(row[-3])
@@ -325,6 +327,7 @@ class Account:
             currencies=DatabaseInterface.stringToList(currs),
             cryptos=DatabaseInterface.stringToList(cryptos),
             plus_end_date=plus_end_date,
+            plus_start_date=plus_start_date,
             calc_currencies=DatabaseInterface.stringToList(calc_currs),
             calc_cryptos=DatabaseInterface.stringToList(calc_cryptos),
             is_admin=is_admin,

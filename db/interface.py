@@ -2,7 +2,7 @@ import mysql.connector
 from mysql.connector import Error, MySQLConnection
 from datetime import datetime
 from tools.manuwriter import log, prepare_folder, fwrite_from_scratch
-from tools.mathematix import n_months_later, now_in_minute
+from tools.mathematix import n_months_later, now_in_minute, tz_today
 from time import time
 from typing import List, Tuple
 from decouple import config
@@ -23,6 +23,7 @@ class DatabaseInterface:
         ACCOUNT_CALC_CRYPTOS,
         ACCOUNT_USERNAME,
         ACCOUNT_LAST_INTERACTION,
+        ACCOUNT_PLUS_START_DATE,
         ACCOUNT_PLUS_END_DATE,
         ACCOUNT_STATE,
         ACCOUNT_CACHE,
@@ -36,6 +37,7 @@ class DatabaseInterface:
         "calc_currencies",
         "username",
         "last_interaction",
+        "plus_start_date",
         "plus_end_date",
         "state",
         "cache",
@@ -224,7 +226,7 @@ class DatabaseInterface:
                 query = (
                     f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY,"
                     + f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), "
-                    + f"{self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} VARCHAR(256) DEFAULT NULL, "
+                    + f"{self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_START_DATE} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} VARCHAR(256) DEFAULT NULL, "
                     + f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) {tables_common_charset};"
                 )
                 # create table account
@@ -327,6 +329,7 @@ class DatabaseInterface:
                 account.calc_cryptos_as_str,
                 account.username,
                 account.last_interaction,
+                account.plus_start_date,
                 account.plus_end_date,
                 account.state.value,
                 account.cache_as_str,
@@ -396,6 +399,7 @@ class DatabaseInterface:
                 account.calc_cryptos_as_str,
                 account.username,
                 account.last_interaction,
+                account.plus_start_date,
                 account.plus_end_date,
                 account.state.value,
                 account.cache_as_str,
@@ -424,6 +428,7 @@ class DatabaseInterface:
                     account.calc_cryptos_as_str,
                     account.username,
                     account.last_interaction,
+                    account.plus_start_date,
                     account.plus_end_date,
                     account.state.value,
                     account.cache_as_str,
@@ -448,10 +453,12 @@ class DatabaseInterface:
         )
 
     def upgrade_account(self, account, duration_in_months: int):
+        account.plus_start_date = tz_today()
         account.plus_end_date = n_months_later(duration_in_months)
         self.execute(
             False,
-            f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=%s WHERE {self.ACCOUNT_ID}=%s",
+            f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_START_DATE}=%s, {self.ACCOUNT_PLUS_END_DATE}=%s WHERE {self.ACCOUNT_ID}=%s",
+            account.plus_start_date,
             account.plus_end_date,
             account.chat_id,
         )
@@ -460,9 +467,11 @@ class DatabaseInterface:
         )
 
     def downgrade_account(self, account):
+        account.plus_start_date = None
+        account.plus_end_date = None
         self.execute(
             False,
-            f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=%s",
+            f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_START_DATE}=NULL, {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=%s",
             account.chat_id,
         )
         log(
