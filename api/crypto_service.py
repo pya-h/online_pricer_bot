@@ -12,13 +12,13 @@ class CryptoCurrencyService(APIService):
         super().__init__(url, source, max_desired_selection, params, cache_file_name)
         if not CryptoCurrencyService.coinsInPersian:
             CryptoCurrencyService.coinsInPersian = CryptoCurrencyService.loadPersianNames()
-        self.get_desired_ones = (
-            lambda desired_ones: desired_ones or list(CryptoCurrencyService.coinsInPersian.keys())[: self.max_desired_selection]
-        )
+
+    def get_desired_ones(self, desired_ones: List[str] | None):
+        return desired_ones or list(CryptoCurrencyService.coinsInPersian.keys())[: self.max_desired_selection]
 
     @staticmethod
     def find(words: List[str], index: int, word_count: int, max_name_word_count=4):
-        # word_count is for not calculating the words length everytime.
+        # word_count is for not calculating the words length every time.
         word = words[i]
         for coin in CryptoCurrencyService.coinsInPersian:
             if coin == word or CryptoCurrencyService.coinsInPersian[coin] == word:

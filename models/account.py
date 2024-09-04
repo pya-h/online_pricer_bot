@@ -39,7 +39,8 @@ class Account:
         SET_MESSAGE_HEADER = 15
         CHANGE_GROUP = 16
         CHANGE_CHANNEL = 17
-
+        ADMIN_CHANGE_PREMIUM_PLANS = 18
+ 
         @staticmethod
         def which(value: int):
             try:

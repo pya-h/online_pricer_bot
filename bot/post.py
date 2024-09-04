@@ -92,8 +92,8 @@ class PostMan:
             pass
         try:
             crypto = self.crypto_service.get_latest(channel.selected_coins)
-        except:
-            pass
+        except Exception as ex:
+            print(ex, crypto)
 
         post = ''
         tags_fiat = tags_gold = tags_crypto = ''
@@ -105,9 +105,9 @@ class PostMan:
         if fiat:
             post += f"{tags_fiat}{fiat}"
         if gold:
-            post += f"{'\n\n' if post else ''}{tags_gold}{gold}"
+            post += f"{'\n' if post else ''}{tags_gold}{gold}"
         if crypto:
-            post += f"{'\n\n' if post else ''}{tags_crypto}{crypto}"
+            post += f"{'\n' if post else ''}{tags_crypto}{crypto}"
 
         return PostMan.customizePost(post, channel, channel.language)
 

@@ -621,10 +621,14 @@ class DatabaseInterface:
         )
 
     def update_channels_last_post_times(self, id_list: List[int]):
-        return self.bulk_query(
-            f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_LAST_POST_TIME}={now_in_minute()} WHERE {self.CHANNEL_ID} IN %s",
-            id_list,
-        )
+        try:
+            return self.execute(False,
+                f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_LAST_POST_TIME}=%s WHERE {self.CHANNEL_ID} IN ({','.join(['%s'] * len(id_list))})",
+                now_in_minute(),
+                *id_list,
+            )
+        except Exception as ex:
+            print(ex)
 
     def update_user_channels_language(self, owner):
         return self.execute(

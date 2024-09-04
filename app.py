@@ -6,7 +6,15 @@ from telegram.ext import (
     MessageHandler,
     CallbackQueryHandler,
 )
-from telegram import Update, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, Chat, ReplyKeyboardRemove
+from telegram import (
+    Update,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    Chat,
+    ReplyKeyboardRemove,
+)
 from telegram.error import BadRequest
 from models.account import Account
 import json
@@ -17,17 +25,25 @@ from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinGeckoService, CoinMarketCapService
 from models.alarms import PriceAlarm
 from typing import List, Tuple
-from tools.exceptions import NoLatestDataException, InvalidInputException, MaxAddedCommunityException, NoSuchThingException
+from tools.exceptions import (
+    NoLatestDataException,
+    InvalidInputException,
+    MaxAddedCommunityException,
+    NoSuchThingException,
+)
 from models.group import Group
 from models.channel import Channel, PostInterval
 from bot.post import PostMan
 from datetime import time
+from bot.settings import BotSettings
 
 
 botman = BotMan()
 
 
-async def show_market_types(update: Update, context: CallbackContext, next_state: Account.States):
+async def show_market_types(
+    update: Update, context: CallbackContext, next_state: Account.States
+):
     account = Account.get(update.message.chat)
     if not await botman.has_subscribed_us(account.chat_id, context):
         await botman.ask_for_subscription(update, account.language)
@@ -39,7 +55,9 @@ async def show_market_types(update: Update, context: CallbackContext, next_state
     )
 
 
-async def prepare_market_selection_menu(update: Update, context: CallbackContext, market: MarketOptions):
+async def prepare_market_selection_menu(
+    update: Update, context: CallbackContext, market: MarketOptions
+):
     account = Account.get(update.message.chat)
     if not await botman.has_subscribed_us(account.chat_id, context):
         await botman.ask_for_subscription(update, account.language)
@@ -80,7 +98,10 @@ async def select_gold_menu(update: Update, context: CallbackContext):
 
 
 async def say_youre_not_allowed(reply, account: Account):
-    await reply(botman.error("not_allowed", account.language), reply_markup=botman.get_main_keyboard(account))
+    await reply(
+        botman.error("not_allowed", account.language),
+        reply_markup=botman.get_main_keyboard(account),
+    )
     return None
 
 
@@ -181,7 +202,10 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         first=1,
         name=botman.main_queue_id,
     )
-    await update.message.reply_text(botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
+    await update.message.reply_text(
+        botman.text("channel_planning_started", account.language)
+        % (botman.main_plan_interval,)
+    )
 
 
 async def cmd_premium_plan(update: Update, context: CallbackContext):
@@ -210,7 +234,10 @@ async def cmd_premium_plan(update: Update, context: CallbackContext):
         first=1,
         name=botman.main_queue_id,
     )
-    await update.message.reply_text(botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
+    await update.message.reply_text(
+        botman.text("channel_planning_started", account.language)
+        % (botman.main_plan_interval,)
+    )
 
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
@@ -223,7 +250,9 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
         job.schedule_removal()
     botman.is_main_plan_on = False
     botman.crypto_serv.latest_prices = ""
-    await update.message.reply_text(botman.text("channel_planning_stopped", account.language))
+    await update.message.reply_text(
+        botman.text("channel_planning_stopped", account.language)
+    )
 
 
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
@@ -246,7 +275,8 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
 
     botman.crypto_serv = CoinMarketCapService(botman.postman.coinmarketcap_api_key)
     await update.message.reply_text(
-        botman.text("price_source_changed_cmc", account.language), reply_markup=botman.get_admin_keyboard(account.language)
+        botman.text("price_source_changed_cmc", account.language),
+        reply_markup=botman.get_admin_keyboard(account.language),
     )
     await notify_source_change(context)
 
@@ -269,7 +299,7 @@ async def cmd_upgrade_user(update: Update, context: CallbackContext):
     account.change_state(Account.States.UPGRADE_USER, clear_cache=True)
     await update.message.reply_text(
         botman.text("specify_user", account.language),
-        reply_markup=botman.get_admin_keyboard(account.language),
+        reply_markup=botman.cancel_menu(account.language),
     )
 
 
@@ -280,7 +310,9 @@ async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
 
     account.change_state(Account.States.DOWNGRADE_USER)
     await update.message.reply_text(
-        botman.text("specify_user", account.language) + "\n" + botman.text("downgrade_by_premiums_list", account.language),
+        botman.text("specify_user", account.language)
+        + "\n"
+        + botman.text("downgrade_by_premiums_list", account.language),
         reply_markup=botman.cancel_menu(account.language),
     )
     await botman.list_premiums(update, BotMan.QueryActions.ADMIN_DOWNGRADE_USER)
@@ -314,14 +346,20 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 🔹 تعداد کل کاربران ربات: {stats['all']}"""
     )
 
+
 async def cmd_send_plans_post(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
-    await update.message.reply_text(botman.text('send_premium_plans_post', account.language))
+    account.change_state(Account.States.ADMIN_CHANGE_PREMIUM_PLANS, clear_cache=True)
+    await update.message.reply_text(
+        botman.text("send_premium_plans_post", account.language)
+    )
 
 
-async def start_equalizing(func_send_message, account: Account, amounts: list, units: list):
+async def start_equalizing(
+    func_send_message, account: Account, amounts: list, units: list
+):
     if not isinstance(botman.crypto_serv, CoinMarketCapService):
         await func_send_message(botman.error("only_available_on_cmc", account.language))
         return
@@ -348,13 +386,21 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
                 await func_send_message(response)
             except ValueError as ex:
                 log("Error while equalizing", ex, category_name="Calculator")
-                await func_send_message(botman.error("price_not_available", account.language) % (unit,))
+                await func_send_message(
+                    botman.error("price_not_available", account.language) % (unit,)
+                )
             except NoLatestDataException:
-                await func_send_message(botman.error("api_not_available", account.language))
+                await func_send_message(
+                    botman.error("api_not_available", account.language)
+                )
             except InvalidInputException:
-                await func_send_message(botman.error("invalid_symbol", account.language) % (unit,))
+                await func_send_message(
+                    botman.error("invalid_symbol", account.language) % (unit,)
+                )
 
-    account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, clear_cache=True)  # prepare for next input
+    account.change_state(
+        Account.States.INPUT_EQUALIZER_AMOUNT, clear_cache=True
+    )  # prepare for next input
     await func_send_message(
         botman.text("continues_calculator_hint", account.language),
         reply_markup=botman.cancel_menu(account.language),
@@ -385,33 +431,54 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
                     if curreny_title in botman.crypto_serv.coinsInPersian
                     else botman.currency_serv.currenciesInPersian[curreny_title]
                 )
-                unit = botman.text(f"price_unit_{alarm.target_unit.lower()}", account.language)
+                unit = botman.text(
+                    f"price_unit_{alarm.target_unit.lower()}", account.language
+                )
             descriptions[i] = f"{index}) {curreny_title}: {price} {unit}"
         except:
-            descriptions[i] = f"{index}) " + botman.error("invalid_alarm_data", account.language)
+            descriptions[i] = f"{index}) " + botman.error(
+                "invalid_alarm_data", account.language
+            )
         buttons[i] = InlineKeyboardButton(
             descriptions[i],
-            callback_data=botman.actionCallbackData(BotMan.QueryActions.DISABLE_ALARM, alarm.id),
+            callback_data=botman.actionCallbackData(
+                BotMan.QueryActions.DISABLE_ALARM, alarm.id
+            ),
         )
 
     if account.language == "fa":
         alarms_count = persianify(alarms_count)
-    message_text = botman.text("u_have_n_alarms", account.language) % (str(alarms_count),) + (
-        (":\n\n" + "\n".join(descriptions) + "\n\n" + botman.text("click_alarm_to_disable", account.language))
+    message_text = botman.text("u_have_n_alarms", account.language) % (
+        str(alarms_count),
+    ) + (
+        (
+            ":\n\n"
+            + "\n".join(descriptions)
+            + "\n\n"
+            + botman.text("click_alarm_to_disable", account.language)
+        )
         if my_alarms
         else "."
     )
 
     if isinstance(update, CallbackQuery):
-        await update.message.edit_text(message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons]))
+        await update.message.edit_text(
+            message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons])
+        )
         return
-    await update.message.reply_text(message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons]))
+    await update.message.reply_text(
+        message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons])
+    )
 
 
-async def send_r_u_sure_to_downgrade_message(context: CallbackContext, admin_user: Account, target_user: Account):
+async def send_r_u_sure_to_downgrade_message(
+    context: CallbackContext, admin_user: Account, target_user: Account
+):
     await context.bot.send_message(
         chat_id=admin_user.chat_id,
-        text=target_user.user_detail + "\n\n" + botman.text("r_u_sure_to_downgrade", admin_user.language),
+        text=target_user.user_detail
+        + "\n\n"
+        + botman.text("r_u_sure_to_downgrade", admin_user.language),
         reply_markup=botman.action_inline_keyboard(
             BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
             {
@@ -446,7 +513,13 @@ async def handle_action_queries(
         if query.message:
             await query.message.delete()
 
-        return await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id) if message_id else None
+        return (
+            await context.bot.delete_message(
+                chat_id=account.chat_id, message_id=message_id
+            )
+            if message_id
+            else None
+        )
     match action:
         case BotMan.QueryActions.CHOOSE_LANGUAGE.value:
             if not value:
@@ -461,15 +534,7 @@ async def handle_action_queries(
                 return
             account.language = lang
             account.save()
-            channel = Channel.getByOwner(account.chat_id)
-            if channel:
-                if isinstance(channel, Channel):
-                    channel.language = account.language
-                    channel.save()
-                elif isinstance(channel, list):
-                    for each in channel:
-                        each.language = account.language
-                        each.save()
+            Channel.updateUserChannels(account)
             await context.bot.send_message(
                 text=botman.text("language_switched", account.language),
                 chat_id=account.chat_id,
@@ -487,18 +552,32 @@ async def handle_action_queries(
                 try:
                     match market:
                         case MarketOptions.CRYPTO:
-                            current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
+                            current_price = botman.crypto_serv.get_single_price(
+                                symbol, price_unit
+                            )
                             currency_name = botman.crypto_serv.coinsInPersian[symbol]
                         case MarketOptions.GOLD | MarketOptions.CURRENCY:
-                            current_price = botman.currency_serv.get_single_price(symbol, price_unit)
-                            currency_name = botman.currency_serv.currenciesInPersian[symbol]
+                            current_price = botman.currency_serv.get_single_price(
+                                symbol, price_unit
+                            )
+                            currency_name = botman.currency_serv.currenciesInPersian[
+                                symbol
+                            ]
                         case _:
                             if symbol in botman.crypto_serv.coinsInPersian:
-                                current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
-                                currency_name = botman.crypto_serv.coinsInPersian[symbol]
+                                current_price = botman.crypto_serv.get_single_price(
+                                    symbol, price_unit
+                                )
+                                currency_name = botman.crypto_serv.coinsInPersian[
+                                    symbol
+                                ]
                             elif symbol in botman.currency_serv.currenciesInPersian:
-                                current_price = botman.currency_serv.get_single_price(symbol, price_unit)
-                                currency_name = botman.currency_serv.currenciesInPersian[symbol]
+                                current_price = botman.currency_serv.get_single_price(
+                                    symbol, price_unit
+                                )
+                                currency_name = (
+                                    botman.currency_serv.currenciesInPersian[symbol]
+                                )
                             else:
                                 raise ValueError("Unknown symbol and market")
                 except Exception as ex:
@@ -531,7 +610,9 @@ async def handle_action_queries(
                             )
                         )
                     else:
-                        await botman.show_reached_max_error(query, account, account.max_alarms_count)
+                        await botman.show_reached_max_error(
+                            query, account, account.max_alarms_count
+                        )
 
         case BotMan.QueryActions.DISABLE_ALARM.value:
             alarm_id: int | None = None
@@ -556,12 +637,16 @@ async def handle_action_queries(
                         reply_markup=botman.mainkeyboard(account),
                     )
             except Exception as ex:
-                await query.message.edit_text(text=botman.error("factory_reset_incomplete", account.language))
+                await query.message.edit_text(
+                    text=botman.error("factory_reset_incomplete", account.language)
+                )
                 log(f"User {account.chat_id} factory reset failed!", ex, "FactoryReset")
         case BotMan.QueryActions.SELECT_TUTORIAL.value:
             import resources.longtext as long_texts
 
-            await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language])
+            await query.message.edit_text(
+                text=long_texts.TUTORIALS_TEXT[value][account.language]
+            )
             return
         case BotMan.QueryActions.SELECT_POST_INTERVAL.value:
             await botman.handle_set_interval_outcome(query, context, value)
@@ -587,7 +672,10 @@ async def handle_action_queries(
                 )
                 await query.message.delete()
 
-        case BotMan.QueryActions.TRIGGER_DATE_TAG.value | BotMan.QueryActions.TRIGGER_MARKET_TAGS.value:
+        case (
+            BotMan.QueryActions.TRIGGER_DATE_TAG.value
+            | BotMan.QueryActions.TRIGGER_MARKET_TAGS.value
+        ):
             try:
                 community_type, enable = value.split(BotMan.CALLBACK_DATA_JOINER)
                 if not community_type or not enable:
@@ -595,35 +683,50 @@ async def handle_action_queries(
                 community_type, enable = int(community_type), int(enable)
                 community = BotMan.getCommunity(community_type, account.chat_id)
                 if not community:
-                    raise NoSuchThingException(-1, BotMan.CommunityType.toString(community_type))
+                    raise NoSuchThingException(
+                        -1, BotMan.CommunityType.toString(community_type)
+                    )
                 if action == BotMan.QueryActions.TRIGGER_DATE_TAG.value:
                     community.message_show_date_tag = bool(enable)
                 else:
                     community.message_show_market_tags = bool(enable)
                 community.save()
-                await query.message.edit_text(botman.text("update_successful", account.language))
+                await query.message.edit_text(
+                    botman.text("update_successful", account.language)
+                )
             except NoSuchThingException as x:
                 await query.message.edit_text(
-                    botman.error(f"no_{x.thing}s", account.language), reply_markup=botman.mainkeyboard(account)
+                    botman.error(f"no_{x.thing}s", account.language),
+                    reply_markup=botman.mainkeyboard(account),
                 )
                 account.delete_specific_cache("community")
             except:
-                await query.message.edit_text(botman.error("unexpected_error", account.language))
-        case BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value | BotMan.QueryActions.DISCONNECT_COMMUNITY.value:
+                await query.message.edit_text(
+                    botman.error("unexpected_error", account.language)
+                )
+        case (
+            BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value
+            | BotMan.QueryActions.DISCONNECT_COMMUNITY.value
+        ):
             if not value:
-                await query.message.edit_text(botman.text("operation_canceled", account.language))
+                await query.message.edit_text(
+                    botman.text("operation_canceled", account.language)
+                )
                 account.change_state()
                 return
             params = value.split(BotMan.CALLBACK_DATA_JOINER)
             community_type = BotMan.CommunityType.which(int(params[0]))
             if not community_type:
-                await query.message.edit_text(botman.text("data_invalid", account.language))
+                await query.message.edit_text(
+                    botman.text("data_invalid", account.language)
+                )
                 account.change_state(clear_cache=True)
                 return
 
             if not (community := community_type.to_class().getByOwner(account.chat_id)):
                 await query.message.reply_text(
-                    botman.error(f"no_{community.__str__()}", account.language), reply_markup=botman.mainkeyboard(account)
+                    botman.error(f"no_{community.__str__()}", account.language),
+                    reply_markup=botman.mainkeyboard(account),
                 )
                 await query.message.delete()
                 if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
@@ -633,7 +736,9 @@ async def handle_action_queries(
                 return
             if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
                 if (section := params[1].lower()) != "footer" and section != "header":
-                    await query.message.edit_text(botman.error("data_invalid", account.language))
+                    await query.message.edit_text(
+                        botman.error("data_invalid", account.language)
+                    )
                 else:
                     if section != "footer":
                         community.message_header = None
@@ -641,13 +746,18 @@ async def handle_action_queries(
                         community.message_footnote = None
                     community.save()
                 account.change_state()
-                await query.message.edit_text(botman.text("update_successful", account.language))
+                await query.message.edit_text(
+                    botman.text("update_successful", account.language)
+                )
             else:
                 try:
                     community_id = int(params[1])
                     if community_id != community.id:
                         await query.message.edit_text(
-                            botman.error(f"{community.__str__()}_not_yours_anymore", account.language)
+                            botman.error(
+                                f"{community.__str__()}_not_yours_anymore",
+                                account.language,
+                            )
                         )
                         return
                     community.throw_in_trashcan()
@@ -663,42 +773,79 @@ async def handle_action_queries(
                         )
                         return
                 except Exception as x:
-                    log(f'Disconnecting {community.__str__()} failed, callback_data={value}', x, category_name='Community')
-                await query.message.edit_text(botman.error("data_invalid", account.language))
-        case BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value | BotMan.QueryActions.RECONNECT_COMMUNITY.value:
+                    log(
+                        f"Disconnecting {community.__str__()} failed, callback_data={value}",
+                        x,
+                        category_name="Community",
+                    )
+                await query.message.edit_text(
+                    botman.error("data_invalid", account.language)
+                )
+        case (
+            BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value
+            | BotMan.QueryActions.RECONNECT_COMMUNITY.value
+        ):
             if not value and (action == BotMan.QueryActions.RECONNECT_COMMUNITY.value):
-                await query.message.edit_text(botman.text("operation_canceled", account.language))
+                await query.message.edit_text(
+                    botman.text("operation_canceled", account.language)
+                )
                 return
             params = value.split(BotMan.CALLBACK_DATA_JOINER)
-            if not params or (len(params) < 2) or (not (community_type := BotMan.CommunityType.which(int(params[0]))).value):
-                await query.message.edit_text(botman.error("data_invalid", account.language))
+            if (
+                not params
+                or (len(params) < 2)
+                or (
+                    not (
+                        community_type := BotMan.CommunityType.which(int(params[0]))
+                    ).value
+                )
+            ):
+                await query.message.edit_text(
+                    botman.error("data_invalid", account.language)
+                )
                 return
 
             if action == BotMan.QueryActions.REQUEST_RECONNECT_COMMUNITY.value:
                 await query.message.edit_text(
-                    botman.text(f"rusure_to_reconnect_{community_type.__str__()}", account.language),
+                    botman.text(
+                        f"rusure_to_reconnect_{community_type.__str__()}",
+                        account.language,
+                    ),
                     reply_markup=botman.action_inline_keyboard(
-                        BotMan.QueryActions.RECONNECT_COMMUNITY, {None: "cancel", value: "reconnect"}, account.language
+                        BotMan.QueryActions.RECONNECT_COMMUNITY,
+                        {None: "cancel", value: "reconnect"},
+                        account.language,
                     ),
                 )
             else:
                 # If user has verified the reconnection request:
                 community_id = int(params[1])
-                current_community: Group | Channel | None = BotMan.getCommunity(community_type, account.chat_id)
+                current_community: Group | Channel | None = BotMan.getCommunity(
+                    community_type, account.chat_id
+                )
                 if current_community:
-                    trash_data = community_type.to_class().getTrashedCustomization(community_id)
+                    trash_data = community_type.to_class().getTrashedCustomization(
+                        community_id
+                    )
                     current_community.use_trash_data(trash_data)
                     current_community.save()
                     await query.message.edit_text(
-                        botman.text(f"trash_replaced_{community_type.__str__()}_data", account.language)
+                        botman.text(
+                            f"trash_replaced_{community_type.__str__()}_data",
+                            account.language,
+                        )
                     )
                     return
                 community = community_type.to_class().restoreTrash(community_id)
-                await query.message.edit_text(botman.text("trash_restored", account.language))
+                await query.message.edit_text(
+                    botman.text("trash_restored", account.language)
+                )
 
         case _:
             if not account.authorization(context.args):
-                await query.message.edit_text(botman.error("what_the_fuck", account.language))
+                await query.message.edit_text(
+                    botman.error("what_the_fuck", account.language)
+                )
                 await context.bot.send_message(
                     chat_id=account.chat_id,
                     text=botman.text("what_can_i_do", account.language),
@@ -717,7 +864,9 @@ async def handle_action_queries(
                             # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
                             if page == -1 or callback_data["pg"] is None:
                                 account.change_state(clear_cache=True)
-                                await query.message.edit_text(botman.text("list_updated", account.language))
+                                await query.message.edit_text(
+                                    botman.text("list_updated", account.language)
+                                )
                                 await context.bot.send_message(
                                     chat_id=account.chat_id,
                                     text=botman.text("what_can_i_do", account.language),
@@ -743,21 +892,31 @@ async def handle_action_queries(
                     except:
                         pass
                     if not chat_id:
-                        await query.message.edit_text(botman.error("invalid_user_specification", account.language))
+                        await query.message.edit_text(
+                            botman.error("invalid_user_specification", account.language)
+                        )
                         return
                     target_user = Account.getById(chat_id)
                     if len(values) > 1:
                         if values[1] == "y":
                             if target_user.is_premium:
                                 botman.downgrade_user(target_user, context=context)
-                                await query.message.edit_text(botman.text("account_downgraded", account.language))
+                                await query.message.edit_text(
+                                    botman.text("account_downgraded", account.language)
+                                )
                                 return
-                            await query.message.edit_text(botman.text("not_a_premium", account.language))
+                            await query.message.edit_text(
+                                botman.text("not_a_premium", account.language)
+                            )
                         else:
-                            await query.message.edit_text(botman.text("operation_canceled", account.language))
+                            await query.message.edit_text(
+                                botman.text("operation_canceled", account.language)
+                            )
                         # downgrade user
                     else:
-                        await send_r_u_sure_to_downgrade_message(context, account, target_user)
+                        await send_r_u_sure_to_downgrade_message(
+                            context, account, target_user
+                        )
     await query.answer()
 
 
@@ -808,11 +967,18 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             input_amounts = account.get_cache("input_amounts")
             if input_amounts:
                 unit_symbol = data["v"].upper()
-                await query.message.edit_text(" ".join([str(amount) for amount in input_amounts]) + f" {unit_symbol}")
-                await start_equalizing(query.message.reply_text, account, input_amounts, [unit_symbol])
+                await query.message.edit_text(
+                    " ".join([str(amount) for amount in input_amounts])
+                    + f" {unit_symbol}"
+                )
+                await start_equalizing(
+                    query.message.reply_text, account, input_amounts, [unit_symbol]
+                )
             else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
                 # condition possible(or not.!)
-                await query.message.edit_text(botman.text("enter_desired_price", account.language))
+                await query.message.edit_text(
+                    botman.text("enter_desired_price", account.language)
+                )
                 account.change_state(
                     Account.States.INPUT_EQUALIZER_AMOUNT,
                     "input_symbols",
@@ -841,7 +1007,9 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     # if the user is configuring a list:
     try:
-        selection_list = BotMan.handleMarketSelection(account, list_type, market, data["v"])
+        selection_list = BotMan.handleMarketSelection(
+            account, list_type, market, data["v"]
+        )
 
         await query.message.edit_reply_markup(
             reply_markup=botman.inline_keyboard(
@@ -867,7 +1035,9 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     except IndexError as ie:
         log("Invalid market selection procedure", ie, "general")
         account.change_state(clear_cache=True)
-        await query.message.edit_text(text=botman.error("invalid_market_selection", account.language))
+        await query.message.edit_text(
+            text=botman.error("invalid_market_selection", account.language)
+        )
     except BadRequest:
         # when the message content is exactly the same
         pass
@@ -912,32 +1082,81 @@ async def cmd_start_using_in_channel(update: Update, context: CallbackContext):
         reply_markup=botman.cancel_menu(account.language),
     )
 
+
 async def cmd_show_my_plan_status(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     days_remaining = account.premium_days_remaining
     if days_remaining < 0:
-        await botman.send_message_with_premium_button(update, botman.text('ur_using_free_plan', account.language))
+        await botman.send_message_with_premium_button(
+            update, botman.text("ur_using_free_plan", account.language)
+        )
         if account.plus_end_date is not None:
             await botman.downgrade_user(account)
         return
-    days_remaining = str(days_remaining) if account.language.lower() != 'fa' else persianify(days_remaining)
+    days_remaining = (
+        str(days_remaining)
+        if account.language.lower() != "fa"
+        else persianify(days_remaining)
+    )
     await update.message.reply_text(
         botman.text("ur_plan_duration", account.language) % (days_remaining,),
-        reply_markup=botman.mainkeyboard(account)
+        reply_markup=botman.mainkeyboard(account),
     )
+
+async def admin_renew_plans(update: Update, context: CallbackContext, account: Account | None = None):
+    if not account:
+        account = Account.get(update.message.chat)
+    if account.authorization(context.args):
+        if account.state == Account.States.ADMIN_CHANGE_PREMIUM_PLANS:
+            post: str
+            photo_file_id: str | None = None
+            if update.message.photo:
+                photo_file_id = update.message.photo[-1].file_id
+                post = update.message.caption or ""
+            elif update.message.text:
+                post = update.message.text
+
+            if post:
+                language = BotSettings.Language.FA
+                for ch in post:
+                    if ch.isalnum():
+                        ch = ch.lower()
+                        if (ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9"):
+                            language = BotSettings.Language.EN
+                        break
+
+                BotSettings().get().update_premium_plans_post(
+                    post, photo_file_id, language
+                )
+                await update.message.reply_text(
+                    botman.text("update_successful", account.language),
+                    reply_markup=botman.get_admin_keyboard(account.language),
+                )
+
+                return True
+        return False
 
 async def unknown_command_handler(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     await update.message.reply_text(
         botman.error("what_the_fuck", account.language),
-        reply_markup=botman.mainkeyboard(account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove(),
+        reply_markup=(
+            botman.mainkeyboard(account)
+            if update.message.chat.type.lower() == "private"
+            else ReplyKeyboardRemove()
+        ),
     )
 
-async def go_to_community_panel(update: Update, account: Account, community: BotMan.CommunityType):
+
+async def go_to_community_panel(
+    update: Update, account: Account, community: BotMan.CommunityType
+):
     account.add_cache("community", community.value)
     await update.message.reply_text(
         (
-            botman.resourceman.mainkeyboard(f"my_{community.__str__()}s", account.language)
+            botman.resourceman.mainkeyboard(
+                f"my_{community.__str__()}s", account.language
+            )
             if account.is_premium
             else botman.text("go_premium_to_activate_feature", account.language)
         ),
@@ -952,17 +1171,32 @@ async def handle_messages(update: Update, context: CallbackContext):
     match update.message.text:
         case BotMan.Commands.GET_FA.value | BotMan.Commands.GET_EN.value:
             await cmd_get_prices(update, context)
-        case BotMan.Commands.CONFIG_PRICE_LIST_FA.value | BotMan.Commands.CONFIG_PRICE_LIST_EN.value:
+        case (
+            BotMan.Commands.CONFIG_PRICE_LIST_FA.value
+            | BotMan.Commands.CONFIG_PRICE_LIST_EN.value
+        ):
             await show_market_types(update, context, Account.States.CONFIG_MARKETS)
-        case BotMan.Commands.CONFIG_CALCULATOR_FA.value | BotMan.Commands.CONFIG_CALCULATOR_EN.value:
-            await show_market_types(update, context, Account.States.CONFIG_CALCULATOR_LIST)
-        case BotMan.Commands.CREATE_ALARM_FA.value | BotMan.Commands.CREATE_ALARM_EN.value:
+        case (
+            BotMan.Commands.CONFIG_CALCULATOR_FA.value
+            | BotMan.Commands.CONFIG_CALCULATOR_EN.value
+        ):
+            await show_market_types(
+                update, context, Account.States.CONFIG_CALCULATOR_LIST
+            )
+        case (
+            BotMan.Commands.CREATE_ALARM_FA.value
+            | BotMan.Commands.CREATE_ALARM_EN.value
+        ):
             await show_market_types(update, context, Account.States.CREATE_ALARM)
-        case BotMan.Commands.LIST_ALARMS_FA.value | BotMan.Commands.LIST_ALARMS_EN.value:
+        case (
+            BotMan.Commands.LIST_ALARMS_FA.value | BotMan.Commands.LIST_ALARMS_EN.value
+        ):
             await list_user_alarms(update, context)
         case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
             await cmd_equalizer(update, context)
-        case BotMan.Commands.MY_CHANNELS_FA.value | BotMan.Commands.MY_CHANNELS_EN.value:
+        case (
+            BotMan.Commands.MY_CHANNELS_FA.value | BotMan.Commands.MY_CHANNELS_EN.value
+        ):
             account = Account.get(update.message.chat)
             if not Channel.userHasAnyChannels(account.chat_id):
                 await cmd_start_using_in_channel(update, context)
@@ -983,13 +1217,19 @@ async def handle_messages(update: Update, context: CallbackContext):
             await update.message.delete()
             await botman.show_settings_menu(update)
 
-        case BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA.value | BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN.value:
+        case (
+            BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA.value
+            | BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN.value
+        ):
             await cmd_show_my_plan_status(update, context)
         # Select market sub menu
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
             if await list_type_is_selected(update):
                 await select_coin_menu(update, context)
-        case BotMan.Commands.NATIONAL_CURRENCIES_FA.value | BotMan.Commands.NATIONAL_CURRENCIES_EN.value:
+        case (
+            BotMan.Commands.NATIONAL_CURRENCIES_FA.value
+            | BotMan.Commands.NATIONAL_CURRENCIES_EN.value
+        ):
             if await list_type_is_selected(update):
                 await select_currency_menu(update, context)
         case BotMan.Commands.GOLDS_FA.value | BotMan.Commands.GOLDS_EN.value:
@@ -997,7 +1237,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                 await select_gold_menu(update, context)
 
         # community sub menu:
-        case BotMan.Commands.CHANNELS_CHANGE_INTERVAL_FA.value | BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN.value:
+        case (
+            BotMan.Commands.CHANNELS_CHANGE_INTERVAL_FA.value
+            | BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN.value
+        ):
             account = Account.get(update.message.chat)
             channel = Channel.getByOwner(account.chat_id)
             if not channel:
@@ -1007,9 +1250,14 @@ async def handle_messages(update: Update, context: CallbackContext):
                     reply_markup=botman.mainkeyboard(account),
                 )
                 return
-            await botman.prepare_set_interval_interface(update, account, channel.id, Account.States.CHANGE_POST_INTERVAL)
+            await botman.prepare_set_interval_interface(
+                update, account, channel.id, Account.States.CHANGE_POST_INTERVAL
+            )
 
-        case BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value | BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value:
+        case (
+            BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value
+            | BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value
+        ):
             account = Account.get(update.message.chat)
             community_type = BotMan.CommunityType.which(account.get_cache("community"))
             if not community_type:
@@ -1025,7 +1273,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                     else Account.States.CONFIG_CHANNEL_MARKETS
                 ),
             )
-        case BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value | BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value:
+        case (
+            BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value
+            | BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value
+        ):
             account = Account.get(update.message.chat)
             community_type = account.get_cache("community")
             if not BotMan.CommunityType.which(community_type):
@@ -1042,7 +1293,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.language,
                 ),
             )
-        case BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value | BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value:
+        case (
+            BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value
+            | BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value
+        ):
             account = Account.get(update.message.chat)
             community_type = account.get_cache("community")
             if not BotMan.CommunityType.which(community_type):
@@ -1067,8 +1321,10 @@ async def handle_messages(update: Update, context: CallbackContext):
         ):
             (section, state) = (
                 ("header", Account.States.SET_MESSAGE_HEADER)
-                if update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value
-                and update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value
+                if update.message.text
+                != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value
+                and update.message.text
+                != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value
                 else ("footer", Account.States.SET_MESSAGE_FOOTNOTE)
             )
             account = Account.get(update.message.chat)
@@ -1081,11 +1337,17 @@ async def handle_messages(update: Update, context: CallbackContext):
                 botman.text(f"write_msg_{section}", account.language),
                 reply_markup=botman.action_inline_keyboard(
                     BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS,
-                    {None: "cancel", f"{community_type}{BotMan.CALLBACK_DATA_JOINER}{section}": "remove"},
+                    {
+                        None: "cancel",
+                        f"{community_type}{BotMan.CALLBACK_DATA_JOINER}{section}": "remove",
+                    },
                     account.language,
                 ),
             )
-        case BotMan.Commands.GROUP_CHANGE_FA.value | BotMan.Commands.GROUP_CHANGE_EN.value:
+        case (
+            BotMan.Commands.GROUP_CHANGE_FA.value
+            | BotMan.Commands.GROUP_CHANGE_EN.value
+        ):
             account = Account.get(update.message.chat)
             group = Group.getByOwner(account.chat_id)
             if not group:
@@ -1098,9 +1360,13 @@ async def handle_messages(update: Update, context: CallbackContext):
             account.change_state(Account.States.CHANGE_GROUP, "changing_id", group.id)
             account.add_cache("back", BotMan.MenuSections.COMMUNITY_PANEL.value)
             await update.message.reply_text(
-                botman.text("add_bot_to_new_group", account.language), reply_markup=botman.cancel_menu(account.language)
+                botman.text("add_bot_to_new_group", account.language),
+                reply_markup=botman.cancel_menu(account.language),
             )
-        case BotMan.Commands.CHANNEL_CHANGE_FA.value | BotMan.Commands.CHANNEL_CHANGE_EN.value:
+        case (
+            BotMan.Commands.CHANNEL_CHANGE_FA.value
+            | BotMan.Commands.CHANNEL_CHANGE_EN.value
+        ):
             account = Account.get(update.message.chat)
             if not (channel := Channel.getByOwner(account.chat_id)):
                 account.delete_specific_cache("community")
@@ -1109,26 +1375,42 @@ async def handle_messages(update: Update, context: CallbackContext):
                     reply_markup=botman.mainkeyboard(account),
                 )
                 return
-            account.change_state(Account.States.ADD_BOT_AS_ADMIN, "community", BotMan.CommunityType.CHANNEL.value)
+            account.change_state(
+                Account.States.ADD_BOT_AS_ADMIN,
+                "community",
+                BotMan.CommunityType.CHANNEL.value,
+            )
             account.add_cache("back", BotMan.MenuSections.COMMUNITY_PANEL.value)
             await update.message.reply_text(
-                botman.text("add_bot_as_channel_admin", account.language), reply_markup=botman.cancel_menu(account.language)
+                botman.text("add_bot_as_channel_admin", account.language),
+                reply_markup=botman.cancel_menu(account.language),
             )
-        case BotMan.Commands.COMMUNITY_DISCONNECT_FA.value | BotMan.Commands.COMMUNITY_DISCONNECT_EN.value:
+        case (
+            BotMan.Commands.COMMUNITY_DISCONNECT_FA.value
+            | BotMan.Commands.COMMUNITY_DISCONNECT_EN.value
+        ):
             account = Account.get(update.message.chat)
             if not (
                 community := BotMan.getCommunity(
-                    (community_type := BotMan.CommunityType.which(account.get_cache("community"))), account.chat_id
+                    (
+                        community_type := BotMan.CommunityType.which(
+                            account.get_cache("community")
+                        )
+                    ),
+                    account.chat_id,
                 )
             ):
                 account.delete_specific_cache("community")
                 await update.message.reply_text(
-                    botman.error(f"no_{community_type.__str__()}", account.language), reply_markup=botman.mainkeyboard(account)
+                    botman.error(f"no_{community_type.__str__()}", account.language),
+                    reply_markup=botman.mainkeyboard(account),
                 )
                 return
 
             await update.message.reply_text(
-                botman.text(f"rusure_to_disconnect_{community_type.__str__()}", account.language),
+                botman.text(
+                    f"rusure_to_disconnect_{community_type.__str__()}", account.language
+                ),
                 reply_markup=botman.action_inline_keyboard(
                     BotMan.QueryActions.DISCONNECT_COMMUNITY,
                     {
@@ -1138,7 +1420,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                 ),
             )
         # settings sub menu:
-        case BotMan.Commands.SET_BOT_LANGUAGE_FA.value | BotMan.Commands.SET_BOT_LANGUAGE_EN.value:
+        case (
+            BotMan.Commands.SET_BOT_LANGUAGE_FA.value
+            | BotMan.Commands.SET_BOT_LANGUAGE_EN.value
+        ):
             account = Account.get(update.message.chat)
             if not await botman.has_subscribed_us(account.chat_id, context):
                 await botman.ask_for_subscription(update, account.language)
@@ -1151,7 +1436,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                     language=account.language,
                 ),
             )
-        case BotMan.Commands.FACTORY_RESET_FA.value | BotMan.Commands.FACTORY_RESET_EN.value:
+        case (
+            BotMan.Commands.FACTORY_RESET_FA.value
+            | BotMan.Commands.FACTORY_RESET_EN.value
+        ):
             account = Account.get(update.message.chat)
             await update.message.reply_text(
                 botman.text("factory_reset_confirmation", account.language),
@@ -1163,7 +1451,10 @@ async def handle_messages(update: Update, context: CallbackContext):
             )
 
         case BotMan.Commands.SUPPORT_FA.value | BotMan.Commands.SUPPORT_EN.value:
-            await update.message.reply_text(botman.text("contact_support_hint") % (Account.getHardcodeAdmin()["username"]))
+            await update.message.reply_text(
+                botman.text("contact_support_hint")
+                % (Account.getHardcodeAdmin()["username"])
+            )
         case BotMan.Commands.OUR_OTHERS_FA.value | BotMan.Commands.OUR_OTHERS_EN.value:
             await update.message.reply_text(botman.text("check_our_other_collections"))
         case BotMan.Commands.TUTORIALS_FA.value | BotMan.Commands.TUTORIALS_EN.value:
@@ -1200,7 +1491,9 @@ async def handle_messages(update: Update, context: CallbackContext):
             if prev_menu:
                 match prev_menu:
                     case BotMan.MenuSections.COMMUNITY_PANEL.value:
-                        community = BotMan.CommunityType.which(account.get_cache("community"))
+                        community = BotMan.CommunityType.which(
+                            account.get_cache("community")
+                        )
                         if not community:
                             await unknown_command_handler(update, context)
                             return
@@ -1229,28 +1522,49 @@ async def handle_messages(update: Update, context: CallbackContext):
             if account.is_admin:
                 # admin options:
                 match msg:
-                    case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:
+                    case (
+                        BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value
+                        | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value
+                    ):
                         await cmd_upgrade_user(update, context)
                         return
-                    case BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value | BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value:
+                    case (
+                        BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value
+                        | BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value
+                    ):
                         await cmd_list_users_to_downgrade(update, context)
                         return
-                    case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
+                    case (
+                        BotMan.Commands.ADMIN_NOTICES_FA.value
+                        | BotMan.Commands.ADMIN_NOTICES_EN.value
+                    ):
                         await cmd_send_post(update, context)
                         return
-                    case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
+                    case (
+                        BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value
+                        | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value
+                    ):
                         await cmd_schedule_channel_update(update, context)
                         return
-                    case BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value | BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value:
+                    case (
+                        BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value
+                        | BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value
+                    ):
                         await cmd_stop_schedule(update, context)
                         return
-                    case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
+                    case (
+                        BotMan.Commands.ADMIN_STATISTICS_FA.value
+                        | BotMan.Commands.ADMIN_STATISTICS_EN.value
+                    ):
                         await cmd_report_statistics(update, context)
                         return
-                    case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
+                    case (
+                        BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_FA.value
+                        | BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_EN.value
+                    ):
                         await cmd_send_plans_post(update, context)
                         return
-                    
+
             match account.state:
                 case Account.States.INPUT_EQUALIZER_AMOUNT:
                     params = msg.split()
@@ -1294,7 +1608,10 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                     if invalid_units:
                         await update.message.reply_text(
-                            botman.error("unrecognized_currency_symbols", account.language) + ", ".join(invalid_units),
+                            botman.error(
+                                "unrecognized_currency_symbols", account.language
+                            )
+                            + ", ".join(invalid_units),
                             reply_markup=botman.mainkeyboard(account),
                             reply_to_message_id=update.message.message_id,
                         )
@@ -1304,9 +1621,13 @@ async def handle_messages(update: Update, context: CallbackContext):
                             "input_amounts",
                             amounts,
                         )
-                        await show_market_types(update, context, Account.States.INPUT_EQUALIZER_UNIT)
+                        await show_market_types(
+                            update, context, Account.States.INPUT_EQUALIZER_UNIT
+                        )
                     else:
-                        await start_equalizing(update.message.reply_text, account, amounts, units)
+                        await start_equalizing(
+                            update.message.reply_text, account, amounts, units
+                        )
 
                 case Account.States.CREATE_ALARM:
                     props = account.get_cache("create_alarm_props")
@@ -1334,7 +1655,9 @@ async def handle_messages(update: Update, context: CallbackContext):
                     )
                     account.delete_specific_cache("create_alarm_props")
 
-                case Account.States.ADD_BOT_AS_ADMIN:  # TODO: Add code to automatically add channel, just like groups
+                case (
+                    Account.States.ADD_BOT_AS_ADMIN
+                ):  # TODO: Add code to automatically add channel, just like groups
                     channel_chat: Chat | None = None
                     if update.message.forward_from_chat:
                         channel_chat = update.message.forward_from_chat
@@ -1342,15 +1665,21 @@ async def handle_messages(update: Update, context: CallbackContext):
                     if not channel_chat:
                         # send a message to the channel or group and retrieve chat_id
                         try:
-                            response: Message = await context.bot.send_message(chat_id=msg, text="Test")
+                            response: Message = await context.bot.send_message(
+                                chat_id=msg, text="Test"
+                            )
                             channel_chat = response.chat
-                            await context.bot.delete_message(chat_id=channel_chat.id, message_id=response.message_id)
+                            await context.bot.delete_message(
+                                chat_id=channel_chat.id, message_id=response.message_id
+                            )
                         except:
                             await update.message.reply_text(
                                 botman.error("bot_seems_not_admin", account.language),
                                 reply_markup=botman.action_inline_keyboard(
                                     botman.QueryActions.VERIFY_BOT_IS_ADMIN,
-                                    {msg: "verify"},  # FIXME: This has no code behind it. complete it.
+                                    {
+                                        msg: "verify"
+                                    },  # FIXME: This has no code behind it. complete it.
                                     in_main_keyboard=False,
                                 ),
                             )
@@ -1363,12 +1692,17 @@ async def handle_messages(update: Update, context: CallbackContext):
                             channel_chat,
                             Account.States.SELECT_POST_INTERVAL,
                         )
-                case Account.States.SELECT_POST_INTERVAL | Account.States.CHANGE_POST_INTERVAL:
+                case (
+                    Account.States.SELECT_POST_INTERVAL
+                    | Account.States.CHANGE_POST_INTERVAL
+                ):
                     interval: int = 0
                     try:
                         interval = PostInterval.TimestampToMinutes(msg)
                     except:
-                        await update.message.reply_text(botman.error("unsupported_input_format", account.language))
+                        await update.message.reply_text(
+                            botman.error("unsupported_input_format", account.language)
+                        )
                         return
                     await botman.handle_set_interval_outcome(update, context, interval)
                     try:
@@ -1379,26 +1713,36 @@ async def handle_messages(update: Update, context: CallbackContext):
                     except:
                         pass
                     account.change_state(clear_cache=True)
-                case Account.States.SET_MESSAGE_FOOTNOTE | Account.States.SET_MESSAGE_HEADER:
-                    community_type = BotMan.CommunityType.which(account.get_cache("community"))
+                case (
+                    Account.States.SET_MESSAGE_FOOTNOTE
+                    | Account.States.SET_MESSAGE_HEADER
+                ):
+                    community_type = BotMan.CommunityType.which(
+                        account.get_cache("community")
+                    )
                     if not community_type:
                         await unknown_command_handler(update, context)
                         return
                     community = community_type.to_class().getByOwner(account.chat_id)
                     if not community:
                         await update.message.reply_text(
-                            botman.error(f"no_{community_type}s", account.language), reply_markup=botman.mainkeyboard(account)
+                            botman.error(f"no_{community_type}s", account.language),
+                            reply_markup=botman.mainkeyboard(account),
                         )
                         account.delete_specific_cache("community")
                         return
                     if account.state == Account.States.SET_MESSAGE_HEADER:
-                        community.message_header = msg  # FIXME: Handle the case which text has emojis
+                        community.message_header = (
+                            msg  # FIXME: Handle the case which text has emojis
+                        )
                     else:
                         community.message_footnote = msg
                     community.save()
                     await update.message.reply_text(
                         botman.text("update_successful", account.language),
-                        reply_markup=botman.get_community_config_keyboard(community, account.language),
+                        reply_markup=botman.get_community_config_keyboard(
+                            community, account.language
+                        ),
                     )
                     account.change_state()
                 case _:
@@ -1433,7 +1777,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     botman.text(
                                         "enter_upgrade_premium_duration",
                                         account.language,
-                                    )
+                                    ),
+                                    reply_markup=botman.cancel_menu(account.language),
                                 )
                             else:
                                 months: int | None = None
@@ -1442,19 +1787,30 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 except:
                                     months = None
                                 if not months or (months < 0):
-                                    await update.message.reply_text(botman.error("invalid_months_count", account.language))
+                                    await update.message.reply_text(
+                                        botman.error(
+                                            "invalid_months_count", account.language
+                                        ),
+                                        reply_markup=botman.cancel_menu(
+                                            account.language
+                                        ),
+                                    )
                                     return
                                 target = Account.getById(upgrading_chat_id)
                                 target.upgrade(months)
 
                                 await context.bot.send_message(
                                     chat_id=target.chat_id,
-                                    text=botman.text("youre_upgraded_premium", target.language),
+                                    text=botman.text(
+                                        "youre_upgraded_premium", target.language
+                                    ),
                                     reply_markup=botman.mainkeyboard(target),
                                 )
 
                                 await update.message.reply_text(
-                                    botman.text("user_upgraded_premium", account.language),
+                                    botman.text(
+                                        "user_upgraded_premium", account.language
+                                    ),
                                     reply_markup=botman.mainkeyboard(account),
                                 )
                                 account.change_state(clear_cache=True)
@@ -1462,27 +1818,49 @@ async def handle_messages(update: Update, context: CallbackContext):
                             user = botman.identify_user(update)
 
                             if not user:
-                                await update.message.reply_text(botman.error("invalid_user_specification", account.language))
+                                await update.message.reply_text(
+                                    botman.error(
+                                        "invalid_user_specification", account.language
+                                    )
+                                )
                                 return
-                            await send_r_u_sure_to_downgrade_message(context, account, user)
+                            await send_r_u_sure_to_downgrade_message(
+                                context, account, user
+                            )
                         case Account.States.SEND_POST:
                             # admin is trying to send post
                             if update.message.text.isnumeric():
                                 try:
                                     days = int(update.message.text)
                                     account.add_cache("offset", days)
-                                    str_days = str(days) if account.language.lower() != "fa" else persianify(days)
-                                    suffix = botman.text("this_message_will_be_removed_after", account.language) % (str_days,)
+                                    str_days = (
+                                        str(days)
+                                        if account.language.lower() != "fa"
+                                        else persianify(days)
+                                    )
+                                    suffix = botman.text(
+                                        "this_message_will_be_removed_after",
+                                        account.language,
+                                    ) % (str_days,)
                                     await update.message.reply_text(
-                                        botman.text("type_your_post_text", account.language) + suffix,
-                                        reply_markup=botman.cancel_menu[account.language],
+                                        botman.text(
+                                            "type_your_post_text", account.language
+                                        )
+                                        + suffix,
+                                        reply_markup=botman.cancel_menu[
+                                            account.language
+                                        ],
                                     )
                                     return
                                 except:
                                     pass
                             all_accounts = Account.everybody()
-                            progress_text = botman.text("sending_your_post", account.language)
-                            telegram_response: Message = await update.message.reply_text(progress_text)
+                            progress_text = botman.text(
+                                "sending_your_post", account.language
+                            )
+                            telegram_response: Message = (
+                                await update.message.reply_text(progress_text)
+                            )
                             message_id: int | None = None
                             removal_time: int | None = None
                             try:
@@ -1492,13 +1870,24 @@ async def handle_messages(update: Update, context: CallbackContext):
                             except:
                                 pass
                             number_of_accounts = len(all_accounts)
-                            trashes: List[Tuple[int, int, int, int]] = [None] * number_of_accounts
-                            progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
+                            trashes: List[Tuple[int, int, int, int]] = [
+                                None
+                            ] * number_of_accounts
+                            progress_update_trigger = (
+                                number_of_accounts // 20
+                                if number_of_accounts >= 100
+                                else 5
+                            )
                             post_index = 0
-                            trash_message_type = Account.database().TrashType.MESSAGE.value
+                            trash_message_type = (
+                                Account.database().TrashType.MESSAGE.value
+                            )
                             for index, chat_id in enumerate(all_accounts):
                                 try:
-                                    if message_id and index % progress_update_trigger == 0:
+                                    if (
+                                        message_id
+                                        and index % progress_update_trigger == 0
+                                    ):
                                         progress = 100 * index / number_of_accounts
                                         await context.bot.edit_message_text(
                                             chat_id=account.chat_id,
@@ -1508,35 +1897,57 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     if chat_id != account.chat_id:
                                         post = await update.message.copy(chat_id)
                                         if removal_time:
-                                            trashes[post_index] = (trash_message_type, chat_id, post.message_id, removal_time)
+                                            trashes[post_index] = (
+                                                trash_message_type,
+                                                chat_id,
+                                                post.message_id,
+                                                removal_time,
+                                            )
                                             post_index += 1
                                 except:
                                     pass  # maybe remove the account from database ?
                             if message_id:
-                                await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
+                                await context.bot.delete_message(
+                                    chat_id=account.chat_id, message_id=message_id
+                                )
                             await update.message.reply_text(
-                                botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
-                                reply_markup=botman.get_admin_keyboard(account.language),
+                                botman.text("post_successfully_sent", account.language)
+                                % (len(all_accounts),),
+                                reply_markup=botman.get_admin_keyboard(
+                                    account.language
+                                ),
                             )
-                            account.change_state(clear_cache=True)  # reset .state and .state_data
+                            account.change_state(
+                                clear_cache=True
+                            )  # reset .state and .state_data
                             if removal_time:
                                 try:
-                                    Account.schedulePostsForRemoval(trashes[:post_index])
-                                    await update.message.reply_text("posts_scheduled_for_removal", account.language)
+                                    Account.schedulePostsForRemoval(
+                                        trashes[:post_index]
+                                    )
+                                    await update.message.reply_text(
+                                        "posts_scheduled_for_removal", account.language
+                                    )
                                 except:
                                     pass
 
+                        case Account.States.ADMIN_CHANGE_PREMIUM_PLANS:
+                            await admin_renew_plans(update, context, account)
 
 async def handle_new_group_members(update: Update, context: CallbackContext):
     my_id = context.bot.id
     for member in update.message.new_chat_members:
         if member.id == my_id:
-            owner = Account.getById(update.message.from_user.id)  # TODO: Use Join query if account is not in cache mem
+            owner = Account.getById(
+                update.message.from_user.id
+            )  # TODO: Use Join query if account is not in cache mem
             try:
                 if owner.state == Account.States.CHANGE_GROUP:
                     old_group_id = owner.get_cache("changing_id")
                     old_group: Group
-                    if not old_group_id or not (old_group := Group.get(old_group_id, no_fastmem=True)):
+                    if not old_group_id or not (
+                        old_group := Group.get(old_group_id, no_fastmem=True)
+                    ):
                         await context.bot.send_message(
                             chat_id=owner.chat_id,
                             text=botman.error("unexpected_error", owner.language),
@@ -1549,16 +1960,28 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                         await context.bot.send_message(
                             chat_id=owner.chat_id,
                             text=botman.text("group_changed", owner.language),
-                            reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
+                            reply_markup=botman.get_community_config_keyboard(
+                                BotMan.CommunityType.GROUP, owner.language
+                            ),
                         )
-                        owner.change_state(cache_key="community", data=BotMan.CommunityType.GROUP.value, clear_cache=True)
-                        await update.message.reply_text(botman.text("farewell_my_friends", owner.language))
+                        owner.change_state(
+                            cache_key="community",
+                            data=BotMan.CommunityType.GROUP.value,
+                            clear_cache=True,
+                        )
+                        await update.message.reply_text(
+                            botman.text("farewell_my_friends", owner.language)
+                        )
                         await update.message.chat.leave()
                     except InvalidInputException:
                         await context.bot.send_message(
                             chat_id=owner.chat_id,
-                            text=botman.error("changed_group_is_the_same", owner.language),
-                            reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
+                            text=botman.error(
+                                "changed_group_is_the_same", owner.language
+                            ),
+                            reply_markup=botman.get_community_config_keyboard(
+                                BotMan.CommunityType.GROUP, owner.language
+                            ),
                         )
                     except:
                         pass
@@ -1567,12 +1990,16 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                 if group.is_active:
                     await context.bot.send_message(
                         chat_id=owner.chat_id,
-                        text=botman.text("group_is_active", owner.language) % (group.title,),
+                        text=botman.text("group_is_active", owner.language)
+                        % (group.title,),
                     )
                 else:
                     await context.bot.send_message(
                         chat_id=owner.chat_id,
-                        text=botman.text("go_premium_for_group_activation", owner.language) % (group.title),
+                        text=botman.text(
+                            "go_premium_for_group_activation", owner.language
+                        )
+                        % (group.title),
                     )
             except MaxAddedCommunityException:
                 await context.bot.send_message(
@@ -1597,10 +2024,13 @@ async def cmd_refresh(update: Update, context: CallbackContext):
         reply_markup=botman.mainkeyboard(account),
     )
 
+
 async def handle_group_messages(update: Update, context: CallbackContext):
     if not update.message or not update.message.text:
         return
-    crypto_amounts, currency_amounts = botman.extract_symbols_and_amounts(update.message.text)
+    crypto_amounts, currency_amounts = botman.extract_symbols_and_amounts(
+        update.message.text
+    )
     group: Group = Group.get(update.message.chat.id)
     to_user: Account = Account.getById(update.message.from_user.id)
 
@@ -1625,19 +2055,39 @@ async def handle_group_messages(update: Update, context: CallbackContext):
             )
 
             await update.message.reply_text(
-                PostMan.customizePost(message, group, to_user.language), reply_markup=ReplyKeyboardRemove()
+                PostMan.customizePost(message, group, to_user.language),
+                reply_markup=ReplyKeyboardRemove(),
             )
 
 
 async def unhandled_error_happened(update: Update, context: CallbackContext):
-    account = Account.get(update.message.chat)
-    account.change_state(clear_cache=True)
-    await update.message.reply_text(
-        botman.error("unhandled_error_happened", account.language),
-        reply_markup=botman.mainkeyboard(account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove(),
-    )
+    try:
+        if (
+            update and update.message
+            and isinstance(update.message.chat, Chat)
+            and (account := Account.get(update.message.chat))
+        ):
+            account.change_state(clear_cache=True)
+            await update.message.reply_text(
+                botman.error("unhandled_error_happened", account.language),
+                reply_markup=(
+                    botman.mainkeyboard(account)
+                    if update.message.chat.type.lower() == "private"
+                    else ReplyKeyboardRemove()
+                ),
+            )
+    except Exception as ex:
+        log('Fucked up error', ex, category_name='FATALITY')
+
+
+async def handle_multimedia_messages(update: Update, context: CallbackContext):
+    if await admin_renew_plans(update, context):
+        return
+    await unknown_command_handler(update, context)
+
 
 # FIXME: Some cmd_ methods are re-getting accounts, (admin or non-admin commands), do a full check on them, and check if they need changing, (cause we have fastmem of course)
+
 
 # TODO: disable old caching
 # FIXME: Write script for CROSS_Checking CMC api response with my coin list
@@ -1654,12 +2104,13 @@ def main():
     app.add_handler(CommandHandler("useinchannel", cmd_start_using_in_channel))
     app.add_handler(CommandHandler("myplan", cmd_show_my_plan_status))
     app.add_handler(CommandHandler("refresh", cmd_refresh))
-    
+
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
     app.add_handler(CommandHandler("up", cmd_upgrade_user))
     app.add_handler(CommandHandler("down", cmd_list_users_to_downgrade))
     app.add_handler(CommandHandler("post", cmd_send_post))
+    app.add_handler(CommandHandler("newplans", cmd_send_plans_post))
     app.add_handler(CommandHandler("schedule", cmd_schedule_channel_update))
     app.add_handler(CommandHandler("stop", cmd_stop_schedule))
     app.add_handler(CommandHandler("stats", cmd_report_statistics))
@@ -1667,19 +2118,38 @@ def main():
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
 
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_group_members))
+    app.add_handler(
+        MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_group_members)
+    )
     app.add_handler(
         MessageHandler(
             filters.ChatType.GROUPS,
             handle_group_messages,
         )
     )
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_messages))
-    app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
+    app.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_messages
+        )
+    )
+    app.add_handler(
+        MessageHandler(
+            filters.ALL & filters.ChatType.PRIVATE, handle_multimedia_messages
+        )
+    )
+    app.add_handler(
+        MessageHandler(
+            filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler
+        )
+    )
     app.add_error_handler(unhandled_error_happened)
 
-    app.job_queue.run_repeating(botman.process_channels, interval=60, first=60, name="PLUS_CHANNELS")
-    app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))
+    app.job_queue.run_repeating(
+        botman.process_channels, interval=60, first=60, name="PLUS_CHANNELS"
+    )
+    app.job_queue.run_daily(
+        botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0)
+    )
 
     print("Server is up and running...")
     app.run_polling(poll_interval=0.2, timeout=10)
