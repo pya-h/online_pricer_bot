@@ -355,6 +355,14 @@
         "unhandled_error_happened": {
             "fa": "❗️ متاسفانه با یک خطای نامشخص مواجه شدیم. لطفا از نو تلاش کنید.",
             "en": "❗️ Unfortunately an unrecognized error happened. Please retry your operation from start again."
+        },
+        "failed_getting_crypto_market": {
+            "fa": "متاسفانه دریافت وضعیت بازار ارز دیجیتال ناموفق بود. لطفا لحظاتی دیگر تلاش کنید.",
+            "en": "Unfurtunately getting cryptocurrency market data was unsuccessful. Please try again some time later."
+        },
+        "failed_getting_currency_market": {
+            "fa": "متاسفانه دریافت وضعیت بازار ارز و طلا ناموفق بود. لطفا لحظاتی دیگر تلاش کنید.",
+            "en": "Unfurtunately getting currency/gold market data was unsuccessful. Please try again some time later."
         }
     },
     "what_can_i_do": {

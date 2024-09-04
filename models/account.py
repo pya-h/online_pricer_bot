@@ -159,7 +159,6 @@ class Account:
 
         return False
 
-
     def upgrade(self, duration_in_months: int):
         Account.database().upgrade_account(self, duration_in_months)
 
@@ -176,7 +175,7 @@ class Account:
         try:
             if not self.plus_end_date:
                 return -1
-            delta = tz_today().date() - self.premium_date
+            delta = self.premium_date - tz_today().date()
             return delta.days
         except Exception as x:
             log(f'Failed to calculate remaining days of user premium plan, chat_id={self.chat_id}', 'Premiums')
@@ -241,7 +240,9 @@ class Account:
     def user_detail(self) -> str:
         detail = f'Telegram ID: {self.chat_id}\nUsername: {"@" + self.username if self.username else "-"}'
         if self.firstname:
-            detail += f"\n{self.firstname}"
+            detail += f"\nFirstname: {self.firstname}"
+        if self.plus_end_date and (days := self.premium_days_remaining) >= 0:
+            detail += f"\nPremium Days: {days}\n"
         return detail
 
     @property

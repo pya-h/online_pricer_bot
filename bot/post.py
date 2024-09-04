@@ -89,11 +89,14 @@ class PostMan:
         try:
             fiat, gold = self.currency_service.get_latest(channel.selected_currencies)
         except:
-            pass
+            if channel.selected_currencies and not fiat and not gold:
+                fiat = self.resourceman.error('failed_getting_currency_market', channel.language)
+
         try:
             crypto = self.crypto_service.get_latest(channel.selected_coins)
         except Exception as ex:
-            print(ex, crypto)
+            if channel.selected_coins and not crypto:
+                crypto = self.resourceman.error('failed_getting_crypto_market', channel.language)
 
         post = ''
         tags_fiat = tags_gold = tags_crypto = ''

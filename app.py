@@ -353,7 +353,8 @@ async def cmd_send_plans_post(update: Update, context: CallbackContext):
         return await say_youre_not_allowed(update.message.reply_text, account)
     account.change_state(Account.States.ADMIN_CHANGE_PREMIUM_PLANS, clear_cache=True)
     await update.message.reply_text(
-        botman.text("send_premium_plans_post", account.language)
+        botman.text("send_premium_plans_post", account.language),
+        reply_markup=botman.cancel_menu(account.language),
     )
 
 
@@ -1093,17 +1094,27 @@ async def cmd_show_my_plan_status(update: Update, context: CallbackContext):
         if account.plus_end_date is not None:
             await botman.downgrade_user(account)
         return
-    days_remaining = (
+    str_days_remaining = (
         str(days_remaining)
         if account.language.lower() != "fa"
         else persianify(days_remaining)
     )
+    if days_remaining <= 7:
+        await context.bot.send_message(
+            chat_id=account.chat_id,
+            text=botman.text("premium_expiry_is_close", account.language)
+            % (str_days_remaining,),
+        )
+        return
     await update.message.reply_text(
-        botman.text("ur_plan_duration", account.language) % (days_remaining,),
+        botman.text("ur_plan_duration", account.language) % (str_days_remaining,),
         reply_markup=botman.mainkeyboard(account),
     )
 
-async def admin_renew_plans(update: Update, context: CallbackContext, account: Account | None = None):
+
+async def admin_renew_plans(
+    update: Update, context: CallbackContext, account: Account | None = None
+):
     if not account:
         account = Account.get(update.message.chat)
     if account.authorization(context.args):
@@ -1135,6 +1146,7 @@ async def admin_renew_plans(update: Update, context: CallbackContext, account: A
 
                 return True
         return False
+
 
 async def unknown_command_handler(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
@@ -1216,7 +1228,21 @@ async def handle_messages(update: Update, context: CallbackContext):
         case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
             await update.message.delete()
             await botman.show_settings_menu(update)
-
+        case BotMan.Commands.GO_PREMIUM_FA.value | BotMan.Commands.GO_PREMIUM_EN.value:
+            account = Account.get(update.message.chat)
+            post_text, post_photo = BotSettings.get().PREMIUM_PLANS_POST(
+                account.language
+            )
+            if post_photo:
+                await update.message.reply_photo(
+                    photo=post_photo,
+                    caption=post_text,
+                    reply_markup=botman.mainkeyboard(account),
+                )
+                return
+            await update.message.reply_text(
+                post_text, reply_markup=botman.mainkeyboard(account)
+            )
         case (
             BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA.value
             | BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN.value
@@ -1934,6 +1960,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                         case Account.States.ADMIN_CHANGE_PREMIUM_PLANS:
                             await admin_renew_plans(update, context, account)
 
+
 async def handle_new_group_members(update: Update, context: CallbackContext):
     my_id = context.bot.id
     for member in update.message.new_chat_members:
@@ -2063,7 +2090,8 @@ async def handle_group_messages(update: Update, context: CallbackContext):
 async def unhandled_error_happened(update: Update, context: CallbackContext):
     try:
         if (
-            update and update.message
+            update
+            and update.message
             and isinstance(update.message.chat, Chat)
             and (account := Account.get(update.message.chat))
         ):
@@ -2077,7 +2105,7 @@ async def unhandled_error_happened(update: Update, context: CallbackContext):
                 ),
             )
     except Exception as ex:
-        log('Fucked up error', ex, category_name='FATALITY')
+        log("Fucked up error", ex, category_name="FATALITY")
 
 
 async def handle_multimedia_messages(update: Update, context: CallbackContext):

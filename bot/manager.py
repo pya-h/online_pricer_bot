@@ -1558,7 +1558,7 @@ class BotMan:
         update_last_post_time_targets = []
         for channel in channels:
             if not channel.last_post_time or (
-                channel.last_post_time - now >= channel.interval
+                now - channel.last_post_time >= channel.interval
             ):
                 try:
                     post = self.postman.create_channel_post(channel)

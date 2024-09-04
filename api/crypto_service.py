@@ -124,7 +124,6 @@ class CoinMarketCapService(CryptoCurrencyService):
         desired_coins = self.get_desired_ones(desired_coins)
         if not self.latest_data:
             raise NoLatestDataException("Use for announcing prices!")
-
         res = ""
         for coin in desired_coins:
             res += self.get_price_description_row(coin.upper())
