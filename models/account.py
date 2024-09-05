@@ -4,12 +4,14 @@ from datetime import datetime, date
 from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from tools.manuwriter import log
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Set
 from bot.types import SelectionListTypes
 from json import loads as json_parse, dumps as jsonify
 from telegram import Chat, User
 from bot.settings import BotSettings
 import gc
+from api.crypto_service import CryptoCurrencyService
+from api.currency_service import NavasanService
 
 
 ADMIN_USERNAME = config("ADMIN_USERNAME")
@@ -87,10 +89,10 @@ class Account:
     def __init__(
         self,
         chat_id: int,
-        currencies: List[str] = None,
-        cryptos: List[str] = None,
-        calc_cryptos: List[str] = None,
-        calc_currencies: List[str] = None,
+        currencies: Set[str] = None,
+        cryptos: Set[str] = None,
+        calc_cryptos: Set[str] = None,
+        calc_currencies: Set[str] = None,
         language: str = "fa",
         join_date: datetime = None,
         plus_start_date: datetime = None,
@@ -103,10 +105,10 @@ class Account:
     ) -> None:
 
         self.chat_id: int = int(chat_id)
-        self.desired_cryptos: list = cryptos or []
-        self.desired_currencies: list = currencies or []
-        self.calc_cryptos: list = calc_cryptos or []
-        self.calc_currencies: list = calc_currencies or []
+        self.desired_cryptos: Set[str] = cryptos or set()
+        self.desired_currencies: Set[str] = currencies or set()
+        self.calc_cryptos: Set[str] = calc_cryptos or set()
+        self.calc_currencies: Set[str] = calc_currencies or set()
         self.last_interaction: datetime = tz_today()
         self.language: str = language
         self.state: Account.States = state
@@ -326,13 +328,13 @@ class Account:
         language = row[-1]
         return Account(
             chat_id=int(row[0]),
-            currencies=DatabaseInterface.stringToList(currs),
-            cryptos=DatabaseInterface.stringToList(cryptos),
+            currencies=DatabaseInterface.stringToSet(currs),
+            cryptos=DatabaseInterface.stringToSet(cryptos),
             join_date=join_date,
             plus_end_date=plus_end_date,
             plus_start_date=plus_start_date,
-            calc_currencies=DatabaseInterface.stringToList(calc_currs),
-            calc_cryptos=DatabaseInterface.stringToList(calc_cryptos),
+            calc_currencies=DatabaseInterface.stringToSet(calc_currs),
+            calc_cryptos=DatabaseInterface.stringToSet(calc_cryptos),
             is_admin=is_admin,
             username=username,
             language=language,
@@ -359,7 +361,7 @@ class Account:
             account = Account.extractQueryRowData(row, no_fastmem=no_fastmem)
             return account
 
-        return Account(chat_id=chat_id, join_date=tz_today(), no_fastmem=no_fastmem).save()
+        return Account(chat_id=chat_id, join_date=tz_today(), calc_cryptos=CryptoCurrencyService.getDefaultCryptos(), calc_currencies=NavasanService.getDefaultCurrencies(), no_fastmem=no_fastmem).save()
 
     @staticmethod
     def getByUsername(username: str):

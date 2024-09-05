@@ -704,5 +704,9 @@
     "send_premium_plans_post": {
         "fa": "حالا پست مربوط به تعرفه های جدید را همراه با عکس آن (اختیاری) بفرستید.\n\n* کاراکتر اول متن مشخص کننده زبان پست است. اگر کاراکتر انگلیسی بود، متن برای زبان انگلیسی و درغیر اینصورت برای زبان فارسی تنظیم می شود.",
         "en": "Now send the New Premium Plans post with post image[optional].\n\n* The first letter of the text specifies the Post Language: First english character means this post is for english language, and otherwise it's for persians."
+    },
+    "no_token_selected": {
+        "fa": "شما هیچ توکنی را انتخاب نکرده اید که محاسبات بر حسب آن ها انجام بگیرد! از طریق منو می توانید توکن های مورد علاقه خود را انتخاب کنید.",
+        "en": "You have selected no tokens to do the calculations upon! You can select them with menu options."
     }
 }

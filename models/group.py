@@ -1,6 +1,6 @@
 from tools.mathematix import now_in_minute, from_now_time_diff
 from db.interface import DatabaseInterface
-from typing import List, Dict
+from typing import Dict, Set
 from telegram import Chat
 from .account import Account
 from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException, NoSuchThingException
@@ -8,6 +8,9 @@ from tools.manuwriter import log
 from bot.settings import BotSettings
 import gc
 from json import loads as load_json
+from api.crypto_service import CryptoCurrencyService
+from api.currency_service import NavasanService
+
 
 class Group:
     fastMemInstances = {}
@@ -27,8 +30,8 @@ class Group:
         group_id: int,
         group_name: str = None,
         group_title: str | None = None,
-        selected_coins: List[str] | None = None,
-        selected_currencies: List[str] | None = None,
+        selected_coins: Set[str] | None = None,
+        selected_currencies: Set[str] | None = None,
         message_header: str | None = None,
         message_footnote: str | None = None,
         message_show_date_tag: bool = False,
@@ -40,8 +43,8 @@ class Group:
         self.id: int = int(group_id)
         self.name: str | None = group_name  # username
         self.title: str = group_title
-        self.selected_coins: List[str] = selected_coins or []
-        self.selected_currencies: List[str] = selected_currencies or []
+        self.selected_coins: Set[str] = selected_coins or set()
+        self.selected_currencies: Set[str] = selected_currencies or set()
         self.message_header: str | None = message_header
         self.message_footnote: str | None = message_footnote
         self.message_show_date_tag: bool = message_show_date_tag
@@ -101,8 +104,8 @@ class Group:
 
     def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
         try:
-            self.selected_coins = (DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else None) or []
-            self.selected_currencies = (DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else None) or []
+            self.selected_coins = (DatabaseInterface.stringToSet(trash["coins"]) if "coins" in trash else None) or set()
+            self.selected_currencies = (DatabaseInterface.stringToSet(trash["currencies"]) if "currencies" in trash else None) or set()
             self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
             self.name = trash["name"] if "name" in trash else None
@@ -168,8 +171,8 @@ class Group:
             group_id=int(row[0]),
             group_name=row[1],
             group_title=row[2],
-            selected_coins=DatabaseInterface.stringToList(row[3]),
-            selected_currencies=DatabaseInterface.stringToList(row[4]),
+            selected_coins=DatabaseInterface.stringToSet(row[3]),
+            selected_currencies=DatabaseInterface.stringToSet(row[4]),
             message_header=row[5],
             message_footnote=row[6],
             message_show_date_tag=bool(row[7]),
@@ -216,7 +219,7 @@ class Group:
         elif not allowed_group_count:
             raise UserNotAllowedException(owner_id, "have groups")
 
-        group = Group(owner_id=owner_id, group_id=chat.id, group_title=chat.title, group_name=chat.username, owner=owner)
+        group = Group(owner_id=owner_id, group_id=chat.id, group_title=chat.title, group_name=chat.username, owner=owner, selected_coins=CryptoCurrencyService.getDefaultCryptos(), selected_currencies=NavasanService.getDefaultCurrencies())
         db.add_group(group)
         return group
 

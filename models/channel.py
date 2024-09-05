@@ -2,13 +2,15 @@ from tools import manuwriter
 from db.interface import DatabaseInterface
 from json import dumps as jsonify
 from bot.types import GroupInlineKeyboardButtonTemplate
-from typing import List, Dict
+from typing import List, Dict, Set
 from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException, NoSuchThingException
 from telegram import Chat
 from .account import Account
 from tools.mathematix import now_in_minute
 from bot.settings import BotSettings
 from json import loads as load_json
+from api.crypto_service import CryptoCurrencyService
+from api.currency_service import NavasanService
 
 
 class PostInterval(GroupInlineKeyboardButtonTemplate):
@@ -117,8 +119,8 @@ class Channel:
         channel_title: str = None,
         last_post_time: int = None,
         is_active: bool = False,
-        selected_coins: List[str] | None = None,
-        selected_currencies: List[str] | None = None,
+        selected_coins: Set[str] | None = None,
+        selected_currencies: Set[str] | None = None,
         message_header: str | None = None,
         message_footnote: str | None = None,
         message_show_date_tag: bool = False,
@@ -131,8 +133,8 @@ class Channel:
         self.title: str = channel_title
         self.interval: int = interval
         self.is_active: bool = is_active
-        self.selected_coins: List[str] = selected_coins or []
-        self.selected_currencies: List[str] = selected_currencies or []
+        self.selected_coins: Set[str] = selected_coins or set()
+        self.selected_currencies: Set[str] = selected_currencies or set()
         self.message_header: str | None = message_header
         self.message_footnote: str | None = message_footnote
         self.message_show_date_tag: bool = message_show_date_tag
@@ -147,6 +149,8 @@ class Channel:
         allowed_channels_count = BotSettings.get().EACH_COMMUNITY_COUNT_LIMIT(
             self.owner.user_type
         )
+        self.selected_coins = CryptoCurrencyService.getDefaultCryptos()
+        self.selected_currencies = NavasanService.getDefaultCurrencies()
         db = Channel.database()
         channel_columns = db.get_channel(self.id)
         if channel_columns:
@@ -229,8 +233,8 @@ class Channel:
 
     def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
         try:
-            self.selected_coins = (DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else None) or []
-            self.selected_currencies = (DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else None) or []
+            self.selected_coins = (DatabaseInterface.stringToSet(trash["coins"]) if "coins" in trash else None) or set()
+            self.selected_currencies = (DatabaseInterface.stringToSet(trash["currencies"]) if "currencies" in trash else None) or set()
             self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
             self.name = trash["name"] if "name" in trash else None
@@ -306,8 +310,8 @@ class Channel:
             channel_title=row[2],
             interval=int(row[3]),
             is_active=bool(row[4]),
-            selected_coins=DatabaseInterface.stringToList(row[5]),
-            selected_currencies=DatabaseInterface.stringToList(row[6]),
+            selected_coins=DatabaseInterface.stringToSet(row[5]),
+            selected_currencies=DatabaseInterface.stringToSet(row[6]),
             message_header=row[7],
             message_footnote=row[8],
             message_show_date_tag=bool(row[9]),

@@ -166,12 +166,12 @@ class DatabaseInterface:
         return DatabaseInterface._instance
 
     @staticmethod
-    def stringToList(string: str):
+    def stringToSet(string: str) -> set:
         """Use this method to extract saved currency or cryptocurrency list strings to List again."""
         if not string:
             return None
         string = string if string[-1] != ";" else string[:-1]
-        return string.split(";")
+        return set(string.split(";"))
 
     def migrate(self):
         """This method is like a migration thing, after any major update, this must be called to perform any required structural change in db"""
@@ -209,7 +209,7 @@ class DatabaseInterface:
 
     def setup(self):
         try:
-            conn, cursor = self.set_timezone()
+            conn, cursor = self.set_timezone(close_connection=False)
 
             table_exist_query_start = f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
             tables_common_charset = "CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci"
@@ -933,19 +933,19 @@ class DatabaseInterface:
         )
         return res[0] if res else 0
 
-    def set_timezone(self, tz: str = "Asia/Tehran", return_connection: bool = True):
+    def set_timezone(self, tz: str = "Asia/Tehran", close_connection: bool = True, cursor_dictionary_param: bool = False):
         conn = self.connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=cursor_dictionary_param)
         cursor.execute(f"SET time_zone=%s;", (tz, ))
         conn.commit()
-        if not return_connection:
+        if close_connection:
             cursor.close()
             conn.close()
             return None
         return conn, cursor
 
     def get_account_stats(self):
-        conn, cursor = self.set_timezone()
+        conn, cursor = self.set_timezone(close_connection=False, cursor_dictionary_param = True)
         cursor.execute(
             f"""SELECT 
             COUNT(*) as all_users,

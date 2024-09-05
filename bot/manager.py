@@ -663,7 +663,7 @@ class BotMan:
         list_type: Enum,
         button_type: Enum,
         choices: Dict[str, str],
-        selected_ones: List[str] = None,
+        selected_ones: List[str] | Set[str] = None,
         page: int = 0,
         max_page_buttons: int = 90,
         full_names: bool = False,
@@ -697,7 +697,7 @@ class BotMan:
             )
 
         if not selected_ones:
-            selected_ones = []
+            selected_ones = set()
         buttons: List[List[InlineKeyboardButton]] = []
         pagination_menu: List[InlineKeyboardButton] | None = None
         buttons_count = len(choices)
@@ -1249,19 +1249,21 @@ class BotMan:
         use_tags: bool = True,
     ):
         if not use_tags:
-            return f"{res_fiat}\n{res_gold}\n{res_crypto}"
+            res = filter(lambda x: x, [res_fiat, res_gold, res_crypto])
+            return "\n".join(res)
         tags_fiat = self.text("markets_fiat", language)
         tags_gold = self.text("markets_gold", language)
         tags_crypto = self.text("markets_crypto", language)
 
-        return f"{tags_fiat}\n{res_fiat}\n{tags_gold}\n{res_gold}\n{tags_crypto}\n{res_crypto}"
+        res = filter(lambda x: x[1], [(tags_fiat, res_fiat), (tags_gold, res_gold), (tags_crypto, res_crypto)])
+        return "\n".join([f"{tag}\n{text}" for (tag, text) in res])
 
     def create_crypto_equalize_message(
         self,
         unit: str,
         amount: float | int,
-        target_cryptos: List[str] | None,
-        target_currencies: List[str] | None,
+        target_cryptos: Set[str] | None,
+        target_currencies: Set[str] | None,
         language: str = "fa",
         use_tags: bool = True,
     ):
@@ -1270,8 +1272,10 @@ class BotMan:
         )
         res_fiat, res_gold = self.currency_serv.irt_to_currencies(
             absolute_irt, unit, target_currencies
-        )
+        ) if target_currencies else (None, None)
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
+        if not post:
+            return self.text('no_token_selected')
         header = self.text("equalize_header", language) % (
             str(amount) if language != "fa" else persianify(amount),
             self.crypto_serv.coinsInPersian[unit],
@@ -1282,16 +1286,18 @@ class BotMan:
         self,
         unit: str,
         amount: float | int,
-        target_cryptos: List[str] | None,
-        target_currencies: List[str] | None,
+        target_cryptos: Set[str] | None,
+        target_currencies: Set[str] | None,
         language: str = "fa",
         use_tags: bool = True,
     ):
         res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(
             unit, amount, target_currencies
         )
-        res_crypto = self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
+        res_crypto = self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos) if target_cryptos else None
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
+        if not post:
+            return self.text('no_token_selected')
         header = self.text("equalize_header", language) % (
             str(amount) if language != "fa" else persianify(amount),
             self.currency_serv.currenciesInPersian[unit],
@@ -1468,19 +1474,19 @@ class BotMan:
         market: MarketOptions,
         symbol: str | None = None,
     ):
-        target_list: List[str]
-        related_list: List[str]
+        target_set: Set[str]
+        related_set: Set[str]
         save_func: callable = account.save
 
         match list_type:
             case SelectionListTypes.CALCULATOR:
-                (target_list, related_list) = (
+                (target_set, related_set) = (
                     (account.calc_cryptos, account.calc_currencies)
                     if market == MarketOptions.CRYPTO
                     else (account.calc_currencies, account.calc_cryptos)
                 )
             case SelectionListTypes.USER_TOKENS:
-                (target_list, related_list) = (
+                (target_set, related_set) = (
                     (account.desired_cryptos, account.desired_currencies)
                     if market == MarketOptions.CRYPTO
                     else (account.desired_currencies, account.desired_cryptos)
@@ -1489,7 +1495,7 @@ class BotMan:
                 my_group = Group.getByOwner(account.chat_id)
                 if not my_group:
                     raise NoSuchThingException(account.chat_id, "Group")
-                (target_list, related_list) = (
+                (target_set, related_set) = (
                     (my_group.selected_coins, my_group.selected_currencies)
                     if market == MarketOptions.CRYPTO
                     else (my_group.selected_currencies, my_group.selected_coins)
@@ -1499,7 +1505,7 @@ class BotMan:
                 my_channel = Channel.getByOwner(account.chat_id)
                 if not my_channel:
                     raise NoSuchThingException(account.chat_id, "Channel")
-                (target_list, related_list) = (
+                (target_set, related_set) = (
                     (my_channel.selected_coins, my_channel.selected_currencies)
                     if market == MarketOptions.CRYPTO
                     else (my_channel.selected_currencies, my_channel.selected_coins)
@@ -1511,15 +1517,15 @@ class BotMan:
                 raise ValueError(f"Invalid list type selected by: {list_type.value}")
 
         if symbol:
-            if symbol.upper() not in target_list:
-                if len(target_list) + len(related_list) >= account.max_selection_count:
+            if symbol.upper() not in target_set:
+                if len(target_set) + len(related_set) >= account.max_selection_count:
                     raise ValueError(account.max_selection_count)
 
-                target_list.append(symbol)
+                target_set.add(symbol)
             else:
-                target_list.remove(symbol)
+                target_set.remove(symbol)
             save_func()
-        return target_list
+        return target_set
 
     @staticmethod
     def factoryResetAccount(account: Account):

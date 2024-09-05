@@ -122,6 +122,10 @@ class NavasanService(CurrencyService):
     goldsInPersian = None
     maxExtraServicesFailure = 5
 
+    @staticmethod
+    def getDefaultCurrencies():
+        return set(NavasanService.defaults)
+
     def __init__(self, token: str, nobitex_tether_service_token: str = None, aban_tether_service_token: str = None) -> None:
         self.tether_service = (
             NobitexService(nobitex_tether_service_token)
@@ -136,7 +140,7 @@ class NavasanService(CurrencyService):
             tether_service_token=self.tether_service.token,
             token=token,
         )
-        self.get_desired_ones = lambda desired_ones: desired_ones or NavasanService.defaults
+
         self.gold_service: GoldService = GoldService(self.token)
         if (
             not NavasanService.nationalCurrenciesInPersian
@@ -145,6 +149,9 @@ class NavasanService(CurrencyService):
             or not NavasanService.persianShortcuts
         ):
             NavasanService.loadPersianNames()
+
+    def get_desired_ones(self, selection: set):
+        return selection or set(NavasanService.defaults)
 
     @staticmethod
     def find(word: str):
@@ -193,7 +200,7 @@ class NavasanService(CurrencyService):
         response = await super(NavasanService, self).get_request(no_cache=True)
         return response.data
 
-    async def get(self, desired_ones: list = None) -> str:
+    async def get(self, desired_ones: set = None) -> str:
         self.latest_data = await self.get_request()  # update latest
         try:
             await self.gold_service.append_gold_prices(self.latest_data)
@@ -221,7 +228,7 @@ class NavasanService(CurrencyService):
     def irt_to_usd(self, irt_price: float | int) -> float | int:
         return irt_price / self.usdInTomans
 
-    def irt_to_currencies(self, absolute_amount: float | int, source_unit_slug: str, currencies: list = None) -> str:
+    def irt_to_currencies(self, absolute_amount: float | int, source_unit_slug: str, currencies: set = None) -> Tuple[str, str]:
         currencies = self.get_desired_ones(currencies)
         res_gold, res_fiat = "", ""
 
@@ -257,7 +264,7 @@ class NavasanService(CurrencyService):
             absolute_amount: float = amount * float(self.latest_data[source_unit_symbol.lower()]["value"])
         except:
             raise ValueError(f"{source_unit_symbol} has not been received from the API.")
-        res_fiat, res_gold = self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies)
+        res_fiat, res_gold = self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies) if target_currencies else (None, None)
         return (
             res_fiat,
             res_gold,

@@ -91,7 +91,7 @@ class DatabaseInterface:
         return DatabaseInterface._instance
 
     @staticmethod
-    def stringToList(string: str):
+    def stringToSet(string: str):
         """Use this method to extract saved currency or cryptocurrency list strings to List again."""
         if not string:
             return None
@@ -250,7 +250,7 @@ class DatabaseInterface:
                     account.last_interaction.strftime(self.DATE_FORMAT),
                     account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                     account.state.value,
-                    account.scache_as_str,
+                    account.cache_as_str,
                     account.is_admin,
                     account.language,
                 ),

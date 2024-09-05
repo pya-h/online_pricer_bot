@@ -105,9 +105,8 @@ class APIService(BaseAPIService):
     usdInTomans = None  # not important, it is just a default value that will be updated at first api get from
     tetherInTomans = None
 
-    def __init__(self, url: str, source: str, max_desired_selection: int = 5, params=None, cache_file_name: str = None) -> None:
+    def __init__(self, url: str, source: str, params=None, cache_file_name: str = None) -> None:
         super(APIService, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
-        self.max_desired_selection = max_desired_selection
 
     @staticmethod
     def set_usd_price(value):
@@ -117,20 +116,20 @@ class APIService(BaseAPIService):
     def set_tether_tomans(value):
         APIService.tetherInTomans = float(value)
 
-    def get_desired_ones(self, desired_ones: list) -> List[str]:
+    def get_desired_ones(self, desired_ones: set) -> set:
         pass
 
-    def extract_api_response(self, desired_ones: list = None) -> Tuple[str, str]:
+    def extract_api_response(self, desired_ones: set = None) -> Tuple[str, str]:
         pass
 
-    async def get(self, desired_ones: list = None) -> Tuple[str, str]:
+    async def get(self, desired_ones: set = None) -> Tuple[str, str]:
         self.latest_data = await self.get_request()  # update latest
         return self.extract_api_response(desired_ones)
 
-    def get_latest(self, desired_ones: list = None) -> Tuple[str, str]:
+    def get_latest(self, desired_ones: set = None) -> Tuple[str, str]:
         return self.extract_api_response(desired_ones)
 
-    def get_desired_cache(self, desired_ones: list = None, force_reload: bool = False) -> str:
+    def get_desired_cache(self, desired_ones: set = None, force_reload: bool = False) -> str:
         """This is for the channel planner bot"""
         try:
             if force_reload or not self.latest_data:
