@@ -335,16 +335,11 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
-    stats = Account.statistics()
-    await update.message.reply_text(
-        f"""🔷 تعداد کاربران فعال ربات:
-
-🔹 امروز: {stats['daily']}
-🔹 دیروز: {stats['yesterday']}
-🔹 هفته اخیر: {stats['weekly']}
-🔹 ماه اخیر: {stats['monthly']}
-🔹 تعداد کل کاربران ربات: {stats['all']}"""
-    )
+    reports = botman.collect_bot_stats(account.language)
+    for report in reports:
+        await update.message.reply_text(
+            report, reply_markup=botman.get_admin_keyboard(account.language)
+        )
 
 
 async def cmd_send_plans_post(update: Update, context: CallbackContext):

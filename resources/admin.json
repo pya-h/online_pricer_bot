@@ -1,0 +1,112 @@
+{
+  "statistics": {
+    "title": {
+      "fa": "📊 آمار ربات:",
+      "en": "📊 Bot stats:"
+    },
+    "total": {
+      "all_users": {
+        "fa": "🔶 تعداد کل کاربران",
+        "en": "🔶 All Users"
+      },
+      "free": {
+        "fa": "🔴 کاربران بدون اشتراک",
+        "en": "🔴 Free Users"
+      },
+      "plus": {
+        "fa": "🟢 کاربران دارای اشتراک",
+        "en": "🟢 Premium Users"
+      }
+    },
+    "joins": {
+      "all_join_today": {
+        "fa": "🔹 کاربران جدید امروز",
+        "en": "🔹 Today's New Users"
+      },
+      "all_join_yesterday": {
+        "fa": "🔹 کاربران جدید دیروز",
+        "en": "🔹 Yesterday's New Users"
+      },
+      "all_join_lastweek": {
+        "fa": "🔹 کاربران جدید هفته گذشته",
+        "en": "🔹 Last Week's New Users"
+      },
+      "all_join_lastmonth": {
+        "fa": "🔹 کاربران جدید ماه گذشته",
+        "en": "🔹 Last Month's New Users"
+      }
+    },
+    "premiums": {
+      "plus_today": {
+        "fa": "🔸 کاربران پریمیوم امروز",
+        "en": "🔸 Today's Premium Users"
+      },
+      "plus_yesterday": {
+        "fa": "🔸 کاربران پریمیوم دیروز",
+        "en": "🔸 Yesterday's Premium Users"
+      },
+      "plus_lastweek": {
+        "fa": "🔸 کاربران پریمیوم هفته گذشته",
+        "en": "🔸 Last Week's Premium Users"
+      },
+      "plus_lastmonth": {
+        "fa": "🔸 کاربران پریمیوم ماه گذشته",
+        "en": "🔸 Last Month's Premium Users"
+      }
+    },
+    "interactions": {
+      "title": {
+        "fa": "📊 آمار تعامل با ربات:",
+        "en": "📊 Bot Interaction stats:"
+      },
+      "free": {
+        "free_int_today": {
+          "fa": "🔹 فعال های عادی امروز",
+          "en": "🔹 Today's Free Actives"
+        },
+        "free_int_yesterday": {
+          "fa": "🔹 فعال های عادی دیروز",
+          "en": "🔹 Yesterday's Free Actives"
+        },
+        "free_int_lastweek": {
+          "fa": "🔹 فعال های عادی هفته گذشته",
+          "en": "🔹 Last Week's Free Actives"
+        },
+        "free_int_lastmonth": {
+          "fa": "🔹 فعال های عادی ماه گذشته",
+          "en": "🔹 Last Month's Free Actives"
+        }
+      },
+      "premiums": {
+        "plus_int_today": {
+          "fa": "🔸 فعال های پریمیوم امروز",
+          "en": "🔸 Today's Premium Actives"
+        },
+        "plus_int_yesterday": {
+          "fa": "🔸 فعال های پریمیوم دیروز",
+          "en": "🔸 Yesterday's Premium Actives"
+        },
+        "plus_int_lastweek": {
+          "fa": "🔸 فعال های پریمیوم هفته گذشته",
+          "en": "🔸 Last Week's Premium Actives"
+        },
+        "plus_int_lastmonth": {
+          "fa": "🔸 فعال های پریمیوم ماه گذشته",
+          "en": "🔸 Last Month's Premium Actives"
+        }
+      }
+    },
+    "channels": {
+      "fa": "🌐 کانال های متصل",
+      "en": "🌐 Connected Channels"
+    },
+    "groups": {
+      "fa": "🌐 گروه های متصل",
+      "en": "🌐 Connected Groups"
+    },
+    "unknown": {
+        "fa": "❗️ نامعلوم",
+        "en": "❗️ Unknown"
+    }
+  }
+}

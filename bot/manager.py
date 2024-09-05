@@ -1255,7 +1255,10 @@ class BotMan:
         tags_gold = self.text("markets_gold", language)
         tags_crypto = self.text("markets_crypto", language)
 
-        res = filter(lambda x: x[1], [(tags_fiat, res_fiat), (tags_gold, res_gold), (tags_crypto, res_crypto)])
+        res = filter(
+            lambda x: x[1],
+            [(tags_fiat, res_fiat), (tags_gold, res_gold), (tags_crypto, res_crypto)],
+        )
         return "\n".join([f"{tag}\n{text}" for (tag, text) in res])
 
     def create_crypto_equalize_message(
@@ -1270,12 +1273,14 @@ class BotMan:
         res_crypto, _, absolute_irt = self.crypto_serv.equalize(
             unit, amount, target_cryptos
         )
-        res_fiat, res_gold = self.currency_serv.irt_to_currencies(
-            absolute_irt, unit, target_currencies
-        ) if target_currencies else (None, None)
+        res_fiat, res_gold = (
+            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies)
+            if target_currencies
+            else (None, None)
+        )
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:
-            return self.text('no_token_selected')
+            return self.text("no_token_selected")
         header = self.text("equalize_header", language) % (
             str(amount) if language != "fa" else persianify(amount),
             self.crypto_serv.coinsInPersian[unit],
@@ -1294,10 +1299,14 @@ class BotMan:
         res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(
             unit, amount, target_currencies
         )
-        res_crypto = self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos) if target_cryptos else None
+        res_crypto = (
+            self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
+            if target_cryptos
+            else None
+        )
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:
-            return self.text('no_token_selected')
+            return self.text("no_token_selected")
         header = self.text("equalize_header", language) % (
             str(amount) if language != "fa" else persianify(amount),
             self.currency_serv.currenciesInPersian[unit],
@@ -1571,7 +1580,11 @@ class BotMan:
                     await context.bot.send_message(chat_id=channel.id, text=post)
                     update_last_post_time_targets.append(channel.id)
                 except Exception as x:
-                    log(f'Failed sending post to channel: {channel.id}, title:{channel.title}, at its due.', x, category_name='Channels')                    
+                    log(
+                        f"Failed sending post to channel: {channel.id}, title:{channel.title}, at its due.",
+                        x,
+                        category_name="Channels",
+                    )
         if update_last_post_time_targets:
             Channel.updateLastPostTimes(update_last_post_time_targets)
 
@@ -1631,11 +1644,62 @@ class BotMan:
         Group.fastMemInstances.clear()
         BotSettings.refresh()  # this one calls gc.collect too
 
-    def collect_bot_stats(self):
-        db = Account.database()
-        account_stats = db.get_account_stats()
-        channels_count = db.get_channels_stats()
-        groups_count = db.get_groups_stats()
+    @staticmethod
+    def createReportByLabels(
+        stats: Dict[str, int],
+        all_labels: Dict[str, str],
+        desired_labels: Tuple[str],
+        word_unknown: str,
+        language: str = "fa",
+    ):
+        report = all_labels["title"][language] + "\n\n"
+        for part in desired_labels:
+            labels = all_labels[part]
+            for label in labels:
+                text = labels[label]
+                current: str | None = None
+                try:
+                    current = text[language]
+                    report += f"{current}: {stats[label]}\n"
+                except Exception as x:
+                    if current:
+                        report += f"{current}: {word_unknown}"
+            report += "\n"
+        return report
 
-        # TODO:L use stats to show the message
-        # try a way to obtain query results by their defined name in the sql queries.
+    def collect_bot_stats(self, language: str = "fa"):
+        db = Account.database()
+        account_stats = db.get_user_stats()
+        channels_count = db.get_active_channels_count()
+        groups_count = db.get_all_groups_stats()
+        admin_json = load_json("admin", "resources")
+        all_labels = admin_json["statistics"]
+        word_unknown: str | None
+        try:
+            word_unknown = all_labels["unknown"][language]
+        except:
+            word_unknown = "Unknown"
+        total_report = BotMan.createReportByLabels(
+            account_stats,
+            all_labels,
+            ("joins", "premiums", "total"),
+            word_unknown,
+            language,
+        )
+
+        try:
+            total_report += f"{all_labels['channels'][language]}: {channels_count if channels_count is not None else word_unknown}\n"
+        except Exception as x:
+            total_report += f"{all_labels['channels'][language]}: {word_unknown}\n"
+        try:
+            total_report += f"{all_labels['groups'][language]}: {groups_count if groups_count is not None else word_unknown}\n"
+        except Exception as x:
+            total_report += f"{all_labels['groups'][language]}: {word_unknown}\n"
+        interaction_report = BotMan.createReportByLabels(
+            account_stats,
+            all_labels["interactions"],
+            ("premiums", "free"),
+            word_unknown,
+            language,
+        )
+        return total_report, interaction_report

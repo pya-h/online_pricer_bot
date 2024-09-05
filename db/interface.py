@@ -944,50 +944,64 @@ class DatabaseInterface:
             return None
         return conn, cursor
 
-    def get_account_stats(self):
-        conn, cursor = self.set_timezone(close_connection=False, cursor_dictionary_param = True)
-        cursor.execute(
-            f"""SELECT 
-            COUNT(*) as all_users,
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL THEN 1 END) as free,
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL THEN 1 END) as plus,
+    def get_user_stats(self):
+        try:
+            conn, cursor = self.set_timezone(close_connection=False, cursor_dictionary_param = True)
+            cursor.execute(
+                f"""SELECT 
+                COUNT(*) as all_users,
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL THEN 1 END) as free,
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL THEN 1 END) as plus,
 
-            COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE})=DATE(NOW()) THEN 1 END) as all_join_today,
-            COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as all_join_yesterday,
-            COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as all_join_lastweek,
-            COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as all_join_lastmonth,
+                COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE})=DATE(NOW()) THEN 1 END) as all_join_today,
+                COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as all_join_yesterday,
+                COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as all_join_lastweek,
+                COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as all_join_lastmonth,
 
-            COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE})=DATE(NOW()) THEN 1 END) as plus_today,
-            COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_yesterday,
-            COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_lastweek,
-            COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_lastmonth,
-            
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction)=DATE(NOW()) THEN 1 END) as free_int_today,
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as free_int_yesterday,
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as free_int_lastweek,
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as free_int_lastmonth,
-            
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction)=DATE(NOW()) THEN 1 END) as plus_int_today,
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_int_yesterday,
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastweek,
-            COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastmonth
-    FROM {self.TABLE_ACCOUNTS};"""
-        )
-        result = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return result
+                COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE})=DATE(NOW()) THEN 1 END) as plus_today,
+                COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_yesterday,
+                COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_lastweek,
+                COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_lastmonth,
+                
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction)=DATE(NOW()) THEN 1 END) as free_int_today,
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as free_int_yesterday,
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as free_int_lastweek,
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as free_int_lastmonth,
+                
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction)=DATE(NOW()) THEN 1 END) as plus_int_today,
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_int_yesterday,
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastweek,
+                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastmonth
+        FROM {self.TABLE_ACCOUNTS};"""
+            )
+            result = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return result[0] if result else None
+        except:
+            pass
+        return None
 
-    def get_channels_stats(self):
-        return self.execute(
-            True,
-            f"SELECT COUNT(*) as all_channels FROM `{self.TABLE_CHANNELS}` WHERE {self.CHANNEL_IS_ACTIVE}=1;",
-        )
+    def get_active_channels_count(self):
+        try:
+            result = self.execute(
+                True,
+                f"SELECT COUNT(*) as all_channels FROM `{self.TABLE_CHANNELS}` WHERE {self.CHANNEL_IS_ACTIVE}=1;",
+            )
+            return result[0][0] if result and result[0] else 0
+        except:
+            pass
+        return 0
 
-    def get_groups_stats(self):
-        return self.execute(
-            True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;"
-        )
+    def get_all_groups_stats(self):
+        try:
+            result = self.execute(
+                True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;"
+            )
+            return result[0][0] if result and result[0] else 0
+        except:
+            pass
+        return 0
 
     def backup(
         self, single_table_name: str = None, output_filename_suffix: str = "backup"
