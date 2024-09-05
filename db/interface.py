@@ -204,6 +204,7 @@ class DatabaseInterface:
         res = cursor.execute(query, (tuple(param),))
         conn.commit()
         cursor.close()
+        conn.close()
         return res
 
     def setup(self):
@@ -932,11 +933,15 @@ class DatabaseInterface:
         )
         return res[0] if res else 0
 
-    def set_timezone(self, tz: str = "Asia/Tehran"):
+    def set_timezone(self, tz: str = "Asia/Tehran", return_connection: bool = True):
         conn = self.connection()
         cursor = conn.cursor()
         cursor.execute(f"SET time_zone=%s;", (tz, ))
         conn.commit()
+        if not return_connection:
+            cursor.close()
+            conn.close()
+            return None
         return conn, cursor
 
     def get_account_stats(self):
@@ -1006,16 +1011,16 @@ class DatabaseInterface:
                 "\n".join(rows),
             )
 
-    def __init__(self):
+    def __init__(self, pool_size: int = 10, connection_timeout: int = 60):
         self.__host = config("DATABASE_HOST", "localhost")
         self.__username = config("DATABASE_USERNAME", "root")
         self.__password = config("DATABASE_PASSWORD", "")
         self.__name = config("DATABASE_NAME", "database")
         self.__connection_pool = pooling.MySQLConnectionPool(
             pool_name="main_pool",
-            pool_size=7,
+            pool_size=pool_size,
             pool_reset_session=True,
-            connection_timeout=60,
+            connection_timeout=connection_timeout,
             host=self.__host,
             user=self.__username,
             password=self.__password,
