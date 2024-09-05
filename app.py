@@ -398,6 +398,10 @@ async def start_equalizing(
                 await func_send_message(
                     botman.error("invalid_symbol", account.language) % (unit,)
                 )
+            except Exception as x:
+                log("Error while equalizing", x, category_name="Calculator")
+                await func_send_message(botman.error("unknown", account.language))
+                account.change_state()
 
     account.change_state(
         Account.States.INPUT_EQUALIZER_AMOUNT, clear_cache=True

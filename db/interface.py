@@ -1,5 +1,5 @@
 import mysql.connector
-from mysql.connector import Error, MySQLConnection
+from mysql.connector import Error, pooling
 from datetime import datetime
 from tools.manuwriter import log, prepare_folder, fwrite_from_scratch
 from tools.mathematix import n_months_later, now_in_minute, tz_today
@@ -34,8 +34,8 @@ class DatabaseInterface:
         "id",
         "currencies",
         "cryptos",
-        "calc_cryptos",
         "calc_currencies",
+        "calc_cryptos",
         "username",
         "join_date",
         "last_interaction",
@@ -179,47 +179,37 @@ class DatabaseInterface:
         # cursor.execute(f'ALTER TABLE {self.TABLE_ACCOUNTS} ADD {self.ACCOUNT_LAST_INTERACTION} DATE')
         # connection.commit()
 
-    def connect(self):
-        self.__connection_instance = mysql.connector.connect(
-            host=self.__host,
-            user=self.__username,
-            password=self.__password,
-            database=self.__name,
-        )
-
-    @property
     def connection(self):
-        if (
-            not self.__connection_instance
-            or not self.__connection_instance.is_connected
-        ):
-            self.connect()
-
-        return self.__connection_instance
+        return self.__connection_pool.get_connection()
 
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesn't return result such as insert or delete"""
         result = None
-        cursor = self.connection.cursor()
+        conn = self.connection()
+        cursor = conn.cursor()
         r = cursor.execute(query, (*params,))
         if is_fetch_query:
             result = cursor.fetchall()
         else:
             result = cursor.lastrowid
-            self.connection.commit()
+            conn.commit()
         cursor.close()
+        conn.close()
+
         return result
 
     def bulk_query(self, query: str, param: list):
-        cursor = self.connection.cursor()
+        conn = self.connection()
+        cursor = conn.cursor()
         res = cursor.execute(query, (tuple(param),))
-        self.connection.commit()
+        conn.commit()
         cursor.close()
         return res
 
     def setup(self):
         try:
-            cursor = self.connection.cursor()
+            conn, cursor = self.set_timezone()
+
             table_exist_query_start = f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
             tables_common_charset = "CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci"
             # check if the table accounts was created
@@ -237,9 +227,6 @@ class DatabaseInterface:
                     f"Table {self.TABLE_ACCOUNTS} created successfully.",
                     category_name="DatabaseInfo",
                 )
-            else:
-                # write any migration needed in the function called below
-                self.migrate()
 
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_CHANNELS}'")
             if not cursor.fetchone():
@@ -307,10 +294,9 @@ class DatabaseInterface:
                 )
 
             log("OnlinePricer Database setup completed.", category_name="DatabaseInfo")
-            cursor.close()
 
-            cursor = self.set_timezone()
             cursor.close()
+            conn.close()
         except Error as ex:
             log(
                 "Failed setting up database, app cannot continue...",
@@ -391,7 +377,8 @@ class DatabaseInterface:
         )
 
     def update_account(self, account):
-        cursor = self.connection.cursor()
+        conn = self.connection()
+        cursor = conn.cursor()
 
         columns_to_set = ", ".join(
             [f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]]
@@ -423,6 +410,7 @@ class DatabaseInterface:
             )
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()
+                conn.close()
                 return
             columns: str = ", ".join(self.ACCOUNT_COLUMNS)
             cursor.execute(
@@ -449,8 +437,9 @@ class DatabaseInterface:
                 + account.__str__(),
                 category_name="DatabaseInfo",
             )
-        self.connection.commit()
+        conn.commit()
         cursor.close()
+        conn.close()
 
     def update_username(self, account):
         self.execute(
@@ -523,7 +512,8 @@ class DatabaseInterface:
 
     def update_channel(self, channel, old_chat_id: int = None):
         channel_id = old_chat_id or channel.id
-        cursor = self.connection.cursor()
+        conn = self.connection()
+        cursor = conn.cursor()
         columns_to_set = ", ".join([f"{field}=%s" for field in self.CHANNELS_COLUMNS])
         cursor.execute(
             f"UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s",
@@ -558,6 +548,7 @@ class DatabaseInterface:
             )
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()
+                conn.close()
                 return
             columns = ", ".join(self.CHANNELS_COLUMNS)
             cursor.execute(
@@ -583,8 +574,9 @@ class DatabaseInterface:
                 f"New channel with the id of [{channel.id}, {channel.name}] has been planned by: {channel.owner_id}",
                 category_name="DatabaseInfo",
             )
-        self.connection.commit()
+        conn.commit()
         cursor.close()
+        conn.close()
 
     def get_channel(self, channel_id: int):
         channels = self.execute(
@@ -641,7 +633,8 @@ class DatabaseInterface:
 
     def update_channels_last_post_times(self, id_list: List[int]):
         try:
-            return self.execute(False,
+            return self.execute(
+                False,
                 f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_LAST_POST_TIME}=%s WHERE {self.CHANNEL_ID} IN ({','.join(['%s'] * len(id_list))})",
                 now_in_minute(),
                 *id_list,
@@ -695,7 +688,8 @@ class DatabaseInterface:
 
     def update_group(self, group, old_chat_id: int = None):
         group_id = old_chat_id or group.id
-        cursor = self.connection.cursor()
+        conn = self.connection()
+        cursor = conn.cursor()
 
         columns_to_set = ", ".join([f"{field}=%s" for field in self.GROUPS_COLUMNS])
 
@@ -723,6 +717,7 @@ class DatabaseInterface:
             )
             if cursor.fetchone():  # Id exists but no update happened.
                 cursor.close()
+                conn.close()
                 return
             columns: str = ", ".join(self.GROUPS_COLUMNS)
             cursor.execute(
@@ -744,8 +739,9 @@ class DatabaseInterface:
                 "New group started using this bot with id=: " + group.__str__(),
                 category_name="DatabaseInfo",
             )
-        self.connection.commit()
+        conn.commit()
         cursor.close()
+        conn.close()
 
     def get_group(self, group_id: int):
         groups = self.execute(
@@ -930,20 +926,23 @@ class DatabaseInterface:
             from_time,
         )
 
-    def count_query(self, table: str, where: str | None= None):
-        res = self.execute(True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else '')
+    def count_query(self, table: str, where: str | None = None):
+        res = self.execute(
+            True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else ""
+        )
         return res[0] if res else 0
 
-
-    def set_timezone(self, tz: str = 'Asia/Tehran'):
-        cursor = self.connection.cursor()
-        cursor.execute(f"SET time_zone = {tz};")
-        self.connection.commit()
-        return cursor
+    def set_timezone(self, tz: str = "Asia/Tehran"):
+        conn = self.connection()
+        cursor = conn.cursor()
+        cursor.execute(f"SET time_zone=%s;", (tz, ))
+        conn.commit()
+        return conn, cursor
 
     def get_account_stats(self):
-        cursor = self.set_timezone()
-        cursor.execute(f'''SELECT 
+        conn, cursor = self.set_timezone()
+        cursor.execute(
+            f"""SELECT 
             COUNT(*) as all_users,
             COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL THEN 1 END) as free,
             COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL THEN 1 END) as plus,
@@ -967,14 +966,23 @@ class DatabaseInterface:
             COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_int_yesterday,
             COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastweek,
             COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastmonth
-    FROM {self.TABLE_ACCOUNTS};''')
-        return cursor.fetchall()
+    FROM {self.TABLE_ACCOUNTS};"""
+        )
+        result = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return result
 
     def get_channels_stats(self):
-        return self.execute(True, f"SELECT COUNT(*) as all_channels FROM `{self.TABLE_CHANNELS}` WHERE {self.CHANNEL_IS_ACTIVE}=1;")
-    
+        return self.execute(
+            True,
+            f"SELECT COUNT(*) as all_channels FROM `{self.TABLE_CHANNELS}` WHERE {self.CHANNEL_IS_ACTIVE}=1;",
+        )
+
     def get_groups_stats(self):
-        return self.execute(True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;")
+        return self.execute(
+            True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;"
+        )
 
     def backup(
         self, single_table_name: str = None, output_filename_suffix: str = "backup"
@@ -1003,5 +1011,15 @@ class DatabaseInterface:
         self.__username = config("DATABASE_USERNAME", "root")
         self.__password = config("DATABASE_PASSWORD", "")
         self.__name = config("DATABASE_NAME", "database")
-        self.__connection_instance: MySQLConnection = None
+        self.__connection_pool = pooling.MySQLConnectionPool(
+            pool_name="main_pool",
+            pool_size=7,
+            pool_reset_session=True,
+            connection_timeout=60,
+            host=self.__host,
+            user=self.__username,
+            password=self.__password,
+            database=self.__name,
+        )
+
         self.setup()
