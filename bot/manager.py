@@ -1624,3 +1624,12 @@ class BotMan:
         Account.fastMemInstances.clear()
         Group.fastMemInstances.clear()
         BotSettings.refresh()  # this one calls gc.collect too
+
+    def collect_bot_stats(self):
+        db = Account.database()
+        account_stats = db.get_account_stats()
+        channels_count = db.get_channels_stats()
+        groups_count = db.get_groups_stats()
+
+        # TODO:L use stats to show the message
+        # try a way to obtain query results by their defined name in the sql queries.
