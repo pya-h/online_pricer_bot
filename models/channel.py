@@ -3,7 +3,12 @@ from db.interface import DatabaseInterface
 from json import dumps as jsonify
 from bot.types import GroupInlineKeyboardButtonTemplate
 from typing import List, Dict, Set
-from tools.exceptions import MaxAddedCommunityException, UserNotAllowedException, InvalidInputException, NoSuchThingException
+from tools.exceptions import (
+    MaxAddedCommunityException,
+    UserNotAllowedException,
+    InvalidInputException,
+    NoSuchThingException,
+)
 from telegram import Chat
 from .account import Account
 from tools.mathematix import now_in_minute
@@ -141,16 +146,16 @@ class Channel:
         self.message_show_market_tags: bool = message_show_market_tags
         self.last_post_time: int | None = last_post_time  # don't forget database has this
         self.language = language
-        self.owner: Account | None = Account.getFast(self.owner_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
+        self.owner: Account | None = Account.getFast(
+            self.owner_id
+        )  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
     def create(self):
         if not self.owner:
             self.owner = Account.get(self.owner_id)
-        allowed_channels_count = BotSettings.get().EACH_COMMUNITY_COUNT_LIMIT(
-            self.owner.user_type
-        )
-        self.selected_coins = CryptoCurrencyService.getDefaultCryptos()
-        self.selected_currencies = NavasanService.getDefaultCurrencies()
+        allowed_channels_count = BotSettings.get().EACH_COMMUNITY_COUNT_LIMIT(self.owner.user_type)
+        self.selected_coins = CryptoCurrencyService.getUserDefaultCryptos()
+        self.selected_currencies = NavasanService.getUserDefaultCurrencies()
         db = Channel.database()
         channel_columns = db.get_channel(self.id)
         if channel_columns:
@@ -234,7 +239,9 @@ class Channel:
     def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
         try:
             self.selected_coins = (DatabaseInterface.stringToSet(trash["coins"]) if "coins" in trash else None) or set()
-            self.selected_currencies = (DatabaseInterface.stringToSet(trash["currencies"]) if "currencies" in trash else None) or set()
+            self.selected_currencies = (
+                DatabaseInterface.stringToSet(trash["currencies"]) if "currencies" in trash else None
+            ) or set()
             self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
             self.name = trash["name"] if "name" in trash else None
@@ -277,11 +284,21 @@ class Channel:
 
     @property
     def coins_as_str(self):
-        return ";".join(self.selected_coins) if self.selected_coins else ''
+        return ";".join(self.selected_coins) if self.selected_coins else ""
 
     @property
     def currencies_as_str(self):
-        return ";".join(self.selected_currencies) if self.selected_currencies else ''
+        return ";".join(self.selected_currencies) if self.selected_currencies else ""
+
+    @property
+    def description(self):
+        if not self.owner:
+            self.owner = Account.getById(self.owner_id, no_fastmem=True)
+        return {
+            "title": self.title,
+            "username": f"@{self.name}" or self.id,
+            "owner": self.owner,
+        }
 
     @staticmethod
     def get(channel_id):
@@ -352,7 +369,7 @@ class Channel:
         except Exception as x:
             manuwriter.log("Returning trashed channel failed!", x, "Channel")
         return None
-    
+
     @staticmethod
     def updateLastPostTimes(channel_ids: List[int]):
         if not channel_ids or not len(channel_ids):
@@ -365,14 +382,18 @@ class Channel:
 
     @staticmethod
     def selectActiveChannels(take: int = 10, page: int = 0):
-        channels_query_data = Channel.database().select_active_channels_with_owner(limit=take, offset=page*take)
+        channels_query_data = Channel.database().select_active_channels_with_owner(limit=take, offset=page * take)
         return list(
             map(
                 lambda row: Channel.extractQueryRowData(
-                    row[:len(DatabaseInterface.CHANNELS_COLUMNS)],
+                    row[: len(DatabaseInterface.CHANNELS_COLUMNS)],
                     no_fastmem=True,
-                    owner=Account.extractQueryRowData(row[len(DatabaseInterface.CHANNELS_COLUMNS):], no_fastmem=True),
+                    owner=Account.extractQueryRowData(row[len(DatabaseInterface.CHANNELS_COLUMNS) :], no_fastmem=True),
                 ),
                 channels_query_data,
             )
         )
+
+    @staticmethod
+    def getAtiveChannelsCount():
+        return Channel.database().get_active_channels_count()

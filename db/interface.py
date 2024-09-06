@@ -1000,10 +1000,20 @@ class DatabaseInterface:
             pass
         return 0
 
-    def get_groups_statistics(self):
+    def get_all_groups_count(self):
         try:
             result = self.execute(
                 True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;"
+            )
+            return result[0][0] if result and result[0] else 0
+        except:
+            pass
+        return 0
+
+    def get_premium_users_count(self):
+        try:
+            result = self.execute(
+                True, f"SELECT COUNT(*) as premium_users FROM `{self.TABLE_ACCOUNTS}` WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL ;"
             )
             return result[0][0] if result and result[0] else 0
         except:

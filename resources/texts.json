@@ -217,6 +217,14 @@
     "groups_list": {
       "fa": "لیست گروه ها",
       "en": "Groups List"
+    },
+    "next_page": {
+      "fa": "صفحه بعد",
+      "en": "Next Page"
+    },
+    "prev_page": {
+      "fa": "صفحه قبل",
+      "en": "Previous Page"
     }
   },
   "which_market": {
@@ -667,15 +675,15 @@
   },
   "announcement_fiat_header": {
     "fa": "📌 #قیمت_لحظه_ای #بازار_ارز",
-    "en": "📌 #Instant_Price #Currency_Market"
+    "en": "📌 #Currency_Market"
   },
   "announcement_gold_header": {
     "fa": "📌 #قیمت_لحظه_ای #بازار_طلا",
-    "en": "📌 #Instant_Price #Gold_Market"
+    "en": "📌 #Gold_Market"
   },
   "announcement_crypto_header": {
     "fa": "📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال",
-    "en": "📌 #Instant_Price #Cryptocurrency_Market"
+    "en": "📌 #Cryptocurrency_Market"
   },
   "announcement_post_interval": {
     "fa": "✅ بروزرسانی قیمت ها (هر %s دقیقه)",
@@ -728,5 +736,13 @@
   "no_token_selected": {
     "fa": "شما هیچ توکنی را انتخاب نکرده اید که محاسبات بر حسب آن ها انجام بگیرد! از طریق منو می توانید توکن های مورد علاقه خود را انتخاب کنید.",
     "en": "You have selected no tokens to do the calculations upon! You can select them with menu options."
+  },
+  "group_description_template": {
+    "fa": "شماره: %s:\nگروه: %s\nعنوان: %s\nمدیر: %s\nمدت اشترا; باقی مانده: %s روز",
+    "en": "Number %s\nGroup: %s\nTitle: %s\nOwner: %s\nPremium Days Remaining: %s days."
+  },
+  "channel_description_template": {
+    "fa": "شماره: %s:\nگروکانال: %s\nعنوان: %s\nمدیر: %s\nمدت اشترا; باقی مانده: %s روز",
+    "en": "Number %s\nChannel: %s\nTitle: %s\nOwner: %s\nPremium Days Remaining: %s days."
   }
 }

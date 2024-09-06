@@ -118,6 +118,12 @@ class NavasanService(CurrencyService):
         "SEKE_EMAMI",
         "SEKE_GERAMI",
     )
+    userDefaults = (
+        "USD",
+        "EUR",
+        "TALA_18",
+        "SEKE_EMAMI",
+    )
     persianShortcuts: Dict[str, str] | None = None
     currenciesInPersian = None
     nationalCurrenciesInPersian = None
@@ -127,6 +133,10 @@ class NavasanService(CurrencyService):
     @staticmethod
     def getDefaultCurrencies():
         return set(NavasanService.defaults)
+
+    @staticmethod
+    def getUserDefaultCurrencies():
+        return set(NavasanService.userDefaults)
 
     def __init__(
         self,

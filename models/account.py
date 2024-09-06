@@ -153,7 +153,7 @@ class Account:
         return self.cache[cache_key] if cache_key in self.cache else None
 
     def __str__(self) -> str:
-        return f"{self.username if self.username else self.chat_id}"
+        return f"@{self.username}" if self.username else str(self.chat_id)
 
     def authorization(self, args):
         if self.is_admin:
@@ -292,16 +292,19 @@ class Account:
 
     # user privileges:
     @property
-    def max_selection_count(self):
-        return 100 if self.is_premium else 10
+    def allowed_tokens_count(self):  # For now this is the same for all token selections
+        return self.botSettings.TOKENS_COUNT_LIMIT(self.user_type)
 
     @property
     def max_alarms_count(self):
-        return 10 if self.is_premium else 3
+        return self.botSettings.ALARM_COUNT_LIMIT(self.user_type)
 
-    @property
-    def max_channel_count(self):
-        return 1 if self.is_premium else 0
+    def description(self, only_names: bool = False):
+        return (
+            f"{self.__str__()} - {self.firstname} - {self.premium_days_remaining}"
+            if not only_names
+            else f"{self.__str__()} - {self.firstname}"
+        )
 
     @staticmethod
     def getPremiumUsers(from_date: datetime | None = None, even_possibles: bool = False):
@@ -372,8 +375,8 @@ class Account:
         return Account(
             chat_id=chat_id,
             join_date=tz_today(),
-            calc_cryptos=CryptoCurrencyService.getDefaultCryptos(),
-            calc_currencies=NavasanService.getDefaultCurrencies(),
+            calc_cryptos=CryptoCurrencyService.getUserDefaultCryptos(),
+            calc_currencies=NavasanService.getUserDefaultCurrencies(),
             no_fastmem=no_fastmem,
         ).save()
 
@@ -497,7 +500,9 @@ class Account:
 
     @staticmethod
     def selectAccounts(take: int = 20, page: int = 0, only_premiums: bool = True):
-        accounts_query_data = Account.database().select_accounts(limit=take, offset=take * page, only_premiums=only_premiums)
+        accounts_query_data = Account.database().select_accounts(
+            limit=take, offset=take * page, only_premiums=only_premiums
+        )
         return list(
             map(
                 lambda row: Account.extractQueryRowData(
@@ -507,3 +512,7 @@ class Account:
                 accounts_query_data,
             )
         )
+
+    @staticmethod
+    def getPremiumUsersCount():
+        return Account.database().get_premium_users_count()

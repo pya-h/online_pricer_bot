@@ -184,6 +184,16 @@ class Group:
         owner = Account.getById(self.owner_id)
         return owner.is_premium
 
+    @property
+    def description(self):
+        if not self.owner:
+            self.owner = Account.getById(self.owner_id, no_fastmem=True)
+        return {
+            "title": self.title,
+            "username": f"@{self.name}" or self.id,
+            "owner": self.owner,
+        }
+
     @staticmethod
     def get(group_id, no_fastmem: bool = False):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
@@ -259,8 +269,8 @@ class Group:
             group_title=chat.title,
             group_name=chat.username,
             owner=owner,
-            selected_coins=CryptoCurrencyService.getDefaultCryptos(),
-            selected_currencies=NavasanService.getDefaultCurrencies(),
+            selected_coins=CryptoCurrencyService.getUserDefaultCryptos(),
+            selected_currencies=NavasanService.getUserDefaultCurrencies(),
         )
         db.add_group(group)
         return group
@@ -334,3 +344,7 @@ class Group:
                 groups_query_data,
             )
         )
+
+    @staticmethod
+    def getAllGroupsCount():
+        return Group.database().get_all_groups_count()

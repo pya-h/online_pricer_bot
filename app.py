@@ -803,15 +803,43 @@ async def handle_action_queries(
                         await send_r_u_sure_to_downgrade_message(context, account, target_user)
                 case BotMan.QueryActions.LIST_ENTITY.value:
                     post_body: str = ''
+                    limit: int = 10
                     community, page = (int(x) for x in value.split(BotMan.CALLBACK_DATA_DELIMITER))
-                    match BotMan.CommunityType.which(community):
+                    comms: List[Channel | Group] | None = None
+                    total = 0
+                    match (community := BotMan.CommunityType.which(community)):
                         case BotMan.CommunityType.GROUP:
-                            groups = Group.selectGroups(page=page)
+                            comms = Group.selectGroups(page=page)
+                            total = Group.getAllGroupsCount()
                         case BotMan.CommunityType.CHANNEL:
-                            channels = Channel.selectActiveChannels(page=page)
+                            comms = Channel.selectActiveChannels(page=page)
+                            total = Channel.getAtiveChannelsCount()
                         case _:
                             accounts = Account.selectAccounts(page=page, only_premiums=True)
-                    
+                            total = Account.getPremiumUsersCount()
+                            limit *= 2
+                            for i, user in enumerate(accounts):
+                                post_body += f"{page*limit + i + 1}. {user.description()}\n"
+                    if comms:
+                        template = botman.text(f"{community.__str__()}_description_template", account.language)
+                        number = page * limit + 1
+                        for comm in comms:
+                            owner: Account = comm['owner']
+                            premium_days = owner.premium_days_remaining
+                            if account.language == 'fa':
+                                premium_days = persianify(premium_days)
+                                str_number = persianify(number)
+                            else:
+                                premium_days = str(premium_days)
+                                str_number = str(number)
+                            post_body += template % (str_number, comm['username'], comm['title'], owner.description(True), premium_days)
+                            number += 1
+                    buttons: dict = dict()
+                    if page:
+                        buttons[f"{community.value}{BotMan.CALLBACK_DATA_DELIMITER}{page - 1}"] = "prev_page"
+                    if (page + 1) * limit < total:
+                        buttons[f"{community.value}{BotMan.CALLBACK_DATA_DELIMITER}{page + 1}"] = "next_page"
+                    await query.message.edit_text(post_body, reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.LIST_ENTITY, buttons, account.language))
     await query.answer()
 
 
@@ -865,7 +893,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 await query.message.edit_text(" ".join([str(amount) for amount in input_amounts]) + f" {unit_symbol}")
                 await start_equalizing(query.message.reply_text, account, input_amounts, [unit_symbol])
             else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
-                # condition possible(or not.!)
+                # condition possible(or not.!
                 await query.message.edit_text(botman.text("enter_desired_price", account.language))
                 account.change_state(
                     Account.States.INPUT_EQUALIZER_AMOUNT,

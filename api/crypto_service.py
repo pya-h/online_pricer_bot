@@ -8,6 +8,7 @@ from typing import Union, List, Set
 class CryptoCurrencyService(APIService):
     coinsInPersian: Dict[str, str] | None = None
     defaults = ("BTC", "ETH", "USDT", "BNB", "SOL")
+    userDefaults = ("BTC", "USDT")
 
     def __init__(self, url: str, source: str, params=None, cache_file_name: str = None) -> None:
         super().__init__(url, source, params, cache_file_name)
@@ -17,6 +18,10 @@ class CryptoCurrencyService(APIService):
     @staticmethod
     def getDefaultCryptos():
         return set(CryptoCurrencyService.defaults)
+
+    @staticmethod
+    def getUserDefaultCryptos():
+        return set(CryptoCurrencyService.userDefaults)
 
     def get_desired_ones(self, desired_ones: List[str] | None):
         return desired_ones or set(CryptoCurrencyService.defaults)

@@ -1529,8 +1529,8 @@ class BotMan:
 
         if symbol:
             if symbol.upper() not in target_set:
-                if len(target_set) + len(related_set) >= account.max_selection_count:
-                    raise ValueError(account.max_selection_count)
+                if len(target_set) + len(related_set) >= account.allowed_tokens_count:
+                    raise ValueError(account.allowed_tokens_count)
 
                 target_set.add(symbol)
             else:
@@ -1673,7 +1673,7 @@ class BotMan:
         db = Account.database()
         account_stats = db.get_user_stats()
         channels_count = db.get_active_channels_count()
-        groups_count = db.get_groups_statistics()
+        groups_count = db.get_all_groups_count()
         admin_json = load_json("admin", "resources")
         all_labels = admin_json["statistics"]
         word_unknown: str | None
