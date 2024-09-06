@@ -104,7 +104,7 @@ async def say_youre_not_allowed(reply, account: Account):
 async def notify_source_change(context: CallbackContext):
     await context.bot.send_message(
         chat_id=botman.channels[0]["id"],
-        text=f"منبع قیمت ها به {botman.crypto_serv.Source} تغییر یافت.",
+        text=botman.text("price_source_is_cmc"), # for now only coin market cap is used as crypto source.
     )
 
 
@@ -324,9 +324,14 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
-    reports = botman.collect_bot_stats(account.language)
-    for report in reports:
-        await update.message.reply_text(report, reply_markup=botman.get_admin_keyboard(account.language))
+    total_report, interaction_report = botman.collect_bot_stats(account.language)
+    await update.message.reply_text(total_report, reply_markup=botman.get_admin_keyboard(account.language))
+
+    await update.message.reply_text(interaction_report, reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.LIST_ENTITY, {
+        f"{BotMan.CommunityType.GROUP.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "groups_list",
+        f"{BotMan.CommunityType.CHANNEL.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "channels_list",
+        f"{BotMan.CommunityType.NONE.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "premiums_list",
+    }, account.language))
 
 
 async def cmd_send_plans_post(update: Update, context: CallbackContext):
@@ -438,8 +443,8 @@ async def send_r_u_sure_to_downgrade_message(context: CallbackContext, admin_use
         reply_markup=botman.action_inline_keyboard(
             BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
             {
-                f"{target_user.chat_id}{BotMan.CALLBACK_DATA_JOINER}y": "yes",
-                f"{target_user.chat_id}{BotMan.CALLBACK_DATA_JOINER}n": "no",
+                f"{target_user.chat_id}{BotMan.CALLBACK_DATA_DELIMITER}y": "yes",
+                f"{target_user.chat_id}{BotMan.CALLBACK_DATA_DELIMITER}n": "no",
             },
         ),
     )
@@ -492,7 +497,7 @@ async def handle_action_queries(
             )
         case BotMan.QueryActions.SELECT_PRICE_UNIT.value:
             if value:
-                value = value.split(BotMan.CALLBACK_DATA_JOINER)
+                value = value.split(BotMan.CALLBACK_DATA_DELIMITER)
                 market = MarketOptions.which(int(value[0]))
                 symbol = value[1]
                 target_price = float(value[2])
@@ -606,7 +611,7 @@ async def handle_action_queries(
 
         case BotMan.QueryActions.TRIGGER_DATE_TAG.value | BotMan.QueryActions.TRIGGER_MARKET_TAGS.value:
             try:
-                community_type, enable = value.split(BotMan.CALLBACK_DATA_JOINER)
+                community_type, enable = value.split(BotMan.CALLBACK_DATA_DELIMITER)
                 if not community_type or not enable:
                     raise InvalidInputException("Invalid callback data.")
                 community_type, enable = int(community_type), int(enable)
@@ -632,7 +637,7 @@ async def handle_action_queries(
                 await query.message.edit_text(botman.text("operation_canceled", account.language))
                 account.change_state()
                 return
-            params = value.split(BotMan.CALLBACK_DATA_JOINER)
+            params = value.split(BotMan.CALLBACK_DATA_DELIMITER)
             community_type = BotMan.CommunityType.which(int(params[0]))
             if not community_type:
                 await query.message.edit_text(botman.text("data_invalid", account.language))
@@ -695,7 +700,7 @@ async def handle_action_queries(
             if not value and (action == BotMan.QueryActions.RECONNECT_COMMUNITY.value):
                 await query.message.edit_text(botman.text("operation_canceled", account.language))
                 return
-            params = value.split(BotMan.CALLBACK_DATA_JOINER)
+            params = value.split(BotMan.CALLBACK_DATA_DELIMITER)
             if (
                 not params
                 or (len(params) < 2)
@@ -775,7 +780,7 @@ async def handle_action_queries(
                         return
 
                     chat_id: int | None = None
-                    values = str(value).split(BotMan.CALLBACK_DATA_JOINER)
+                    values = str(value).split(BotMan.CALLBACK_DATA_DELIMITER)
                     try:
                         chat_id = int(values[0])
                     except:
@@ -796,6 +801,17 @@ async def handle_action_queries(
                         # downgrade user
                     else:
                         await send_r_u_sure_to_downgrade_message(context, account, target_user)
+                case BotMan.QueryActions.LIST_ENTITY.value:
+                    post_body: str = ''
+                    community, page = (int(x) for x in value.split(BotMan.CALLBACK_DATA_DELIMITER))
+                    match BotMan.CommunityType.which(community):
+                        case BotMan.CommunityType.GROUP:
+                            groups = Group.selectGroups(page=page)
+                        case BotMan.CommunityType.CHANNEL:
+                            channels = Channel.selectActiveChannels(page=page)
+                        case _:
+                            accounts = Account.selectAccounts(page=page, only_premiums=True)
+                    
     await query.answer()
 
 
@@ -1131,8 +1147,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                 reply_markup=botman.action_inline_keyboard(
                     BotMan.QueryActions.TRIGGER_DATE_TAG,
                     {
-                        f"{community_type}{BotMan.CALLBACK_DATA_JOINER}0": "no_hide_tag",
-                        f"{community_type}{BotMan.CALLBACK_DATA_JOINER}1": "yes_show_tag",
+                        f"{community_type}{BotMan.CALLBACK_DATA_DELIMITER}0": "no_hide_tag",
+                        f"{community_type}{BotMan.CALLBACK_DATA_DELIMITER}1": "yes_show_tag",
                     },
                     account.language,
                 ),
@@ -1151,8 +1167,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                 reply_markup=botman.action_inline_keyboard(
                     BotMan.QueryActions.TRIGGER_MARKET_TAGS,
                     {
-                        f"{community_type}{BotMan.CALLBACK_DATA_JOINER}0": "no_hide_tag",
-                        f"{community_type}{BotMan.CALLBACK_DATA_JOINER}1": "yes_show_tag",
+                        f"{community_type}{BotMan.CALLBACK_DATA_DELIMITER}0": "no_hide_tag",
+                        f"{community_type}{BotMan.CALLBACK_DATA_DELIMITER}1": "yes_show_tag",
                     },
                     account.language,
                 ),
@@ -1181,7 +1197,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS,
                     {
                         None: "cancel",
-                        f"{community_type}{BotMan.CALLBACK_DATA_JOINER}{section}": "remove",
+                        f"{community_type}{BotMan.CALLBACK_DATA_DELIMITER}{section}": "remove",
                     },
                     account.language,
                 ),
@@ -1242,7 +1258,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     BotMan.QueryActions.DISCONNECT_COMMUNITY,
                     {
                         None: "cancel",
-                        f"{community_type.value}{BotMan.CALLBACK_DATA_JOINER}{community.id}": "community_disconnect",
+                        f"{community_type.value}{BotMan.CALLBACK_DATA_DELIMITER}{community.id}": "community_disconnect",
                     },
                 ),
             )
@@ -1441,14 +1457,14 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                     symbol = props["symbol"]
                     market = props["market"]
-                    data_prefix = f"{market}{BotMan.CALLBACK_DATA_JOINER}{symbol}{BotMan.CALLBACK_DATA_JOINER}{price}"
+                    data_prefix = f"{market}{BotMan.CALLBACK_DATA_DELIMITER}{symbol}{BotMan.CALLBACK_DATA_DELIMITER}{price}"
                     await update.message.reply_text(
                         botman.text("whats_price_unit", account.language),
                         reply_markup=botman.action_inline_keyboard(
                             BotMan.QueryActions.SELECT_PRICE_UNIT,
                             {
-                                f"{data_prefix}{BotMan.CALLBACK_DATA_JOINER}irt": "price_unit_irt",
-                                f"{data_prefix}{BotMan.CALLBACK_DATA_JOINER}usd": "price_unit_usd",
+                                f"{data_prefix}{BotMan.CALLBACK_DATA_DELIMITER}irt": "price_unit_irt",
+                                f"{data_prefix}{BotMan.CALLBACK_DATA_DELIMITER}usd": "price_unit_usd",
                             },
                         ),
                     )
@@ -1462,6 +1478,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                     if not channel_chat:
                         # send a message to the channel or group and retrieve chat_id
                         try:
+                            if 'https://t.me/' in msg:
+                                msg = msg.replace('https://t.me/', '@')
                             response: Message = await context.bot.send_message(chat_id=msg, text="Test")
                             channel_chat = response.chat
                             await context.bot.delete_message(chat_id=channel_chat.id, message_id=response.message_id)

@@ -205,6 +205,18 @@
     "change_premium_plans": {
       "fa": "تغییر تعرفه ها",
       "en": "Change Premium Plans"
+    },
+    "premiums_list": {
+      "fa": "لیست کاربران دارای اشتراک",
+      "en": "Premium Users List"
+    },
+    "channels_list": {
+      "fa": "لیست کانال ها",
+      "en": "Channels List"
+    },
+    "groups_list": {
+      "fa": "لیست گروه ها",
+      "en": "Groups List"
     }
   },
   "which_market": {

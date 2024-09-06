@@ -1010,10 +1010,11 @@ class DatabaseInterface:
             pass
         return 0
 
-    def select_accounts(self, limit: int = 20, offset: int = 0):
+    def select_accounts(self, limit: int = 20, offset: int = 0, only_premiums: bool = True):
+        where: str = f"{self.ACCOUNT_PLUS_END_DATE} IS NOT NULL" if only_premiums else ""
         return self.execute(
             True,
-            f"SELECT * FROM `{self.TABLE_ACCOUNTS}` LIMIT {limit} OFFSET {offset}",
+            f"SELECT * FROM `{self.TABLE_ACCOUNTS}` {where} LIMIT {limit} OFFSET {offset}",
         )
 
     def select_groups_with_owner(self, limit: int = 10, offset: int = 0):

@@ -44,7 +44,7 @@ class BotMan:
     """This class is defined to collect all common and handy options, fields and features of online pricer bot"""
 
     MAXIMUM_ALLOWED_NUMBER_OF_INLINE_BUTTONS = 100
-    CALLBACK_DATA_JOINER = "&"
+    CALLBACK_DATA_DELIMITER = "&"
 
     class Commands(Enum):
         GET_FA = resourceman.mainkeyboard("get_prices", "fa")
@@ -179,6 +179,7 @@ class BotMan:
         DISCONNECT_COMMUNITY = 13
         REQUEST_RECONNECT_COMMUNITY = 14
         RECONNECT_COMMUNITY = 15
+        LIST_ENTITY = 16
         NONE = 0
 
         @staticmethod
@@ -205,6 +206,7 @@ class BotMan:
         QueryActions.DISCONNECT_COMMUNITY,
         QueryActions.REQUEST_RECONNECT_COMMUNITY,
         QueryActions.RECONNECT_COMMUNITY,
+        QueryActions.LIST_ENTITY,
     )
 
     class CommunityType(Enum):

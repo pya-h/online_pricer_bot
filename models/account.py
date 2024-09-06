@@ -496,8 +496,8 @@ class Account:
         return Account.database().schedule_messages_for_removal(posts)
 
     @staticmethod
-    def selectGroups(take: int = 20, page: int = 0):
-        accounts_query_data = Account.database().select_accounts(limit=take, offset=take * page)
+    def selectAccounts(take: int = 20, page: int = 0, only_premiums: bool = True):
+        accounts_query_data = Account.database().select_accounts(limit=take, offset=take * page, only_premiums=only_premiums)
         return list(
             map(
                 lambda row: Account.extractQueryRowData(
