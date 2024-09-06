@@ -42,7 +42,7 @@ class Account:
         CHANGE_GROUP = 16
         CHANGE_CHANNEL = 17
         ADMIN_CHANGE_PREMIUM_PLANS = 18
- 
+
         @staticmethod
         def which(value: int):
             try:
@@ -75,7 +75,9 @@ class Account:
     _database = None
     FastMemGarbageCollectionInterval = 5
     PreviousFastMemGarbageCollectionTime: int = now_in_minute()  # in minutes
-    fastMemInstances: dict = {}  # active accounts will cache into this; so there's no need to access database every time
+    fastMemInstances: dict = (
+        {}
+    )  # active accounts will cache into this; so there's no need to access database every time
     botSettings: BotSettings | None = None
 
     def no_interaction_duration(self):
@@ -125,7 +127,9 @@ class Account:
         if not Account.botSettings:
             Account.botSettings = BotSettings.get()
 
-    def change_state(self, state: States = States.NONE, cache_key: str = None, data: any = None, clear_cache: bool = False):
+    def change_state(
+        self, state: States = States.NONE, cache_key: str = None, data: any = None, clear_cache: bool = False
+    ):
         self.state = state
         self.add_cache(cache_key, data, clear_cache)
         self.save()
@@ -175,7 +179,7 @@ class Account:
     def premium_date(self):
         return self.plus_end_date.date() if isinstance(self.plus_end_date, datetime) else self.plus_end_date
 
-    @property        
+    @property
     def premium_days_remaining(self) -> int:
         try:
             if not self.plus_end_date:
@@ -183,24 +187,24 @@ class Account:
             delta = self.premium_date - tz_today().date()
             return delta.days
         except Exception as x:
-            log(f'Failed to calculate remaining days of user premium plan, chat_id={self.chat_id}', 'Premiums')
+            log(f"Failed to calculate remaining days of user premium plan, chat_id={self.chat_id}", "Premiums")
         return 0
 
     @property
     def desired_cryptos_as_str(self):
-        return ";".join(self.desired_cryptos) if self.desired_cryptos else ''
+        return ";".join(self.desired_cryptos) if self.desired_cryptos else ""
 
     @property
     def desired_currencies_as_str(self):
-        return ";".join(self.desired_currencies) if self.desired_currencies else ''
+        return ";".join(self.desired_currencies) if self.desired_currencies else ""
 
     @property
     def calc_cryptos_as_str(self):
-        return ";".join(self.calc_cryptos) if self.calc_cryptos else ''
+        return ";".join(self.calc_cryptos) if self.calc_cryptos else ""
 
     @property
     def calc_currencies_as_str(self):
-        return ";".join(self.calc_currencies) if self.calc_currencies else ''
+        return ";".join(self.calc_currencies) if self.calc_currencies else ""
 
     @property
     def is_premium(self) -> bool:
@@ -252,7 +256,7 @@ class Account:
 
     @property
     def name(self):
-        return f'@{self.username}' if self.username else self.firstname
+        return f"@{self.username}" if self.username else self.firstname
 
     @name.setter
     def name(self, chat: Chat):
@@ -301,7 +305,11 @@ class Account:
 
     @staticmethod
     def getPremiumUsers(from_date: datetime | None = None, even_possibles: bool = False):
-        rows = Account.database().get_premium_accounts(from_date if from_date else datetime.now()) if not even_possibles else Account.database().get_possible_premium_accounts()
+        rows = (
+            Account.database().get_premium_accounts(from_date if from_date else datetime.now())
+            if not even_possibles
+            else Account.database().get_possible_premium_accounts()
+        )
         return [Account.extractQueryRowData(row) for row in rows]
 
     @staticmethod
@@ -361,7 +369,13 @@ class Account:
             account = Account.extractQueryRowData(row, no_fastmem=no_fastmem)
             return account
 
-        return Account(chat_id=chat_id, join_date=tz_today(), calc_cryptos=CryptoCurrencyService.getDefaultCryptos(), calc_currencies=NavasanService.getDefaultCurrencies(), no_fastmem=no_fastmem).save()
+        return Account(
+            chat_id=chat_id,
+            join_date=tz_today(),
+            calc_cryptos=CryptoCurrencyService.getDefaultCryptos(),
+            calc_currencies=NavasanService.getDefaultCurrencies(),
+            no_fastmem=no_fastmem,
+        ).save()
 
     @staticmethod
     def getByUsername(username: str):
@@ -415,11 +429,15 @@ class Account:
                         if now.day == interaction_date.day + 1:
                             yesterday_actives += 1
                     elif now.month == interaction_date.month + 1:
-                        delta = now - (interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
+                        delta = now - (
+                            interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date
+                        )
                         if delta and delta.days == 1:
                             yesterday_actives += 1
                 elif now.year == interaction_date.year + 1 and now.month == 1 and interaction_date.month == 12:
-                    delta = now - (interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date)
+                    delta = now - (
+                        interaction_date.date() if isinstance(interaction_date, datetime) else interaction_date
+                    )
                     if delta and delta.days == 1:
                         yesterday_actives += 1
         return {
@@ -433,7 +451,9 @@ class Account:
     @staticmethod
     def getAdmins(just_hardcode_admin: bool = True):
         if not just_hardcode_admin:
-            admins = list(map(lambda data: Account.extractQueryRowData(data), Account.database().get_special_accounts()))
+            admins = list(
+                map(lambda data: Account.extractQueryRowData(data), Account.database().get_special_accounts())
+            )
             if HARDCODE_ADMIN_CHATID:
                 admins.insert(0, Account.getHardcodeAdmin()["account"])
             return admins
@@ -442,7 +462,9 @@ class Account:
         ]
 
     def mayInteract(self):
-        long_time_no_see = self.no_interaction_duration() >= Account.FastMemGarbageCollectionInterval # TODO: Check out unit: Needs to convert to secs?
+        long_time_no_see = (
+            self.no_interaction_duration() >= Account.FastMemGarbageCollectionInterval
+        )  # TODO: Check out unit: Needs to convert to secs?
         if long_time_no_see:
             self.save()
             return False
@@ -455,7 +477,9 @@ class Account:
             return
         Account.PreviousFastMemGarbageCollectionTime = now
 
-        Account.fastMemInstances = {chat_id: account for chat_id, account in Account.fastMemInstances.items() if account.mayInteract()}
+        Account.fastMemInstances = {
+            chat_id: account for chat_id, account in Account.fastMemInstances.items() if account.mayInteract()
+        }
         gc.collect()
 
     @staticmethod
@@ -466,7 +490,20 @@ class Account:
     @staticmethod
     def getFast(chat_id: int):
         return Account.fastMemInstances[chat_id] if chat_id in Account.fastMemInstances else None
-    
+
     @staticmethod
     def schedulePostsForRemoval(posts: List[Tuple[int, int, int, int]]):
         return Account.database().schedule_messages_for_removal(posts)
+
+    @staticmethod
+    def selectGroups(take: int = 20, page: int = 0):
+        accounts_query_data = Account.database().select_accounts(limit=take, offset=take * page)
+        return list(
+            map(
+                lambda row: Account.extractQueryRowData(
+                    row,
+                    no_fastmem=True,
+                ),
+                accounts_query_data,
+            )
+        )

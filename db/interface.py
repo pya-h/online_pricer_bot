@@ -933,10 +933,15 @@ class DatabaseInterface:
         )
         return res[0] if res else 0
 
-    def set_timezone(self, tz: str = "Asia/Tehran", close_connection: bool = True, cursor_dictionary_param: bool = False):
+    def set_timezone(
+        self,
+        tz: str = "Asia/Tehran",
+        close_connection: bool = True,
+        cursor_dictionary_param: bool = False,
+    ):
         conn = self.connection()
         cursor = conn.cursor(dictionary=cursor_dictionary_param)
-        cursor.execute(f"SET time_zone=%s;", (tz, ))
+        cursor.execute(f"SET time_zone=%s;", (tz,))
         conn.commit()
         if close_connection:
             cursor.close()
@@ -946,7 +951,9 @@ class DatabaseInterface:
 
     def get_user_stats(self):
         try:
-            conn, cursor = self.set_timezone(close_connection=False, cursor_dictionary_param = True)
+            conn, cursor = self.set_timezone(
+                close_connection=False, cursor_dictionary_param=True
+            )
             cursor.execute(
                 f"""SELECT 
                 COUNT(*) as all_users,
@@ -993,7 +1000,7 @@ class DatabaseInterface:
             pass
         return 0
 
-    def get_all_groups_stats(self):
+    def get_groups_statistics(self):
         try:
             result = self.execute(
                 True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;"
@@ -1002,6 +1009,24 @@ class DatabaseInterface:
         except:
             pass
         return 0
+
+    def select_accounts(self, limit: int = 20, offset: int = 0):
+        return self.execute(
+            True,
+            f"SELECT * FROM `{self.TABLE_ACCOUNTS}` LIMIT {limit} OFFSET {offset}",
+        )
+
+    def select_groups_with_owner(self, limit: int = 10, offset: int = 0):
+        return self.execute(
+            True,
+            f"SELECT * FROM `{self.TABLE_GROUPS}` JOIN {self.TABLE_ACCOUNTS} ON {self.TABLE_ACCOUNTS}.{self.ACCOUNT_ID} = {self.TABLE_GROUPS}.{self.GROUP_OWNER_ID} LIMIT {limit} OFFSET {offset}",
+        )
+
+    def select_active_channels_with_owner(self, limit: int = 10, offset: int = 0):
+        return self.execute(
+            True,
+            f"SELECT * FROM `{self.TABLE_CHANNELS} JOIN {self.TABLE_ACCOUNTS} ON {self.TABLE_ACCOUNTS}.{self.ACCOUNT_ID} = {self.TABLE_CHANNELS}.{self.CHANNEL_OWNER_ID} LIMIT {limit} OFFSET {offset}",
+        )
 
     def backup(
         self, single_table_name: str = None, output_filename_suffix: str = "backup"

@@ -1671,7 +1671,7 @@ class BotMan:
         db = Account.database()
         account_stats = db.get_user_stats()
         channels_count = db.get_active_channels_count()
-        groups_count = db.get_all_groups_stats()
+        groups_count = db.get_groups_statistics()
         admin_json = load_json("admin", "resources")
         all_labels = admin_json["statistics"]
         word_unknown: str | None

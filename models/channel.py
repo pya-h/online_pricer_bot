@@ -362,3 +362,17 @@ class Channel:
     @staticmethod
     def updateUserChannels(user: Account):
         Channel.database().update_user_channels_language(user)
+
+    @staticmethod
+    def selectActiveChannels(take: int = 10, page: int = 0):
+        channels_query_data = Channel.database().select_active_channels_with_owner(limit=take, offset=page*take)
+        return list(
+            map(
+                lambda row: Channel.extractQueryRowData(
+                    row[:len(DatabaseInterface.CHANNELS_COLUMNS)],
+                    no_fastmem=True,
+                    owner=Account.extractQueryRowData(row[len(DatabaseInterface.CHANNELS_COLUMNS):], no_fastmem=True),
+                ),
+                channels_query_data,
+            )
+        )
