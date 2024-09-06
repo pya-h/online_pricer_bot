@@ -63,6 +63,7 @@ def fwrite_from_scratch(fpath: str, fdata: str, source: str = None) -> bool:
 def load_json(json_filename: str, parent_folder: str = "."):
     if json_filename[-5:] != ".json":
         json_filename = f"{json_filename}.json"
+    str_json: str = "{}"
     try:
         json_file = open(f"./{parent_folder}/{json_filename}", "r")
         str_json = json_file.read()

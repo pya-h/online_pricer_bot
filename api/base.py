@@ -119,15 +119,15 @@ class APIService(BaseAPIService):
     def get_desired_ones(self, desired_ones: set) -> set:
         pass
 
-    def extract_api_response(self, desired_ones: set = None) -> Tuple[str, str]:
+    def extract_api_response(self, desired_ones: set = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
         pass
 
-    async def get(self, desired_ones: set = None) -> Tuple[str, str]:
+    async def get(self, desired_ones: set = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
         self.latest_data = await self.get_request()  # update latest
-        return self.extract_api_response(desired_ones)
+        return self.extract_api_response(desired_ones, language, no_price_message)
 
-    def get_latest(self, desired_ones: set = None) -> Tuple[str, str]:
-        return self.extract_api_response(desired_ones)
+    def get_latest(self, desired_ones: set = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+        return self.extract_api_response(desired_ones, language, no_price_message)
 
     def get_desired_cache(self, desired_ones: set = None, force_reload: bool = False) -> str:
         """This is for the channel planner bot"""

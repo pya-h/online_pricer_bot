@@ -1011,8 +1011,8 @@ class BotMan:
     def crypto_serv(self, value: CryptoCurrencyService):
         self.postman.crypto_service = value
 
-    async def next_post(self):
-        return await self.postman.create_post(channel_interval=self.main_plan_interval)
+    async def next_post(self, language: str = 'fa'):
+        return await self.postman.create_post(post_interval=self.main_plan_interval, language=language)
 
     def check_price_alarms(self) -> List[PriceAlarm]:
         """Checks all user alarms and finds alarms that has gone off"""
@@ -1271,10 +1271,10 @@ class BotMan:
         use_tags: bool = True,
     ):
         res_crypto, _, absolute_irt = self.crypto_serv.equalize(
-            unit, amount, target_cryptos
+            unit, amount, target_cryptos, (language := language.lower())
         )
         res_fiat, res_gold = (
-            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies)
+            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies, language)
             if target_currencies
             else (None, None)
         )
@@ -1283,7 +1283,7 @@ class BotMan:
             return self.text("no_token_selected")
         header = self.text("equalize_header", language) % (
             str(amount) if language != "fa" else persianify(amount),
-            self.crypto_serv.coinsInPersian[unit],
+            unit if language != 'fa' else self.crypto_serv.coinsInPersian[unit],
         )
         return f"{header}\n\n{post}"
 
@@ -1297,10 +1297,10 @@ class BotMan:
         use_tags: bool = True,
     ):
         res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(
-            unit, amount, target_currencies
+            unit, amount, target_currencies, (language := language.lower())
         )
         res_crypto = (
-            self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos)
+            self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos, language)
             if target_cryptos
             else None
         )
@@ -1309,7 +1309,7 @@ class BotMan:
             return self.text("no_token_selected")
         header = self.text("equalize_header", language) % (
             str(amount) if language != "fa" else persianify(amount),
-            self.currency_serv.currenciesInPersian[unit],
+            self.currency_serv.getEnglishTitle(unit) if language != 'fa' else self.currency_serv.currenciesInPersian[unit],
         )
         return f"{header}\n\n{post}"
 

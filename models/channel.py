@@ -355,6 +355,8 @@ class Channel:
     
     @staticmethod
     def updateLastPostTimes(channel_ids: List[int]):
+        if not channel_ids or not len(channel_ids):
+            return
         return Channel.database().update_channels_last_post_times(channel_ids)
 
     @staticmethod

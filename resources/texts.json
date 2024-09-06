@@ -363,7 +363,15 @@
     "failed_getting_currency_market": {
       "fa": "متاسفانه دریافت وضعیت بازار ارز و طلا ناموفق بود. لطفا لحظاتی دیگر تلاش کنید.",
       "en": "Unfurtunately getting currency/gold market data was unsuccessful. Please try again some time later."
+    },
+    "not_available_rn": {
+      "fa": "این دستور در حال حاضر در دسترس نیست!",
+      "en": "This command is not available for now!"
     }
+  },
+  "no_price_message": {
+    "fa": "❗️ قیمت دریافت نشد.",
+    "en": "❗️ Price not received."
   },
   "what_can_i_do": {
     "fa": "خب! چه کمکی از دستم بر میاد؟",

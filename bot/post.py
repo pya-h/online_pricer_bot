@@ -31,69 +31,80 @@ class PostMan:
         self.currency_service: NavasanService = NavasanService(self.source_arena_api_key, self.nobitex_api_token)
 
     def arrange_post_sections(
-        self, fiat_body: str, gold_body: str, crypto_body: str, channel_interval: float | None = None, language: str = "fa"
+        self, fiat_body: str, gold_body: str, crypto_body: str, post_interval: float | None = None, language: str = "fa"
     ) -> str:
         post: str = ""
-        if channel_interval:
-            channel_interval = str(int(channel_interval)) if language != 'fa' else persianify(channel_interval.__str__()) 
-            post = self.resourceman.text('announcement_post_interval', language) % (channel_interval, ) + "\n"
-        post += timestamp(language)
+        if post_interval:
+            post_interval = str(int(post_interval)) if language != 'fa' else persianify(post_interval.__str__()) 
+            post = self.resourceman.text('announcement_post_interval', language) % (post_interval, ) + "\n"
+        post += timestamp(language) + "\n"
         if fiat_body:
             tags_fiat = self.resourceman.text('announcement_fiat_header', language)
-            post += f"\n\n{tags_fiat}\n{fiat_body}"
+            post += f"\n{tags_fiat}\n{fiat_body}"
         if gold_body:
             tags_gold = self.resourceman.text('announcement_gold_header', language)
-            post += f"\n\n{tags_gold}\n{gold_body}"
+            post += f"\n{tags_gold}\n{gold_body}"
         if crypto_body:
             tags_crypto = self.resourceman.text('announcement_crypto_header', language)
-            post += f"\n\n{tags_crypto}\n{crypto_body}"
-        return f"{post}\n\n🆔 @Online_pricer\n🤖 @Online_pricer_bot"
+            post += f"\n{tags_crypto}\n{crypto_body}"
+        return f"{post}\n🆔 @Online_pricer\n🤖 @Online_pricer_bot"
+
+    def get_default_no_price_message(self, language: str = 'fa'):
+        no_price_message: str | None = None
+        try:
+            no_price_message = self.resourceman.text('no_price_message', language)
+        except:
+            pass
+        return no_price_message
 
     async def create_post(
         self,
         desired_coins: list = None,
         desired_currencies: list = None,
         get_most_recent_price: bool = True,
-        channel_interval: float | None = None,
+        post_interval: float | None = None,
         language: str = "fa",
     ) -> str:
         fiat = gold = cryptos = ""
+        no_price_message = self.get_default_no_price_message(language)
 
         try:
             if desired_currencies or (not desired_coins and not desired_currencies):
                 # this condition is for preventing default values, when user has selected just cryptos
                 fiat, gold = (
-                    await self.currency_service.get(desired_currencies)
+                    await self.currency_service.get(desired_currencies, language, no_price_message)
                     if get_most_recent_price
-                    else self.currency_service.get_latest(desired_currencies)
+                    else self.currency_service.get_latest(desired_currencies, language, no_price_message)
                 )
         except Exception as ex:
             log("Cannot obtain Currencies! ", ex, self.currency_service.Source)
-            fiat, gold = self.currency_service.get_latest(desired_currencies)
+            fiat, gold = self.currency_service.get_latest(desired_currencies, language, no_price_message)
         try:
             if desired_coins or (not desired_coins and not desired_currencies):
                 # this condition is for preventing default values, when user has selected just currencies
                 cryptos = (
-                    await self.crypto_service.get(desired_coins)
+                    await self.crypto_service.get(desired_coins, language, no_price_message)
                     if get_most_recent_price
-                    else self.crypto_service.get_latest(desired_coins)
+                    else self.crypto_service.get_latest(desired_coins, language, no_price_message)
                 )
         except Exception as ex:
             log("Cannot obtain Cryptos! ", ex, self.crypto_service.Source)
-            cryptos = self.crypto_service.get_latest(desired_coins)
-        return self.arrange_post_sections(fiat, gold, cryptos, channel_interval=channel_interval, language=language)
+            cryptos = self.crypto_service.get_latest(desired_coins, language, no_price_message)
+        return self.arrange_post_sections(fiat, gold, cryptos, post_interval=post_interval, language=language)
 
 
     def create_channel_post(self, channel: Channel):
         fiat = gold = crypto = ''
+        no_price_message = self.get_default_no_price_message(channel.language)
+
         try:
-            fiat, gold = self.currency_service.get_latest(channel.selected_currencies)
+            fiat, gold = self.currency_service.get_latest(channel.selected_currencies, channel.language, no_price_message)
         except:
             if channel.selected_currencies and not fiat and not gold:
                 fiat = self.resourceman.error('failed_getting_currency_market', channel.language)
 
         try:
-            crypto = self.crypto_service.get_latest(channel.selected_coins)
+            crypto = self.crypto_service.get_latest(channel.selected_coins, channel.language, no_price_message)
         except Exception as ex:
             if channel.selected_coins and not crypto:
                 crypto = self.resourceman.error('failed_getting_crypto_market', channel.language)

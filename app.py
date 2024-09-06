@@ -260,12 +260,12 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
-    botman.crypto_serv = CoinGeckoService()
+    # botman.crypto_serv = CoinGeckoService()
     await update.message.reply_text(
-        botman.text("price_source_changed_coingecko", account.language),
+        botman.error("not_available_rn", account.language),
         reply_markup=botman.get_admin_keyboard(account.language),
     )
-    await notify_source_change(context)
+    # await notify_source_change(context)
 
 
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):

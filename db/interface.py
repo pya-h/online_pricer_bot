@@ -641,7 +641,7 @@ class DatabaseInterface:
                 *id_list,
             )
         except Exception as ex:
-            print(ex)
+            pass
 
     def update_user_channels_language(self, owner):
         return self.execute(
