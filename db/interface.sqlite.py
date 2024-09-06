@@ -260,7 +260,7 @@ class DatabaseInterface:
         cursor.close()
         connection.close()
 
-    def update_username(self, account):
+    def update_account_names(self, account):
         self.execute(
             False,
             f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_USERNAME}=? WHERE {self.ACCOUNT_ID}=?",

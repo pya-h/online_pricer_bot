@@ -22,6 +22,7 @@ class DatabaseInterface:
         ACCOUNT_CALC_CURRENCIES,
         ACCOUNT_CALC_CRYPTOS,
         ACCOUNT_USERNAME,
+        ACCOUNT_FIRSTNAME,
         ACCOUNT_JOIN_DATE,
         ACCOUNT_LAST_INTERACTION,
         ACCOUNT_PLUS_START_DATE,
@@ -37,6 +38,7 @@ class DatabaseInterface:
         "calc_currencies",
         "calc_cryptos",
         "username",
+        "firstname",
         "join_date",
         "last_interaction",
         "plus_start_date",
@@ -211,15 +213,17 @@ class DatabaseInterface:
         try:
             conn, cursor = self.set_timezone(close_connection=False)
 
-            table_exist_query_start = f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
+            table_exist_query_start = (
+                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
+            )
             tables_common_charset = "CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci"
             # check if the table accounts was created
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_ACCOUNTS}'")
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY,"
-                    + f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), "
-                    + f"{self.ACCOUNT_JOIN_DATE} DATETIME, {self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_START_DATE} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} VARCHAR(256) DEFAULT NULL, "
+                    + f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), {self.ACCOUNT_FIRSTNAME} VARCHAR(256) DEFAULT NULL,"
+                    + f"{self.ACCOUNT_JOIN_DATE} DATETIME, {self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_START_DATE} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} JSON DEFAULT NULL, "
                     + f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) {tables_common_charset};"
                 )
                 # create table account
@@ -233,7 +237,7 @@ class DatabaseInterface:
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} BIGINT PRIMARY KEY, "
-                    + f"{self.CHANNEL_NAME} VARCHAR(32), {self.CHANNEL_TITLE} VARCHAR(128), {self.CHANNEL_INTERVAL} INTEGER NOT NULL,"
+                    + f"{self.CHANNEL_NAME} VARCHAR(32), {self.CHANNEL_TITLE} VARCHAR(256), {self.CHANNEL_INTERVAL} INTEGER NOT NULL,"
                     + f"{self.CHANNEL_IS_ACTIVE} TINYINT DEFAULT 0, {self.CHANNEL_COINS} VARCHAR(1024), {self.CHANNEL_CURRENCIES} VARCHAR(1024), "
                     + f"{self.CHANNEL_MESSAGE_HEADER} VARCHAR(256), {self.CHANNEL_MESSAGE_FOOTNOTE} VARCHAR(256), "
                     + f"{self.CHANNEL_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, "
@@ -251,7 +255,7 @@ class DatabaseInterface:
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} BIGINT PRIMARY KEY, "
-                    + f"{self.GROUP_NAME} VARCHAR(32), {self.GROUP_TITLE} VARCHAR(128),"
+                    + f"{self.GROUP_NAME} VARCHAR(32), {self.GROUP_TITLE} VARCHAR(256),"
                     + f"{self.GROUP_COINS} VARCHAR(1024), {self.GROUP_CURRENCIES} VARCHAR(1024), "
                     + f"{self.GROUP_MESSAGE_HEADER} VARCHAR(256), {self.GROUP_MESSAGE_FOOTNOTE} VARCHAR(256), "
                     + f"{self.GROUP_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, "
@@ -310,7 +314,9 @@ class DatabaseInterface:
             raise Exception("You must provide an Account to save")
         try:
             columns = ", ".join(self.ACCOUNT_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})"
+            query = (
+                f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})"
+            )
             self.execute(
                 False,
                 query,
@@ -320,6 +326,7 @@ class DatabaseInterface:
                 account.calc_currencies_as_str,
                 account.calc_cryptos_as_str,
                 account.username,
+                account.firstname,
                 account.join_date or tz_today(),
                 account.last_interaction,
                 account.plus_start_date,
@@ -353,9 +360,7 @@ class DatabaseInterface:
         rows = self.execute(True, f"SELECT ({by_column}) FROM {self.TABLE_ACCOUNTS}")
         return [row[0] for row in rows]  # just return a list of ids
 
-    def get_special_accounts(
-        self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1
-    ) -> list:
+    def get_special_accounts(self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
         return self.execute(
             True,
             f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s",
@@ -381,9 +386,7 @@ class DatabaseInterface:
         conn = self.connection()
         cursor = conn.cursor()
 
-        columns_to_set = ", ".join(
-            [f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]]
-        )
+        columns_to_set = ", ".join([f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]])
         cursor.execute(
             f"UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s",
             (
@@ -392,6 +395,7 @@ class DatabaseInterface:
                 account.calc_currencies_as_str,
                 account.calc_cryptos_as_str,
                 account.username,
+                account.firstname,
                 account.join_date,
                 account.last_interaction,
                 account.plus_start_date,
@@ -423,6 +427,7 @@ class DatabaseInterface:
                     account.calc_currencies_as_str,
                     account.calc_cryptos_as_str,
                     account.username,
+                    account.firstname,
                     account.join_date,
                     account.last_interaction,
                     account.plus_start_date,
@@ -434,19 +439,19 @@ class DatabaseInterface:
                 ),
             )
             log(
-                "New account started using this bot with chat_id=: "
-                + account.__str__(),
+                "New account started using this bot with chat_id=: " + account.__str__(),
                 category_name="DatabaseInfo",
             )
         conn.commit()
         cursor.close()
         conn.close()
 
-    def update_username(self, account):
+    def update_account_names(self, account):
         self.execute(
             False,
-            f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_USERNAME}=%s WHERE {self.ACCOUNT_ID}=%s",
+            f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_USERNAME}=%s, {self.ACCOUNT_FIRSTNAME}=%s WHERE {self.ACCOUNT_ID}=%s",
             account.username,
+            account.firstname,
             account.chat_id,
         )
 
@@ -460,9 +465,7 @@ class DatabaseInterface:
             account.plus_end_date,
             account.chat_id,
         )
-        log(
-            f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {account.plus_end_date}"
-        )
+        log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {account.plus_end_date}")
 
     def downgrade_account(self, account):
         account.plus_start_date = None
@@ -482,7 +485,9 @@ class DatabaseInterface:
             raise Exception("You must provide an Group to add")
         try:
             columns = ", ".join(self.CHANNELS_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})"
+            query = (
+                f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})"
+            )
             self.execute(
                 False,
                 query,
@@ -506,9 +511,7 @@ class DatabaseInterface:
                 category_name="DatabaseInfo",
             )
         except Exception as ex:
-            log(
-                f"Cannot save this channel:{channel}", ex, category_name="DatabaseError"
-            )
+            log(f"Cannot save this channel:{channel}", ex, category_name="DatabaseError")
             raise ex  # custom ex needed here too
 
     def update_channel(self, channel, old_chat_id: int = None):
@@ -901,9 +904,7 @@ class DatabaseInterface:
             id,
         )
 
-    def schedule_messages_for_removal(
-        self, messages_data: List[Tuple[int, int, int, int]]
-    ):
+    def schedule_messages_for_removal(self, messages_data: List[Tuple[int, int, int, int]]):
         return self.bulk_query(
             f"INSERT INTO {self.TABLE_TRASH} ({self.TRASH_TYPE}, {self.TRASH_OWNER_ID}, {self.TRASH_IDENTIFIER}, {self.TRASH_DELETE_AT}) VALUES (%s, %s, %s, %s)",
             messages_data,
@@ -928,9 +929,7 @@ class DatabaseInterface:
         )
 
     def count_query(self, table: str, where: str | None = None):
-        res = self.execute(
-            True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else ""
-        )
+        res = self.execute(True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else "")
         return res[0] if res else 0
 
     def set_timezone(
@@ -951,9 +950,7 @@ class DatabaseInterface:
 
     def get_user_stats(self):
         try:
-            conn, cursor = self.set_timezone(
-                close_connection=False, cursor_dictionary_param=True
-            )
+            conn, cursor = self.set_timezone(close_connection=False, cursor_dictionary_param=True)
             cursor.execute(
                 f"""SELECT 
                 COUNT(*) as all_users,
@@ -1002,9 +999,7 @@ class DatabaseInterface:
 
     def get_all_groups_count(self):
         try:
-            result = self.execute(
-                True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;"
-            )
+            result = self.execute(True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;")
             return result[0][0] if result and result[0] else 0
         except:
             pass
@@ -1013,7 +1008,8 @@ class DatabaseInterface:
     def get_premium_users_count(self):
         try:
             result = self.execute(
-                True, f"SELECT COUNT(*) as premium_users FROM `{self.TABLE_ACCOUNTS}` WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL ;"
+                True,
+                f"SELECT COUNT(*) as premium_users FROM `{self.TABLE_ACCOUNTS}` WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL ;",
             )
             return result[0][0] if result and result[0] else 0
         except:
@@ -1021,7 +1017,7 @@ class DatabaseInterface:
         return 0
 
     def select_accounts(self, limit: int = 20, offset: int = 0, only_premiums: bool = True):
-        where: str = f"{self.ACCOUNT_PLUS_END_DATE} IS NOT NULL" if only_premiums else ""
+        where: str = f"WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL" if only_premiums else ""
         return self.execute(
             True,
             f"SELECT * FROM `{self.TABLE_ACCOUNTS}` {where} LIMIT {limit} OFFSET {offset}",
@@ -1036,12 +1032,10 @@ class DatabaseInterface:
     def select_active_channels_with_owner(self, limit: int = 10, offset: int = 0):
         return self.execute(
             True,
-            f"SELECT * FROM `{self.TABLE_CHANNELS} JOIN {self.TABLE_ACCOUNTS} ON {self.TABLE_ACCOUNTS}.{self.ACCOUNT_ID} = {self.TABLE_CHANNELS}.{self.CHANNEL_OWNER_ID} LIMIT {limit} OFFSET {offset}",
+            f"SELECT * FROM `{self.TABLE_CHANNELS}` JOIN {self.TABLE_ACCOUNTS} ON {self.TABLE_ACCOUNTS}.{self.ACCOUNT_ID} = {self.TABLE_CHANNELS}.{self.CHANNEL_OWNER_ID} LIMIT {limit} OFFSET {offset}",
         )
 
-    def backup(
-        self, single_table_name: str = None, output_filename_suffix: str = "backup"
-    ):
+    def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
         tables = (
             [single_table_name]
             if single_table_name

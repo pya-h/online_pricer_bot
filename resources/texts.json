@@ -219,12 +219,12 @@
       "en": "Groups List"
     },
     "next_page": {
-      "fa": "صفحه بعد",
-      "en": "Next Page"
+      "fa": "< صفحه بعدی",
+      "en": "Next Page >"
     },
     "prev_page": {
-      "fa": "صفحه قبل",
-      "en": "Previous Page"
+      "fa": "صفحه قبلی >",
+      "en": "< Previous Page"
     }
   },
   "which_market": {
@@ -738,11 +738,15 @@
     "en": "You have selected no tokens to do the calculations upon! You can select them with menu options."
   },
   "group_description_template": {
-    "fa": "شماره: %s:\nگروه: %s\nعنوان: %s\nمدیر: %s\nمدت اشترا; باقی مانده: %s روز",
-    "en": "Number %s\nGroup: %s\nTitle: %s\nOwner: %s\nPremium Days Remaining: %s days."
+    "fa": "شماره: %s:\nگروه: %s\nعنوان: %s\nمدیر: %s\nنام مدیر: %s\nمدت اشتراک باقی مانده: %s روز\n\n",
+    "en": "Number %s\nGroup: %s\nTitle: %s\nOwner: %s\nOwner Firstname: %s\nPremium Days Remaining: %s days\n\n"
   },
   "channel_description_template": {
-    "fa": "شماره: %s:\nگروکانال: %s\nعنوان: %s\nمدیر: %s\nمدت اشترا; باقی مانده: %s روز",
-    "en": "Number %s\nChannel: %s\nTitle: %s\nOwner: %s\nPremium Days Remaining: %s days."
+    "fa": "شماره: %s:\nکانال: %s\nعنوان: %s\nمدیر: %s\nنام مدیر: %s\nمدت اشتراک باقی مانده: %s روز\n\n",
+    "en": "Number %s\nChannel: %s\nTitle: %s\nOwner: %s\nOwner Firstname: %s\nPremium Days Remaining: %s days\n\n"
+  },
+  "u_can_list_entities": {
+    "fa": "همچنین در صورت تمایل، ما می توانید با استفاده از گزینه های زیر، کاربران دارای اشتراک، گروه ها و کانال های متصل را به دلخواه لیسا کنید:",
+    "en": "Also you can list premium users, channels and groups if you wish:, with buttons provided below:"
   }
 }

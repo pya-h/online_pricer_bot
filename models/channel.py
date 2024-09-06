@@ -131,6 +131,7 @@ class Channel:
         message_show_date_tag: bool = False,
         message_show_market_tags: bool = True,
         language: str | None = "fa",
+        owner: Account | None = None
     ) -> None:
         self.owner_id: int = int(owner_id)
         self.id: int = int(channel_id)
@@ -146,7 +147,7 @@ class Channel:
         self.message_show_market_tags: bool = message_show_market_tags
         self.last_post_time: int | None = last_post_time  # don't forget database has this
         self.language = language
-        self.owner: Account | None = Account.getFast(
+        self.owner: Account | None = owner or Account.getFast(
             self.owner_id
         )  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
@@ -242,7 +243,6 @@ class Channel:
             self.selected_currencies = (
                 DatabaseInterface.stringToSet(trash["currencies"]) if "currencies" in trash else None
             ) or set()
-            self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
             self.name = trash["name"] if "name" in trash else None
             self.interval = trash["interval"] if "interval" in trash else 0
@@ -290,16 +290,6 @@ class Channel:
     def currencies_as_str(self):
         return ";".join(self.selected_currencies) if self.selected_currencies else ""
 
-    @property
-    def description(self):
-        if not self.owner:
-            self.owner = Account.getById(self.owner_id, no_fastmem=True)
-        return {
-            "title": self.title,
-            "username": f"@{self.name}" or self.id,
-            "owner": self.owner,
-        }
-
     @staticmethod
     def get(channel_id):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
@@ -320,7 +310,7 @@ class Channel:
         return list(map(Channel.extractQueryRowData, Channel.database().get_all_active_channels()))
 
     @staticmethod
-    def extractQueryRowData(row: tuple):
+    def extractQueryRowData(row: tuple, owner: Account | None = None):
         return Channel(
             channel_id=int(row[0]),
             channel_name=row[1],
@@ -336,6 +326,7 @@ class Channel:
             language=row[-3],
             last_post_time=int(row[-2] or 0),
             owner_id=int(row[-1]),
+            owner=owner,
         )
 
     @staticmethod
@@ -387,7 +378,6 @@ class Channel:
             map(
                 lambda row: Channel.extractQueryRowData(
                     row[: len(DatabaseInterface.CHANNELS_COLUMNS)],
-                    no_fastmem=True,
                     owner=Account.extractQueryRowData(row[len(DatabaseInterface.CHANNELS_COLUMNS) :], no_fastmem=True),
                 ),
                 channels_query_data,
@@ -395,5 +385,5 @@ class Channel:
         )
 
     @staticmethod
-    def getAtiveChannelsCount():
+    def getActiveChannelsCount():
         return Channel.database().get_active_channels_count()

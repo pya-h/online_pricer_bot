@@ -104,7 +104,7 @@ async def say_youre_not_allowed(reply, account: Account):
 async def notify_source_change(context: CallbackContext):
     await context.bot.send_message(
         chat_id=botman.channels[0]["id"],
-        text=botman.text("price_source_is_cmc"), # for now only coin market cap is used as crypto source.
+        text=botman.text("price_source_is_cmc"),  # for now only coin market cap is used as crypto source.
     )
 
 
@@ -324,14 +324,22 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
-    total_report, interaction_report = botman.collect_bot_stats(account.language)
-    await update.message.reply_text(total_report, reply_markup=botman.get_admin_keyboard(account.language))
+    reports = botman.collect_bot_stats(account.language)
+    for report in reports:
+        await update.message.reply_text(report, reply_markup=botman.get_admin_keyboard(account.language))
 
-    await update.message.reply_text(interaction_report, reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.LIST_ENTITY, {
-        f"{BotMan.CommunityType.GROUP.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "groups_list",
-        f"{BotMan.CommunityType.CHANNEL.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "channels_list",
-        f"{BotMan.CommunityType.NONE.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "premiums_list",
-    }, account.language))
+    await update.message.reply_text(
+        botman.text("u_can_list_entities", account.language),
+        reply_markup=botman.action_inline_keyboard(
+            BotMan.QueryActions.LIST_ENTITY,
+            {
+                f"{BotMan.CommunityType.GROUP.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "groups_list",
+                f"{BotMan.CommunityType.CHANNEL.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "channels_list",
+                f"{BotMan.CommunityType.NONE.value}{BotMan.CALLBACK_DATA_DELIMITER}0": "premiums_list",
+            },
+            account.language,
+        ),
+    )
 
 
 async def cmd_send_plans_post(update: Update, context: CallbackContext):
@@ -802,44 +810,55 @@ async def handle_action_queries(
                     else:
                         await send_r_u_sure_to_downgrade_message(context, account, target_user)
                 case BotMan.QueryActions.LIST_ENTITY.value:
-                    post_body: str = ''
+                    post_body: str = ""
                     limit: int = 10
                     community, page = (int(x) for x in value.split(BotMan.CALLBACK_DATA_DELIMITER))
-                    comms: List[Channel | Group] | None = None
+                    communities: List[Channel | Group] | None = None
                     total = 0
                     match (community := BotMan.CommunityType.which(community)):
                         case BotMan.CommunityType.GROUP:
-                            comms = Group.selectGroups(page=page)
+                            communities = Group.selectGroups(take=limit, page=page)
                             total = Group.getAllGroupsCount()
                         case BotMan.CommunityType.CHANNEL:
-                            comms = Channel.selectActiveChannels(page=page)
-                            total = Channel.getAtiveChannelsCount()
+                            communities = Channel.selectActiveChannels(take=limit, page=page)
+                            total = Channel.getActiveChannelsCount()
                         case _:
-                            accounts = Account.selectAccounts(page=page, only_premiums=True)
-                            total = Account.getPremiumUsersCount()
                             limit *= 2
+                            accounts = Account.selectAccounts(take=limit, page=page, only_premiums=True)
+                            total = Account.getPremiumUsersCount()
                             for i, user in enumerate(accounts):
-                                post_body += f"{page*limit + i + 1}. {user.description()}\n"
-                    if comms:
+                                post_body += f"{page*limit + i + 1}. {user.description}\n"
+                    if communities:
                         template = botman.text(f"{community.__str__()}_description_template", account.language)
                         number = page * limit + 1
-                        for comm in comms:
-                            owner: Account = comm['owner']
-                            premium_days = owner.premium_days_remaining
-                            if account.language == 'fa':
-                                premium_days = persianify(premium_days)
-                                str_number = persianify(number)
-                            else:
-                                premium_days = str(premium_days)
-                                str_number = str(number)
-                            post_body += template % (str_number, comm['username'], comm['title'], owner.description(True), premium_days)
+                        lang_is_persian = account.language.lower() == "fa"
+                        for comm in communities:
+                            premium_days = comm.owner.premium_days_remaining
+                            premium_days, str_number = (
+                                (persianify(premium_days), persianify(number))
+                                if lang_is_persian
+                                else (str(premium_days), str(number))
+                            )
+                            post_body += template % (
+                                str_number,
+                                comm.name,
+                                comm.title,
+                                str(comm.owner),
+                                comm.owner.firstname,
+                                premium_days,
+                            )
                             number += 1
                     buttons: dict = dict()
                     if page:
                         buttons[f"{community.value}{BotMan.CALLBACK_DATA_DELIMITER}{page - 1}"] = "prev_page"
                     if (page + 1) * limit < total:
                         buttons[f"{community.value}{BotMan.CALLBACK_DATA_DELIMITER}{page + 1}"] = "next_page"
-                    await query.message.edit_text(post_body, reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.LIST_ENTITY, buttons, account.language))
+                    await query.message.edit_text(
+                        post_body or "Nothing!",
+                        reply_markup=botman.action_inline_keyboard(
+                            BotMan.QueryActions.LIST_ENTITY, buttons, account.language
+                        ),
+                    )
     await query.answer()
 
 
@@ -1485,7 +1504,9 @@ async def handle_messages(update: Update, context: CallbackContext):
 
                     symbol = props["symbol"]
                     market = props["market"]
-                    data_prefix = f"{market}{BotMan.CALLBACK_DATA_DELIMITER}{symbol}{BotMan.CALLBACK_DATA_DELIMITER}{price}"
+                    data_prefix = (
+                        f"{market}{BotMan.CALLBACK_DATA_DELIMITER}{symbol}{BotMan.CALLBACK_DATA_DELIMITER}{price}"
+                    )
                     await update.message.reply_text(
                         botman.text("whats_price_unit", account.language),
                         reply_markup=botman.action_inline_keyboard(
@@ -1506,12 +1527,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                     if not channel_chat:
                         # send a message to the channel or group and retrieve chat_id
                         try:
-                            if 'https://t.me/' in msg:
-                                msg = msg.replace('https://t.me/', '@')
+                            if "https://t.me/" in msg:
+                                msg = msg.replace("https://t.me/", "@")
                             response: Message = await context.bot.send_message(chat_id=msg, text="Test")
                             channel_chat = response.chat
                             await context.bot.delete_message(chat_id=channel_chat.id, message_id=response.message_id)
-                        except:
+                        except Exception as x:
                             await update.message.reply_text(
                                 botman.error("bot_seems_not_admin", account.language),
                                 reply_markup=botman.action_inline_keyboard(
@@ -1520,7 +1541,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     in_main_keyboard=False,
                                 ),
                             )
-
+                            log("Something fucked while identifying the channel", x, category_name="Channels")
                     if channel_chat:
                         await botman.use_input_channel_chat_info(
                             update,

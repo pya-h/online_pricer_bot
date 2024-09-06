@@ -129,7 +129,6 @@ class Group:
             ) or set()
             self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
-            self.name = trash["name"] if "name" in trash else None
             msg_settings = trash["message"] if "message" in trash else None
             if msg_settings:
                 self.message_header = (

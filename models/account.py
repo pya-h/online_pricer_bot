@@ -103,6 +103,7 @@ class Account:
         cache=None,
         is_admin: bool = False,
         username: str | None = None,
+        firstname: str | None = None,
         no_fastmem: bool = False,
     ) -> None:
 
@@ -119,7 +120,7 @@ class Account:
         self.plus_start_date: datetime = plus_start_date
         self.plus_end_date: datetime = plus_end_date
         self.username: str | None = username[1:] if username and (username[0] == "@") else username
-        self.firstname: str | None = None
+        self.firstname: str | None = firstname
         self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
         if not no_fastmem:
             self.organize_fastmem()
@@ -274,7 +275,7 @@ class Account:
             data_changed = True
 
         if data_changed:
-            self.database().update_username(self)
+            self.database().update_account_names(self)
 
     @property
     def user_type(self) -> BotSettings.UserTypes:
@@ -299,12 +300,9 @@ class Account:
     def max_alarms_count(self):
         return self.botSettings.ALARM_COUNT_LIMIT(self.user_type)
 
-    def description(self, only_names: bool = False):
-        return (
-            f"{self.__str__()} - {self.firstname} - {self.premium_days_remaining}"
-            if not only_names
-            else f"{self.__str__()} - {self.firstname}"
-        )
+    @property
+    def description(self):
+        return f"{self.__str__()} - {self.firstname} - {self.premium_days_remaining}"
 
     @staticmethod
     def getPremiumUsers(from_date: datetime | None = None, even_possibles: bool = False):
@@ -329,7 +327,8 @@ class Account:
         calc_cryptos = row[4]
 
         username = row[5]
-        join_date = row[6]
+        firstname = row[6]
+        join_date = row[7]
         # add new rows here
         plus_start_date = row[-6]
         plus_end_date = row[-5]
@@ -348,6 +347,7 @@ class Account:
             calc_cryptos=DatabaseInterface.stringToSet(calc_cryptos),
             is_admin=is_admin,
             username=username,
+            firstname=firstname,
             language=language,
             state=state,
             cache=cache,
