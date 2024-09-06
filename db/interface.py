@@ -934,7 +934,7 @@ class DatabaseInterface:
 
     def set_timezone(
         self,
-        tz: str = "Asia/Tehran",
+        tz: str = "+03:30",
         close_connection: bool = True,
         cursor_dictionary_param: bool = False,
     ):
@@ -1056,10 +1056,10 @@ class DatabaseInterface:
             )
 
     def __init__(self, pool_size: int = 10, connection_timeout: int = 60):
-        self.__host = config("DATABASE_HOST", "localhost")
-        self.__username = config("DATABASE_USERNAME", "root")
-        self.__password = config("DATABASE_PASSWORD", "")
-        self.__name = config("DATABASE_NAME", "database")
+        self.__host = config("DATABASE_HOST")
+        self.__username = config("DATABASE_USERNAME")
+        self.__password = config("DATABASE_PASSWORD")
+        self.__name = config("DATABASE_NAME")
         self.__connection_pool = pooling.MySQLConnectionPool(
             pool_name="main_pool",
             pool_size=pool_size,

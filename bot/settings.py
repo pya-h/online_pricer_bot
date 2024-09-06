@@ -1,5 +1,5 @@
 from tools.manuwriter import load_json, fwrite_from_scratch
-from typing import Self, Dict
+from typing import Dict
 from enum import Enum
 import gc
 import json
@@ -14,7 +14,7 @@ class BotSettings:
         FA = 'fa'
         EN = 'en'
 
-    singleInstance: Self | None = None
+    singleInstance = None
 
     @staticmethod
     def init():
