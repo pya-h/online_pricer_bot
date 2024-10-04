@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  mysql:
+    build: .
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_ALLOW_EMPTY_PASSWORD: true
+      MYSQL_DATABASE: "online_pricer"
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
