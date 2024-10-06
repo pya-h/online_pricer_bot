@@ -91,7 +91,7 @@ class DatabaseInterface:
         return DatabaseInterface._instance
 
     @staticmethod
-    def stringToSet(string: str):
+    def stringToList(string: str):
         """Use this method to extract saved currency or cryptocurrency list strings to List again."""
         if not string:
             return None

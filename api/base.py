@@ -116,20 +116,20 @@ class APIService(BaseAPIService):
     def set_tether_tomans(value):
         APIService.tetherInTomans = float(value)
 
-    def get_desired_ones(self, desired_ones: set) -> set:
+    def get_desired_ones(self, desired_ones: List[str]) -> list:
         pass
 
-    def extract_api_response(self, desired_ones: set = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+    def extract_api_response(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
         pass
 
-    async def get(self, desired_ones: set = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+    async def get(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
         self.latest_data = await self.get_request()  # update latest
         return self.extract_api_response(desired_ones, language, no_price_message)
 
-    def get_latest(self, desired_ones: set = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+    def get_latest(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
         return self.extract_api_response(desired_ones, language, no_price_message)
 
-    def get_desired_cache(self, desired_ones: set = None, force_reload: bool = False) -> str:
+    def get_desired_cache(self, desired_ones: List[str] = None, force_reload: bool = False) -> str:
         """This is for the channel planner bot"""
         try:
             if force_reload or not self.latest_data:

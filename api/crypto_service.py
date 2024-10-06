@@ -1,7 +1,7 @@
 import coinmarketcapapi as cmc_api
 from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from typing import Union, List, Set
+from typing import Union, List
 
 
 # Parent Class
@@ -17,14 +17,14 @@ class CryptoCurrencyService(APIService):
 
     @staticmethod
     def getDefaultCryptos():
-        return set(CryptoCurrencyService.defaults)
+        return list(CryptoCurrencyService.defaults)
 
     @staticmethod
     def getUserDefaultCryptos():
-        return set(CryptoCurrencyService.userDefaults)
+        return list(CryptoCurrencyService.userDefaults)
 
     def get_desired_ones(self, desired_ones: List[str] | None):
-        return desired_ones or set(CryptoCurrencyService.defaults)
+        return desired_ones or list(CryptoCurrencyService.defaults)
 
     @staticmethod
     def find(words: List[str], index: int, word_count: int, max_name_word_count=4):
@@ -72,9 +72,9 @@ class CoinGeckoService(CryptoCurrencyService):
     def get_price_description_row(self, symbol: str, language: str = 'fa', no_price_message: str | None = None) -> str:
         pass
 
-    def extract_api_response(self, desired_coins: Set[str] | None = None, language: str = 'fa', no_price_message: str | None = None):
+    def extract_api_response(self, desired_coins: List[str] | None = None, language: str = 'fa', no_price_message: str | None = None):
         "Construct a text string consisting of each desired coin prices of a special user."
-        desired_coins: Set[str] = self.get_desired_ones(desired_coins)
+        desired_coins: List[str] = self.get_desired_ones(desired_coins)
         res = ""
         for symbol in desired_coins:   
             res += self.get_price_description_row(symbol.upper(), language.lower(), no_price_message)
@@ -126,7 +126,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             manuwriter.log("CoinMarketCap Api Failure", exception=ex, category_name="CoinMarketCapFailure")
         return result
 
-    def extract_api_response(self, desired_coins: set = None, language: str = 'fa', no_price_message: str | None = None):
+    def extract_api_response(self, desired_coins: List[str] = None, language: str = 'fa', no_price_message: str | None = None):
         """This function constructs a text string that in each row has the latest price of a
         cryptocurrency unit in two price units, dollars and Tomans"""
         desired_coins = self.get_desired_ones(desired_coins)
@@ -137,7 +137,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             res += self.get_price_description_row(coin.upper(), language, no_price_message)
         return res
 
-    def usd_to_cryptos(self, absolute_amount: float | int, source_unit_symbol: str, cryptos: Set[str] | None = None, language: str = 'fa') -> str:
+    def usd_to_cryptos(self, absolute_amount: float | int, source_unit_symbol: str, cryptos: List[str] | None = None, language: str = 'fa') -> str:
         cryptos = self.get_desired_ones(cryptos)
         res: str = ""
         coin_equalized_price: str
@@ -157,7 +157,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         return res
 
     def equalize(
-        self, source_unit_symbol: str, amount: float | int, desired_cryptos: Set[str] | None = None, language: str = 'fa'
+        self, source_unit_symbol: str, amount: float | int, desired_cryptos: List[str] | None = None, language: str = 'fa'
     ) -> Union[str, float | int, float | int]:
         """This function gets an amount param, alongside with a source_unit_symbol [and obviously with the users desired coins]
         and it returns a text string, that in each row of that, shows that amount equivalent in another cryptocurrency unit."""

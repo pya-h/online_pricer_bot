@@ -4,7 +4,7 @@ from datetime import datetime, date
 from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from tools.manuwriter import log
 from enum import Enum
-from typing import List, Dict, Set
+from typing import List, Dict
 from bot.types import SelectionListTypes
 from json import loads as json_parse, dumps as jsonify
 from telegram import Chat, User
@@ -91,10 +91,10 @@ class Account:
     def __init__(
         self,
         chat_id: int,
-        currencies: Set[str] = None,
-        cryptos: Set[str] = None,
-        calc_cryptos: Set[str] = None,
-        calc_currencies: Set[str] = None,
+        currencies: List[str] = None,
+        cryptos: List[str] = None,
+        calc_cryptos: List[str] = None,
+        calc_currencies: List[str] = None,
         language: str = "fa",
         join_date: datetime = None,
         plus_start_date: datetime = None,
@@ -108,10 +108,10 @@ class Account:
     ) -> None:
 
         self.chat_id: int = int(chat_id)
-        self.desired_cryptos: Set[str] = cryptos or set()
-        self.desired_currencies: Set[str] = currencies or set()
-        self.calc_cryptos: Set[str] = calc_cryptos or set()
-        self.calc_currencies: Set[str] = calc_currencies or set()
+        self.desired_cryptos: List[str] = cryptos or []
+        self.desired_currencies: List[str] = currencies or []
+        self.calc_cryptos: List[str] = calc_cryptos or []
+        self.calc_currencies: List[str] = calc_currencies or []
         self.last_interaction: datetime = tz_today()
         self.language: str = language
         self.state: Account.States = state
@@ -338,13 +338,13 @@ class Account:
         language = row[-1]
         return Account(
             chat_id=int(row[0]),
-            currencies=DatabaseInterface.stringToSet(currs),
-            cryptos=DatabaseInterface.stringToSet(cryptos),
+            currencies=DatabaseInterface.stringToList(currs),
+            cryptos=DatabaseInterface.stringToList(cryptos),
             join_date=join_date,
             plus_end_date=plus_end_date,
             plus_start_date=plus_start_date,
-            calc_currencies=DatabaseInterface.stringToSet(calc_currs),
-            calc_cryptos=DatabaseInterface.stringToSet(calc_cryptos),
+            calc_currencies=DatabaseInterface.stringToList(calc_currs),
+            calc_cryptos=DatabaseInterface.stringToList(calc_cryptos),
             is_admin=is_admin,
             username=username,
             firstname=firstname,

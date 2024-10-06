@@ -168,12 +168,12 @@ class DatabaseInterface:
         return DatabaseInterface._instance
 
     @staticmethod
-    def stringToSet(string: str) -> set:
+    def stringToList(string: str) -> list:
         """Use this method to extract saved currency or cryptocurrency list strings to List again."""
         if not string:
             return None
         string = string if string[-1] != ";" else string[:-1]
-        return set(string.split(";"))
+        return string.split(";")
 
     def migrate(self):
         """This method is like a migration thing, after any major update, this must be called to perform any required structural change in db"""

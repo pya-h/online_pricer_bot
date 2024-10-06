@@ -1,6 +1,6 @@
 from tools.mathematix import now_in_minute, from_now_time_diff
 from db.interface import DatabaseInterface
-from typing import Dict, Set
+from typing import Dict, List
 from telegram import Chat
 from .account import Account
 from tools.exceptions import (
@@ -35,8 +35,8 @@ class Group:
         group_id: int,
         group_name: str = None,
         group_title: str | None = None,
-        selected_coins: Set[str] | None = None,
-        selected_currencies: Set[str] | None = None,
+        selected_coins: List[str] | None = None,
+        selected_currencies: List[str] | None = None,
         message_header: str | None = None,
         message_footnote: str | None = None,
         message_show_date_tag: bool = False,
@@ -48,8 +48,8 @@ class Group:
         self.id: int = int(group_id)
         self.name: str | None = group_name  # username
         self.title: str = group_title
-        self.selected_coins: Set[str] = selected_coins or set()
-        self.selected_currencies: Set[str] = selected_currencies or set()
+        self.selected_coins: List[str] = selected_coins or []
+        self.selected_currencies: List[str] = selected_currencies or []
         self.message_header: str | None = message_header
         self.message_footnote: str | None = message_footnote
         self.message_show_date_tag: bool = message_show_date_tag
@@ -118,15 +118,15 @@ class Group:
     def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
         try:
             self.selected_coins = (
-                DatabaseInterface.stringToSet(trash["coins"])
+                DatabaseInterface.stringToList(trash["coins"])
                 if "coins" in trash
                 else None
-            ) or set()
+            ) or []
             self.selected_currencies = (
-                DatabaseInterface.stringToSet(trash["currencies"])
+                DatabaseInterface.stringToList(trash["currencies"])
                 if "currencies" in trash
                 else None
-            ) or set()
+            ) or []
             self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
             msg_settings = trash["message"] if "message" in trash else None
@@ -213,8 +213,8 @@ class Group:
             group_id=int(row[0]),
             group_name=row[1],
             group_title=row[2],
-            selected_coins=DatabaseInterface.stringToSet(row[3]),
-            selected_currencies=DatabaseInterface.stringToSet(row[4]),
+            selected_coins=DatabaseInterface.stringToList(row[3]),
+            selected_currencies=DatabaseInterface.stringToList(row[4]),
             message_header=row[5],
             message_footnote=row[6],
             message_show_date_tag=bool(row[7]),

@@ -5,7 +5,7 @@ from api.tether_service import AbanTetherService, NobitexService
 from tools.manuwriter import log, load_json
 from tools.mathematix import persianify
 from tools.exceptions import NoLatestDataException
-from typing import Union, Set
+from typing import Union, List
 
 
 def get_gold_names(filename: str):
@@ -132,11 +132,11 @@ class NavasanService(CurrencyService):
 
     @staticmethod
     def getDefaultCurrencies():
-        return set(NavasanService.defaults)
+        return list(NavasanService.defaults)
 
     @staticmethod
     def getUserDefaultCurrencies():
-        return set(NavasanService.userDefaults)
+        return list(NavasanService.userDefaults)
 
     def __init__(
         self,
@@ -169,7 +169,7 @@ class NavasanService(CurrencyService):
         ):
             NavasanService.loadPersianNames()
 
-    def get_desired_ones(self, selection: Set[str]) -> Set[str]:
+    def get_desired_ones(self, selection: List[str]) -> List[str]:
         return selection or set(NavasanService.defaults)
 
     @staticmethod
@@ -207,7 +207,7 @@ class NavasanService(CurrencyService):
 
     def extract_api_response(
         self,
-        desired_ones: Set[str] = None,
+        desired_ones: List[str] = None,
         language: str = "fa",
         no_price_message: str | None = None,
     ) -> str:
@@ -239,7 +239,7 @@ class NavasanService(CurrencyService):
 
     async def get(
         self,
-        desired_ones: Set[str] = None,
+        desired_ones: List[str] = None,
         language: str = "fa",
         no_price_message: str | None = None,
     ) -> str:
@@ -274,7 +274,7 @@ class NavasanService(CurrencyService):
         self,
         absolute_amount: float | int,
         source_unit_slug: str,
-        currencies: Set[str] = None,
+        currencies: List[str] = None,
         language: str = "fa",
     ) -> Tuple[str, str]:
         currencies = self.get_desired_ones(currencies)
@@ -306,7 +306,7 @@ class NavasanService(CurrencyService):
         self,
         source_unit_symbol: str,
         amount: float | int,
-        target_currencies: Set[str] | None = None,
+        target_currencies: List[str] | None = None,
         language: str = "fa",
     ) -> Union[str, float | int, float | int]:
         """This function gets an amount param, alongside with a source_unit_symbol [and obviously with the users desired coins]

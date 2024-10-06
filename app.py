@@ -1919,14 +1919,15 @@ def main():
     app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))
 
     print("Server is up and running...")
-    app.run_polling(poll_interval=0.2, timeout=10)
+    # app.run_polling(poll_interval=0.2, timeout=10)
 
     # Run as webhook
-    # app.run_webhook(
-    #     listen='127.0.0.1',
-    #     port=8000,
-    #     webhook_url='https://7490-2a05-f480-1c00-69d-5400-5ff-fe05-46a8.ngrok-free.app'
-    # )
+    app.run_webhook(
+        listen='0.0.0.0',
+        port=botman.bot_port,
+        webhook_url=f'{botman.host_url}/{botman.bot_tag}',
+        url_path=botman.bot_tag
+    )
 
 
 if __name__ == "__main__":

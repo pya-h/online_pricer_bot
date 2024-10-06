@@ -30,10 +30,13 @@ from tools.manuwriter import log, load_json
 from tools.mathematix import persianify, cut_and_separate, now_in_minute, tz_today
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
-from .types import GroupInlineKeyboardButtonTemplate, SelectionListTypes, MarketOptions
+from .types import (
+    GroupInlineKeyboardButtonTemplate,
+    SelectionListTypes,
+    MarketOptions,
+    ResourceManager,
+)
 from math import ceil as math_ceil
-from .types import ResourceManager
-from datetime import datetime
 from .settings import BotSettings
 
 
@@ -265,7 +268,9 @@ class BotMan:
         username: str = config("BOT_USERNAME")
         self.username = f"@{username}"
         self.url = f"https://t.me/{username}"
-
+        self.host_url = config('HOST_URL')
+        self.bot_tag = config('BOT_TAG')
+        self.bot_port = config('BOT_PORT')
         CMC_API_KEY = config("COINMARKETCAP_API_KEY")
         CURRENCY_TOKEN = config("CURRENCY_TOKEN")
         NOBITEX_TOKEN = config("NOBITEX_TOKEN")
@@ -665,7 +670,7 @@ class BotMan:
         list_type: Enum,
         button_type: Enum,
         choices: Dict[str, str],
-        selected_ones: List[str] | Set[str] = None,
+        selected_ones: List[str] | List[str] = None,
         page: int = 0,
         max_page_buttons: int = 90,
         full_names: bool = False,
@@ -699,7 +704,7 @@ class BotMan:
             )
 
         if not selected_ones:
-            selected_ones = set()
+            selected_ones = []
         buttons: List[List[InlineKeyboardButton]] = []
         pagination_menu: List[InlineKeyboardButton] | None = None
         buttons_count = len(choices)
@@ -1013,8 +1018,10 @@ class BotMan:
     def crypto_serv(self, value: CryptoCurrencyService):
         self.postman.crypto_service = value
 
-    async def next_post(self, language: str = 'fa'):
-        return await self.postman.create_post(post_interval=self.main_plan_interval, language=language)
+    async def next_post(self, language: str = "fa"):
+        return await self.postman.create_post(
+            post_interval=self.main_plan_interval, language=language
+        )
 
     def check_price_alarms(self) -> List[PriceAlarm]:
         """Checks all user alarms and finds alarms that has gone off"""
@@ -1233,9 +1240,8 @@ class BotMan:
 
                 if not slug:
                     slug, word_count = finder.search_around(
-                        self.currency_serv.persianShortcuts
+                        self.currency_serv.persianShortcuts, i
                     )
-
                 if slug:
                     coef = self.extract_coef(prev_word)
                     currency_amounts.add(f"{coef} {slug}")
@@ -1267,8 +1273,8 @@ class BotMan:
         self,
         unit: str,
         amount: float | int,
-        target_cryptos: Set[str] | None,
-        target_currencies: Set[str] | None,
+        target_cryptos: List[str] | None,
+        target_currencies: List[str] | None,
         language: str = "fa",
         use_tags: bool = True,
     ):
@@ -1276,7 +1282,9 @@ class BotMan:
             unit, amount, target_cryptos, (language := language.lower())
         )
         res_fiat, res_gold = (
-            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies, language)
+            self.currency_serv.irt_to_currencies(
+                absolute_irt, unit, target_currencies, language
+            )
             if target_currencies
             else (None, None)
         )
@@ -1285,7 +1293,7 @@ class BotMan:
             return self.text("no_token_selected")
         header = self.text("equalize_header", language) % (
             str(amount) if language != "fa" else persianify(amount),
-            unit if language != 'fa' else self.crypto_serv.coinsInPersian[unit],
+            unit if language != "fa" else self.crypto_serv.coinsInPersian[unit],
         )
         return f"{header}\n\n{post}"
 
@@ -1293,8 +1301,8 @@ class BotMan:
         self,
         unit: str,
         amount: float | int,
-        target_cryptos: Set[str] | None,
-        target_currencies: Set[str] | None,
+        target_cryptos: List[str] | None,
+        target_currencies: List[str] | None,
         language: str = "fa",
         use_tags: bool = True,
     ):
@@ -1302,7 +1310,9 @@ class BotMan:
             unit, amount, target_currencies, (language := language.lower())
         )
         res_crypto = (
-            self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos, language)
+            self.crypto_serv.usd_to_cryptos(
+                absolute_usd, unit, target_cryptos, language
+            )
             if target_cryptos
             else None
         )
@@ -1311,7 +1321,11 @@ class BotMan:
             return self.text("no_token_selected")
         header = self.text("equalize_header", language) % (
             str(amount) if language != "fa" else persianify(amount),
-            self.currency_serv.getEnglishTitle(unit) if language != 'fa' else self.currency_serv.currenciesInPersian[unit],
+            (
+                self.currency_serv.getEnglishTitle(unit)
+                if language != "fa"
+                else self.currency_serv.currenciesInPersian[unit]
+            ),
         )
         return f"{header}\n\n{post}"
 
@@ -1485,8 +1499,8 @@ class BotMan:
         market: MarketOptions,
         symbol: str | None = None,
     ):
-        target_set: Set[str]
-        related_set: Set[str]
+        target_set: List[str]
+        related_set: List[str]
         save_func: callable = account.save
 
         match list_type:
@@ -1532,7 +1546,7 @@ class BotMan:
                 if len(target_set) + len(related_set) >= account.allowed_tokens_count:
                     raise ValueError(account.allowed_tokens_count)
 
-                target_set.add(symbol)
+                target_set.append(symbol)
             else:
                 target_set.remove(symbol)
             save_func()
