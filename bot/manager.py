@@ -673,7 +673,6 @@ class BotMan:
         selected_ones: List[str] | List[str] = None,
         page: int = 0,
         max_page_buttons: int = 90,
-        full_names: bool = False,
         close_button: bool = False,
         language: str = "fa",
     ):
@@ -708,6 +707,7 @@ class BotMan:
         buttons: List[List[InlineKeyboardButton]] = []
         pagination_menu: List[InlineKeyboardButton] | None = None
         buttons_count = len(choices)
+
         if buttons_count > max_page_buttons:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
             if idx_last > buttons_count:
@@ -750,7 +750,7 @@ class BotMan:
         i: int = 0
         row: List[InlineKeyboardButton] = []
         for choice in choice_keys:
-            btn_text = choice if not full_names else choices[choice]
+            btn_text = choice if language != 'fa' else choices[choice]
             i += 1 + int(len(btn_text) / 5)
             if choice in selected_ones:
                 btn_text += "✅"
@@ -773,7 +773,7 @@ class BotMan:
             buttons.append(
                 [
                     InlineKeyboardButton(
-                        self.resourceman.keyboard("close"),
+                        self.resourceman.keyboard("close", language),
                         callback_data=choice_callback_data(page=-1),
                     )
                 ]

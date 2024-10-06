@@ -75,8 +75,8 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
                 )
             ),
             BotMan.handleMarketSelection(account, list_type, market),
-            full_names=market != MarketOptions.CRYPTO,
             close_button=True,
+            language=account.language
         ),
     )
 
@@ -876,6 +876,10 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         return
 
     # check if user is changing list page:
+    # FIXME: Add a message that says its the last page or the first page
+
+    # FIXME: Page index log is showing 0 only
+
     page: int
     try:
         page = int(data["pg"])
@@ -888,7 +892,6 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         await query.message.edit_text(botman.text("list_updated", account.language))
         return
 
-    # FIXME: Page index log is showing 0 only
     if data["v"] and data["v"][0] == "$":
         if data["v"][1] == "#":
             pages_count = int(data["v"][2:]) + 1
@@ -921,6 +924,22 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 )
             return
         case SelectionListTypes.ALARM:
+            if 'v' not in data or not data['v']:
+                await query.message.edit_reply_markup(
+                    reply_markup=botman.inline_keyboard(
+                        list_type,
+                        market,
+                        (
+                            botman.crypto_serv.coinsInPersian,
+                            botman.currency_serv.nationalCurrenciesInPersian,
+                            botman.currency_serv.goldsInPersian,
+                        )[market.value - 1],
+                        page=page,
+                        language=account.language,
+                        close_button=True,
+                    )
+                )
+                return
             symbol = data["v"].upper()
             account.change_state(
                 Account.States.CREATE_ALARM,
@@ -956,7 +975,6 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 selection_list,
                 page=page,
                 language=account.language,
-                full_names=market != MarketOptions.CRYPTO,
                 close_button=True,
             )
         )
