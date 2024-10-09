@@ -46,9 +46,7 @@ class CurrencyService(APIService):
         token: str,
         tether_service_token: str,
     ) -> None:
-        super(CurrencyService, self).__init__(
-            url=url, source=source, cache_file_name=cache_file_name
-        )
+        super(CurrencyService, self).__init__(url=url, source=source, cache_file_name=cache_file_name)
         self.token = token
         self.tether_service_token = tether_service_token
 
@@ -186,15 +184,11 @@ class NavasanService(CurrencyService):
             NavasanService.goldsInPersian,
             NavasanService.goldsInEnglish,
         ) = get_persian_currency_names()
-        NavasanService.goldsInPersian = dict(
-            GoldService.goldsInPersian, **NavasanService.goldsInPersian
-        )
+        NavasanService.goldsInPersian = dict(GoldService.goldsInPersian, **NavasanService.goldsInPersian)
         NavasanService.currenciesInPersian = dict(
             NavasanService.nationalCurrenciesInPersian, **NavasanService.goldsInPersian
         )
-        NavasanService.goldsInEnglish = dict(
-            GoldService.goldsInEnglish, **NavasanService.goldsInEnglish
-        )
+        NavasanService.goldsInEnglish = dict(GoldService.goldsInEnglish, **NavasanService.goldsInEnglish)
         NavasanService.persianShortcuts = get_shortcuts()
 
     @staticmethod
@@ -216,9 +210,7 @@ class NavasanService(CurrencyService):
         res_gold = ""
 
         for slug in desired_ones:
-            row = self.get_price_description_row(
-                slug.lower(), language.lower(), no_price_message
-            )
+            row = self.get_price_description_row(slug.lower(), language.lower(), no_price_message)
             if slug not in NavasanService.goldsInPersian:
                 res_curr += f"🔸 {row}\n"
             else:
@@ -320,17 +312,15 @@ class NavasanService(CurrencyService):
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         try:
-            absolute_amount: float = amount * float(
-                self.latest_data[source_unit_symbol.lower()]["value"]
+            absolute_amount: float = amount * (
+                float(self.latest_data[source_unit_symbol.lower()]["value"])
+                if source_unit_symbol != self.tomanSymbol
+                else 1
             )
         except:
-            raise ValueError(
-                f"{source_unit_symbol} has not been received from the API."
-            )
+            raise ValueError(f"{source_unit_symbol} has not been received from the API.")
         res_fiat, res_gold = (
-            self.irt_to_currencies(
-                absolute_amount, source_unit_symbol, target_currencies, language
-            )
+            self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies, language)
             if target_currencies
             else (None, None)
         )
@@ -365,15 +355,9 @@ class NavasanService(CurrencyService):
         return self.to_irt_exact(usd_price) if price_unit != "usd" else usd_price
 
     def getEnglishTitle(symbol: str) -> str:
-        return (
-            symbol
-            if symbol not in NavasanService.goldsInEnglish
-            else NavasanService.goldsInEnglish[symbol]
-        )
+        return symbol if symbol not in NavasanService.goldsInEnglish else NavasanService.goldsInEnglish[symbol]
 
-    def get_price_description_row(
-        self, symbol: str, language: str = "fa", no_price_message: str | None = None
-    ) -> str:
+    def get_price_description_row(self, symbol: str, language: str = "fa", no_price_message: str | None = None) -> str:
         symbol_up = symbol.upper()
         try:
             price: float
@@ -387,16 +371,13 @@ class NavasanService(CurrencyService):
             else:
                 usd, toman = self.rounded_prices(price)
             if language != "fa":
-                return (
-                    f"{NavasanService.getEnglishTitle(symbol_up)}: {toman} {self.tomanSymbol}"
-                    + (f" / {usd}$" if usd else "")
+                return f"{NavasanService.getEnglishTitle(symbol_up)}: {toman} {self.tomanSymbol}" + (
+                    f" / {usd}$" if usd else ""
                 )
             toman = persianify(toman)
             if price < 0:
                 toman = f"{toman[1:]}-"
-            return f"{NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان" + (
-                f" / {usd}$" if usd else ""
-            )
+            return f"{NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان" + (f" / {usd}$" if usd else "")
         except Exception as x:
             pass
         return (

@@ -7,7 +7,7 @@ class OptiFinder:
         self.word_count = len(self.words)
 
     def search_around(self, source: Dict[str, str], index: int = 0):
-        word = self.words[index]
+        word = self.words[index].upper()
         multiword_max_count = 1
         multiword_candidate: str | None = None
         for slug in source:

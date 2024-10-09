@@ -3,6 +3,7 @@ import pytz
 from persiantools import digits
 from dateutil.relativedelta import relativedelta
 from time import time
+from typing import Tuple
 
 
 timezone = pytz.timezone("Asia/Tehran")
@@ -226,3 +227,33 @@ if __name__ == "__main__":
     while True:
         x = float(input("> "))
         print("\t=> ", cut_and_separate(x))
+
+thousand_shortcuts = {
+    'k': 1e3,
+    'K': 1e3,
+    'M': 1e6,
+    'G': 1e9,
+    'T': 1e12,
+    'P': 1e15,
+    'm': 1e-3,
+    'u': 1e-6,
+    'n': 1e-9,
+    'p': 1e-12,
+    'f': 1e-15
+}
+
+def extract_thousands(num: str) -> Tuple:
+    th = 1
+    end_index = 1
+    num_length = len(num)
+
+    while end_index <= num_length and num[-end_index] in thousand_shortcuts:
+        th *= thousand_shortcuts[num[-end_index]]
+        end_index += 1
+    if end_index > 1:
+        num = num[:-end_index+1]
+    return th, (num or 1)
+
+def normal_float_display(number):
+    abs_num = number if number >= 0 else -number
+    return str(number) if abs_num >= 1 else '{:.16f}'.format(number).rstrip('0').rstrip('.')

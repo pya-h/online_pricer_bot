@@ -19,10 +19,10 @@ from telegram.error import BadRequest
 from models.account import Account
 import json
 from tools.manuwriter import log
-from tools.mathematix import cut_and_separate, persianify, n_days_later_timestamp
+from tools.mathematix import cut_and_separate, persianify, n_days_later_timestamp, separate_by3
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
-from api.crypto_service import CoinGeckoService, CoinMarketCapService
+from api.crypto_service import CoinMarketCapService
 from models.alarms import PriceAlarm
 from typing import List, Tuple
 from tools.exceptions import (
@@ -1467,12 +1467,11 @@ async def handle_messages(update: Update, context: CallbackContext):
                     # extract amounts from params
                     try:
                         while index < count_of_params:
-                            amount = float(params[index])
+                            amount = botman.string_to_number(params[index])
                             amounts.append(amount)
                             index += 1
                     except:
                         pass
-
                     if not amounts:
                         await update.message.reply_text(
                             botman.error("invalid_amount", account.language),
@@ -1946,7 +1945,6 @@ def main():
         webhook_url=f'{botman.host_url}/{botman.bot_tag}',
         url_path=botman.bot_tag
     )
-
 
 if __name__ == "__main__":
     try:

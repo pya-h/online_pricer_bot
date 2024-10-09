@@ -27,7 +27,7 @@ from models.account import Account
 from models.channel import Channel, PostInterval
 from models.group import Group
 from tools.manuwriter import log, load_json
-from tools.mathematix import persianify, cut_and_separate, now_in_minute, tz_today
+from tools.mathematix import persianify, cut_and_separate, now_in_minute, tz_today, extract_thousands, normal_float_display
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
 from .types import (
@@ -1209,11 +1209,17 @@ class BotMan:
                 upgrading_chat_id = None
         return user
 
-    def extract_coef(self, word: str | float):
+    def string_to_number(self, num: str) -> int | float:
+        thousands = 1
+        if num[0].isdigit() and not num[-1].isdigit():
+            thousands, num = extract_thousands(num)
+        f = float(num) * thousands
+        intf = int(f)
+        return f if intf != f else intf
+
+    def extract_coef(self, word: str):
         try:
-            f = float(word)
-            intf = int(f)
-            return f if intf != f else intf
+            return self.string_to_number(word)
         except:
             pass
         return 1
@@ -1227,7 +1233,6 @@ class BotMan:
         i = 0
 
         while i < finder.word_count:
-            words[i] = words[i].upper()
             prev_word: str | float = words[i - 1] if i else 1.0
             slug, word_count = finder.search_around(self.crypto_serv.coinsInPersian, i)
             if slug:
@@ -1291,8 +1296,9 @@ class BotMan:
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:
             return self.text("no_token_selected")
+        amount = normal_float_display(amount)
         header = self.text("equalize_header", language) % (
-            str(amount) if language != "fa" else persianify(amount),
+            amount if language != "fa" else persianify(amount),
             unit if language != "fa" else self.crypto_serv.coinsInPersian[unit],
         )
         return f"{header}\n\n{post}"
@@ -1319,8 +1325,9 @@ class BotMan:
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:
             return self.text("no_token_selected")
+        amount = normal_float_display(amount)
         header = self.text("equalize_header", language) % (
-            str(amount) if language != "fa" else persianify(amount),
+            amount if language != "fa" else persianify(amount),
             (
                 self.currency_serv.getEnglishTitle(unit)
                 if language != "fa"

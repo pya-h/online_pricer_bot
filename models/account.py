@@ -362,6 +362,8 @@ class Account:
 
     @staticmethod
     def getById(chat_id: int, no_fastmem: bool = False):
+        if chat_id < 0:
+            raise ValueError('Account chat_id must be positive.')  # FIXME: Find the root of the problem: groups are creating negative ID accounts, alongside their Group model instance.
         if chat_id in Account.fastMemInstances:
             account: Account = Account.fastMemInstances[chat_id]
             account.last_interaction = tz_today()
