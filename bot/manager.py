@@ -27,7 +27,14 @@ from models.account import Account
 from models.channel import Channel, PostInterval
 from models.group import Group
 from tools.manuwriter import log, load_json
-from tools.mathematix import persianify, cut_and_separate, now_in_minute, tz_today, extract_thousands, normal_float_display
+from tools.mathematix import (
+    persianify,
+    cut_and_separate,
+    now_in_minute,
+    tz_today,
+    extract_thousands,
+    normal_float_display,
+)
 from models.alarms import PriceAlarm
 from tools.optifinder import OptiFinder
 from .types import (
@@ -91,42 +98,18 @@ class BotMan:
         OUR_OTHERS_FA = resourceman.keyboard("our_others", "fa")
         OUR_OTHERS_EN = resourceman.keyboard("our_others", "en")
 
-        CHANNELS_CHANGE_INTERVAL_FA = resourceman.keyboard(
-            "channels_change_interval", "fa"
-        )
-        CHANNELS_CHANGE_INTERVAL_EN = resourceman.keyboard(
-            "channels_change_interval", "en"
-        )
-        COMMUNITY_CONFIG_PRICE_LIST_FA = resourceman.keyboard(
-            "community_config_price_list", "fa"
-        )
-        COMMUNITY_CONFIG_PRICE_LIST_EN = resourceman.keyboard(
-            "community_config_price_list", "en"
-        )
-        COMMUNITY_TRIGGER_DATE_TAG_FA = resourceman.keyboard(
-            "community_trigger_date_tag", "fa"
-        )
-        COMMUNITY_TRIGGER_DATE_TAG_EN = resourceman.keyboard(
-            "community_trigger_date_tag", "en"
-        )
-        COMMUNITY_TRIGGER_MARKET_TAGS_FA = resourceman.keyboard(
-            "community_trigger_market_tags", "fa"
-        )
-        COMMUNITY_TRIGGER_MARKET_TAGS_EN = resourceman.keyboard(
-            "community_trigger_market_tags", "en"
-        )
-        COMMUNITY_SET_MESSAGE_HEADER_FA = resourceman.keyboard(
-            "community_set_message_header", "fa"
-        )
-        COMMUNITY_SET_MESSAGE_HEADER_EN = resourceman.keyboard(
-            "community_set_message_header", "en"
-        )
-        COMMUNITY_SET_MESSAGE_FOOTNOTE_FA = resourceman.keyboard(
-            "community_set_message_footnote", "fa"
-        )
-        COMMUNITY_SET_MESSAGE_FOOTNOTE_EN = resourceman.keyboard(
-            "community_set_message_footnote", "en"
-        )
+        CHANNELS_CHANGE_INTERVAL_FA = resourceman.keyboard("channels_change_interval", "fa")
+        CHANNELS_CHANGE_INTERVAL_EN = resourceman.keyboard("channels_change_interval", "en")
+        COMMUNITY_CONFIG_PRICE_LIST_FA = resourceman.keyboard("community_config_price_list", "fa")
+        COMMUNITY_CONFIG_PRICE_LIST_EN = resourceman.keyboard("community_config_price_list", "en")
+        COMMUNITY_TRIGGER_DATE_TAG_FA = resourceman.keyboard("community_trigger_date_tag", "fa")
+        COMMUNITY_TRIGGER_DATE_TAG_EN = resourceman.keyboard("community_trigger_date_tag", "en")
+        COMMUNITY_TRIGGER_MARKET_TAGS_FA = resourceman.keyboard("community_trigger_market_tags", "fa")
+        COMMUNITY_TRIGGER_MARKET_TAGS_EN = resourceman.keyboard("community_trigger_market_tags", "en")
+        COMMUNITY_SET_MESSAGE_HEADER_FA = resourceman.keyboard("community_set_message_header", "fa")
+        COMMUNITY_SET_MESSAGE_HEADER_EN = resourceman.keyboard("community_set_message_header", "en")
+        COMMUNITY_SET_MESSAGE_FOOTNOTE_FA = resourceman.keyboard("community_set_message_footnote", "fa")
+        COMMUNITY_SET_MESSAGE_FOOTNOTE_EN = resourceman.keyboard("community_set_message_footnote", "en")
         CHANNEL_CHANGE_FA = resourceman.keyboard("channel_change", "fa")
         CHANNEL_CHANGE_EN = resourceman.keyboard("channel_change", "en")
         GROUP_CHANGE_FA = resourceman.keyboard("change_group", "fa")
@@ -143,28 +126,16 @@ class BotMan:
         ADMIN_NOTICES_EN = resourceman.keyboard("admin_notices", "en")
         ADMIN_PLAN_CHANNEL_FA = resourceman.keyboard("admin_plan_channel", "fa")
         ADMIN_PLAN_CHANNEL_EN = resourceman.keyboard("admin_plan_channel", "en")
-        ADMIN_STOP_CHANNEL_PLAN_FA = resourceman.keyboard(
-            "admin_stop_channel_plan", "fa"
-        )
-        ADMIN_STOP_CHANNEL_PLAN_EN = resourceman.keyboard(
-            "admin_stop_channel_plan", "en"
-        )
+        ADMIN_STOP_CHANNEL_PLAN_FA = resourceman.keyboard("admin_stop_channel_plan", "fa")
+        ADMIN_STOP_CHANNEL_PLAN_EN = resourceman.keyboard("admin_stop_channel_plan", "en")
         ADMIN_STATISTICS_FA = resourceman.keyboard("admin_statistics", "fa")
         ADMIN_STATISTICS_EN = resourceman.keyboard("admin_statistics", "en")
-        ADMIN_UPGRADE_TO_PREMIUM_FA = resourceman.keyboard(
-            "admin_upgrade_to_premium", "fa"
-        )
-        ADMIN_UPGRADE_TO_PREMIUM_EN = resourceman.keyboard(
-            "admin_upgrade_to_premium", "en"
-        )
+        ADMIN_UPGRADE_TO_PREMIUM_FA = resourceman.keyboard("admin_upgrade_to_premium", "fa")
+        ADMIN_UPGRADE_TO_PREMIUM_EN = resourceman.keyboard("admin_upgrade_to_premium", "en")
         ADMIN_DOWNGRADE_USER_FA = resourceman.keyboard("admin_downgrade_user", "fa")
         ADMIN_DOWNGRADE_USER_EN = resourceman.keyboard("admin_downgrade_user", "en")
-        ADMIN_CHANGE_PREMIUM_PLANS_FA = resourceman.keyboard(
-            "change_premium_plans", "fa"
-        )
-        ADMIN_CHANGE_PREMIUM_PLANS_EN = resourceman.keyboard(
-            "change_premium_plans", "en"
-        )
+        ADMIN_CHANGE_PREMIUM_PLANS_FA = resourceman.keyboard("change_premium_plans", "fa")
+        ADMIN_CHANGE_PREMIUM_PLANS_EN = resourceman.keyboard("change_premium_plans", "en")
 
     class QueryActions(Enum):
         CHOOSE_LANGUAGE = 1
@@ -259,18 +230,16 @@ class BotMan:
                     return BotMan.MenuSections.COMMUNITY_PANEL
             return BotMan.MenuSections.NONE
 
-    def __init__(
-        self, main_plan_interval: float = 10.0, plan_manager_interval: float = 1.0
-    ) -> None:
+    def __init__(self, main_plan_interval: float = 10.0, plan_manager_interval: float = 1.0) -> None:
         self.resourceman = resourceman
         # environment values
         self.token: str = config("BOT_TOKEN")
         username: str = config("BOT_USERNAME")
         self.username = f"@{username}"
         self.url = f"https://t.me/{username}"
-        self.host_url = config('HOST_URL')
-        self.bot_tag = config('BOT_TAG')
-        self.bot_port = config('BOT_PORT')
+        self.host_url = config("HOST_URL")
+        self.bot_tag = config("BOT_TAG")
+        self.bot_port = config("BOT_PORT")
         CMC_API_KEY = config("COINMARKETCAP_API_KEY")
         CURRENCY_TOKEN = config("CURRENCY_TOKEN")
         NOBITEX_TOKEN = config("NOBITEX_TOKEN")
@@ -292,15 +261,11 @@ class BotMan:
             },
         ]
 
-        self.channels[0]["username"] = config(
-            "CHANNEL_USERNAME", self.channels[0]["url"]
-        )
+        self.channels[0]["username"] = config("CHANNEL_USERNAME", self.channels[0]["url"])
         if not self.channels[1]["id"]:
             del self.channels[1]
         else:
-            self.channels[-1]["username"] = config(
-                "SECOND_CHANNEL_USERNAME", self.channels[-1]["url"]
-            )
+            self.channels[-1]["username"] = config("SECOND_CHANNEL_USERNAME", self.channels[-1]["url"])
 
         self.main_queue_id: str = "mainplan"
         self.main_plan_interval: float = main_plan_interval
@@ -366,9 +331,7 @@ class BotMan:
                 [KeyboardButton(BotMan.Commands.CANCEL_EN.value)],
             ],
         }
-        self.cancel_menu = lambda lang: ReplyKeyboardMarkup(
-            self.cancel_menu_key[lang], resize_keyboard=True
-        )
+        self.cancel_menu = lambda lang: ReplyKeyboardMarkup(self.cancel_menu_key[lang], resize_keyboard=True)
 
         self.return_key = {
             "fa": [
@@ -457,9 +420,7 @@ class BotMan:
                 [
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value),
-                        KeyboardButton(
-                            BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value
-                        ),
+                        KeyboardButton(BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value),
                     ],
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_NOTICES_FA.value),
@@ -467,15 +428,11 @@ class BotMan:
                     ],
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value),
-                        KeyboardButton(
-                            BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value
-                        ),
+                        KeyboardButton(BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value),
                     ],
                     *self.common_menu_main_keys,
                     [
-                        KeyboardButton(
-                            BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_FA.value
-                        ),
+                        KeyboardButton(BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_FA.value),
                         KeyboardButton(BotMan.Commands.SETTINGS_FA.value),
                     ],
                 ],
@@ -486,9 +443,7 @@ class BotMan:
                 [
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value),
-                        KeyboardButton(
-                            BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value
-                        ),
+                        KeyboardButton(BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value),
                     ],
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_NOTICES_EN.value),
@@ -496,15 +451,11 @@ class BotMan:
                     ],
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value),
-                        KeyboardButton(
-                            BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value
-                        ),
+                        KeyboardButton(BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value),
                     ],
                     *self.common_menu_main_keys_en,
                     [
-                        KeyboardButton(
-                            BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_EN.value
-                        ),
+                        KeyboardButton(BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_EN.value),
                         KeyboardButton(BotMan.Commands.SETTINGS_EN.value),
                     ],
                 ],
@@ -512,41 +463,25 @@ class BotMan:
             )
         )
 
-    def get_community_config_keyboard(
-        self, community_type: CommunityType, language: str
-    ):
+    def get_community_config_keyboard(self, community_type: CommunityType, language: str):
         if community_type == self.CommunityType.CHANNEL:
             return ReplyKeyboardMarkup(
                 (
                     [
                         [
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value
-                            ),
-                            KeyboardButton(
-                                BotMan.Commands.CHANNELS_CHANGE_INTERVAL_FA.value
-                            ),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value),
+                            KeyboardButton(BotMan.Commands.CHANNELS_CHANGE_INTERVAL_FA.value),
                         ],
                         [
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value
-                            ),
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value
-                            ),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value),
                         ],
                         [
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value
-                            ),
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value
-                            ),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value),
                         ],
                         [
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_DISCONNECT_FA.value
-                            ),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_DISCONNECT_FA.value),
                             KeyboardButton(BotMan.Commands.CHANNEL_CHANGE_FA.value),
                         ],
                         [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
@@ -554,33 +489,19 @@ class BotMan:
                     if language == "fa"
                     else [
                         [
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value
-                            ),
-                            KeyboardButton(
-                                BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN.value
-                            ),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value),
+                            KeyboardButton(BotMan.Commands.CHANNELS_CHANGE_INTERVAL_EN.value),
                         ],
                         [
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value
-                            ),
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value
-                            ),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value),
                         ],
                         [
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value
-                            ),
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value
-                            ),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value),
                         ],
                         [
-                            KeyboardButton(
-                                BotMan.Commands.COMMUNITY_DISCONNECT_EN.value
-                            ),
+                            KeyboardButton(BotMan.Commands.COMMUNITY_DISCONNECT_EN.value),
                             KeyboardButton(BotMan.Commands.CHANNEL_CHANGE_EN.value),
                         ],
                         [KeyboardButton(BotMan.Commands.RETURN_EN.value)],
@@ -591,26 +512,14 @@ class BotMan:
         return ReplyKeyboardMarkup(
             (
                 [
+                    [KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value)],
                     [
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_FA.value
-                        )
+                        KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value),
                     ],
                     [
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_FA.value
-                        ),
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_FA.value
-                        ),
-                    ],
-                    [
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value
-                        ),
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value
-                        ),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_FA.value),
                     ],
                     [
                         KeyboardButton(BotMan.Commands.COMMUNITY_DISCONNECT_FA.value),
@@ -621,25 +530,15 @@ class BotMan:
                 if language == "fa"
                 else [
                     [
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value
-                        ),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value),
                     ],
                     [
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value
-                        ),
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value
-                        ),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_MARKET_TAGS_EN.value),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_TRIGGER_DATE_TAG_EN.value),
                     ],
                     [
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value
-                        ),
-                        KeyboardButton(
-                            BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value
-                        ),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value),
+                        KeyboardButton(BotMan.Commands.COMMUNITY_SET_MESSAGE_HEADER_EN.value),
                     ],
                     [
                         KeyboardButton(BotMan.Commands.COMMUNITY_DISCONNECT_EN.value),
@@ -652,11 +551,7 @@ class BotMan:
         )
 
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
-        return (
-            self.get_main_keyboard(account)
-            if not account.is_admin
-            else self.get_admin_keyboard(account.language)
-        )
+        return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account.language)
 
     @staticmethod
     def actionCallbackData(action: QueryActions, value: any, page: int | None = None):
@@ -678,9 +573,7 @@ class BotMan:
     ):
         """this function creates inline keyboard for selecting/deselecting some options"""
 
-        def choice_callback_data(
-            value: str | int | float | bool | None = None, page: int = 0
-        ):
+        def choice_callback_data(value: str | int | float | bool | None = None, page: int = 0):
             return jsonify(
                 {
                     "lt": list_type.value if list_type else None,
@@ -690,9 +583,7 @@ class BotMan:
                 }
             )
 
-        def special_button_callback_data(
-            command: str | int | float | bool, page: int = 0
-        ):
+        def special_button_callback_data(command: str | int | float | bool, page: int = 0):
             return jsonify(
                 {
                     "lt": list_type.value if list_type else None,
@@ -712,11 +603,6 @@ class BotMan:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
             if idx_last > buttons_count:
                 idx_last = buttons_count
-            lbl_first, lbl_last = (
-                (persianify(idx_first + 1), persianify(idx_last))
-                if language == "fa"
-                else (idx_first + 1, idx_last)
-            )
 
             pages_count = int(buttons_count / max_page_buttons)
             choice_keys = list(choices.keys())[idx_first:idx_last]
@@ -724,25 +610,17 @@ class BotMan:
                 InlineKeyboardButton("<<", callback_data=choice_callback_data(page=0)),
                 InlineKeyboardButton(
                     "<",
-                    callback_data=choice_callback_data(
-                        page=page - 1 if page > 0 else 0
-                    ),
+                    callback_data=choice_callback_data(page=page - 1 if page > 0 else 0),
                 ),
                 InlineKeyboardButton(
-                    f"({lbl_first}-{lbl_last})",
-                    callback_data=special_button_callback_data(
-                        f"#{pages_count + 1}", page
-                    ),
+                    f"({page+1}/{pages_count+1})" if language != "fa" else persianify(f"({page+1}/{pages_count+1})"),
+                    callback_data=special_button_callback_data(f"#{idx_first}:{idx_last}", page),
                 ),
                 InlineKeyboardButton(
                     ">",
-                    callback_data=choice_callback_data(
-                        page=page + 1 if page < pages_count else int(pages_count)
-                    ),
+                    callback_data=choice_callback_data(page=page + 1 if page < pages_count else pages_count),
                 ),
-                InlineKeyboardButton(
-                    ">>", callback_data=choice_callback_data(page=pages_count)
-                ),
+                InlineKeyboardButton(">>", callback_data=choice_callback_data(page=pages_count)),
             ]
         else:
             choice_keys = choices
@@ -750,15 +628,11 @@ class BotMan:
         i: int = 0
         row: List[InlineKeyboardButton] = []
         for choice in choice_keys:
-            btn_text = choice if language != 'fa' else choices[choice]
+            btn_text = choice if language != "fa" else choices[choice]
             i += 1 + int(len(btn_text) / 5)
             if choice in selected_ones:
                 btn_text += "✅"
-            row.append(
-                InlineKeyboardButton(
-                    btn_text, callback_data=choice_callback_data(choice, page)
-                )
-            )
+            row.append(InlineKeyboardButton(btn_text, callback_data=choice_callback_data(choice, page)))
             if i >= 5:
                 buttons.append(row)
                 row = []
@@ -792,9 +666,7 @@ class BotMan:
         buttons = [
             [
                 InlineKeyboardButton(
-                    self.resourceman.keyboard(
-                        urls_data[col + row * columns_in_a_row]["text_key"], language
-                    ),
+                    self.resourceman.keyboard(urls_data[col + row * columns_in_a_row]["text_key"], language),
                     url=urls_data[col + row * columns_in_a_row]["url"],
                 )
                 for col in range(columns_in_a_row)
@@ -829,14 +701,10 @@ class BotMan:
         buttons = [
             [
                 InlineKeyboardButton(
-                    text=(
-                        self.resourceman.keyboard
-                        if not in_main_keyboard
-                        else self.resourceman.mainkeyboard
-                    )(data[keys[col + row * columns_in_a_row]], language),
-                    callback_data=self.actionCallbackData(
-                        action, keys[col + row * columns_in_a_row]
+                    text=(self.resourceman.keyboard if not in_main_keyboard else self.resourceman.mainkeyboard)(
+                        data[keys[col + row * columns_in_a_row]], language
                     ),
+                    callback_data=self.actionCallbackData(action, keys[col + row * columns_in_a_row]),
                 )
                 for col in range(columns_in_a_row)
             ]
@@ -869,18 +737,14 @@ class BotMan:
         buttons_count = len(users)
 
         pagination_menu: List[InlineKeyboardButton] | None = None
-        pagination_callback_data = lambda page: self.actionCallbackData(
-            list_type, None, page
-        )
+        pagination_callback_data = lambda page: self.actionCallbackData(list_type, None, page)
 
         if buttons_count > max_page_buttons:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
             if idx_last > buttons_count:
                 idx_last = buttons_count
             lbl_first, lbl_last = (
-                (persianify(idx_first + 1), persianify(idx_last))
-                if language == "fa"
-                else (idx_first + 1, idx_last)
+                (persianify(idx_first + 1), persianify(idx_last)) if language == "fa" else (idx_first + 1, idx_last)
             )
 
             pages_count = int(buttons_count / max_page_buttons)
@@ -889,9 +753,7 @@ class BotMan:
                 InlineKeyboardButton("<<", callback_data=pagination_callback_data(0)),
                 InlineKeyboardButton(
                     "<",
-                    callback_data=pagination_callback_data(
-                        page=page - 1 if page > 0 else 0
-                    ),
+                    callback_data=pagination_callback_data(page=page - 1 if page > 0 else 0),
                 ),
                 InlineKeyboardButton(
                     f"({lbl_first}-{lbl_last})",
@@ -899,13 +761,9 @@ class BotMan:
                 ),
                 InlineKeyboardButton(
                     ">",
-                    callback_data=pagination_callback_data(
-                        page=page + 1 if page < pages_count else int(pages_count)
-                    ),
+                    callback_data=pagination_callback_data(page=page + 1 if page < pages_count else int(pages_count)),
                 ),
-                InlineKeyboardButton(
-                    ">>", callback_data=pagination_callback_data(pages_count)
-                ),
+                InlineKeyboardButton(">>", callback_data=pagination_callback_data(pages_count)),
             ]
 
             buttons_count = len(users)
@@ -916,9 +774,7 @@ class BotMan:
             [
                 InlineKeyboardButton(
                     text=str(users[col + row * columns_in_a_row]),
-                    callback_data=self.actionCallbackData(
-                        list_type, users[col + row * columns_in_a_row].chat_id
-                    ),
+                    callback_data=self.actionCallbackData(list_type, users[col + row * columns_in_a_row].chat_id),
                 )
                 for col in range(columns_in_a_row)
             ]
@@ -931,9 +787,7 @@ class BotMan:
                 [
                     InlineKeyboardButton(
                         text=str(users[i]),
-                        callback_data=self.actionCallbackData(
-                            list_type, users[i].chat_id
-                        ),
+                        callback_data=self.actionCallbackData(list_type, users[i].chat_id),
                     )
                     for i in range(full_rows_last_index, buttons_count)
                 ]
@@ -970,9 +824,7 @@ class BotMan:
             return False
         return chat1.status != ChatMember.LEFT and chat2.status != ChatMember.LEFT
 
-    async def inform_admins(
-        self, message_key: str, context: CallbackContext, is_error: bool = False
-    ):
+    async def inform_admins(self, message_key: str, context: CallbackContext, is_error: bool = False):
         message_text = self.error if is_error else self.text
         for admin in Account.getAdmins(just_hardcode_admin=False):
             try:
@@ -990,12 +842,8 @@ class BotMan:
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton(
-                            self.channels[-1]["username"], url=self.channels[-1]["url"]
-                        ),
-                        InlineKeyboardButton(
-                            self.channels[0]["username"], url=self.channels[0]["url"]
-                        ),
+                        InlineKeyboardButton(self.channels[-1]["username"], url=self.channels[-1]["url"]),
+                        InlineKeyboardButton(self.channels[0]["username"], url=self.channels[0]["url"]),
                     ]
                 ]
             ),
@@ -1019,9 +867,7 @@ class BotMan:
         self.postman.crypto_service = value
 
     async def next_post(self, language: str = "fa"):
-        return await self.postman.create_post(
-            post_interval=self.main_plan_interval, language=language
-        )
+        return await self.postman.create_post(post_interval=self.main_plan_interval, language=language)
 
     def check_price_alarms(self) -> List[PriceAlarm]:
         """Checks all user alarms and finds alarms that has gone off"""
@@ -1031,13 +877,9 @@ class BotMan:
         for alarm in alarms:
             print(alarm)
             source = self.currency_serv
-            alarm.current_price = self.currency_serv.get_single_price(
-                alarm.currency, alarm.target_unit
-            )
+            alarm.current_price = self.currency_serv.get_single_price(alarm.currency, alarm.target_unit)
             if alarm.current_price is None:
-                alarm.current_price = self.crypto_serv.get_single_price(
-                    alarm.currency, alarm.target_unit
-                )
+                alarm.current_price = self.crypto_serv.get_single_price(alarm.currency, alarm.target_unit)
                 source = self.crypto_serv
 
             if alarm.current_price is not None:
@@ -1077,9 +919,7 @@ class BotMan:
                 )
 
                 if account.language == "fa":
-                    target_price, current_price = persianify(target_price), persianify(
-                        current_price
-                    )
+                    target_price, current_price = persianify(target_price), persianify(current_price)
                 price_alarm_text = self.text("price_alarm", account.language) % (
                     currency_name,
                     target_price,
@@ -1094,9 +934,7 @@ class BotMan:
             except:
                 pass
 
-    async def show_reached_max_error(
-        self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int
-    ):
+    async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
         if not account.is_premium:
             await self.send_message_with_premium_button(
                 telegram_handle,
@@ -1104,13 +942,9 @@ class BotMan:
                 + self.error("get_premium", account.language),
             )
         else:
-            await telegram_handle.message.reply_text(
-                text=self.error("max_selection", account.language) % (max_value,)
-            )
+            await telegram_handle.message.reply_text(text=self.error("max_selection", account.language) % (max_value,))
 
-    async def send_message_with_premium_button(
-        self, update: Update | CallbackQuery, text: str
-    ):
+    async def send_message_with_premium_button(self, update: Update | CallbackQuery, text: str):
         link = f"https://t.me/{Account.getHardcodeAdmin()['username']}"
         await update.message.reply_text(
             text=text,
@@ -1155,13 +989,9 @@ class BotMan:
             reply_markup=keyboard,
         )
 
-    async def clear_unwanted_menu_messages(
-        self, update: Update, context: CallbackContext, operation_result
-    ):
+    async def clear_unwanted_menu_messages(self, update: Update, context: CallbackContext, operation_result):
         if isinstance(operation_result, Message):
-            await context.bot.delete_message(
-                chat_id=update.message.chat_id, message_id=operation_result.message_id
-            )
+            await context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id)
         await update.message.delete()
 
     async def list_premiums(self, update: Update, list_type: QueryActions) -> bool:
@@ -1173,13 +1003,9 @@ class BotMan:
                 reply_markup=self.mainkeyboard(account),
             )
             return False
-        menu = self.users_list_menu(
-            premiums, list_type, columns_in_a_row=3, page=0, language=account.language
-        )
+        menu = self.users_list_menu(premiums, list_type, columns_in_a_row=3, page=0, language=account.language)
 
-        await update.message.reply_text(
-            text=self.text("select_user", account.language), reply_markup=menu
-        )
+        await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
         return True
 
     def identify_user(self, update: Update) -> Account | None:
@@ -1239,14 +1065,10 @@ class BotMan:
                 coef = self.extract_coef(prev_word)
                 crypto_amounts.add(f"{coef} {slug}")
             else:
-                slug, word_count = finder.search_around(
-                    self.currency_serv.currenciesInPersian, i
-                )
+                slug, word_count = finder.search_around(self.currency_serv.currenciesInPersian, i)
 
                 if not slug:
-                    slug, word_count = finder.search_around(
-                        self.currency_serv.persianShortcuts, i
-                    )
+                    slug, word_count = finder.search_around(self.currency_serv.persianShortcuts, i)
                 if slug:
                     coef = self.extract_coef(prev_word)
                     currency_amounts.add(f"{coef} {slug}")
@@ -1287,9 +1109,7 @@ class BotMan:
             unit, amount, target_cryptos, (language := language.lower())
         )
         res_fiat, res_gold = (
-            self.currency_serv.irt_to_currencies(
-                absolute_irt, unit, target_currencies, language
-            )
+            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies, language)
             if target_currencies
             else (None, None)
         )
@@ -1316,11 +1136,7 @@ class BotMan:
             unit, amount, target_currencies, (language := language.lower())
         )
         res_crypto = (
-            self.crypto_serv.usd_to_cryptos(
-                absolute_usd, unit, target_cryptos, language
-            )
-            if target_cryptos
-            else None
+            self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos, language) if target_cryptos else None
         )
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:
@@ -1336,16 +1152,10 @@ class BotMan:
         )
         return f"{header}\n\n{post}"
 
-    async def prepare_channel(
-        self, ctx: CallbackContext, owner: Account, channel_id: int, interval: int
-    ):
+    async def prepare_channel(self, ctx: CallbackContext, owner: Account, channel_id: int, interval: int):
         try:
-            channel_response: Message = await ctx.bot.send_message(
-                chat_id=channel_id, text="OK"
-            )
-            await ctx.bot.delete_message(
-                chat_id=channel_id, message_id=channel_response.message_id
-            )
+            channel_response: Message = await ctx.bot.send_message(chat_id=channel_id, text="OK")
+            await ctx.bot.delete_message(chat_id=channel_id, message_id=channel_response.message_id)
             channel = Channel(
                 channel_id,
                 owner.chat_id,
@@ -1397,9 +1207,7 @@ class BotMan:
         next_state: Account.States = Account.States.SELECT_POST_INTERVAL,
     ):
         community_type = account.get_cache("community")
-        if (
-            community_type := BotMan.CommunityType.which(community_type)
-        ) == BotMan.CommunityType.CHANNEL and (
+        if (community_type := BotMan.CommunityType.which(community_type)) == BotMan.CommunityType.CHANNEL and (
             old_channel := Channel.getByOwner(account.chat_id)
         ):
             try:
@@ -1407,9 +1215,7 @@ class BotMan:
                 old_channel.change(channel_chat)
                 await update.message.reply_text(
                     self.text("update_successful", account.language),
-                    reply_markup=self.get_community_config_keyboard(
-                        BotMan.CommunityType.CHANNEL, account.language
-                    ),
+                    reply_markup=self.get_community_config_keyboard(BotMan.CommunityType.CHANNEL, account.language),
                 )
                 account.change_state(
                     cache_key="community",
@@ -1419,9 +1225,7 @@ class BotMan:
             except Exception as x:
                 log("sth went wrong while changing channel:", x, "Channel")
             return
-        await self.prepare_set_interval_interface(
-            update, account, channel_chat.id, next_state
-        )
+        await self.prepare_set_interval_interface(update, account, channel_chat.id, next_state)
 
     async def prepare_set_interval_interface(
         self,
@@ -1430,9 +1234,7 @@ class BotMan:
         channel_chat_id: int,
         next_state: Account.States,
     ):
-        account.change_state(
-            next_state, "channel_chat_id", channel_chat_id, clear_cache=True
-        )
+        account.change_state(next_state, "channel_chat_id", channel_chat_id, clear_cache=True)
         response_message = await update.message.reply_text(
             self.text("select_post_interval"),
             reply_markup=self.arrangeInlineKeyboardButtons(
@@ -1448,9 +1250,7 @@ class BotMan:
         channel_id = account.get_cache("channel_chat_id")
         try:
             if account.state == Account.States.SELECT_POST_INTERVAL:
-                if not channel_id or not (
-                    await self.prepare_channel(context, account, channel_id, interval)
-                ):
+                if not channel_id or not (await self.prepare_channel(context, account, channel_id, interval)):
                     raise InvalidInputException("Invalid channel data.")
             elif account.state == Account.States.CHANGE_POST_INTERVAL:
                 channel = Channel.get(channel_id)
@@ -1458,9 +1258,7 @@ class BotMan:
                     raise NoSuchThingException(channel_id)
                 channel.interval = interval
                 channel.save()
-                await update.message.reply_text(
-                    self.text("update_successful", account.language)
-                )
+                await update.message.reply_text(self.text("update_successful", account.language))
             else:
                 raise InvalidInputException("Invalid account state.")
             return True
@@ -1486,13 +1284,9 @@ class BotMan:
             [
                 InlineKeyboardButton(
                     list_of_keys[j].title,
-                    callback_data=BotMan.actionCallbackData(
-                        query_action, list_of_keys[j].value
-                    ),
+                    callback_data=BotMan.actionCallbackData(query_action, list_of_keys[j].value),
                 )
-                for j in range(
-                    i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count
-                )
+                for j in range(i * 5, (i + 1) * 5 if (i + 1) * 5 < keys_count else keys_count)
             ]
             for i in range(math_ceil(keys_count // 5))
         ]
@@ -1574,18 +1368,11 @@ class BotMan:
         # FIXME: Also disable groups
 
     @staticmethod
-    def getCommunity(
-        community_type: int | CommunityType, owner_id: int
-    ) -> Group | Channel | None:
-        if not community_type or (
-            isinstance(community_type, BotMan.CommunityType)
-            and not community_type.value
-        ):
+    def getCommunity(community_type: int | CommunityType, owner_id: int) -> Group | Channel | None:
+        if not community_type or (isinstance(community_type, BotMan.CommunityType) and not community_type.value):
             return None
         return BotMan.CommunityType.toClass(
-            community_type
-            if not isinstance(community_type, BotMan.CommunityType)
-            else community_type.value
+            community_type if not isinstance(community_type, BotMan.CommunityType) else community_type.value
         ).getByOwner(owner_id)
 
     async def process_channels(self, context: CallbackContext):
@@ -1595,9 +1382,7 @@ class BotMan:
         # FIXME: Find ways to optimize this mf
         update_last_post_time_targets = []
         for channel in channels:
-            if not channel.last_post_time or (
-                now - channel.last_post_time >= channel.interval
-            ):
+            if not channel.last_post_time or (now - channel.last_post_time >= channel.interval):
                 try:
                     post = self.postman.create_channel_post(channel)
                     await context.bot.send_message(chat_id=channel.id, text=post)
@@ -1611,14 +1396,10 @@ class BotMan:
         if update_last_post_time_targets:
             Channel.updateLastPostTimes(update_last_post_time_targets)
 
-    async def downgrade_user(
-        self, user: Account, context: CallbackContext | None = None
-    ):
+    async def downgrade_user(self, user: Account, context: CallbackContext | None = None):
         user.downgrade()
         if context:
-            await context.bot.send_message(
-                chat_id=user.chat_id, text=self.text("plan_expired", user.language)
-            )
+            await context.bot.send_message(chat_id=user.chat_id, text=self.text("plan_expired", user.language))
         Channel.deactivateUserChannels(user.chat_id)
 
     async def do_daily_check(self, context: CallbackContext):
@@ -1636,15 +1417,10 @@ class BotMan:
                 else:
                     days_remaining = (today - user_premium_end_date).days
                     if days_remaining in (7, 3, 1):
-                        days_remaining = (
-                            str(days_remaining)
-                            if user.language != "fa"
-                            else persianify(days_remaining)
-                        )
+                        days_remaining = str(days_remaining) if user.language != "fa" else persianify(days_remaining)
                         await context.bot.send_message(
                             chat_id=user.chat_id,
-                            text=self.text("premium_expiry_is_close", user.language)
-                            % (days_remaining,),
+                            text=self.text("premium_expiry_is_close", user.language) % (days_remaining,),
                         )
             except Exception as x:
                 log("User daily checkout failed", x, category_name="Checkouts")
@@ -1715,7 +1491,9 @@ class BotMan:
         except Exception as x:
             total_report += f"{all_labels['channels'][language]}: {word_unknown}\n"
         try:
-            total_report += f"{all_labels['groups'][language]}: {groups_count if groups_count is not None else word_unknown}\n"
+            total_report += (
+                f"{all_labels['groups'][language]}: {groups_count if groups_count is not None else word_unknown}\n"
+            )
         except Exception as x:
             total_report += f"{all_labels['groups'][language]}: {word_unknown}\n"
         interaction_report = BotMan.createReportByLabels(

@@ -894,14 +894,15 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     if data["v"] and data["v"][0] == "$":
         if data["v"][1] == "#":
-            pages_count = int(data["v"][2:]) + 1
+            idx_first, idx_last = (int(x) for x in (data["v"][2:]).split(':'))
+            hint = botman.text("log_page_indices", account.language) % (
+                idx_first + 1,
+                idx_last,
+                page + 1
+            )
             await query.answer(
-                text=botman.text("log_page_indices", account.language)
-                % (
-                    page,
-                    pages_count,
-                ),
-                show_alert=False,
+                text=hint if account.language != 'fa' else persianify(hint),
+                show_alert=True,
             )
         return
 
@@ -1554,7 +1555,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 botman.error("bot_seems_not_admin", account.language),
                                 reply_markup=botman.action_inline_keyboard(
                                     botman.QueryActions.VERIFY_BOT_IS_ADMIN,
-                                    {msg: "verify"},  # FIXME: This has no code behind it. complete it.
+                                    {msg: "verify"}, 
                                     in_main_keyboard=False,
                                 ),
                             )
@@ -1597,7 +1598,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                         account.delete_specific_cache("community")
                         return
                     if account.state == Account.States.SET_MESSAGE_HEADER:
-                        community.message_header = msg  # FIXME: Handle the case which text has emojis
+                        community.message_header = msg
                     else:
                         community.message_footnote = msg
                     community.save()

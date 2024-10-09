@@ -410,8 +410,8 @@
     "en": "🔹 If you don't know the short name you want, just write the value you want:\n\nExamples:\n50"
   },
   "log_page_indices": {
-    "fa": "صفحه %d از %d",
-    "en": "Page %d of %d"
+    "fa": "توکن %d تا %d - صفحه %d",
+    "en": "Token %d to %d - Page %d"
   },
   "language_switched": {
     "fa": "✅ زبان ربات فارسی شد.",
