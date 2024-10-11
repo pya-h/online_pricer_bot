@@ -196,7 +196,7 @@ class Channel:
     @staticmethod
     def deactivateUserChannels(owner_id: int):
         channel_s = Channel.getByOwner(owner_id)
-        if not channel_s:
+        if channel_s:
             channels = [channel_s] if isinstance(channel_s, Channel) else channel_s
             manuwriter.log(
                 f"\tUser had {len(channels)} active channels which are now disabled.",

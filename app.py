@@ -791,14 +791,20 @@ async def handle_action_queries(
                     if len(values) > 1:
                         if values[1] == "y":
                             if target_user.is_premium:
-                                botman.downgrade_user(target_user, context=context)
+                                await botman.downgrade_user(target_user, context=context)
                                 await query.message.edit_text(botman.text("account_downgraded", account.language))
+                                msg_to_edit = account.get_cache('msg2edit')
+                                if msg_to_edit:
+                                    premiums = await botman.list_premiums(update=query, list_type=BotMan.QueryActions.ADMIN_DOWNGRADE_USER, only_menu=True)
+                                    await context.bot.edit_message_reply_markup(chat_id=account.chat_id, message_id=int(msg_to_edit), reply_markup=premiums)
+                                    account.delete_specific_cache('msg2edit')
                                 return
                             await query.message.edit_text(botman.text("not_a_premium", account.language))
                         else:
                             await query.message.edit_text(botman.text("operation_canceled", account.language))
                         # downgrade user
                     else:
+                        account.add_cache('msg2edit', query.message.message_id)
                         await send_r_u_sure_to_downgrade_message(context, account, target_user)
                 case BotMan.QueryActions.LIST_ENTITY.value:
                     post_body: str = ""

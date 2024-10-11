@@ -1008,20 +1008,24 @@ class BotMan:
             await context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id)
         await update.message.delete()
 
-    async def list_premiums(self, update: Update, list_type: QueryActions) -> bool:
-        account = Account.get(update.message.chat)
-        premiums = Account.getPremiumUsers()
-        if not premiums:
-            await update.message.reply_text(
-                text=self.text("no_premium_users_found", account.language),
-                reply_markup=self.mainkeyboard(account),
-            )
-            return False
-        menu = self.users_list_menu(premiums, list_type, columns_in_a_row=3, page=0, language=account.language)
-
-        await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
-        return True
-
+    async def list_premiums(self, update: Update | CallbackQuery, list_type: QueryActions, only_menu: bool = False) -> bool:
+        try:
+            account = Account.get(update.message.chat)
+            premiums = Account.getPremiumUsers()
+            if not premiums:
+                if only_menu:
+                    return None
+                await update.message.reply_text(
+                    text=self.text("no_premium_users_found", account.language),
+                    reply_markup=self.mainkeyboard(account),
+                )
+                return None
+            menu = self.users_list_menu(premiums, list_type, columns_in_a_row=3, page=0, language=account.language)
+            if only_menu:
+                return menu
+            await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
+        except Exception as x:
+            print(x)
     def identify_user(self, update: Update) -> Account | None:
         """Get the user's Account object from update object by one of these methods:
         1- providing a forwarded message from the desired user
