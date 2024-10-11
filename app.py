@@ -76,7 +76,7 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
             ),
             BotMan.handleMarketSelection(account, list_type, market),
             close_button=True,
-            language=account.language
+            language=account.language,
         ),
     )
 
@@ -410,7 +410,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
     for i, alarm in enumerate(my_alarms):
         index = i + 1
         try:
-            curreny_title = alarm.currency.upper()
+            curreny_title = alarm.token.upper()
             price = cut_and_separate(alarm.target_price)
 
             if account.language == "fa":
@@ -418,10 +418,10 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
                 price = persianify(price)
                 curreny_title = (
                     botman.crypto_serv.coinsInPersian[curreny_title]
-                    if curreny_title in botman.crypto_serv.coinsInPersian
+                    if alarm.token == MarketOptions.CRYPTO
                     else botman.currency_serv.currenciesInPersian[curreny_title]
                 )
-                unit = botman.text(f"price_unit_{alarm.target_unit.lower()}", account.language)
+            unit = botman.text(f"price_unit_{alarm.target_unit}", account.language)
             descriptions[i] = f"{index}) {curreny_title}: {price} {unit}"
         except:
             descriptions[i] = f"{index}) " + botman.error("invalid_alarm_data", account.language)
@@ -513,22 +513,7 @@ async def handle_action_queries(
                 current_price: float | None = None
                 currency_name: str = None
                 try:
-                    match market:
-                        case MarketOptions.CRYPTO:
-                            current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
-                            currency_name = botman.crypto_serv.coinsInPersian[symbol]
-                        case MarketOptions.GOLD | MarketOptions.CURRENCY:
-                            current_price = botman.currency_serv.get_single_price(symbol, price_unit)
-                            currency_name = botman.currency_serv.currenciesInPersian[symbol]
-                        case _:
-                            if symbol in botman.crypto_serv.coinsInPersian:
-                                current_price = botman.crypto_serv.get_single_price(symbol, price_unit)
-                                currency_name = botman.crypto_serv.coinsInPersian[symbol]
-                            elif symbol in botman.currency_serv.currenciesInPersian:
-                                current_price = botman.currency_serv.get_single_price(symbol, price_unit)
-                                currency_name = botman.currency_serv.currenciesInPersian[symbol]
-                            else:
-                                raise ValueError("Unknown symbol and market")
+                    currency_name, current_price = botman.get_token_state(market, symbol, price_unit)
                 except Exception as ex:
                     log(f"Cannot create the alarm for user {account.chat_id}", ex)
 
@@ -540,6 +525,7 @@ async def handle_action_queries(
                             target_price=target_price,
                             target_unit=price_unit,
                             current_price=current_price,
+                            market=market,
                         )
 
                         alarm.set()
@@ -547,21 +533,26 @@ async def handle_action_queries(
                             f"price_unit_{price_unit.lower()}",
                             language=account.language,
                         )
-                        current_price = cut_and_separate(target_price)
-                        lang = account.language
-                        if lang == "fa":
-                            current_price = persianify(current_price)
-                        # TODO: WHY current_price is not used?
+                        target_price = cut_and_separate(target_price)
+
+                        if account.language == "fa":
+                            target_price = persianify(target_price)
+                        else:
+                            currency_name = symbol
                         await query.message.edit_text(
-                            text=botman.text("alarm_set", lang)
+                            text=botman.text("alarm_set", account.language)
                             % (
-                                currency_name if lang == "fa" else symbol,
+                                currency_name,
                                 target_price,
                                 price_unit_str,
                             )
                         )
                     else:
                         await botman.show_reached_max_error(query, account, account.max_alarms_count)
+
+                await query.message.reply_text(
+                    botman.text("what_can_i_do", account.language), reply_markup=botman.mainkeyboard(account)
+                )
 
         case BotMan.QueryActions.DISABLE_ALARM.value:
             alarm_id: int | None = None
@@ -894,14 +885,10 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     if data["v"] and data["v"][0] == "$":
         if data["v"][1] == "#":
-            idx_first, idx_last = (int(x) for x in (data["v"][2:]).split(':'))
-            hint = botman.text("log_page_indices", account.language) % (
-                idx_first + 1,
-                idx_last,
-                page + 1
-            )
+            idx_first, idx_last = (int(x) for x in (data["v"][2:]).split(":"))
+            hint = botman.text("log_page_indices", account.language) % (idx_first + 1, idx_last, page + 1)
             await query.answer(
-                text=hint if account.language != 'fa' else persianify(hint),
+                text=hint if account.language != "fa" else persianify(hint),
                 show_alert=True,
             )
         return
@@ -925,7 +912,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 )
             return
         case SelectionListTypes.ALARM:
-            if 'v' not in data or not data['v']:
+            if "v" not in data or not data["v"]:
                 await query.message.edit_reply_markup(
                     reply_markup=botman.inline_keyboard(
                         list_type,
@@ -957,7 +944,8 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
             if current_price_description:
                 message_text += f"\n\n{current_price_description}"
-            await query.message.edit_text(text=message_text)
+            await query.message.reply_text(message_text, reply_markup=botman.cancel_menu(account.language))
+            await query.message.delete()
             return
 
     # if the user is configuring a list:
@@ -1002,7 +990,9 @@ async def cmd_switch_language(update: Update, context: CallbackContext):
     acc.language = "en" if acc.language == "fa" else "fa"
     acc.save()
     Channel.updateUserChannels(acc)
-    await update.message.reply_text(botman.text("language_switched", acc.language))
+    await update.message.reply_text(
+        botman.text("language_switched", acc.language), reply_markup=botman.mainkeyboard(acc)
+    )
 
 
 async def list_type_is_selected(update: Update):
@@ -1533,6 +1523,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 f"{data_prefix}{BotMan.CALLBACK_DATA_DELIMITER}irt": "price_unit_irt",
                                 f"{data_prefix}{BotMan.CALLBACK_DATA_DELIMITER}usd": "price_unit_usd",
                             },
+                            account.language,
                         ),
                     )
                     account.delete_specific_cache("create_alarm_props")
@@ -1555,7 +1546,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 botman.error("bot_seems_not_admin", account.language),
                                 reply_markup=botman.action_inline_keyboard(
                                     botman.QueryActions.VERIFY_BOT_IS_ADMIN,
-                                    {msg: "verify"}, 
+                                    {msg: "verify"},
                                     in_main_keyboard=False,
                                 ),
                             )
@@ -1941,11 +1932,12 @@ def main():
 
     # Run as webhook
     app.run_webhook(
-        listen='0.0.0.0',
+        listen="0.0.0.0",
         port=botman.bot_port,
-        webhook_url=f'{botman.host_url}/{botman.bot_tag}',
-        url_path=botman.bot_tag
+        webhook_url=f"{botman.host_url}/{botman.bot_tag}",
+        url_path=botman.bot_tag,
     )
+
 
 if __name__ == "__main__":
     try:

@@ -431,7 +431,7 @@ class DatabaseInterface:
             False,
             f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (?{', ?' * (len(self.PRICE_ALARMS_COLUMNS) - 2)})",
             alarm.chat_id,
-            alarm.currency,
+            alarm.token,
             alarm.target_price,
             alarm.change_direction.value,
             alarm.target_unit,

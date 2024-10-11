@@ -875,64 +875,78 @@ class BotMan:
         # TODO: Define a pre_latest_data, check for currencies that have changed in 10m and then get alarms by currencies
         triggered_alarms = []
         for alarm in alarms:
-            print(alarm)
-            source = self.currency_serv
-            alarm.current_price = self.currency_serv.get_single_price(alarm.currency, alarm.target_unit)
-            if alarm.current_price is None:
-                alarm.current_price = self.crypto_serv.get_single_price(alarm.currency, alarm.target_unit)
-                source = self.crypto_serv
+            try:
+                if alarm.market == MarketOptions.CRYPTO:
+                    alarm.current_price = self.crypto_serv.get_single_price(alarm.token, alarm.target_unit)
+                    alarm.full_token_name = {
+                        "en": alarm.token.upper(),
+                        "fa": self.crypto_serv.getPersianName(alarm.token.upper()),
+                    }
+                else:
+                    alarm.current_price = self.currency_serv.get_single_price(alarm.token, alarm.target_unit)
+                    alarm.full_token_name = {
+                        "en": alarm.token.upper(),
+                        "fa": self.currency_serv.getPersianName(alarm.token.upper()),
+                    }
 
-            if alarm.current_price is not None:
-                alarm.full_currency_name = {
-                    "en": alarm.currency.upper(),
-                    "fa": source.getPersianName(alarm.currency.upper()),
-                }
-                match alarm.change_direction:
-                    case PriceAlarm.ChangeDirection.UP:
-                        if alarm.current_price >= alarm.target_price:
-                            triggered_alarms.append(alarm)
+                if alarm.current_price is not None:
+                    match alarm.change_direction:
+                        case PriceAlarm.ChangeDirection.UP:
+                            if alarm.current_price >= alarm.target_price:
+                                triggered_alarms.append(alarm)
 
-                    case PriceAlarm.ChangeDirection.DOWN:
-                        if alarm.current_price <= alarm.target_price:
-                            triggered_alarms.append(alarm)
+                        case PriceAlarm.ChangeDirection.DOWN:
+                            if alarm.current_price <= alarm.target_price:
+                                triggered_alarms.append(alarm)
 
-                    case _:
-                        if alarm.current_price == alarm.target_price:
-                            triggered_alarms.append(alarm)
-        print(triggered_alarms)
+                        case _:
+                            if alarm.current_price == alarm.target_price:
+                                triggered_alarms.append(alarm)
+            except Exception as x:
+                log(
+                    f"Failed examining Alarm state: id={alarm.id} account={alarm.chat_id}: {alarm}",
+                    x,
+                    category_name="ALARM",
+                )
         return triggered_alarms
 
     async def handle_possible_alarms(self, send_message_func):
         # start notifying users [if at least one alarm went off]
         unit_names = {
-            "IRT": {"fa": self.currency_serv.getPersianName("IRT"), "en": "IRT"},
-            "USD": {"fa": self.currency_serv.getPersianName("USD"), "en": "USD"},
-        }
+            "irt": {"fa": self.currency_serv.getPersianName("IRT"), "en": "IRT"},
+            "usd": {"fa": self.currency_serv.getPersianName("USD"), "en": "USD"},
+        }  # shortcut variable to prevent getting it in every step of the loop
         for alarm in self.check_price_alarms():
             try:
                 account = Account.getById(alarm.chat_id, no_fastmem=True)
                 target_price = cut_and_separate(alarm.target_price)
                 current_price = cut_and_separate(alarm.current_price)
                 currency_name, unit_name = (
-                    alarm.full_currency_name[account.language],
+                    alarm.full_token_name[account.language],
                     unit_names[alarm.target_unit][account.language],
                 )
 
-                if account.language == "fa":
+                if account.language.lower() == "fa":
                     target_price, current_price = persianify(target_price), persianify(current_price)
-                price_alarm_text = self.text("price_alarm", account.language) % (
-                    currency_name,
-                    target_price,
-                    unit_name,
-                ) + self.text("current_price_is", account.language) % (
-                    currency_name,
-                    current_price,
-                    unit_name,
+                price_alarm_text = (
+                    self.text("price_alarm", account.language)
+                    % (
+                        currency_name,
+                        target_price,
+                        unit_name,
+                    )
+                    + "\n\n"
+                    + self.text("current_price_is", account.language)
+                    % (
+                        currency_name,
+                        current_price,
+                        unit_name,
+                    )
                 )
                 await send_message_func(chat_id=account.chat_id, text=price_alarm_text)
                 alarm.disable()
-            except:
-                pass
+            except Exception as ex:
+                log("Failed notifying user of triggered alarm:", ex, category_name="ALARM")
 
     async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
         if not account.is_premium:
@@ -1504,3 +1518,24 @@ class BotMan:
             language,
         )
         return total_report, interaction_report
+
+    def get_token_state(self, market: MarketOptions, token: str, price_unit: str):
+        current_price: float
+        currency_name: str
+        match market:
+            case MarketOptions.CRYPTO:
+                current_price = self.crypto_serv.get_single_price(token, price_unit)
+                currency_name = self.crypto_serv.coinsInPersian[token]
+            case MarketOptions.GOLD | MarketOptions.CURRENCY:
+                current_price = self.currency_serv.get_single_price(token, price_unit)
+                currency_name = self.currency_serv.currenciesInPersian[token]
+            case _:
+                if token in self.crypto_serv.coinsInPersian:
+                    current_price = self.crypto_serv.get_single_price(token, price_unit)
+                    currency_name = self.crypto_serv.coinsInPersian[token]
+                elif token in self.currency_serv.currenciesInPersian:
+                    current_price = self.currency_serv.get_single_price(token, price_unit)
+                    currency_name = self.currency_serv.currenciesInPersian[token]
+                else:
+                    raise ValueError("Unknown token and market")
+        return currency_name, current_price

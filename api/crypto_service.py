@@ -180,16 +180,19 @@ class CoinMarketCapService(CryptoCurrencyService):
         )
 
     def get_single_price(self, crypto_symbol: str, price_unit: str = "usd", tether_instead_of_dollars: bool = True):
-        if not self.latest_data or not isinstance(self.latest_data, dict):
+        if not isinstance(self.latest_data, dict):
             return None
         coin = crypto_symbol.upper()
         price_unit = price_unit.lower()
         if coin == self.tetherSymbol and price_unit == "irt":
             return self.tetherInTomans
 
-        data = self.latest_data[coin] if coin in self.latest_data else None
+        if coin not in self.latest_data:
+            return None
 
-        if not data:
+        data = self.latest_data[coin]
+
+        if "price" not in data:
             return None
 
         return (

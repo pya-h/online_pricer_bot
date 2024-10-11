@@ -3,6 +3,8 @@ from typing import List, Dict
 from db.interface import DatabaseInterface
 from .account import Account
 from tools.exceptions import InvalidInputException
+from bot.types import MarketOptions
+
 
 class PriceAlarm:
     _database: DatabaseInterface = None
@@ -38,18 +40,20 @@ class PriceAlarm:
     def __init__(
         self,
         chat_id: int,
-        currency: str,
+        token: str,
         target_price: int | float,
         change_direction: ChangeDirection | int | None = None,
         target_unit: str = "irt",
+        market: MarketOptions = MarketOptions.CRYPTO,
         id: int = None,
         current_price: float | int | None = None,
     ) -> None:
         self.id = id
         self.chat_id = int(chat_id)
-        self.currency = currency
-        self.target_price = target_price
-        self.target_unit = target_unit
+        self.token = token
+        self.target_price: float | int = target_price
+        self.target_unit: str = target_unit
+        self.market: MarketOptions = market
         self.current_price: int | None = current_price
         if change_direction is None and current_price is not None:
             if current_price < target_price:
@@ -63,9 +67,13 @@ class PriceAlarm:
                 else PriceAlarm.ChangeDirection.which(change_direction)
             )
             if (self.current_price) and not self.is_reasonable:
-                raise InvalidInputException("specified change direction and target price doesn't match with token's current price.")
-        self.full_currency_name: Dict[str, str] | None = None
-        self.owner: Account | None = Account.getFast(self.chat_id)  # TODO: Use SQL JOIN and Use it In case fastmem is empty
+                raise InvalidInputException(
+                    "specified change direction and target price doesn't match with token's current price."
+                )
+        self.full_token_name: Dict[str, str] | None = None
+        self.owner: Account | None = Account.getFast(
+            self.chat_id
+        )  # TODO: Use SQL JOIN and Use it In case fastmem is empty
 
     def set(self):
         db = self.database()
@@ -76,32 +84,42 @@ class PriceAlarm:
         self.id = db.create_new_alarm(self)
 
     def __str__(self) -> str:
-        return f"Alarm for when {self.currency} {self.change_direction} {self.target_price} {self.target_unit}"
+        return f"Alarm for when {self.token} {self.change_direction} {self.target_price} {self.target_unit}"
 
     @property
     def is_reasonable(self):
-        return (self.change_direction == PriceAlarm.ChangeDirection.UP and self.current_price < self.target_price) \
-            or (self.change_direction == PriceAlarm.ChangeDirection.DOWN and self.current_price > self.target_price) \
+        return (
+            (self.change_direction == PriceAlarm.ChangeDirection.UP and self.current_price < self.target_price)
+            or (self.change_direction == PriceAlarm.ChangeDirection.DOWN and self.current_price > self.target_price)
             or (self.change_direction == PriceAlarm.ChangeDirection.EXACT and self.current_price != self.target_price)
+        )
 
     @staticmethod
     def extractQueryRowData(row: tuple):
-        return PriceAlarm(row[1], row[3], row[2], row[4], row[5], row[0])
+        return PriceAlarm(
+            id=row[0],
+            chat_id=row[1],
+            token=row[2],
+            target_price=row[3],
+            market=MarketOptions.which(row[4]),
+            change_direction=row[5],
+            target_unit=row[6],
+        )
 
     @staticmethod
-    def getAlarms(id: int):
-        alarms_rows = PriceAlarm.database().get_alarms(None)
-        return list(map(PriceAlarm.extractQueryRowData, alarms_rows))
+    def getAlarm(id: int):
+        alarm_rows = PriceAlarm.database().get_single_alarm(id)
+        return PriceAlarm.extractQueryRowData(alarm_rows)
 
     @staticmethod
     def getUserAlarms(chat_id: int):
-        rows = PriceAlarm.database().get_user_alarms(int(chat_id))
+        rows = PriceAlarm.database().get_user_alarms(chat_id)
         return list(map(PriceAlarm.extractQueryRowData, rows))
 
     @staticmethod
-    def get(currencies: List[str] | None = None):
+    def get(tokens: List[str] | None = None):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
-        rows = PriceAlarm.database().get_alarms_by_currencies(currencies) if currencies else PriceAlarm.database().get_alarms()
+        rows = PriceAlarm.database().get_alarms_by_tokens(tokens) if tokens else PriceAlarm.database().get_alarms()
         return list(map(PriceAlarm.extractQueryRowData, rows))
 
     def disable(self):

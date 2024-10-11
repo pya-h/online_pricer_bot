@@ -196,7 +196,7 @@ class NavasanService(CurrencyService):
         if not NavasanService.currenciesInPersian:
             NavasanService.loadPersianNames()
         if symbol not in NavasanService.currenciesInPersian:
-            raise InvalidInputException("Currency Symbol/Name!")
+            raise InvalidInputException(f"Currency Symbol/Name: {symbol}!")
         return NavasanService.currenciesInPersian[symbol]
 
     def extract_api_response(
@@ -308,7 +308,7 @@ class NavasanService(CurrencyService):
         if not self.latest_data:
             raise NoLatestDataException("use for equalizing!")
         if source_unit_symbol not in NavasanService.currenciesInPersian:
-            raise InvalidInputException("Currency/Gold symbol!")
+            raise InvalidInputException(f"Currency/Gold symbol: {source_unit_symbol}!")
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
         try:
@@ -335,8 +335,7 @@ class NavasanService(CurrencyService):
         curr = currency_symbol.lower()
         price_unit = price_unit.lower()
         if (
-            not self.latest_data
-            or not isinstance(self.latest_data, dict)
+            not isinstance(self.latest_data, dict)
             or not curr in self.latest_data
             or not "value" in self.latest_data[curr]
         ):
@@ -377,7 +376,9 @@ class NavasanService(CurrencyService):
             toman = persianify(toman)
             if price < 0:
                 toman = f"{toman[1:]}-"
-            return f"{NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان" + (f" / {usd}$" if usd else "")
+            return f"{NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان" + (
+                f" / {usd}$" if usd else ""
+            )  # TODO: Remove language based text from this class
         except Exception as x:
             pass
         return (

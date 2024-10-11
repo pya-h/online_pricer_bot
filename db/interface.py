@@ -111,11 +111,12 @@ class DatabaseInterface:
     PRICE_ALARMS_COLUMNS = (
         PRICE_ALARM_ID,
         PRICE_ALARM_TARGET_CHAT_ID,
-        PRICE_ALARM_TARGET_CURRENCY,
+        PRICE_ALARM_TARGET_TOKEN,
         PRICE_ALARM_TARGET_PRICE,
+        PRICE_ALARM_MARKET,
         PRICE_ALARM_CHANGE_DIRECTION,
         PRICE_ALARM_PRICE_UNIT,
-    ) = ("id", "chat_id", "currency", "price", "change_dir", "unit")
+    ) = ("id", "chat_id", "token", "price", "token_market", "change_dir", "unit")
 
     TABLE_TRASH = "trash"
     TRASH_COLUMNS = (
@@ -169,7 +170,7 @@ class DatabaseInterface:
 
     @staticmethod
     def stringToList(string: str) -> list:
-        """Use this method to extract saved currency or cryptocurrency list strings to List again."""
+        """Use this method to extract saved token list strings to List again."""
         if not string:
             return None
         string = string if string[-1] != ";" else string[:-1]
@@ -273,8 +274,8 @@ class DatabaseInterface:
                 query = (
                     f"CREATE TABLE {self.TABLE_PRICE_ALARMS} ("
                     + f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTO_INCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} BIGINT NOT NULL, "
-                    + f"{self.PRICE_ALARM_TARGET_PRICE} DOUBLE NOT NULL, {self.PRICE_ALARM_TARGET_CURRENCY} VARCHAR(16) NOT NULL, "
-                    + f"{self.PRICE_ALARM_CHANGE_DIRECTION} TINYINT(2), {self.PRICE_ALARM_PRICE_UNIT} VARCHAR(16) NOT NULL, "
+                    + f"{self.PRICE_ALARM_TARGET_TOKEN} VARCHAR(16) NOT NULL, {self.PRICE_ALARM_TARGET_PRICE} DOUBLE NOT NULL, "
+                    + f"{self.PRICE_ALARM_MARKET} TINYINT(2), {self.PRICE_ALARM_CHANGE_DIRECTION} TINYINT(2), {self.PRICE_ALARM_PRICE_UNIT} CHAR(8) NOT NULL, "
                     + f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
                 )
 
@@ -787,12 +788,19 @@ class DatabaseInterface:
             self.PRICE_ALARMS_COLUMNS[1:]
         )  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
+        print(alarm.chat_id,
+            alarm.token,
+            alarm.target_price,
+            alarm.market.value,alarm.market,
+            alarm.change_direction.value,
+            alarm.target_unit,)
         return self.execute(
             False,
             f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (%s{', %s' * (len(self.PRICE_ALARMS_COLUMNS) - 2)})",
             alarm.chat_id,
-            alarm.currency,
+            alarm.token,
             alarm.target_price,
+            alarm.market.value,
             alarm.change_direction.value,
             alarm.target_unit,
         )
@@ -804,22 +812,23 @@ class DatabaseInterface:
             id,
         )
 
-    def get_alarms(self, currency: str | None = None):
+    def get_alarms(self, token: str | None = None, market: int | None = None):
         return (
             self.execute(True, f"SELECT * from {self.TABLE_PRICE_ALARMS}")
-            if not currency
+            if not token
             else self.execute(
                 True,
-                f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY}=%s",
-                currency,
+                f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_TOKEN}=%s AND {self.PRICE_ALARM_MARKET}=%s",
+                token,
+                market,
             )
         )
 
-    def get_alarms_by_currencies(self, currencies: List[str]):
-        targets = "n".join([f"'{curr}'" for curr in currencies])
+    def get_alarms_by_tokens(self, tokens: List[str]):
+        targets = "n".join([f"'{curr}'" for curr in tokens])
         return self.execute(
             True,
-            f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_CURRENCY} IN ({targets})",
+            f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_TARGET_TOKEN} IN ({targets})",
         )
 
     def get_user_alarms(self, chat_id: int):
