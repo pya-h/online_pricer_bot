@@ -40,7 +40,7 @@ class PostInterval(GroupInlineKeyboardButtonTemplate):
     @property
     def timestamps(self):
         if self.minutes < 60:
-            return f"{self.minutes}m", f"{self.minutes} minutes", f"هر {self.minutes} دقیقه"
+            return f"{self.minutes}m", f"{self.minutes} minutes", f"{self.minutes} دقیقه"
 
         days = 0
         hours = int(self.minutes / 60)

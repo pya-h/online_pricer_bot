@@ -285,7 +285,8 @@ async def cmd_upgrade_user(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
-    account.change_state(Account.States.UPGRADE_USER, clear_cache=True)
+    account.change_state(Account.States.UPGRADE_USER,)
+    account.delete_specific_cache('upgrading')
     await update.message.reply_text(
         botman.text("specify_user", account.language),
         reply_markup=botman.cancel_menu(account.language),
@@ -346,7 +347,7 @@ async def cmd_send_plans_post(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
-    account.change_state(Account.States.ADMIN_CHANGE_PREMIUM_PLANS, clear_cache=True)
+    account.change_state(Account.States.ADMIN_CHANGE_PREMIUM_PLANS)
     await update.message.reply_text(
         botman.text("send_premium_plans_post", account.language),
         reply_markup=botman.cancel_menu(account.language),
@@ -390,7 +391,8 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
                 await func_send_message(botman.error("unknown", account.language))
                 account.change_state()
 
-    account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT, clear_cache=True)  # prepare for next input
+    account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT)
+    account.delete_specific_cache('input_amounts', 'input_symbols')
     await func_send_message(
         botman.text("continues_calculator_hint", account.language),
         reply_markup=botman.cancel_menu(account.language),
@@ -640,7 +642,7 @@ async def handle_action_queries(
             community_type = BotMan.CommunityType.which(int(params[0]))
             if not community_type:
                 await query.message.edit_text(botman.text("data_invalid", account.language))
-                account.change_state(clear_cache=True)
+                account.delete_specific_cache("community", 'msg2delete')
                 return
 
             if not (community := community_type.to_class().getByOwner(account.chat_id)):
@@ -649,10 +651,7 @@ async def handle_action_queries(
                     reply_markup=botman.mainkeyboard(account),
                 )
                 await query.message.delete()
-                if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
-                    account.change_state(clear_cache=True)
-                else:
-                    account.delete_specific_cache("community")
+                account.delete_specific_cache("community", 'msg2delete')
                 return
             if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
                 if (section := params[1].lower()) != "footer" and section != "header":
@@ -758,7 +757,7 @@ async def handle_action_queries(
                             page = int(callback_data["pg"])
                             # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
                             if page == -1 or callback_data["pg"] is None:
-                                account.change_state(clear_cache=True)
+                                account.change_state()
                                 await query.message.edit_text(botman.text("list_updated", account.language))
                                 await context.bot.send_message(
                                     chat_id=account.chat_id,
@@ -802,6 +801,7 @@ async def handle_action_queries(
                             await query.message.edit_text(botman.text("not_a_premium", account.language))
                         else:
                             await query.message.edit_text(botman.text("operation_canceled", account.language))
+                        account.delete_specific_cache('msg2edit')
                         # downgrade user
                     else:
                         account.add_cache('msg2edit', query.message.message_id)
@@ -872,11 +872,6 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         await handle_action_queries(query, context, account, data)
         return
 
-    # check if user is changing list page:
-    # FIXME: Add a message that says its the last page or the first page
-
-    # FIXME: Page index log is showing 0 only
-
     page: int
     try:
         page = int(data["pg"])
@@ -885,7 +880,8 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         page = 0
 
     if page == -1 or data["pg"] is None:
-        account.change_state(clear_cache=True)
+        account.change_state()
+        account.delete_specific_cache('input_amounts', 'input_symbols')
         await query.message.edit_text(botman.text("list_updated", account.language))
         return
 
@@ -980,14 +976,14 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
     except IndexError as ie:
         log("Invalid market selection procedure", ie, "general")
-        account.change_state(clear_cache=True)
+        account.change_state()
         await query.message.edit_text(text=botman.error("invalid_market_selection", account.language))
     except BadRequest:
         # when the message content is exactly the same
         pass
     except Exception as selection_ex:
         log("User could't select coins", selection_ex, "general")
-        account.change_state(clear_cache=True)
+        account.change_state()
         await query.message.edit_text(text=botman.error("unknown", account.language))
 
 
@@ -1022,7 +1018,8 @@ async def list_type_is_selected(update: Update):
 # premiums:
 async def cmd_start_using_in_channel(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    account.change_state(Account.States.ADD_BOT_AS_ADMIN, clear_cache=True)
+    account.change_state(Account.States.ADD_BOT_AS_ADMIN)
+    account.delete_specific_cache('channel_chat_id', 'community')
     await update.message.reply_text(
         botman.text("add_bot_as_channel_admin", account.language),
         reply_markup=botman.cancel_menu(account.language),
@@ -1252,8 +1249,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             if not BotMan.CommunityType.which(community_type):
                 await unknown_command_handler(update, context)
                 return
-            account.change_state(state)
-            await update.message.reply_text(
+            telegram_res: Message = await update.message.reply_text(
                 botman.text(f"write_msg_{section}", account.language),
                 reply_markup=botman.action_inline_keyboard(
                     BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS,
@@ -1264,6 +1260,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.language,
                 ),
             )
+            account.change_state(state, 'msg2delete', telegram_res.message_id)
         case BotMan.Commands.GROUP_CHANGE_FA.value | BotMan.Commands.GROUP_CHANGE_EN.value:
             account = Account.get(update.message.chat)
             group = Group.getByOwner(account.chat_id)
@@ -1396,7 +1393,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                         await go_to_community_panel(update, account, community)
                         account.delete_specific_cache("back")
                         return
-            account.change_state(clear_cache=True)
+            await botman.deleteRedundantMessage(account, context, delete_cache=False)
+            account.change_state(clear_cache=update.message.text == BotMan.Commands.RETURN_FA.value or update.message.text == BotMan.Commands.RETURN_EN.value)
             await update.message.reply_text(
                 botman.text(
                     (
@@ -1580,13 +1578,15 @@ async def handle_messages(update: Update, context: CallbackContext):
                         )
                     except:
                         pass
-                    account.change_state(clear_cache=True)
+                    account.change_state()
+                    account.delete_specific_cache("interval_menu_msg_id")
                 case Account.States.SET_MESSAGE_FOOTNOTE | Account.States.SET_MESSAGE_HEADER:
                     community_type = BotMan.CommunityType.which(account.get_cache("community"))
                     if not community_type:
                         await unknown_command_handler(update, context)
                         return
                     community = community_type.to_class().getByOwner(account.chat_id)
+                    await botman.deleteRedundantMessage(account, context)
                     if not community:
                         await update.message.reply_text(
                             botman.error(f"no_{community_type}s", account.language),
@@ -1664,7 +1664,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     botman.text("user_upgraded_premium", account.language),
                                     reply_markup=botman.mainkeyboard(account),
                                 )
-                                account.change_state(clear_cache=True)
+                                account.change_state()
                         case Account.States.DOWNGRADE_USER:
                             user = botman.identify_user(update)
 
@@ -1735,7 +1735,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
                                 reply_markup=botman.get_admin_keyboard(account.language),
                             )
-                            account.change_state(clear_cache=True)  # reset .state and .state_data
+                            account.change_state()
+                            account.delete_specific_cache('offset')
                             if removal_time:
                                 try:
                                     Account.schedulePostsForRemoval(trashes[:post_index])
@@ -1762,7 +1763,8 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                             text=botman.error("unexpected_error", owner.language),
                             reply_markup=botman.mainkeyboard(owner),
                         )
-                        owner.change_state(clear_cache=True)
+                        owner.change_state()
+                        owner.delete_specific_cache('changing_id')
                         return
                     try:
                         old_group.change(update.message.chat)
@@ -1773,10 +1775,10 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                                 BotMan.CommunityType.GROUP, owner.language
                             ),
                         )
+                        owner.delete_specific_cache('changing_id')
                         owner.change_state(
                             cache_key="community",
                             data=BotMan.CommunityType.GROUP.value,
-                            clear_cache=True,
                         )
                         await update.message.reply_text(botman.text("farewell_my_friends", owner.language))
                         await update.message.chat.leave()

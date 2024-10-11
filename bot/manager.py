@@ -1238,7 +1238,6 @@ class BotMan:
                 account.change_state(
                     cache_key="community",
                     data=BotMan.CommunityType.CHANNEL.value,
-                    clear_cache=True,
                 )
             except Exception as x:
                 log("sth went wrong while changing channel:", x, "Channel")
@@ -1252,9 +1251,9 @@ class BotMan:
         channel_chat_id: int,
         next_state: Account.States,
     ):
-        account.change_state(next_state, "channel_chat_id", channel_chat_id, clear_cache=True)
+        account.change_state(next_state, "channel_chat_id", channel_chat_id)
         response_message = await update.message.reply_text(
-            self.text("select_post_interval"),
+            self.text("select_post_interval", account.language),
             reply_markup=self.arrangeInlineKeyboardButtons(
                 Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL
             ),
@@ -1543,3 +1542,14 @@ class BotMan:
                 else:
                     raise ValueError("Unknown token and market")
         return currency_name, current_price
+
+    @staticmethod
+    async def deleteRedundantMessage(account: Account, context: CallbackContext, delete_cache: bool = True):
+        try:
+            msg_to_delete = account.get_cache('msg2delete')
+            if msg_to_delete:
+                await context.bot.delete_message(chat_id=account.chat_id,message_id=int(msg_to_delete))
+                if delete_cache:
+                    account.delete_specific_cache('msg2delete')
+        except Exception as x:
+            log('Failed to remove redundant message:', x, category_name='Minors')
