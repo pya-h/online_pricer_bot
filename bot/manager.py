@@ -154,6 +154,7 @@ class BotMan:
         REQUEST_RECONNECT_COMMUNITY = 14
         RECONNECT_COMMUNITY = 15
         LIST_ENTITY = 16
+        IVE_SUBSCRIBED = 17
         NONE = 0
 
         @staticmethod
@@ -210,11 +211,7 @@ class BotMan:
 
         @staticmethod
         def toClass(value: int) -> Channel | Group | None:
-            return (
-                Channel
-                if value == BotMan.CommunityType.CHANNEL.value
-                else Group if value == BotMan.CommunityType.GROUP.value else None
-            )
+            return Channel if value == BotMan.CommunityType.CHANNEL.value else Group if value == BotMan.CommunityType.GROUP.value else None
 
         def to_class(self) -> Channel | Group | None:
             return self.toClass(self.value)
@@ -743,9 +740,7 @@ class BotMan:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
             if idx_last > buttons_count:
                 idx_last = buttons_count
-            lbl_first, lbl_last = (
-                (persianify(idx_first + 1), persianify(idx_last)) if language == "fa" else (idx_first + 1, idx_last)
-            )
+            lbl_first, lbl_last = (persianify(idx_first + 1), persianify(idx_last)) if language == "fa" else (idx_first + 1, idx_last)
 
             pages_count = int(buttons_count / max_page_buttons)
             users = list(users)[idx_first:idx_last]
@@ -837,16 +832,8 @@ class BotMan:
 
     async def ask_for_subscription(self, update: Update, language: str = "fa"):
         await update.message.reply_text(
-            self.resourceman.text("ask_subscription_message", language)
-            % (self.channels[0]["username"], self.channels[-1]["username"]),
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(self.channels[-1]["username"], url=self.channels[-1]["url"]),
-                        InlineKeyboardButton(self.channels[0]["username"], url=self.channels[0]["url"]),
-                    ]
-                ]
-            ),
+            self.resourceman.text("ask_subscription_message", language) % (self.channels[0]["username"], self.channels[-1]["username"]),
+            reply_markup=self.action_inline_keyboard(self.QueryActions.IVE_SUBSCRIBED, {True: "ive_subscribed"}),
         )
         return None
 
@@ -952,8 +939,7 @@ class BotMan:
         if not account.is_premium:
             await self.send_message_with_premium_button(
                 telegram_handle,
-                text=self.error("max_selection", account.language) % (max_value,)
-                + self.error("get_premium", account.language),
+                text=self.error("max_selection", account.language) % (max_value,) + self.error("get_premium", account.language),
             )
         else:
             await telegram_handle.message.reply_text(text=self.error("max_selection", account.language) % (max_value,))
@@ -1026,6 +1012,7 @@ class BotMan:
             await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
         except Exception as x:
             print(x)
+
     def identify_user(self, update: Update) -> Account | None:
         """Get the user's Account object from update object by one of these methods:
         1- providing a forwarded message from the desired user
@@ -1123,13 +1110,9 @@ class BotMan:
         language: str = "fa",
         use_tags: bool = True,
     ):
-        res_crypto, _, absolute_irt = self.crypto_serv.equalize(
-            unit, amount, target_cryptos, (language := language.lower())
-        )
+        res_crypto, _, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos, (language := language.lower()))
         res_fiat, res_gold = (
-            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies, language)
-            if target_currencies
-            else (None, None)
+            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies, language) if target_currencies else (None, None)
         )
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:
@@ -1150,23 +1133,15 @@ class BotMan:
         language: str = "fa",
         use_tags: bool = True,
     ):
-        res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(
-            unit, amount, target_currencies, (language := language.lower())
-        )
-        res_crypto = (
-            self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos, language) if target_cryptos else None
-        )
+        res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies, (language := language.lower()))
+        res_crypto = self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos, language) if target_cryptos else None
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:
             return self.text("no_token_selected")
         amount = normal_float_display(amount)
         header = self.text("equalize_header", language) % (
             amount if language != "fa" else persianify(amount),
-            (
-                self.currency_serv.getEnglishTitle(unit)
-                if language != "fa"
-                else self.currency_serv.currenciesInPersian[unit]
-            ),
+            (self.currency_serv.getEnglishTitle(unit) if language != "fa" else self.currency_serv.currenciesInPersian[unit]),
         )
         return f"{header}\n\n{post}"
 
@@ -1192,8 +1167,7 @@ class BotMan:
                 interval_description = desc_en
             await ctx.bot.send_message(
                 chat_id=owner.chat_id,
-                text=self.text("click_to_start_channel_posting", owner.language)
-                % (post_interval, interval_description),
+                text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
                 reply_markup=self.action_inline_keyboard(
                     self.QueryActions.START_CHANNEL_POSTING,
                     {channel_id: "start"},
@@ -1254,15 +1228,11 @@ class BotMan:
         account.change_state(next_state, "channel_chat_id", channel_chat_id)
         response_message = await update.message.reply_text(
             self.text("select_post_interval", account.language),
-            reply_markup=self.arrangeInlineKeyboardButtons(
-                Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL
-            ),
+            reply_markup=self.arrangeInlineKeyboardButtons(Channel.SupportedIntervals, self.QueryActions.SELECT_POST_INTERVAL),
         )
         account.add_cache("interval_menu_msg_id", response_message.message_id)
 
-    async def handle_set_interval_outcome(
-        self, update: Update | CallbackQuery, context: CallbackContext, interval: int
-    ):
+    async def handle_set_interval_outcome(self, update: Update | CallbackQuery, context: CallbackContext, interval: int):
         account = Account.get(update.message.chat)
         channel_id = account.get_cache("channel_chat_id")
         try:
@@ -1508,9 +1478,7 @@ class BotMan:
         except Exception as x:
             total_report += f"{all_labels['channels'][language]}: {word_unknown}\n"
         try:
-            total_report += (
-                f"{all_labels['groups'][language]}: {groups_count if groups_count is not None else word_unknown}\n"
-            )
+            total_report += f"{all_labels['groups'][language]}: {groups_count if groups_count is not None else word_unknown}\n"
         except Exception as x:
             total_report += f"{all_labels['groups'][language]}: {word_unknown}\n"
         interaction_report = BotMan.createReportByLabels(
@@ -1546,10 +1514,10 @@ class BotMan:
     @staticmethod
     async def deleteRedundantMessage(account: Account, context: CallbackContext, delete_cache: bool = True):
         try:
-            msg_to_delete = account.get_cache('msg2delete')
+            msg_to_delete = account.get_cache("msg2delete")
             if msg_to_delete:
-                await context.bot.delete_message(chat_id=account.chat_id,message_id=int(msg_to_delete))
+                await context.bot.delete_message(chat_id=account.chat_id, message_id=int(msg_to_delete))
                 if delete_cache:
-                    account.delete_specific_cache('msg2delete')
+                    account.delete_specific_cache("msg2delete")
         except Exception as x:
-            log('Failed to remove redundant message:', x, category_name='Minors')
+            log("Failed to remove redundant message:", x, category_name="Minors")

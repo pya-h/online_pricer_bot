@@ -35,6 +35,14 @@
     "my_groups": {
       "fa": "پنل گروه من",
       "en": "My Group Panel"
+    },
+    "use_in_channel": {
+      "fa": "اتصال ربات به کانال",
+      "en": "Connect Bot To Your Channel"
+    },
+    "use_in_group": {
+      "fa": "اتصال ربات به گروه",
+      "en": "Connect Bot To Your Group"
     }
   },
   "keyboard": {
@@ -225,6 +233,10 @@
     "prev_page": {
       "fa": "صفحه قبلی >",
       "en": "< Previous Page"
+    },
+    "ive_subscribed": {
+      "fa": "عضو شدم",
+      "en": "I've Subscribed"
     }
   },
   "which_market": {

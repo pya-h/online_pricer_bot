@@ -41,6 +41,7 @@ from models.channel import Channel, PostInterval
 from bot.post import PostMan
 from datetime import time
 from bot.settings import BotSettings
+import asyncio
 
 botman = BotMan()
 
@@ -118,7 +119,7 @@ async def update_markets(context: CallbackContext):
     await context.bot.send_message(chat_id=botman.channels[0]["id"], text=res)
 
 
-async def cmd_welcome(update: Update, context: CallbackContext):
+async def cmd_welcome(update: Update | CallbackQuery, context: CallbackContext):
     acc = Account.get(update.message.chat)
     # get old or create new account => automatically will be added to Account.Instances
     if not await botman.has_subscribed_us(acc.chat_id, context):
@@ -730,6 +731,10 @@ async def handle_action_queries(
                 community = community_type.to_class().restoreTrash(community_id)
                 await query.message.edit_text(botman.text("trash_restored", account.language))
 
+        case BotMan.QueryActions.IVE_SUBSCRIBED.value:
+            if value:
+                await asyncio.gather(cmd_welcome(query, context), query.message.delete())
+                return
         case _:
             if not account.authorization(context.args):
                 await query.message.edit_text(botman.error("what_the_fuck", account.language))
@@ -751,11 +756,13 @@ async def handle_action_queries(
                             # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
                             if page == -1 or callback_data["pg"] is None:
                                 account.change_state()
-                                await query.message.edit_text(botman.text("list_updated", account.language))
-                                await context.bot.send_message(
-                                    chat_id=account.chat_id,
-                                    text=botman.text("what_can_i_do", account.language),
-                                    reply_markup=botman.mainkeyboard(account),
+                                await asyncio.gather(
+                                    query.message.edit_text(botman.text("list_updated", account.language)),
+                                    context.bot.send_message(
+                                        chat_id=account.chat_id,
+                                        text=botman.text("what_can_i_do", account.language),
+                                        reply_markup=botman.mainkeyboard(account),
+                                    ),
                                 )
                                 return
                             menu = botman.users_list_menu(
