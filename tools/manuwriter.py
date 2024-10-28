@@ -6,7 +6,16 @@ import json
 LOG_FOLDER_PATH = "logs"
 
 
-def prepare_folder(folder_path, sub_folder_path=None):
+def prepare_folder(folder_path):
+    # Check if the folder exists
+    main_folder_created = True
+    if not os.path.exists(folder_path):
+        # Create the folder if it doesn't exist
+        os.makedirs(folder_path)
+        return main_folder_created
+    return main_folder_created
+
+def prepare_folder_with_subs(folder_path, sub_folder_path=None):
     # Check if the folder exists
     main_folder_created, sub_folder_created = True, True
     if not os.path.exists(folder_path):
@@ -42,10 +51,22 @@ def log(msg, exception=None, category_name=None):
         prepare_folder(LOG_FOLDER_PATH)
     except:
         log_folder_path = ""
-    suffix = "fux" if (not category_name) or ("info" not in category_name.lower()) else "sux"
-    log_file_name = f"total.{suffix}" if not category_name else f"{category_name}.{suffix}"
+    suffix = (
+        "fux" if (not category_name) or ("info" not in category_name.lower()) else "sux"
+    )
+    log_file_name = (
+        f"total.{suffix}" if not category_name else f"{category_name}.{suffix}"
+    )
     logfile = open(f"./{log_folder_path}/{log_file_name}", "a")
-    logfile.write("%s\t=>\t%s\n\n" % (short_timestamp(time_delimiter=":", datetime_delimiter="\t", show_minutes=True), content))
+    logfile.write(
+        "%s\t=>\t%s\n\n"
+        % (
+            short_timestamp(
+                time_delimiter=":", datetime_delimiter="\t", show_minutes=True
+            ),
+            content,
+        )
+    )
     logfile.close()
 
 
@@ -74,7 +95,12 @@ def load_json(json_filename: str, parent_folder: str = "."):
     return json.loads(str_json)
 
 
-def random_string(length: int, capital_case: bool = True, lower_case: bool = False, *signs_or_special_chars) -> str:
+def random_string(
+    length: int,
+    capital_case: bool = True,
+    lower_case: bool = False,
+    *signs_or_special_chars,
+) -> str:
     """Generate a random meaningless string. by default its just upper and lowercase characters. if there's any sign needed, they can be added as extra params to function call.
     for increasing the possibility of occurring a sign/character in string multiply it by a int like: random_text(15, True, False, ':' * 5, 's' * 4, ' ' * 10)
     """
@@ -95,3 +121,18 @@ def random_string(length: int, capital_case: bool = True, lower_case: bool = Fal
     if not lower_case and capital_case and (res[0] >= "a" or res[0] <= "z"):
         return f"{res[0].upper()}{res[1:]}"
     return res.capitalize() if capital_case else res
+
+
+def archive_price_data(
+    cache_folder: str,
+    archive_subfolder: str,
+    filename: str,
+    price_data_json: str,
+    data_tag: str,
+):
+    fwrite_from_scratch(
+        "./%s/%s/%s_%s.json"
+        % (cache_folder, archive_subfolder, filename, short_timestamp()),
+        price_data_json,
+        data_tag,
+    )

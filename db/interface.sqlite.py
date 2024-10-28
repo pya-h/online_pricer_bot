@@ -481,7 +481,7 @@ class DatabaseInterface:
         tables = (
             [single_table_name] if single_table_name else [self.TABLE_ACCOUNTS, self.TABLE_CHANNELS, self.TABLE_PRICE_ALARMS]
         )
-        backup_folder_created, _ = prepare_folder(self.BACKUP_FOLDER)
+        backup_folder_created = prepare_folder(self.BACKUP_FOLDER)
 
         filename_prefix = f"./{self.BACKUP_FOLDER}/" if backup_folder_created else "./"
 

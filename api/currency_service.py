@@ -74,7 +74,11 @@ class GoldService(BaseAPIService):
             GoldService.goldsInEnglish = get_gold_names("golds.sa.en")
 
     async def append_gold_prices(self, api_data: dict):
-        self.latest_data = await self.get_request()  # update latest
+        try:
+            self.latest_data = await self.get_request()  # update latest
+        except Exception as x:
+            log("Gold Price Update Failure, using old prices...", x, "SourceArenaGolds")
+
         for curr in self.latest_data:
             slug = curr["slug"].upper()
 
@@ -235,11 +239,14 @@ class NavasanService(CurrencyService):
         language: str = "fa",
         no_price_message: str | None = None,
     ) -> str:
-        self.latest_data = await self.get_request()  # update latest
+        try:
+            self.latest_data = await self.get_request()  # update latest
+        except Exception as ex:
+            log('Navasan prices failed to fetch:', ex, 'NavasanAPI')
         try:
             await self.gold_service.append_gold_prices(self.latest_data)
         except Exception as ex:
-            log("Gold Price Update Failure", ex, "SourceArenaGolds")
+            log("Failed to append gold prices to navasan", ex, "NavasanAPI")
 
         if self.tether_service.recent_value:
             self.set_tether_tomans(self.tether_service.recent_value)

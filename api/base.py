@@ -5,7 +5,7 @@ import api.api_async as api
 from typing import Dict, List, Tuple
 
 CACHE_FOLDER_PATH = "api.cache"
-CACHE_ARCHIVE_FOLDER_PATH = "archives"
+# CACHE_ARCHIVE_FOLDER_PATH = "archives"
 
 
 class BaseAPIService:
@@ -21,34 +21,22 @@ class BaseAPIService:
         self.timeout: int = timeout
         self.params: dict = params or dict()
         self.cache_file_name: str = cache_file_name
+        self.cache_folder_created: bool = False
         self.latest_data = (
             []
         )  # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
         # Causing: App enhancement, less APi Calls(For best managemnt of non-free API uses), Less cache file read for improving bot performance and speed and prevention of lags
 
     def cache_data(self, data: str, custom_file_name: str = None) -> None:
-        can_be_archived = True
-        try:
-            _, can_be_archived = manuwriter.prepare_folder(CACHE_FOLDER_PATH, CACHE_ARCHIVE_FOLDER_PATH)
-        except OSError as e:
-            manuwriter.log("api-cache folder creation failed!", e, "cache")
-            raise CacheFailureException("Cache Folder creation failed!")
+        if not self.cache_folder_created:
+            try:
+                self.cache_folder_created = manuwriter.prepare_folder(CACHE_FOLDER_PATH)
+            except OSError as e:
+                manuwriter.log("api-cache folder creation failed!", e, "cache")
+                raise CacheFailureException("Cache Folder creation failed!")
         try:
             filename = self.cache_file_name if not custom_file_name else custom_file_name
-
             manuwriter.fwrite_from_scratch(f"./{CACHE_FOLDER_PATH}/{filename}", data, self.Source)
-            if (
-                can_be_archived
-            ):  # as mentioned before, archiving is not crucial; so it will be ignored if its folder can not be created
-                # although u should be aware that these errors and failure circumstances are rare
-                # Its just for making sure app never crashes
-                manuwriter.fwrite_from_scratch(
-                    "./%s/%s/%s_%s.json"
-                    % (CACHE_FOLDER_PATH, CACHE_ARCHIVE_FOLDER_PATH, filename, mathematix.short_timestamp()),
-                    data,
-                    self.Source,
-                )
-
         except Exception as ex:  # caching is so important for the performance of second bot that :
             # as soon as something goes wrong in caching, the admin must be informed.
             manuwriter.log("Caching failure!", ex, category_name="FATALITY")
