@@ -37,7 +37,6 @@ from bot.post import PostMan
 from datetime import time
 from bot.settings import BotSettings
 
-
 botman = BotMan()
 
 
@@ -316,7 +315,7 @@ async def cmd_send_post(update: Update, context: CallbackContext):
     account.change_state(Account.States.SEND_POST)
     await update.message.reply_text(
         botman.text("enter_remove_interval_in_days", account.language),
-        reply_markup=botman.cancel_menu[account.language],
+        reply_markup=botman.cancel_menu(account.language),
     )
 
 
@@ -1687,7 +1686,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     ) % (str_days,)
                                     await update.message.reply_text(
                                         botman.text("type_your_post_text", account.language) + suffix,
-                                        reply_markup=botman.cancel_menu[account.language],
+                                        reply_markup=botman.cancel_menu(account.language),
                                     )
                                     return
                                 except:
@@ -1894,7 +1893,7 @@ async def handle_multimedia_messages(update: Update, context: CallbackContext):
 # TODO: disable old caching
 # FIXME: Write script for CROSS_Checking CMC api response with my coin list
 # FIXME: Empty Tags in Equalizing
-def main():
+def main(run_webhook: bool = True):
     app = BotApplicationBuilder().token(botman.token).build()
     app.add_handler(CommandHandler("start", cmd_welcome))
     app.add_handler(CommandHandler("get", cmd_get_prices))
@@ -1936,20 +1935,23 @@ def main():
     app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))
 
     print("Server is up and running...")
-    # app.run_polling(poll_interval=0.2, timeout=10)
-
-    # Run as webhook
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=botman.bot_port,
-        webhook_url=f"{botman.host_url}/{botman.bot_tag}",
-        url_path=botman.bot_tag,
-    )
+    if not run_webhook:
+        app.run_polling(poll_interval=0.2, timeout=10)
+    else:
+        # Run as webhook
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=botman.bot_port,
+            webhook_url=f"{botman.host_url}/{botman.bot_tag}",
+            url_path=botman.bot_tag,
+        )
 
 
 if __name__ == "__main__":
     try:
-        main()
+        from decouple import config
+        run_method = config("RUN_METHOD", 'webhook')
+        main(run_webhook=run_method.lower() == 'webhook')
     except Exception as ex:
         print(ex)
         log("Server crashed because: ", ex, "FATALITY")
