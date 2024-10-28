@@ -5,6 +5,7 @@ from telegram.ext import (
     ApplicationBuilder as BotApplicationBuilder,
     MessageHandler,
     CallbackQueryHandler,
+    ChatMemberHandler,
 )
 from telegram import (
     Update,
@@ -15,6 +16,7 @@ from telegram import (
     MessageId,
     Chat,
     ReplyKeyboardRemove,
+    ChatMemberMember
 )
 from telegram.error import BadRequest
 from models.account import Account
@@ -24,7 +26,6 @@ from tools.mathematix import (
     cut_and_separate,
     persianify,
     n_days_later_timestamp,
-    separate_by3,
 )
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
@@ -391,7 +392,7 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
                 log("Error while equalizing", x, category_name="Calculator")
                 tasks.append(func_send_message(botman.error("unknown", account.language)))
                 account.change_state()
-    await asyncio.gather(*tasks)       
+    await asyncio.gather(*tasks)
     account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT)
     account.delete_specific_cache("input_amounts", "input_symbols")
     await func_send_message(
@@ -1600,7 +1601,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     community.save()
                     await update.message.reply_text(
                         botman.text("update_successful", account.language),
-                        reply_markup=botman.get_community_config_keyboard(community, account.language),
+                        reply_markup=botman.get_community_config_keyboard(community_type, account.language),
                     )
                     account.change_state()
                 case _:
@@ -1762,68 +1763,74 @@ async def handle_messages(update: Update, context: CallbackContext):
 
 
 async def handle_new_group_members(update: Update, context: CallbackContext):
-    my_id = context.bot.id
-    for member in update.message.new_chat_members:
-        if member.id == my_id:
-            owner = Account.getById(update.message.from_user.id)  # TODO: Use Join query if account is not in cache mem
-            try:
-                if owner.state == Account.States.CHANGE_GROUP:
-                    old_group_id = owner.get_cache("changing_id")
-                    old_group: Group
-                    if not old_group_id or not (old_group := Group.get(old_group_id, no_fastmem=True)):
-                        await context.bot.send_message(
-                            chat_id=owner.chat_id,
-                            text=botman.error("unexpected_error", owner.language),
-                            reply_markup=botman.mainkeyboard(owner),
-                        )
-                        owner.change_state()
-                        owner.delete_specific_cache("changing_id")
-                        return
-                    try:
-                        old_group.change(update.message.chat)
-                        say_farewell_task = update.message.reply_text(
-                            botman.text("farewell_my_friends", owner.language)
-                        )  # FIXME: Check if everything goes well.
-                        await asyncio.gather(
-                            say_farewell_task,
-                            context.bot.send_message(
-                                chat_id=owner.chat_id,
-                                text=botman.text("group_changed", owner.language),
-                                reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
-                            ),
-                            update.message.chat.leave(),
-                        )
-                        owner.delete_specific_cache("changing_id")
-                        owner.change_state(
-                            cache_key="community",
-                            data=BotMan.CommunityType.GROUP.value,
-                        )
-                    except InvalidInputException:
-                        await context.bot.send_message(
-                            chat_id=owner.chat_id,
-                            text=botman.error("changed_group_is_the_same", owner.language),
-                            reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
-                        )
-                    except:
-                        pass
+    if not update.my_chat_member or not update.my_chat_member.new_chat_member:
+        return
+
+    if update.my_chat_member.new_chat_member.user.id == context.bot.id:
+        owner = Account.getById(update.my_chat_member.from_user.id)
+        if update.my_chat_member.new_chat_member and update.my_chat_member.new_chat_member.status != ChatMemberMember.MEMBER:
+            # TODO: Handle other Member states [if required]
+            if update.my_chat_member.new_chat_member.status == ChatMemberMember.LEFT:
+                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('seems_bot_was_removed_from_group', owner.language))
+            return
+        try:
+            if owner.state == Account.States.CHANGE_GROUP:
+                old_group_id = owner.get_cache("changing_id")
+                old_group: Group
+                if not old_group_id or not (old_group := Group.get(old_group_id, no_fastmem=True)):
+                    await context.bot.send_message(
+                        chat_id=owner.chat_id,
+                        text=botman.error("unexpected_error", owner.language),
+                        reply_markup=botman.mainkeyboard(owner),
+                    )
+                    owner.change_state()
+                    owner.delete_specific_cache("changing_id")
                     return
-                group = Group.register(update.message.chat, owner.chat_id)
-                if group.is_active:
+                try:
+                    say_farewell_task = context.bot.send_message(
+                        chat_id=old_group_id, text=botman.text("farewell_my_friends", owner.language)
+                    )
+                    old_group.change(update.my_chat_member.chat)
+                    await asyncio.gather(
+                        say_farewell_task,
+                        context.bot.send_message(
+                            chat_id=owner.chat_id,
+                            text=botman.text("group_changed", owner.language),
+                            reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
+                        ),
+                        context.bot.leave_chat(old_group_id),
+                    )
+                    owner.delete_specific_cache("changing_id")
+                    owner.change_state(
+                        cache_key="community",
+                        data=BotMan.CommunityType.GROUP.value,
+                    )
+                except InvalidInputException:
                     await context.bot.send_message(
                         chat_id=owner.chat_id,
-                        text=botman.text("group_is_active", owner.language) % (group.title,),
+                        text=botman.error("changed_group_is_the_same", owner.language),
+                        reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
                     )
-                else:
-                    await context.bot.send_message(
-                        chat_id=owner.chat_id,
-                        text=botman.text("go_premium_for_group_activation", owner.language) % (group.title),
-                    )
-            except MaxAddedCommunityException:
+                except:
+                    pass
+                return
+            group = Group.register(update.my_chat_member.chat, owner.chat_id)
+            if group.is_active:
                 await context.bot.send_message(
                     chat_id=owner.chat_id,
-                    text=botman.error("max_groups_reached", owner.language),
+                    text=botman.text("group_is_active", owner.language) % (group.title,),
                 )
-            return
+            else:
+                await context.bot.send_message(
+                    chat_id=owner.chat_id,
+                    text=botman.text("go_premium_for_group_activation", owner.language) % (group.title),
+                )
+        except MaxAddedCommunityException:
+            await context.bot.send_message(
+                chat_id=owner.chat_id,
+                text=botman.error("max_groups_reached", owner.language),
+            )
+        return
 
 
 async def cmd_refresh(update: Update, context: CallbackContext):
@@ -1849,7 +1856,7 @@ async def handle_group_messages(update: Update, context: CallbackContext):
     group: Group = Group.get(update.message.chat.id)
     to_user: Account = Account.getById(update.message.from_user.id)
 
-    if not group.is_active:
+    if not group or not group.is_active:
         return
 
     tasks: List[Message] = []
@@ -1929,7 +1936,7 @@ def main(run_webhook: bool = True):
     app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
 
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, handle_new_group_members))
+    app.add_handler(ChatMemberHandler(handle_new_group_members, ChatMemberHandler.MY_CHAT_MEMBER))
     app.add_handler(
         MessageHandler(
             filters.ChatType.GROUPS,
@@ -1939,7 +1946,7 @@ def main(run_webhook: bool = True):
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_messages))
     app.add_handler(MessageHandler(filters.ALL & filters.ChatType.PRIVATE, handle_multimedia_messages))
     app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
-    app.add_error_handler(unhandled_error_happened)
+    # app.add_error_handler(unhandled_error_happened)
 
     app.job_queue.run_repeating(botman.process_channels, interval=60, first=60, name="PLUS_CHANNELS")
     app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))

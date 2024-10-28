@@ -764,5 +764,9 @@
   "u_can_list_entities": {
     "fa": "همچنین در صورت تمایل، ما می توانید با استفاده از گزینه های زیر، کاربران دارای اشتراک، گروه ها و کانال های متصل را به دلخواه لیسا کنید:",
     "en": "Also you can list premium users, channels and groups if you wish:, with buttons provided below:"
+  },
+  "seems_bot_was_removed_from_group": {
+    "fa": "به نظر می رسد که ربات از گروه متصل شده، حذف شده است؛ برای حفظ اطلاعات گروه برای اتصال بعدی، ربات اقدام هنوز به قطع اتصال نکرده است.\n\nدر صورتی که به طور کامل از استفاده از ربات در این گروه منصرف شده اید، می توانید از گزینه قطع اتصال یا تغییر گروه در پنل گروه من استفاده کنید.",
+    "en": "Seems that bot was kicked from the group this account has connected to; To keep your group configuration, bot does not automatically disconnect from group, in case you want to re-connect the bot to so called group.\n\nBut if you are sure, that you never use the bot in so called group, you can use the disconnect or change group option in Group panel."
   }
 }
