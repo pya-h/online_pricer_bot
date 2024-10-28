@@ -788,12 +788,6 @@ class DatabaseInterface:
             self.PRICE_ALARMS_COLUMNS[1:]
         )  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
-        print(alarm.chat_id,
-            alarm.token,
-            alarm.target_price,
-            alarm.market.value,alarm.market,
-            alarm.change_direction.value,
-            alarm.target_unit,)
         return self.execute(
             False,
             f"INSERT INTO {self.TABLE_PRICE_ALARMS} ({fields}) VALUES (%s{', %s' * (len(self.PRICE_ALARMS_COLUMNS) - 2)})",

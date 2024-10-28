@@ -12,6 +12,7 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
+    MessageId,
     Chat,
     ReplyKeyboardRemove,
 )
@@ -29,7 +30,7 @@ from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinMarketCapService
 from models.alarms import PriceAlarm
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from tools.exceptions import (
     NoLatestDataException,
     InvalidInputException,
@@ -358,6 +359,7 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
         await func_send_message(botman.error("only_available_on_cmc", account.language))
         return
     response: str
+    tasks: List[Message] = []
     for amount in amounts:
         for unit in units:
             try:
@@ -377,19 +379,19 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
                         account.calc_currencies,
                         account.language,
                     )
-                await func_send_message(response)
+                tasks.append(func_send_message(response))
             except ValueError as ex:
                 log("Error while equalizing", ex, category_name="Calculator")
-                await func_send_message(botman.error("price_not_available", account.language) % (unit,))
+                tasks.append(func_send_message(botman.error("price_not_available", account.language) % (unit,)))
             except NoLatestDataException:
-                await func_send_message(botman.error("api_not_available", account.language))
+                tasks.append(func_send_message(botman.error("api_not_available", account.language)))
             except InvalidInputException:
-                await func_send_message(botman.error("invalid_symbol", account.language) % (unit,))
+                tasks.append(func_send_message(botman.error("invalid_symbol", account.language) % (unit,)))
             except Exception as x:
                 log("Error while equalizing", x, category_name="Calculator")
-                await func_send_message(botman.error("unknown", account.language))
+                tasks.append(func_send_message(botman.error("unknown", account.language)))
                 account.change_state()
-
+    await asyncio.gather(*tasks)       
     account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT)
     account.delete_specific_cache("input_amounts", "input_symbols")
     await func_send_message(
@@ -790,8 +792,10 @@ async def handle_action_queries(
                     if len(values) > 1:
                         if values[1] == "y":
                             if target_user.is_premium:
-                                await botman.downgrade_user(target_user, context=context)
-                                await query.message.edit_text(botman.text("account_downgraded", account.language))
+                                await asyncio.gather(
+                                    botman.downgrade_user(target_user, context=context),
+                                    query.message.edit_text(botman.text("account_downgraded", account.language)),
+                                )
                                 msg_to_edit = account.get_cache("msg2edit")
                                 if msg_to_edit:
                                     premiums = await botman.list_premiums(
@@ -913,8 +917,10 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             input_amounts = account.get_cache("input_amounts")
             if input_amounts:
                 unit_symbol = data["v"].upper()
-                await query.message.edit_text(" ".join([str(amount) for amount in input_amounts]) + f" {unit_symbol}")
-                await start_equalizing(query.message.reply_text, account, input_amounts, [unit_symbol])
+                await asyncio.gather(
+                    query.message.edit_text(" ".join([str(amount) for amount in input_amounts]) + f" {unit_symbol}"),
+                    start_equalizing(query.message.reply_text, account, input_amounts, [unit_symbol]),
+                )
             else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
                 # condition possible(or not.!
                 await query.message.edit_text(botman.text("enter_desired_price", account.language))
@@ -957,8 +963,9 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
             if current_price_description:
                 message_text += f"\n\n{current_price_description}"
-            await query.message.reply_text(message_text, reply_markup=botman.cancel_menu(account.language))
-            await query.message.delete()
+            await asyncio.gather(
+                query.message.reply_text(message_text, reply_markup=botman.cancel_menu(account.language)), query.message.delete()
+            )
             return
 
     # if the user is configuring a list:
@@ -1682,9 +1689,9 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     return
                                 except:
                                     pass
+
                             all_accounts = Account.everybody()
-                            progress_text = botman.text("sending_your_post", account.language)
-                            telegram_response: Message = await update.message.reply_text(progress_text)
+                            telegram_response: Message = await update.message.reply_text(botman.text("sending_your_post", account.language))
                             message_id: int | None = None
                             removal_time: int | None = None
                             try:
@@ -1693,43 +1700,43 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 removal_time = n_days_later_timestamp(offset)
                             except:
                                 pass
-                            number_of_accounts = len(all_accounts)
-                            trashes: List[Tuple[int, int, int, int]] = [None] * number_of_accounts
-                            progress_update_trigger = number_of_accounts // 20 if number_of_accounts >= 100 else 5
-                            post_index = 0
-                            trash_message_type = Account.database().TrashType.MESSAGE.value
+                            targets_count = len(all_accounts) - 1
+                            post_tasks: List[MessageId] = [None] * targets_count
+                            chat_ids: List[int] = [None] * targets_count
+                            target_index = 0
                             for index, chat_id in enumerate(all_accounts):
                                 try:
-                                    if message_id and index % progress_update_trigger == 0:
-                                        progress = 100 * index / number_of_accounts
-                                        await context.bot.edit_message_text(
-                                            chat_id=account.chat_id,
-                                            message_id=message_id,
-                                            text=f"{progress_text}{progress:.2f} %",
-                                        )
                                     if chat_id != account.chat_id:
-                                        post = await update.message.copy(chat_id)
-                                        if removal_time:
-                                            trashes[post_index] = (
-                                                trash_message_type,
-                                                chat_id,
-                                                post.message_id,
-                                                removal_time,
-                                            )
-                                            post_index += 1
+                                        post_tasks[target_index] = update.message.copy(chat_id)
+                                        chat_ids[target_index] = chat_id
+                                        target_index += 1
                                 except:
                                     pass  # maybe remove the account from database ?
-                            if message_id:
-                                await context.bot.delete_message(chat_id=account.chat_id, message_id=message_id)
-                            await update.message.reply_text(
-                                botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
-                                reply_markup=botman.get_admin_keyboard(account.language),
+
+                            post_tasks = await asyncio.gather(*post_tasks)
+                            await asyncio.gather(
+                                context.bot.delete_message(chat_id=account.chat_id, message_id=message_id),
+                                update.message.reply_text(
+                                    botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
+                                    reply_markup=botman.get_admin_keyboard(account.language),
+                                ),
                             )
+
                             account.change_state()
                             account.delete_specific_cache("offset")
                             if removal_time:
                                 try:
-                                    Account.schedulePostsForRemoval(trashes[:post_index])
+                                    Account.schedulePostsForRemoval(
+                                        [
+                                            (
+                                                Account.database().TrashType.MESSAGE.value,
+                                                chat_ids[i],
+                                                task.message_id,
+                                                removal_time,
+                                            )
+                                            for i, task in enumerate(post_tasks)
+                                        ]
+                                    )
                                     await update.message.reply_text(
                                         botman.text(
                                             "posts_scheduled_for_removal",
@@ -1774,18 +1781,23 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                         return
                     try:
                         old_group.change(update.message.chat)
-                        await context.bot.send_message(
-                            chat_id=owner.chat_id,
-                            text=botman.text("group_changed", owner.language),
-                            reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
+                        say_farewell_task = update.message.reply_text(
+                            botman.text("farewell_my_friends", owner.language)
+                        )  # FIXME: Check if everything goes well.
+                        await asyncio.gather(
+                            say_farewell_task,
+                            context.bot.send_message(
+                                chat_id=owner.chat_id,
+                                text=botman.text("group_changed", owner.language),
+                                reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
+                            ),
+                            update.message.chat.leave(),
                         )
                         owner.delete_specific_cache("changing_id")
                         owner.change_state(
                             cache_key="community",
                             data=BotMan.CommunityType.GROUP.value,
                         )
-                        await update.message.reply_text(botman.text("farewell_my_friends", owner.language))
-                        await update.message.chat.leave()
                     except InvalidInputException:
                         await context.bot.send_message(
                             chat_id=owner.chat_id,
@@ -1840,6 +1852,7 @@ async def handle_group_messages(update: Update, context: CallbackContext):
     if not group.is_active:
         return
 
+    tasks: List[Message] = []
     for input_list in [
         (crypto_amounts, botman.create_crypto_equalize_message),
         (currency_amounts, botman.create_currency_equalize_message),
@@ -1857,10 +1870,13 @@ async def handle_group_messages(update: Update, context: CallbackContext):
                 group.message_show_market_tags,
             )
 
-            await update.message.reply_text(
-                PostMan.customizePost(message, group, to_user.language),
-                reply_markup=ReplyKeyboardRemove(),
+            tasks.append(
+                update.message.reply_text(
+                    PostMan.customizePost(message, group, to_user.language),
+                    reply_markup=ReplyKeyboardRemove(),
+                )
             )
+    await asyncio.gather(*tasks)
 
 
 async def unhandled_error_happened(update: Update, context: CallbackContext):

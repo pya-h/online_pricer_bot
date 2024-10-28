@@ -442,8 +442,8 @@
     "en": "Operation canceled."
   },
   "sending_your_post": {
-    "fa": "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد...\n\nپیشرفت: ",
-    "en": "I'm now sending this post to our users. This may take a while...\n\nProgress:"
+    "fa": "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد. پس از ارسال تمامی پیام ها بات به شما اطلاع می دهد ...",
+    "en": "I'm now sending this post to our users. This may take a while; After all messages are sent, I will notify you ..."
   },
   "post_successfully_sent": {
     "fa": "✅ پیام شما با موفقیت برای تمامی کاربران ربات (%d نفر) ارسال شد.",

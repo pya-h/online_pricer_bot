@@ -23,7 +23,6 @@ class BotSettings:
     @staticmethod
     def get():
         if not BotSettings.singleInstance:
-            print('X Reloading settings json again.')
             BotSettings.singleInstance = BotSettings()
         return BotSettings.singleInstance
 

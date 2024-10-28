@@ -70,4 +70,3 @@ class ChannelPostMan(PostMan):
                 self.crypto_service.latest_data = self.crypto_service.get_request()
             except Exception as ex:
                 manuwriter.log("Can not update crypto data for other channels use!", ex, "PLUS_FATALITY")
-        print("Updated post_service")

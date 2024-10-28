@@ -1011,7 +1011,7 @@ class BotMan:
                 return menu
             await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
         except Exception as x:
-            print(x)
+            log('Problem while listing premium users:', x, 'Admin')
 
     def identify_user(self, update: Update) -> Account | None:
         """Get the user's Account object from update object by one of these methods:
