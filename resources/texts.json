@@ -705,6 +705,10 @@
     "fa": "✅ زمان بندی حذف خودکار پست ها با موفقیت انجام گرفت.",
     "en": "✅ Scheduling posts for removal completed successfully."
   },
+  "posts_sent_by_not_scheduled": {
+    "fa": "✅ زمان بندی حذف خودکار پست ها با موفقیت انجام گرفت.\n\n⚠️ اما متاسفانه زمان بندی حذف خودکگار آن با مشکل مواجه شد، برای حل مشکل با دولوپر صحبت کنید.",
+    "en": "✅ Scheduling posts for removal completed successfully.\n\n⚠️ Unfortunately, auto-removal scheduling encountered a problem! Contact developer to fix the problem for next posts."
+  },
   "enter_remove_interval_in_days": {
     "fa": "ابتدا مشخص کنید که می خواهید این پست چند روز بعد پاک شود؟ تعداد روزها را به صورت عددی وارد کنید.\n\n* توجه: درصورتی که این یک پست دائمی است: یا عدد صفر را وارد کنید و یا اینکه این مرحله را نادیده بگیرید و مستقیما متن پیام را تایپ کنید تا برای همه کاربران بصورت دایمی ارسال شود..",
     "en": "Enter the number of days you wish the message to be deleted after?\n* Notice: If this is a permenant post: you can either enter zero [0] here, or you simply ignore this step and directly type your post text to sent it automatically to all users..."

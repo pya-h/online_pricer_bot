@@ -10,6 +10,7 @@
         "currs",
         "dateutil",
         "EMAMI",
+        "executemany",
         "fastmem",
         "fdata",
         "fotenote",

@@ -190,7 +190,7 @@ class DatabaseInterface:
         result = None
         conn = self.connection()
         cursor = conn.cursor()
-        r = cursor.execute(query, (*params,))
+        cursor.execute(query, (*params,))
         if is_fetch_query:
             result = cursor.fetchall()
         else:
@@ -201,10 +201,10 @@ class DatabaseInterface:
 
         return result
 
-    def bulk_query(self, query: str, param: list):
+    def bulk_query(self, query: str, params: list | tuple):
         conn = self.connection()
         cursor = conn.cursor()
-        res = cursor.execute(query, (tuple(param),))
+        res = cursor.executemany(query, params)
         conn.commit()
         cursor.close()
         conn.close()
