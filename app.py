@@ -583,9 +583,7 @@ async def handle_action_queries(
                 await query.message.edit_text(text=botman.error("factory_reset_incomplete", account.language))
                 log(f"User {account.chat_id} factory reset failed!", ex, "FactoryReset")
         case BotMan.QueryActions.SELECT_TUTORIAL.value:
-            import resources.longtext as long_texts
-
-            await query.message.edit_text(text=long_texts.TUTORIALS_TEXT[value][account.language])
+            await query.message.edit_text(text=BotMan.getLongText(value, account.language))
             return
         case BotMan.QueryActions.SELECT_POST_INTERVAL.value:
             await botman.handle_set_interval_outcome(query, context, value)

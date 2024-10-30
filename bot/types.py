@@ -63,7 +63,7 @@ class ResourceManager:
         return self.source["main_keyboard"][key][language]
 
     def text(self, text_key: str, language: str = "fa") -> str:
-        return self.source[text_key][language]
+        return self.source[text_key][language.lower()]
 
     def get(self, text_key: str):
         return self.source[text_key]

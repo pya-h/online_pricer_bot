@@ -1521,3 +1521,8 @@ class BotMan:
                     account.delete_specific_cache("msg2delete")
         except Exception as x:
             log("Failed to remove redundant message:", x, category_name="Minors")
+
+    @staticmethod
+    def getLongText(key: str, language: str = 'fa'):
+        import resources.longtext as long_texts
+        return long_texts.TUTORIALS_TEXT[key][language.lower()]
