@@ -913,7 +913,7 @@ class BotMan:
                     unit_names[alarm.target_unit][account.language],
                 )
 
-                if account.language.lower() == "fa":
+                if account.language == "fa":
                     target_price, current_price = persianify(target_price), persianify(current_price)
                 price_alarm_text = (
                     self.text("price_alarm", account.language)
@@ -1110,7 +1110,7 @@ class BotMan:
         language: str = "fa",
         use_tags: bool = True,
     ):
-        res_crypto, _, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos, (language := language.lower()))
+        res_crypto, _, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos, (language := language))
         res_fiat, res_gold = (
             self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies, language) if target_currencies else (None, None)
         )
@@ -1133,7 +1133,7 @@ class BotMan:
         language: str = "fa",
         use_tags: bool = True,
     ):
-        res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies, (language := language.lower()))
+        res_fiat, res_gold, absolute_usd, _ = self.currency_serv.equalize(unit, amount, target_currencies, (language := language))
         res_crypto = self.crypto_serv.usd_to_cryptos(absolute_usd, unit, target_cryptos, language) if target_cryptos else None
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:

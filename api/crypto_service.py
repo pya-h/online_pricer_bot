@@ -77,7 +77,7 @@ class CoinGeckoService(CryptoCurrencyService):
         desired_coins: List[str] = self.get_desired_ones(desired_coins)
         res = ""
         for symbol in desired_coins:   
-            res += self.get_price_description_row(symbol.upper(), language.lower(), no_price_message)
+            res += self.get_price_description_row(symbol.upper(), language, no_price_message)
 
         return res
 

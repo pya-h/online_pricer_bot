@@ -214,7 +214,7 @@ class NavasanService(CurrencyService):
         res_gold = ""
 
         for slug in desired_ones:
-            row = self.get_price_description_row(slug.lower(), language.lower(), no_price_message)
+            row = self.get_price_description_row(slug.lower(), language, no_price_message)
             if slug not in NavasanService.goldsInPersian:
                 res_curr += f"🔸 {row}\n"
             else:

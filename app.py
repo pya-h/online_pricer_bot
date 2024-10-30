@@ -844,11 +844,11 @@ async def handle_action_queries(
                             account.language,
                         )
                         number = page * limit + 1
-                        lang_is_persian = account.language.lower() == "fa"
+
                         for comm in communities:
                             premium_days = comm.owner.premium_days_remaining
                             premium_days, str_number = (
-                                (persianify(premium_days), persianify(number)) if lang_is_persian else (str(premium_days), str(number))
+                                (persianify(premium_days), persianify(number)) if account.language == 'fa' else (str(premium_days), str(number))
                             )
                             post_body += template % (
                                 str_number,
@@ -1054,7 +1054,7 @@ async def cmd_show_my_plan_status(update: Update, context: CallbackContext):
         if account.plus_end_date is not None:
             await botman.downgrade_user(account)
         return
-    str_days_remaining = str(days_remaining) if account.language.lower() != "fa" else persianify(days_remaining)
+    str_days_remaining = str(days_remaining) if account.language != "fa" else persianify(days_remaining)
     if days_remaining <= 7:
         await context.bot.send_message(
             chat_id=account.chat_id,
@@ -1678,7 +1678,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 try:
                                     days = int(update.message.text)
                                     account.add_cache("offset", days)
-                                    str_days = str(days) if account.language.lower() != "fa" else persianify(days)
+                                    str_days = str(days) if account.language != "fa" else persianify(days)
                                     suffix = botman.text(
                                         "this_message_will_be_removed_after",
                                         account.language,
