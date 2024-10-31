@@ -1,6 +1,7 @@
 venv
-env
 .env
+env
+.env.local
 test.py
 api.cache
 logs
@@ -16,3 +17,4 @@ CHECKOUTLOGS.zip
 important_logs
 telegram-responses.dat
 .vscode
+*.env*

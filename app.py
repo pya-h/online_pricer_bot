@@ -1983,8 +1983,8 @@ def main(run_webhook: bool = True):
         app.run_webhook(
             listen="0.0.0.0",
             port=botman.bot_port,
-            webhook_url="252f-151-235-32-11.ngrok-free.app/",
-            # url_path=botman.bot_tag,
+            webhook_url=f"{botman.host_url}/{botman.bot_tag}",
+            url_path=botman.bot_tag,
         )
 
 
