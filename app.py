@@ -16,7 +16,7 @@ from telegram import (
     MessageId,
     Chat,
     ReplyKeyboardRemove,
-    ChatMemberMember
+    ChatMemberMember,
 )
 from telegram.error import BadRequest
 from models.account import Account
@@ -425,7 +425,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
                     if alarm.token == MarketOptions.CRYPTO
                     else botman.currency_serv.currenciesInPersian[curreny_title]
                 )
-            unit = botman.text(f"price_unit_{alarm.target_unit}", 'fa' if account.language == 'fa' else 'en')
+            unit = botman.text(f"price_unit_{alarm.target_unit}", "fa" if account.language == "fa" else "en")
             descriptions[i] = f"{index}) {curreny_title}: {price} {unit}"
         except:
             descriptions[i] = f"{index}) " + botman.error("invalid_alarm_data", account.language)
@@ -491,7 +491,7 @@ async def handle_action_queries(
                 await query.delete_message()
                 return
 
-            if value == 'EN-FA':
+            if value == "EN-FA":
                 await query.message.edit_text(
                     text=botman.text("which_english_language_state_u_prefer", account.language),
                     reply_markup=botman.action_inline_keyboard(
@@ -500,7 +500,7 @@ async def handle_action_queries(
                         language=account.language,
                     ),
                 )
-                return 
+                return
             if value.lower() != "fa" and value != "en":
                 await query.answer(
                     text=botman.error("invalid_language", account.language),
@@ -583,11 +583,13 @@ async def handle_action_queries(
             try:
                 if value is not None and value.lower() == "y":
                     BotMan.factoryResetAccount(account)
-                    await query.message.delete()
-                    await context.bot.send_message(
-                        chat_id=account.chat_id,
-                        text=botman.text("factory_reset_successful", account.language),
-                        reply_markup=botman.mainkeyboard(account),
+                    await asyncio.gather(
+                        query.message.delete(),
+                        context.bot.send_message(
+                            chat_id=account.chat_id,
+                            text=botman.text("factory_reset_successful", account.language),
+                            reply_markup=botman.mainkeyboard(account),
+                        ),
                     )
             except Exception as ex:
                 await query.message.edit_text(text=botman.error("factory_reset_incomplete", account.language))
@@ -596,8 +598,7 @@ async def handle_action_queries(
             await query.message.edit_text(text=BotMan.getLongText(value, account.language))
             return
         case BotMan.QueryActions.SELECT_POST_INTERVAL.value:
-            await botman.handle_set_interval_outcome(query, context, value)
-            await query.message.delete()
+            await asyncio.gather(botman.handle_set_interval_outcome(query, context, value), query.message.delete())
             account.change_state(clear_cache=True)
             return
 
@@ -607,17 +608,21 @@ async def handle_action_queries(
                 if not channel:
                     raise Exception()
                 channel.plan()  # TODO: check this again
-                await query.message.reply_text(
-                    botman.text("channel_posting_started", account.language),
-                    reply_markup=botman.mainkeyboard(account),
+                await asyncio.gather(
+                    query.message.reply_text(
+                        botman.text("channel_posting_started", account.language),
+                        reply_markup=botman.mainkeyboard(account),
+                    ),
+                    query.message.delete(),
                 )
-                await query.message.delete()
             except:
-                await query.message.reply_text(
-                    botman.error("error_while_planning_channel", account.language),
-                    reply_markup=botman.mainkeyboard(account),
+                await asyncio.gather(
+                    query.message.reply_text(
+                        botman.error("error_while_planning_channel", account.language),
+                        reply_markup=botman.mainkeyboard(account),
+                    ),
+                    query.message.delete(),
                 )
-                await query.message.delete()
 
         case BotMan.QueryActions.TRIGGER_DATE_TAG.value | BotMan.QueryActions.TRIGGER_MARKET_TAGS.value:
             try:
@@ -655,22 +660,25 @@ async def handle_action_queries(
                 return
 
             if not (community := community_type.to_class().getByOwner(account.chat_id)):
-                await query.message.reply_text(
-                    botman.error(f"no_{community.__str__()}", account.language),
-                    reply_markup=botman.mainkeyboard(account),
+                await asyncio.gather(
+                    query.message.reply_text(
+                        botman.error(f"no_{community.__str__()}", account.language),
+                        reply_markup=botman.mainkeyboard(account),
+                    ),
+                    query.message.delete(),
                 )
-                await query.message.delete()
                 account.delete_specific_cache("community", "msg2delete")
                 return
             if action == BotMan.QueryActions.UPDATE_MESSAGE_SECTIONS.value:
                 if (section := params[1].lower()) != "footer" and section != "header":
                     await query.message.edit_text(botman.error("data_invalid", account.language))
+                    return
+
+                if section != "footer":
+                    community.message_header = None
                 else:
-                    if section != "footer":
-                        community.message_header = None
-                    else:
-                        community.message_footnote = None
-                    community.save()
+                    community.message_footnote = None
+                community.save()
                 account.change_state()
                 await query.message.edit_text(botman.text("update_successful", account.language))
             else:
@@ -748,12 +756,14 @@ async def handle_action_queries(
                 return
         case _:
             if not account.authorization(context.args):
-                await query.message.edit_text(botman.error("what_the_fuck", account.language))
-                await context.bot.send_message(
-                    chat_id=account.chat_id,
-                    text=botman.text("what_can_i_do", account.language),
-                    reply_markup=botman.mainkeyboard(account),
-                )  # to hide admin keyboard if it's shown by mistake
+                await asyncio.gather(
+                    query.message.edit_text(botman.error("what_the_fuck", account.language)),
+                    context.bot.send_message(
+                        chat_id=account.chat_id,
+                        text=botman.text("what_can_i_do", account.language),
+                        reply_markup=botman.mainkeyboard(account),
+                    ),
+                )
                 return
 
             # if admin:
@@ -856,7 +866,9 @@ async def handle_action_queries(
                         for comm in communities:
                             premium_days = comm.owner.premium_days_remaining
                             premium_days, str_number = (
-                                (persianify(premium_days), persianify(number)) if account.language == 'fa' else (str(premium_days), str(number))
+                                (persianify(premium_days), persianify(number))
+                                if account.language == "fa"
+                                else (str(premium_days), str(number))
                             )
                             post_body += template % (
                                 str_number,
@@ -1016,7 +1028,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
 async def cmd_switch_language(update: Update, _: CallbackContext):
     acc = Account.get(update.message.chat)
-    BotMan.updateUserLanguage(acc, "en" if acc.language != 'en' else "fa")
+    BotMan.updateUserLanguage(acc, "en" if acc.language != "en" else "fa")
     await update.message.reply_text(
         botman.text("language_switched", acc.language),
         reply_markup=botman.mainkeyboard(acc),
@@ -1776,7 +1788,7 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
         if update.my_chat_member.new_chat_member and update.my_chat_member.new_chat_member.status != ChatMemberMember.MEMBER:
             # TODO: Handle other Member states [if required]
             if update.my_chat_member.new_chat_member.status == ChatMemberMember.LEFT:
-                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text('seems_bot_was_removed_from_group', owner.language))
+                await context.bot.send_message(chat_id=owner.chat_id, text=botman.text("seems_bot_was_removed_from_group", owner.language))
             return
         try:
             if owner.state == Account.States.CHANGE_GROUP:
