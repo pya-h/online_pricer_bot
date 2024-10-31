@@ -1526,3 +1526,10 @@ class BotMan:
     def getLongText(key: str, language: str = 'fa'):
         import resources.longtext as long_texts
         return long_texts.TUTORIALS_TEXT[key][language.lower()]
+    
+    
+    @staticmethod
+    def updateUserLanguage(account: Account, language: str):
+        Channel.updateUserChannels(account)
+        account.language = language
+        account.save()

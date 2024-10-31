@@ -237,6 +237,14 @@
     "ive_subscribed": {
       "fa": "عضو شدم",
       "en": "I've Subscribed"
+    },
+    "whole_bot": {
+      "fa": "کل ربات",
+      "en": "Whole Bot"
+    },
+    "just_english_tokens": {
+      "fa": "نام های اختصاری",
+      "en": "Just Tokens"
     }
   },
   "which_market": {
@@ -768,5 +776,9 @@
   "seems_bot_was_removed_from_group": {
     "fa": "به نظر می رسد که ربات از گروه متصل شده، حذف شده است؛ برای حفظ اطلاعات گروه برای اتصال بعدی، ربات اقدام هنوز به قطع اتصال نکرده است.\n\nدر صورتی که به طور کامل از استفاده از ربات در این گروه منصرف شده اید، می توانید از گزینه قطع اتصال یا تغییر گروه در پنل گروه من استفاده کنید.",
     "en": "Seems that bot was kicked from the group this account has connected to; To keep your group configuration, bot does not automatically disconnect from group, in case you want to re-connect the bot to so called group.\n\nBut if you are sure, that you never use the bot in so called group, you can use the disconnect or change group option in Group panel."
+  },
+  "which_english_language_state_u_prefer": {
+    "fa": "🔹 می خواهید زبان [ کل ربات ] انگلیسی شود یا فقط [ نام های اختصاری ] انگلیسی شوند؟\n* هشدار: عدم انتخاب این مورد، باعث عدم تغییر زبان بات می گردد.",
+    "en": "🔹 Do you prefer the whole bot be in english, or just the token names and numbers?\n* Warning: Not selecting this menu, will prevent the bot from changing language!"
   }
 }

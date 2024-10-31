@@ -132,7 +132,7 @@ async def cmd_welcome(update: Update | CallbackQuery, context: CallbackContext):
         + botman.text("select_bot_language", acc.language),
         reply_markup=botman.action_inline_keyboard(
             BotMan.QueryActions.CHOOSE_LANGUAGE,
-            {"fa": "language_persian", "en": "language_english"},
+            {"fa": "language_persian", "EN-FA": "language_english"},
             language=acc.language,
         ),
     )
@@ -490,21 +490,31 @@ async def handle_action_queries(
             if not value:
                 await query.delete_message()
                 return
-            lang = value
-            if lang != "fa" and lang != "en":
+
+            if value == 'EN-FA':
+                await query.message.edit_text(
+                    text=botman.text("which_english_language_state_u_prefer", account.language),
+                    reply_markup=botman.action_inline_keyboard(
+                        BotMan.QueryActions.CHOOSE_LANGUAGE,
+                        {"FA": "just_english_tokens", "en": "whole_bot"},
+                        language=account.language,
+                    ),
+                )
+                return 
+            if value.lower() != "fa" and value != "en":
                 await query.answer(
                     text=botman.error("invalid_language", account.language),
                     show_alert=True,
                 )
                 return
-            account.language = lang
-            account.save()
-            Channel.updateUserChannels(account)
+
+            BotMan.updateUserLanguage(account, value)
             await context.bot.send_message(
                 text=botman.text("language_switched", account.language),
                 chat_id=account.chat_id,
                 reply_markup=botman.mainkeyboard(account),
             )
+
         case BotMan.QueryActions.SELECT_PRICE_UNIT.value:
             if value:
                 value = value.split(BotMan.CALLBACK_DATA_DELIMITER)
@@ -1004,11 +1014,9 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         await query.message.edit_text(text=botman.error("unknown", account.language))
 
 
-async def cmd_switch_language(update: Update, context: CallbackContext):
+async def cmd_switch_language(update: Update, _: CallbackContext):
     acc = Account.get(update.message.chat)
-    acc.language = "en" if acc.language == "fa" else "fa"
-    acc.save()
-    Channel.updateUserChannels(acc)
+    BotMan.updateUserLanguage(acc, "en" if acc.language.lower() == "fa" else "fa")
     await update.message.reply_text(
         botman.text("language_switched", acc.language),
         reply_markup=botman.mainkeyboard(acc),
@@ -1340,7 +1348,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 botman.text("select_bot_language", account.language),
                 reply_markup=botman.action_inline_keyboard(
                     BotMan.QueryActions.CHOOSE_LANGUAGE,
-                    {"fa": "language_persian", "en": "language_english", 0: "close"},
+                    {"fa": "language_persian", "EN-FA": "language_english", 0: "close"},
                     language=account.language,
                 ),
             )
