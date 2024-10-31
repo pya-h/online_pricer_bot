@@ -1259,6 +1259,7 @@ class BotMan:
                 if not channel:
                     raise NoSuchThingException(channel_id)
                 channel.interval = interval
+                channel.last_post_time = None
                 channel.save()
                 await update.message.reply_text(self.text("update_successful", account.language))
             else:
