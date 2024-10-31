@@ -727,7 +727,7 @@
     "en": "✅ Scheduling posts for removal completed successfully."
   },
   "posts_sent_by_not_scheduled": {
-    "fa": "✅ زمان بندی حذف خودکار پست ها با موفقیت انجام گرفت.\n\n⚠️ اما متاسفانه زمان بندی حذف خودکگار آن با مشکل مواجه شد، برای حل مشکل با دولوپر صحبت کنید.",
+    "fa": "✅ زمان بندی حذف خودکار پست ها با موفقیت انجام گرفت.\n\n⚠️ اما متاسفانه زمان بندی حذف خودکار آن با مشکل مواجه شد، برای حل مشکل با دولوپر صحبت کنید.",
     "en": "✅ Scheduling posts for removal completed successfully.\n\n⚠️ Unfortunately, auto-removal scheduling encountered a problem! Contact developer to fix the problem for next posts."
   },
   "enter_remove_interval_in_days": {

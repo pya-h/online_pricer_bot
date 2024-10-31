@@ -22,13 +22,7 @@ from telegram.error import BadRequest
 from models.account import Account
 import json
 from tools.manuwriter import log
-from tools.mathematix import (
-    cut_and_separate,
-    persianify,
-    n_days_later_timestamp,
-    seconds_to_next_minute,
-    seconds_to_next_tens
-)
+from tools.mathematix import cut_and_separate, persianify, n_days_later_timestamp, seconds_to_next_minute, seconds_to_next_tens
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinMarketCapService
@@ -394,7 +388,7 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
                 log("Error while equalizing", x, category_name="Calculator")
                 tasks.append(func_send_message(botman.error("unknown", account.language)))
                 account.change_state()
-    await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks, return_exceptions=True)
     account.change_state(Account.States.INPUT_EQUALIZER_AMOUNT)
     account.delete_specific_cache("input_amounts", "input_symbols")
     await func_send_message(
@@ -592,6 +586,7 @@ async def handle_action_queries(
                             text=botman.text("factory_reset_successful", account.language),
                             reply_markup=botman.mainkeyboard(account),
                         ),
+                        return_exceptions=True,
                     )
             except Exception as ex:
                 await query.message.edit_text(text=botman.error("factory_reset_incomplete", account.language))
@@ -600,7 +595,7 @@ async def handle_action_queries(
             await query.message.edit_text(text=BotMan.getLongText(value, account.language))
             return
         case BotMan.QueryActions.SELECT_POST_INTERVAL.value:
-            await asyncio.gather(botman.handle_set_interval_outcome(query, context, value), query.message.delete())
+            await asyncio.gather(botman.handle_set_interval_outcome(query, context, value), query.message.delete(), return_exceptions=True)
             account.change_state(clear_cache=True)
             return
 
@@ -616,6 +611,7 @@ async def handle_action_queries(
                         reply_markup=botman.mainkeyboard(account),
                     ),
                     query.message.delete(),
+                    return_exceptions=True,
                 )
             except:
                 await asyncio.gather(
@@ -624,6 +620,7 @@ async def handle_action_queries(
                         reply_markup=botman.mainkeyboard(account),
                     ),
                     query.message.delete(),
+                    return_exceptions=True,
                 )
 
         case BotMan.QueryActions.TRIGGER_DATE_TAG.value | BotMan.QueryActions.TRIGGER_MARKET_TAGS.value:
@@ -668,6 +665,7 @@ async def handle_action_queries(
                         reply_markup=botman.mainkeyboard(account),
                     ),
                     query.message.delete(),
+                    return_exceptions=True,
                 )
                 account.delete_specific_cache("community", "msg2delete")
                 return
@@ -754,7 +752,7 @@ async def handle_action_queries(
 
         case BotMan.QueryActions.IVE_SUBSCRIBED.value:
             if value:
-                await asyncio.gather(cmd_welcome(query, context), query.message.delete())
+                await asyncio.gather(cmd_welcome(query, context), query.message.delete(), return_exceptions=True)
                 return
         case _:
             if not account.authorization(context.args):
@@ -765,6 +763,7 @@ async def handle_action_queries(
                         text=botman.text("what_can_i_do", account.language),
                         reply_markup=botman.mainkeyboard(account),
                     ),
+                    return_exceptions=True,
                 )
                 return
 
@@ -786,6 +785,7 @@ async def handle_action_queries(
                                         text=botman.text("what_can_i_do", account.language),
                                         reply_markup=botman.mainkeyboard(account),
                                     ),
+                                    return_exceptions=True,
                                 )
                                 return
                             menu = botman.users_list_menu(
@@ -943,6 +943,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 await asyncio.gather(
                     query.message.edit_text(" ".join([str(amount) for amount in input_amounts]) + f" {unit_symbol}"),
                     start_equalizing(query.message.reply_text, account, input_amounts, [unit_symbol]),
+                    return_exceptions=True,
                 )
             else:  # actually this segment occurrence probability is near zero, but i wrote it down anyway to handle any
                 # condition possible(or not.!
@@ -987,7 +988,9 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
             if current_price_description:
                 message_text += f"\n\n{current_price_description}"
             await asyncio.gather(
-                query.message.reply_text(message_text, reply_markup=botman.cancel_menu(account.language)), query.message.delete()
+                query.message.reply_text(message_text, reply_markup=botman.cancel_menu(account.language)),
+                query.message.delete(),
+                return_exceptions=True,
             )
             return
 
@@ -1733,13 +1736,14 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 except:
                                     pass  # maybe remove the account from database ?
 
-                            post_tasks = await asyncio.gather(*post_tasks)
+                            post_tasks = await asyncio.gather(*post_tasks, return_exceptions=True)
                             await asyncio.gather(
                                 context.bot.delete_message(chat_id=account.chat_id, message_id=message_id),
                                 update.message.reply_text(
                                     botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
                                     reply_markup=botman.get_admin_keyboard(account.language),
                                 ),
+                                return_exceptions=True,
                             )
 
                             account.change_state()
@@ -1751,7 +1755,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                             (
                                                 Account.database().TrashType.MESSAGE.value,
                                                 chat_ids[i],
-                                                task.message_id,
+                                                task.message_id if not isinstance(task, Exception) else None,
                                                 removal_time,
                                             )
                                             for i, task in enumerate(post_tasks)
@@ -1818,6 +1822,7 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                             reply_markup=botman.get_community_config_keyboard(BotMan.CommunityType.GROUP, owner.language),
                         ),
                         context.bot.leave_chat(old_group_id),
+                        return_exceptions=True,
                     )
                     owner.delete_specific_cache("changing_id")
                     owner.change_state(
@@ -1902,7 +1907,7 @@ async def handle_group_messages(update: Update, context: CallbackContext):
                     reply_markup=ReplyKeyboardRemove(),
                 )
             )
-    await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 
 async def unhandled_error_happened(update: Update, context: CallbackContext):

@@ -834,7 +834,7 @@ class BotMan:
                 )
             except:
                 pass
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def ask_for_subscription(self, update: Update, language: str = "fa"):
         await update.message.reply_text(
@@ -998,7 +998,9 @@ class BotMan:
     async def clear_unwanted_menu_messages(self, update: Update, context: CallbackContext, operation_result):
         if isinstance(operation_result, Message):
             await asyncio.gather(
-                context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id), update.message.delete()
+                context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id),
+                update.message.delete(),
+                return_exceptions=True,
             )
             return
         await update.message.delete()
@@ -1186,6 +1188,7 @@ class BotMan:
                         columns_in_a_row=1,
                     ),
                 ),
+                return_exceptions=True,
             )
         except MaxAddedCommunityException:
             await ctx.bot.send_message(
@@ -1223,6 +1226,7 @@ class BotMan:
                         self.text("update_successful", account.language),
                         reply_markup=self.get_community_config_keyboard(BotMan.CommunityType.CHANNEL, account.language),
                     ),
+                    return_exceptions=True,
                 )
                 account.change_state(
                     cache_key="community",
@@ -1371,7 +1375,6 @@ class BotMan:
 
         Group.deleteAllUserGroups(account.chat_id)
 
-
     @staticmethod
     def getCommunity(community_type: int | CommunityType, owner_id: int) -> Group | Channel | None:
         if not community_type or (isinstance(community_type, BotMan.CommunityType) and not community_type.value):
@@ -1437,7 +1440,8 @@ class BotMan:
             for msg in deleting_messages:
                 try:
                     (_, chat_id, msg_id) = msg
-                    await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+                    if chat_id and msg_id:
+                        await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
                 except:
                     pass
             db.throw_away_messages_passed_time(from_time=now)
