@@ -26,6 +26,7 @@ from tools.mathematix import (
     cut_and_separate,
     persianify,
     n_days_later_timestamp,
+    seconds_to_next_minute
 )
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
@@ -1965,7 +1966,7 @@ def main(run_webhook: bool = True):
     app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
     # app.add_error_handler(unhandled_error_happened)
 
-    app.job_queue.run_repeating(botman.process_channels, interval=60, first=60, name="PLUS_CHANNELS")
+    app.job_queue.run_repeating(botman.process_channels, interval=30, first=seconds_to_next_minute() - 1, name="PLUS_CHANNELS")
     app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))
 
     print("Server is up and running.")

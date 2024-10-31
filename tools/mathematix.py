@@ -257,3 +257,7 @@ def extract_thousands(num: str) -> Tuple:
 def normal_float_display(number):
     abs_num = number if number >= 0 else -number
     return str(number) if abs_num >= 1 else '{:.16f}'.format(number).rstrip('0').rstrip('.')
+
+def seconds_to_next_minute():
+    now = tz_today()
+    seconds_remaining = 60 - now.second

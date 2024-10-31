@@ -45,6 +45,7 @@ from .types import (
 )
 from math import ceil as math_ceil
 from .settings import BotSettings
+import asyncio
 
 
 resourceman = ResourceManager("texts", "resources")
@@ -808,8 +809,9 @@ class BotMan:
 
     async def has_subscribed_us(self, chat_id: int, context: CallbackContext) -> bool:
         try:
-            chat1 = await context.bot.get_chat_member(self.channels[0]["id"], chat_id)
-            chat2 = await context.bot.get_chat_member(self.channels[-1]["id"], chat_id)
+            chat1, chat2 = await asyncio.gather(
+                context.bot.get_chat_member(self.channels[0]["id"], chat_id), context.bot.get_chat_member(self.channels[-1]["id"], chat_id)
+            )
         except BadRequest as ex:
             log(
                 "Can not determine channel membership, seems the bot is not an admin in specified channels.",
@@ -821,14 +823,18 @@ class BotMan:
 
     async def inform_admins(self, message_key: str, context: CallbackContext, is_error: bool = False):
         message_text = self.error if is_error else self.text
+        tasks = []
         for admin in Account.getAdmins(just_hardcode_admin=False):
             try:
-                await context.bot.send_message(
-                    chat_id=admin.chat_id,
-                    text=message_text(message_key, admin.language),
+                tasks.append(
+                    context.bot.send_message(
+                        chat_id=admin.chat_id,
+                        text=message_text(message_key, admin.language),
+                    )
                 )
             except:
                 pass
+        await asyncio.gather(*tasks)
 
     async def ask_for_subscription(self, update: Update, language: str = "fa"):
         await update.message.reply_text(
@@ -967,7 +973,7 @@ class BotMan:
                     ],
                     [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
                 ]
-                if account.language != 'en'
+                if account.language != "en"
                 else [
                     [KeyboardButton(BotMan.Commands.TUTORIALS_EN.value)],
                     [
@@ -991,7 +997,10 @@ class BotMan:
 
     async def clear_unwanted_menu_messages(self, update: Update, context: CallbackContext, operation_result):
         if isinstance(operation_result, Message):
-            await context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id)
+            await asyncio.gather(
+                context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id), update.message.delete()
+            )
+            return
         await update.message.delete()
 
     async def list_premiums(self, update: Update | CallbackQuery, list_type: QueryActions, only_menu: bool = False) -> bool:
@@ -1011,7 +1020,7 @@ class BotMan:
                 return menu
             await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
         except Exception as x:
-            log('Problem while listing premium users:', x, 'Admin')
+            log("Problem while listing premium users:", x, "Admin")
 
     def identify_user(self, update: Update) -> Account | None:
         """Get the user's Account object from update object by one of these methods:
@@ -1147,8 +1156,8 @@ class BotMan:
 
     async def prepare_channel(self, ctx: CallbackContext, owner: Account, channel_id: int, interval: int):
         try:
-            channel_response: Message = await ctx.bot.send_message(chat_id=channel_id, text="OK")
-            await ctx.bot.delete_message(chat_id=channel_id, message_id=channel_response.message_id)
+            channel_response = await ctx.bot.send_message(chat_id=channel_id, text="OK")
+
             channel = Channel(
                 channel_id,
                 owner.chat_id,
@@ -1165,14 +1174,17 @@ class BotMan:
                 interval_description = persianify(desc_fa)
             else:
                 interval_description = desc_en
-            await ctx.bot.send_message(
-                chat_id=owner.chat_id,
-                text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
-                reply_markup=self.action_inline_keyboard(
-                    self.QueryActions.START_CHANNEL_POSTING,
-                    {channel_id: "start"},
-                    owner.language,
-                    columns_in_a_row=1,
+            await asyncio.gather(
+                ctx.bot.delete_message(chat_id=channel_id, message_id=channel_response.message_id),
+                ctx.bot.send_message(
+                    chat_id=owner.chat_id,
+                    text=self.text("click_to_start_channel_posting", owner.language) % (post_interval, interval_description),
+                    reply_markup=self.action_inline_keyboard(
+                        self.QueryActions.START_CHANNEL_POSTING,
+                        {channel_id: "start"},
+                        owner.language,
+                        columns_in_a_row=1,
+                    ),
                 ),
             )
         except MaxAddedCommunityException:
@@ -1203,11 +1215,14 @@ class BotMan:
             old_channel := Channel.getByOwner(account.chat_id)
         ):
             try:
-                await context.bot.leave_chat(chat_id=old_channel.id)
+                old_channel_id = old_channel.id
                 old_channel.change(channel_chat)
-                await update.message.reply_text(
-                    self.text("update_successful", account.language),
-                    reply_markup=self.get_community_config_keyboard(BotMan.CommunityType.CHANNEL, account.language),
+                await asyncio.gather(
+                    context.bot.leave_chat(chat_id=old_channel_id),
+                    update.message.reply_text(
+                        self.text("update_successful", account.language),
+                        reply_markup=self.get_community_config_keyboard(BotMan.CommunityType.CHANNEL, account.language),
+                    ),
                 )
                 account.change_state(
                     cache_key="community",
@@ -1523,11 +1538,11 @@ class BotMan:
             log("Failed to remove redundant message:", x, category_name="Minors")
 
     @staticmethod
-    def getLongText(key: str, language: str = 'fa'):
+    def getLongText(key: str, language: str = "fa"):
         import resources.longtext as long_texts
+
         return long_texts.TUTORIALS_TEXT[key][language.lower()]
-    
-    
+
     @staticmethod
     def updateUserLanguage(account: Account, language: str):
         Channel.updateUserChannels(account)
