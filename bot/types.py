@@ -60,7 +60,7 @@ class ResourceManager:
         self.source = load_json(source_filename, source_foldername)
 
     def mainkeyboard(self, key: str, language: str = "fa") -> str:
-        return self.source["main_keyboard"][key][language]
+        return self.source["main_keyboard"][key][language.lower()]
 
     def text(self, text_key: str, language: str = "fa") -> str:
         return self.source[text_key][language.lower()]
@@ -69,7 +69,7 @@ class ResourceManager:
         return self.source[text_key]
 
     def error(self, text_key: str, language: str = "fa") -> str:
-        return self.source["errors"][text_key][language]
+        return self.source["errors"][text_key][language.lower()]
 
     def keyboard(self, key: str, language: str = "fa") -> str:
-        return self.source["keyboard"][key][language]
+        return self.source["keyboard"][key][language.lower()]

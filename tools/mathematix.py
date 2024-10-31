@@ -77,7 +77,7 @@ WEEKDAYS = ("دوشنبه", "سه شنبه", "چهارشنبه", "پنج شنب�
 
 def timestamp(language: str = 'fa') -> str:
     now = tz_today()  # timezone.localize(datetime.now())
-    if language != 'fa':
+    if language == 'en':
         formatted_date = now.strftime("%Y/%m/%d %A %H:%M")
         return f"📆 {formatted_date}"
     # today date and time as persian

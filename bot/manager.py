@@ -236,7 +236,7 @@ class BotMan:
         self.url = f"https://t.me/{username}"
         self.host_url = config("HOST_URL")
         self.bot_tag = config("BOT_TAG")
-        self.bot_port = config("BOT_PORT")
+        self.bot_port = int(config("BOT_PORT"))
         CMC_API_KEY = config("COINMARKETCAP_API_KEY")
         CURRENCY_TOKEN = config("CURRENCY_TOKEN")
         NOBITEX_TOKEN = config("NOBITEX_TOKEN")
@@ -328,7 +328,7 @@ class BotMan:
                 [KeyboardButton(BotMan.Commands.CANCEL_EN.value)],
             ],
         }
-        self.cancel_menu = lambda lang: ReplyKeyboardMarkup(self.cancel_menu_key[lang], resize_keyboard=True)
+        self.cancel_menu = lambda lang: ReplyKeyboardMarkup(self.cancel_menu_key[lang.lower()], resize_keyboard=True)
 
         self.return_key = {
             "fa": [
@@ -348,7 +348,7 @@ class BotMan:
                     [KeyboardButton(BotMan.Commands.CRYPTOS_FA.value)],
                     *self.return_key["fa"],
                 ]
-                if lang == "fa"
+                if lang != "en"
                 else [
                     [KeyboardButton(BotMan.Commands.NATIONAL_CURRENCIES_EN.value)],
                     [KeyboardButton(BotMan.Commands.GOLDS_EN.value)],
@@ -483,7 +483,7 @@ class BotMan:
                         ],
                         [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
                     ]
-                    if language == "fa"
+                    if language != "en"
                     else [
                         [
                             KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value),
@@ -524,7 +524,7 @@ class BotMan:
                     ],
                     [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
                 ]
-                if language == "fa"
+                if language != "en"
                 else [
                     [
                         KeyboardButton(BotMan.Commands.COMMUNITY_CONFIG_PRICE_LIST_EN.value),
@@ -967,7 +967,7 @@ class BotMan:
                     ],
                     [KeyboardButton(BotMan.Commands.RETURN_FA.value)],
                 ]
-                if account.language == "fa"
+                if account.language != 'en'
                 else [
                     [KeyboardButton(BotMan.Commands.TUTORIALS_EN.value)],
                     [

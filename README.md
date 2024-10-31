@@ -57,11 +57,11 @@ once you authenticated yourself as admin you will see 4 new options in keyboard 
 # Note:
 * User who is authenticated as Admin, will be logged out after 30 minutes of inactivity; just for security purposes. and alongside that the admin keyboard will be hidden again.
 * For enhancing performance, active users data will be cached in memory; Also there is a GarbageCollector method running every hour to free memory from inactive users.
-* For now Using CoinGecko as source, may encounter some bugs that will be fixed soon...
+* For now Using CoinGecko as source, may encounter some bugs that will be fixed soon.
 * Admin commands need authorization. but you can provide the admin credentials
     alongside these commands, so you won't need to /god before them. like:
 /schedule username password interval
 /gecko username password
-    ...
+   .
     once you did one admin command as above, the further authorization
         for other admin commands, won't be needed.

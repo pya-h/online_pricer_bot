@@ -77,7 +77,7 @@ class GoldService(BaseAPIService):
         try:
             self.latest_data = await self.get_request()  # update latest
         except Exception as x:
-            log("Gold Price Update Failure, using old prices...", x, "SourceArenaGolds")
+            log("Gold Price Update Failure, using old prices.", x, "SourceArenaGolds")
 
         for curr in self.latest_data:
             slug = curr["slug"].upper()

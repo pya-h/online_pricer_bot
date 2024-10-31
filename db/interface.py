@@ -305,7 +305,7 @@ class DatabaseInterface:
             conn.close()
         except Error as ex:
             log(
-                "Failed setting up database, app cannot continue...",
+                "Failed setting up database, app cannot continue.",
                 ex,
                 category_name="FUX",
             )

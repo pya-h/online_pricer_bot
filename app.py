@@ -425,7 +425,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
                     if alarm.token == MarketOptions.CRYPTO
                     else botman.currency_serv.currenciesInPersian[curreny_title]
                 )
-            unit = botman.text(f"price_unit_{alarm.target_unit}", account.language)
+            unit = botman.text(f"price_unit_{alarm.target_unit}", 'fa' if account.language == 'fa' else 'en')
             descriptions[i] = f"{index}) {curreny_title}: {price} {unit}"
         except:
             descriptions[i] = f"{index}) " + botman.error("invalid_alarm_data", account.language)
@@ -965,9 +965,9 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
             message_text = botman.text("enter_desired_price", account.language)
             current_price_description = (
-                botman.crypto_serv.get_price_description_row(symbol)
+                botman.crypto_serv.get_price_description_row(symbol, account.language)
                 if market == MarketOptions.CRYPTO
-                else botman.currency_serv.get_price_description_row(symbol)
+                else botman.currency_serv.get_price_description_row(symbol, account.language)
             )
 
             if current_price_description:
@@ -1016,7 +1016,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
 
 async def cmd_switch_language(update: Update, _: CallbackContext):
     acc = Account.get(update.message.chat)
-    BotMan.updateUserLanguage(acc, "en" if acc.language.lower() == "fa" else "fa")
+    BotMan.updateUserLanguage(acc, "en" if acc.language != 'en' else "fa")
     await update.message.reply_text(
         botman.text("language_switched", acc.language),
         reply_markup=botman.mainkeyboard(acc),
@@ -1160,7 +1160,6 @@ async def handle_messages(update: Update, context: CallbackContext):
                 return
             await go_to_community_panel(update, account, BotMan.CommunityType.GROUP)
         case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
-            await update.message.delete()
             await botman.show_settings_menu(update)
         case BotMan.Commands.GO_PREMIUM_FA.value | BotMan.Commands.GO_PREMIUM_EN.value:
             account = Account.get(update.message.chat)
@@ -1957,7 +1956,7 @@ def main(run_webhook: bool = True):
     app.job_queue.run_repeating(botman.process_channels, interval=60, first=60, name="PLUS_CHANNELS")
     app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))
 
-    print("Server is up and running...")
+    print("Server is up and running.")
     if not run_webhook:
         app.run_polling(poll_interval=0.2, timeout=10)
     else:
@@ -1965,8 +1964,8 @@ def main(run_webhook: bool = True):
         app.run_webhook(
             listen="0.0.0.0",
             port=botman.bot_port,
-            webhook_url=f"{botman.host_url}/{botman.bot_tag}",
-            url_path=botman.bot_tag,
+            webhook_url="252f-151-235-32-11.ngrok-free.app/",
+            # url_path=botman.bot_tag,
         )
 
 
