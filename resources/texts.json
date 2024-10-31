@@ -435,6 +435,7 @@
   },
   "language_switched": {
     "fa": "✅ زبان ربات فارسی شد.",
+    "FA": "✅ زبان ربات فارسی همراه با توکن ها و اعداد انگلیسی انتخاب شد.",
     "en": "✅ Language switched to English."
   },
   "price_alarm": {

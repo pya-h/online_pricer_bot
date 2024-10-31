@@ -8,16 +8,16 @@ from bot.post import PostMan
 class ParallelJob:
     """Define objects from this and use it in TelegramBot, it will does some parallel jobs in the bot by a specific interval [in minutes]"""
 
-    def __init__(self, interval: int, function: Callable[., any], *params) -> None:
+    def __init__(self, interval: int, function: Callable[..., any], *params) -> None:
         self.interval: int = interval
-        self.function: Callable[., any] = function
+        self.function: Callable[..., any] = function
         self.last_run_result: any = None
         self.last_call_time: int = None
         self.params: list[any] = params
         self.running: bool = False
 
     def go(self):
-        """Start running."""
+        """Start running..."""
         self.last_call_time = time() // 60
         self.running = True
         return self

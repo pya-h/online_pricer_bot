@@ -512,7 +512,7 @@ async def handle_action_queries(
 
             BotMan.updateUserLanguage(account, value)
             await context.bot.send_message(
-                text=botman.text("language_switched", account.language),
+                text=botman.resourceman.text_for_case_sensitive_key("language_switched", account.language),
                 chat_id=account.chat_id,
                 reply_markup=botman.mainkeyboard(account),
             )
@@ -1032,7 +1032,7 @@ async def cmd_switch_language(update: Update, _: CallbackContext):
     acc = Account.get(update.message.chat)
     BotMan.updateUserLanguage(acc, "en" if acc.language != "en" else "fa")
     await update.message.reply_text(
-        botman.text("language_switched", acc.language),
+        botman.resourceman.text_for_case_sensitive_key("language_switched", acc.language),
         reply_markup=botman.mainkeyboard(acc),
     )
 
