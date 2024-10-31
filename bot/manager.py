@@ -1460,6 +1460,7 @@ class BotMan:
         word_unknown: str,
         language: str = "fa",
     ):
+        language = language.lower()
         report = all_labels["title"][language] + "\n\n"
         for part in desired_labels:
             labels = all_labels[part]
@@ -1494,7 +1495,7 @@ class BotMan:
             word_unknown,
             language,
         )
-
+        language = language.lower()
         try:
             total_report += f"{all_labels['channels'][language]}: {channels_count if channels_count is not None else word_unknown}\n"
         except Exception as x:
