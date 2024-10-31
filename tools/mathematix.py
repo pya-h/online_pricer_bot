@@ -259,5 +259,13 @@ def normal_float_display(number):
     return str(number) if abs_num >= 1 else '{:.16f}'.format(number).rstrip('0').rstrip('.')
 
 def seconds_to_next_minute():
+    return 60 - tz_today().second
+    
+    
+def seconds_to_next_tens():
     now = tz_today()
-    seconds_remaining = 60 - now.second
+
+    next_tens_minute = ((now.minute // 10) + 1) * 10
+
+    minutes_remaining = next_tens_minute - now.minute
+    return (minutes_remaining * 60) - now.second

@@ -26,7 +26,8 @@ from tools.mathematix import (
     cut_and_separate,
     persianify,
     n_days_later_timestamp,
-    seconds_to_next_minute
+    seconds_to_next_minute,
+    seconds_to_next_tens
 )
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
@@ -200,7 +201,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     context.job_queue.run_repeating(
         update_markets,
         interval=botman.main_plan_interval * 60,
-        first=1,
+        first=seconds_to_next_tens() - 1,
         name=botman.main_queue_id,
     )
     await update.message.reply_text(botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
