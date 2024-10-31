@@ -1038,6 +1038,22 @@ class DatabaseInterface:
             f"SELECT * FROM `{self.TABLE_CHANNELS}` JOIN {self.TABLE_ACCOUNTS} ON {self.TABLE_ACCOUNTS}.{self.ACCOUNT_ID} = {self.TABLE_CHANNELS}.{self.CHANNEL_OWNER_ID} LIMIT {limit} OFFSET {offset}",
         )
 
+    def delete_all_user_groups(self, user_id: int):
+        """ *Warning: delete all groups owned by a user, all at once"""
+        self.execute(
+            False,
+            f"DELETE FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID} = %s",
+            user_id,
+        )
+    
+    def delete_all_user_channels(self, user_id: int):
+        """*Warning: delete all channels owned by a user, all at once"""
+        self.execute(
+            False,
+            f"DELETE FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_OWNER_ID} = %s",
+            user_id,
+        )
+
     def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
         tables = (
             [single_table_name]

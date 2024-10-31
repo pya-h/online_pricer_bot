@@ -206,6 +206,10 @@ class Channel:
                 chan.is_active = False
                 chan.save()
 
+    @staticmethod
+    def deleteAllUserChannels(user_id: int):
+        Channel.database().delete_all_user_channels(user_id)
+
     def __str__(self) -> str:
         return f"Username:{self.name}\nTitle: {self.title}\nId: {self.id}\nInterval: {self.interval}\nOwner Id: {self.owner_id}"
 

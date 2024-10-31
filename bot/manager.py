@@ -1360,14 +1360,16 @@ class BotMan:
         account.factory_reset()
 
         # disable(delete) all alarms
-        for alarm in PriceAlarm.getUserAlarms(account.chat_id):
-            alarm.disable()
+        user_alarms = PriceAlarm.getUserAlarms(account.chat_id)
+        if user_alarms:
+            for alarm in user_alarms:
+                alarm.disable()
 
         # stop(delete) all planned channels
-        for channel in Channel.getByOwner(account.chat_id, take=None):
-            channel.stop_plan()
+        Channel.deleteAllUserChannels(account.chat_id)
 
-        # FIXME: Also disable groups
+        Group.deleteAllUserGroups(account.chat_id)
+
 
     @staticmethod
     def getCommunity(community_type: int | CommunityType, owner_id: int) -> Group | Channel | None:

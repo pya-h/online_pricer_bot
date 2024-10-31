@@ -98,6 +98,15 @@ class Group:
             return False
         return True
 
+    @staticmethod
+    def deleteAllUserGroups(user_id: int):
+        Group.database().delete_all_user_groups(user_id)
+        Group.fastMemInstances = {
+            chat_id: group
+            for chat_id, group in Group.fastMemInstances.items()
+            if group.owner_id != user_id
+        }
+
     def throw_in_trashcan(self):
         self.database().trash_sth(
             self.owner_id, DatabaseInterface.TrashType.GROUP, self.id, self.as_dict
