@@ -1,9 +1,9 @@
 # Crypto Price Bot
 # Language: Python
 Running at:<br>
-<a href="https://t.me/online_pricer_bot"><h2>Online Pricer Bot v1: Production</h2></a>
+<h2><a href="https://t.me/online_pricer_bot">Online Pricer Bot v1: Production</a></h2>
 <br>
-<a href="https://t.me/temp_the_next_bot"><h3>Online Pricer Bot v2: Staging</h3></a>
+<h3><a href="https://t.me/temp_the_next_bot">Online Pricer Bot v2: Staging</a></h3>
 <hr>
 This telegram bot is for obtaining last updates on cryptocurrncies.
 it also can work as an channel admin to post updates every five minutes.
