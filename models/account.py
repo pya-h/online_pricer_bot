@@ -170,8 +170,8 @@ class Account:
 
         return False
 
-    def upgrade(self, duration_in_months: int):
-        Account.database().upgrade_account(self, duration_in_months)
+    def upgrade(self, duration_in_days: int):
+        Account.database().upgrade_account(self, duration_in_days)
 
     def downgrade(self):
         Account.database().downgrade_account(self)

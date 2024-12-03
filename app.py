@@ -27,7 +27,7 @@ from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinMarketCapService
 from models.alarms import PriceAlarm
-from typing import List, Tuple, Dict
+from typing import List
 from tools.exceptions import (
     NoLatestDataException,
     InvalidInputException,
@@ -1662,19 +1662,19 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     reply_markup=botman.cancel_menu(account.language),
                                 )
                             else:
-                                months: int | None = None
+                                days: int | None = None
                                 try:
-                                    months = int(text)
+                                    days = int(text)
                                 except:
-                                    months = None
-                                if not months or (months < 0):
+                                    days = None
+                                if not days or (days < 0):
                                     await update.message.reply_text(
-                                        botman.error("invalid_months_count", account.language),
+                                        botman.error("invalid_days_count", account.language),
                                         reply_markup=botman.cancel_menu(account.language),
                                     )
                                     return
                                 target = Account.getById(upgrading_chat_id)
-                                target.upgrade(months)
+                                target.upgrade(days)
 
                                 await context.bot.send_message(
                                     chat_id=target.chat_id,

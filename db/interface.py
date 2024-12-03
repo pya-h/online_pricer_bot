@@ -1,9 +1,7 @@
-import mysql.connector
 from mysql.connector import Error, pooling
 from datetime import datetime
 from tools.manuwriter import log, prepare_folder, fwrite_from_scratch
-from tools.mathematix import n_months_later, now_in_minute, tz_today
-from time import time
+from tools.mathematix import n_days_later, now_in_minute, tz_today
 from typing import List, Tuple
 from decouple import config
 from enum import Enum
@@ -456,9 +454,9 @@ class DatabaseInterface:
             account.chat_id,
         )
 
-    def upgrade_account(self, account, duration_in_months: int):
+    def upgrade_account(self, account, duration_in_days: int):
         account.plus_start_date = tz_today()
-        account.plus_end_date = n_months_later(duration_in_months)
+        account.plus_end_date = n_days_later(duration_in_days)
         self.execute(
             False,
             f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_START_DATE}=%s, {self.ACCOUNT_PLUS_END_DATE}=%s WHERE {self.ACCOUNT_ID}=%s",

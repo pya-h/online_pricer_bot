@@ -292,6 +292,10 @@
       "fa": "مقدار وارد شده به عنوان مبلغ اشتباه است! لطفا یک عدد معتبر وارد کنید.",
       "en": "Please enter a valid amount to proceed."
     },
+    "invalid_days_count": {
+      "fa": "نعداد روزها باید یک مقدار صحیح مثبت باشد!",
+      "en": "Number of days should be a psoitive integer!"
+    },
     "unrecognized_currency_symbols": {
       "fa": "هشدار! واحد های زیر  جزء واحد های شناخته شده ربات نیستند:\n",
       "en": "Sorry! Could not recognize the these symbols:"
@@ -539,8 +543,8 @@
     "en": "Now you can enter your next input to perform another calculation, or you can use Cancel button to exit calculator section."
   },
   "enter_upgrade_premium_duration": {
-    "fa": "اگر اطلاعات نمایش داده شده کاربر انتخابی معتبر است، تعداد ماه های پریمیوم بودن کاربر را به صورت یک عدد صحیح وارد کنید:",
-    "en": "Now if the detail provided about your selected user is correct, specify how many months this user is going to be premium:"
+    "fa": "اگر اطلاعات نمایش داده شده کاربر انتخابی معتبر است، تعداد روز های پریمیوم بودن کاربر را به صورت یک عدد صحیح وارد کنید:",
+    "en": "Now if the detail provided about your selected user is correct, specify how many days this user is going to be premium:"
   },
   "youre_upgraded_premium": {
     "fa": "اکانت شما به سطح کاربری پریمیوم ارتقا یافت.",

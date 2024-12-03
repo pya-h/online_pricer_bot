@@ -171,8 +171,8 @@ class NavasanService(CurrencyService):
         ):
             NavasanService.loadPersianNames()
 
-    def get_desired_ones(self, selection: List[str]) -> List[str]:
-        return selection or set(NavasanService.defaults)
+    def get_desired_ones(self, selection: List[str] | None) -> List[str]:
+        return selection or NavasanService.defaults
 
     @staticmethod
     def find(word: str):
@@ -273,7 +273,7 @@ class NavasanService(CurrencyService):
         self,
         absolute_amount: float | int,
         source_unit_slug: str,
-        currencies: List[str] = None,
+        currencies: List[str] | None = None,
         language: str = "fa",
     ) -> Tuple[str, str]:
         currencies = self.get_desired_ones(currencies)
