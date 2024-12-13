@@ -29,7 +29,7 @@ class CryptoCurrencyService(APIService):
     @staticmethod
     def find(words: List[str], index: int, word_count: int, max_name_word_count=4):
         # word_count is for not calculating the words length every time.
-        word = words[i]
+        word = words[index]
         for coin in CryptoCurrencyService.coinsInPersian:
             if coin == word or CryptoCurrencyService.coinsInPersian[coin] == word:
                 return coin
@@ -88,7 +88,7 @@ class CoinGeckoService(CryptoCurrencyService):
 class CoinMarketCapService(CryptoCurrencyService):
     """CoinMarketCap Class. The object of this class will get the cryptocurrency prices from CoinMarketCap."""
 
-    def __init__(self, api_key, price_unit="USD", params=None) -> None:
+    def __init__(self, api_key, price_unit="USD", cmc_coin_fetch_limit: int = 1000, params=None) -> None:
         super(CoinMarketCapService, self).__init__(
             url="https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest",
             source="CoinMarketCap.com",
@@ -97,6 +97,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         self.api_key: str = api_key
         self.price_unit: str = price_unit
         self.cmc_api = cmc_api.CoinMarketCapAPI(self.api_key)
+        self.cmc_coin_fetch_limit = cmc_coin_fetch_limit
 
     def set_price_unit(self, pu):
         self.price_unit = pu
@@ -107,7 +108,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         for item in source_list:
             try:
                 symbol = item[key_as].upper()
-                if symbol in CoinMarketCapService.coinsInPersian and symbol not in result:
+                if symbol not in result:
                     result[symbol] = item["quote"][self.price_unit]
             except:
                 pass
@@ -118,7 +119,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         latest_cap = None
         result: dict = {}
         try:
-            latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=5000)
+            latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=self.cmc_coin_fetch_limit)
             if latest_cap and latest_cap.data:
                 result = self.raw_data_to_price_dict(latest_cap.data)
             self.cache_data(json.dumps(result))
