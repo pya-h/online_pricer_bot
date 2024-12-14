@@ -7,7 +7,7 @@ from math import ceil
 
 
 def save(data: dict, dest: str | None = None):
-    f = open(dest or "tests/api-result.json", "w")
+    f = open(dest or "api/testing/api-result.json", "w")
     f.write(dumps(data, ensure_ascii=False, indent=4))
     f.close()
 

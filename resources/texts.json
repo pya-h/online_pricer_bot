@@ -606,6 +606,10 @@
     "fa": "✅ زمان بندی با موفقیت روی %s (هر %s) تنظیم شد.\n\n🔹 هر زمان که می خواهید پست گذاری در کانالتان شروع شود کافیست روی گزینه [ شروع ] کلیک کنید.",
     "en": "✅ Timing successfully set to %s (every %s).\n\n🔹 Whenever you want to start posting in your channel, just click on [ Start ] option."
   },
+  "channel_recognition_done": {
+    "fa": "✅ کانال مورد نظر با موفقیت شناسایی شد.",
+    "en": "✅ Channel successfully detected."
+  },
   "channel_posting_started": {
     "fa": "✅ پست گذاری در کانال شما با موفقیت شروع شد.",
     "en": "✅ Posting in your channel has been started."

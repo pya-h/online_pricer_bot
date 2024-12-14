@@ -687,7 +687,7 @@ class BotMan:
     def action_inline_keyboard(
         self,
         action: QueryActions,
-        data: Dict[str, str],
+        data: Dict[str | int | None, str],
         language: str = "fa",
         columns_in_a_row: int = 2,
         in_main_keyboard: bool = False,
@@ -1005,7 +1005,7 @@ class BotMan:
             return
         await update.message.delete()
 
-    async def list_premiums(self, update: Update | CallbackQuery, list_type: QueryActions, only_menu: bool = False) -> bool:
+    async def list_premiums(self, update: Update | CallbackQuery, list_type: QueryActions, only_menu: bool = False) -> InlineKeyboardMarkup | None:
         try:
             account = Account.get(update.message.chat)
             premiums = Account.getPremiumUsers()
@@ -1169,6 +1169,7 @@ class BotMan:
                 language=owner.language,
             )
             channel.create()
+
             post_interval, desc_en, desc_fa = PostInterval(minutes=interval).timestamps
             interval_description: str = None
             if owner.language == "fa":
@@ -1235,6 +1236,8 @@ class BotMan:
             except Exception as x:
                 log("sth went wrong while changing channel:", x, "Channel")
             return
+        await update.message.reply_text(self.text('channel_recognition_done', account.language),
+                                  reply_markup=self.mainkeyboard(account))
         await self.prepare_set_interval_interface(update, account, channel_chat.id, next_state)
 
     async def prepare_set_interval_interface(
@@ -1391,6 +1394,10 @@ class BotMan:
         update_last_post_time_targets = []
         for channel in channels:
             if not channel.last_post_time or (now - channel.last_post_time >= channel.interval):
+                owner = Account.get(channel.owner_id, no_fastmem=True)
+                if not owner.is_premium:
+                    continue  # TODO: Maybe Deactivate the channel?
+                    # TODO: * Also implement SQL-JOIN for fast owner loading.
                 try:
                     post = self.postman.create_channel_post(channel)
                     await context.bot.send_message(chat_id=channel.id, text=post)

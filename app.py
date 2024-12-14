@@ -201,33 +201,6 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     await update.message.reply_text(botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
 
 
-async def cmd_premium_plan(update: Update, context: CallbackContext):
-    account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account)
-    try:
-        if context.args:
-            try:
-                botman.main_plan_interval = int(context.args[-1])
-            except ValueError:
-                botman.main_plan_interval = float(context.args[-1])
-    except Exception as e:
-        log("Something went wrong while scheduling: ", e)
-
-    if botman.is_main_plan_on:
-        await update.message.reply_text()
-        return
-
-    botman.is_main_plan_on = True
-    context.job_queue.run_repeating(
-        update_markets,
-        interval=botman.main_plan_interval * 60,
-        first=1,
-        name=botman.main_queue_id,
-    )
-    await update.message.reply_text(botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
-
-
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.authorization(context.args):
@@ -410,19 +383,19 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
     for i, alarm in enumerate(my_alarms):
         index = i + 1
         try:
-            curreny_title = alarm.token.upper()
+            currency_title = alarm.token.upper()
             price = cut_and_separate(alarm.target_price)
 
             if account.language == "fa":
                 index = persianify(index)
                 price = persianify(price)
-                curreny_title = (
-                    botman.crypto_serv.coinsInPersian[curreny_title]
+                currency_title = (
+                    botman.crypto_serv.coinsInPersian[currency_title]
                     if alarm.token == MarketOptions.CRYPTO
-                    else botman.currency_serv.currenciesInPersian[curreny_title]
+                    else botman.currency_serv.currenciesInPersian[currency_title]
                 )
             unit = botman.text(f"price_unit_{alarm.target_unit}", "fa" if account.language == "fa" else "en")
-            descriptions[i] = f"{index}) {curreny_title}: {price} {unit}"
+            descriptions[i] = f"{index}) {currency_title}: {price} {unit}"
         except:
             descriptions[i] = f"{index}) " + botman.error("invalid_alarm_data", account.language)
         buttons[i] = InlineKeyboardButton(
@@ -522,8 +495,8 @@ async def handle_action_queries(
                 currency_name: str = None
                 try:
                     currency_name, current_price = botman.get_token_state(market, symbol, price_unit)
-                except Exception as ex:
-                    log(f"Cannot create the alarm for user {account.chat_id}", ex)
+                except Exception as alarm_ex:
+                    log(f"Cannot create the alarm for user {account.chat_id}", alarm_ex)
 
                 if current_price is not None:
                     if account.can_create_new_alarm:
@@ -569,12 +542,12 @@ async def handle_action_queries(
                 alarm_id = int(value)
                 PriceAlarm.disableById(alarm_id)
                 await list_user_alarms(query, context)
-            except Exception as ex:
+            except Exception as alarm_ex:
                 await context.bot.send_message(
                     chat_id=account.chat_id,
                     text=botman.error("error_while_disabling_alarm", account.language),
                 )
-                log(f"Cannot disable the alarm with id={alarm_id}", ex, "Alarms")
+                log(f"Cannot disable the alarm with id={alarm_id}", alarm_ex, "Alarms")
         case BotMan.QueryActions.FACTORY_RESET.value:
             try:
                 if value is not None and value.lower() == "y":
@@ -588,9 +561,9 @@ async def handle_action_queries(
                         ),
                         return_exceptions=True,
                     )
-            except Exception as ex:
+            except Exception as alarm_ex:
                 await query.message.edit_text(text=botman.error("factory_reset_incomplete", account.language))
-                log(f"User {account.chat_id} factory reset failed!", ex, "FactoryReset")
+                log(f"User {account.chat_id} factory reset failed!", alarm_ex, "FactoryReset")
         case BotMan.QueryActions.SELECT_TUTORIAL.value:
             await query.message.edit_text(text=BotMan.getLongText(value, account.language))
             return
@@ -604,6 +577,10 @@ async def handle_action_queries(
                 channel = Channel.get(value)
                 if not channel:
                     raise Exception()
+                if not account.is_premium:
+                    await query.message.reply_text(botman.text("go_premium_to_activate_feature", account.language))
+                    await query.answer()
+                    return
                 channel.plan()  # TODO: check this again
                 await asyncio.gather(
                     query.message.reply_text(
@@ -641,7 +618,6 @@ async def handle_action_queries(
             except NoSuchThingException as x:
                 await query.message.edit_text(
                     botman.error(f"no_{x.thing}s", account.language),
-                    reply_markup=botman.mainkeyboard(account),
                 )
                 account.delete_specific_cache("community")
             except:
@@ -747,9 +723,10 @@ async def handle_action_queries(
                         )
                     )
                     return
-                community = community_type.to_class().restoreTrash(community_id)
-                await query.message.edit_text(botman.text("trash_restored", account.language))
-
+                if community_type.to_class().restoreTrash(community_id):
+                    await query.message.edit_text(botman.text("trash_restored", account.language))
+                else:
+                    await query.message.edit_text(botman.error("unexpected_error", account.language))
         case BotMan.QueryActions.IVE_SUBSCRIBED.value:
             if value:
                 await asyncio.gather(cmd_welcome(query, context), query.message.delete(), return_exceptions=True)
@@ -1026,7 +1003,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         # when the message content is exactly the same
         pass
     except Exception as selection_ex:
-        log("User could't select coins", selection_ex, "general")
+        log("User couldn't select coins", selection_ex, "general")
         account.change_state()
         await query.message.edit_text(text=botman.error("unknown", account.language))
 
@@ -1095,7 +1072,7 @@ async def admin_renew_plans(update: Update, context: CallbackContext, account: A
         account = Account.get(update.message.chat)
     if account.authorization(context.args):
         if account.state == Account.States.ADMIN_CHANGE_PREMIUM_PLANS:
-            post: str
+            post: str | None = None
             photo_file_id: str | None = None
             if update.message.photo:
                 photo_file_id = update.message.photo[-1].file_id
@@ -1108,7 +1085,7 @@ async def admin_renew_plans(update: Update, context: CallbackContext, account: A
                 for ch in post:
                     if ch.isalnum():
                         ch = ch.lower()
-                        if (ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9"):
+                        if ("a" <= ch <= "z") or ("0" <= ch <= "9"):
                             language = BotSettings.Language.EN
                         break
 
@@ -1883,7 +1860,7 @@ async def handle_group_messages(update: Update, context: CallbackContext):
     if not group or not group.is_active:
         return
 
-    tasks: List[Message] = []
+    tasks = []
     for input_list in [
         (crypto_amounts, botman.create_crypto_equalize_message),
         (currency_amounts, botman.create_currency_equalize_message),
@@ -1932,7 +1909,6 @@ async def handle_multimedia_messages(update: Update, context: CallbackContext):
 
 
 # TODO: disable old caching
-# FIXME: Write script for CROSS_Checking CMC api response with my coin list
 # FIXME: Empty Tags in Equalizing
 def main(run_webhook: bool = True):
     app = BotApplicationBuilder().token(botman.token).build()

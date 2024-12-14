@@ -143,22 +143,22 @@ class DatabaseInterface:
         USER = 5
         NONE = 0
 
-        TrashTypeOptions = (
-            NONE,
-            CHANNEL,
-            GROUP,
-            ALARM,
-            MESSAGE,
-            USER,
-        )
-
         @staticmethod
         def which(value: int):
             try:
-                return DatabaseInterface.TrashType.TrashTypeOptions[value]
+                return DatabaseInterface.TrashTypeOptions[value]
             except:
                 pass
             return DatabaseInterface.TrashType.NONE
+
+    TrashTypeOptions = (
+        TrashType.NONE,
+        TrashType.CHANNEL,
+        TrashType.GROUP,
+        TrashType.ALARM,
+        TrashType.MESSAGE,
+        TrashType.USER,
+    )
 
     @staticmethod
     def get():
@@ -167,7 +167,7 @@ class DatabaseInterface:
         return DatabaseInterface._instance
 
     @staticmethod
-    def stringToList(string: str) -> list:
+    def stringToList(string: str) -> list | None:
         """Use this method to extract saved token list strings to List again."""
         if not string:
             return None
@@ -185,7 +185,6 @@ class DatabaseInterface:
 
     def execute(self, is_fetch_query: bool, query: str, *params):
         """Execute queries that doesn't return result such as insert or delete"""
-        result = None
         conn = self.connection()
         cursor = conn.cursor()
         cursor.execute(query, (*params,))
@@ -367,15 +366,13 @@ class DatabaseInterface:
         )
 
     def get_premium_accounts(self, from_date: datetime | None = None) -> list:
-        from_date = from_date or datetime.now()
         return self.execute(
             True,
             f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} > %s",
-            from_date,
+            from_date or datetime.now(),
         )
 
     def get_possible_premium_accounts(self) -> list:
-        from_date = from_date or datetime.now()
         return self.execute(
             True,
             f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL",
@@ -412,7 +409,7 @@ class DatabaseInterface:
                 f"SELECT 1 FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s",
                 (account.chat_id,),
             )
-            if cursor.fetchone():  # Id exists but no update happened.
+            if cursor.fetchone():
                 cursor.close()
                 conn.close()
                 return
@@ -549,7 +546,7 @@ class DatabaseInterface:
                 f"SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s",
                 (channel.id,),
             )
-            if cursor.fetchone():  # Id exists but no update happened.
+            if cursor.fetchone():
                 cursor.close()
                 conn.close()
                 return
@@ -642,7 +639,7 @@ class DatabaseInterface:
                 now_in_minute(),
                 *id_list,
             )
-        except Exception as ex:
+        except Exception:
             pass
 
     def update_user_channels_language(self, owner):
@@ -718,7 +715,7 @@ class DatabaseInterface:
                 f"SELECT 1 FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s",
                 (group.id,),
             )
-            if cursor.fetchone():  # Id exists but no update happened.
+            if cursor.fetchone():
                 cursor.close()
                 conn.close()
                 return
@@ -797,11 +794,11 @@ class DatabaseInterface:
             alarm.target_unit,
         )
 
-    def get_single_alarm(self, id: int):
+    def get_single_alarm(self, alarm_id: int):
         return self.execute(
             True,
             f"SELECT * FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s",
-            id,
+            alarm_id,
         )
 
     def get_alarms(self, token: str | None = None, market: int | None = None):
@@ -840,11 +837,11 @@ class DatabaseInterface:
             pass
         return 0
 
-    def delete_alarm(self, id: int):
+    def delete_alarm(self, alarm_id: int):
         self.execute(
             False,
             f"DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID}=%s LIMIT 1",
-            id,
+            alarm_id,
         )
 
     def get_table_columns(self, table: str):
@@ -874,11 +871,11 @@ class DatabaseInterface:
             json.dumps(data),
         )
 
-    def get_trash(self, id: int):
+    def get_trash(self, trash_id: int):
         rows = self.execute(
             True,
             f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1",
-            id,
+            trash_id,
         )
         return rows[0] if rows else None
 
@@ -898,11 +895,11 @@ class DatabaseInterface:
         )
         return rows[0] if rows else None
 
-    def throw_trash_away(self, id: int):
+    def throw_trash_away(self, trash_id: int):
         return self.execute(
             False,
             f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_ID}=%s LIMIT 1",
-            id,
+            trash_id,
         )
 
     def schedule_messages_for_removal(self, messages_data: List[Tuple[int, int, int, int]]):
