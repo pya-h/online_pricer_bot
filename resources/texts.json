@@ -411,6 +411,10 @@
     "not_available_rn": {
       "fa": "این دستور در حال حاضر در دسترس نیست!",
       "en": "This command is not available for now!"
+    },
+    "bot_was_kicked_from_your_channel": {
+      "fa": "⚠ شما یک کانال فعال دارید که آن را زمان بندی کرده اید، اما به نظر می رسد ربات را از کانال حذف کرده اید؛ برای اینکه ربات قادر به پست گذاشتن در کانال باشد باید آن را بعنوان ادمین در کانال اضافه کنید.\n\nاگر مایل به اینکار نیستید، لطفا از منوی کانال، آن را غیرفعال کنید تا این پیام را دریافت نکنید.",
+      "en": "⚠ Although you have an active channel in our bot, it seems you've kicked the bot from your channel; In order to allow the bot to send posts to your channel, it needs to be added as admin to the channel;\n\nOtherwise please deactivate the channel from Channel menu to stop receiving this warning."
     }
   },
   "no_price_message": {
@@ -789,5 +793,9 @@
   "which_english_language_state_u_prefer": {
     "fa": "🔹 می خواهید زبان [ کل ربات ] انگلیسی شود یا فقط [ نام های اختصاری ] انگلیسی شوند؟\n* هشدار: عدم انتخاب این مورد، باعث عدم تغییر زبان بات می گردد.",
     "en": "🔹 Do you prefer the whole bot be in english, or just the token names and numbers?\n* Warning: Not selecting this menu, will prevent the bot from changing language!"
+  },
+  "channel_not_active": {
+    "fa": "⚠ با اینکه شما کانال خود را به ربات اضافه کرده اید اما تاکنون اقدام به فعال سازی آن نکرده اید. برای فعال سازی می توانید روی شروع کلیک کنید.",
+    "en": "⚠ Although you have added your channel to the bot, you haven't activated it yet. You can do so by clicking the Start button."
   }
 }

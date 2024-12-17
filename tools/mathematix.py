@@ -262,10 +262,10 @@ def seconds_to_next_minute():
     return 60 - tz_today().second
     
     
-def seconds_to_next_tens():
+def seconds_to_next_period(period_in_minutes: int = 10):
     now = tz_today()
 
-    next_tens_minute = ((now.minute // 10) + 1) * 10
+    next_period_in_minutes = ((now.minute // period_in_minutes) + 1) * period_in_minutes
 
-    minutes_remaining = next_tens_minute - now.minute
+    minutes_remaining = next_period_in_minutes - now.minute
     return (minutes_remaining * 60) - now.second

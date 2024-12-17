@@ -280,7 +280,7 @@ class Account:
     @property
     def user_type(self) -> BotSettings.UserTypes:
         if self.is_admin:
-            BotSettings.UserTypes.ADMIN
+            return BotSettings.UserTypes.ADMIN
         return BotSettings.UserTypes.FREE if not self.is_premium else BotSettings.UserTypes.PREMIUM
 
     @property
@@ -361,7 +361,7 @@ class Account:
         return account
 
     @staticmethod
-    def getById(chat_id: int, no_fastmem: bool = False):
+    def getById(chat_id: int, no_fastmem: bool = False, should_create: bool = True):
         if chat_id < 0:
             raise ValueError(
                 "Account chat_id must be positive."
@@ -376,13 +376,16 @@ class Account:
             account = Account.extractQueryRowData(row, no_fastmem=no_fastmem)
             return account
 
-        return Account(
+        account = Account(
             chat_id=chat_id,
             join_date=tz_today(),
             calc_cryptos=CryptoCurrencyService.getUserDefaultCryptos(),
             calc_currencies=NavasanService.getUserDefaultCurrencies(),
-            no_fastmem=no_fastmem,
-        ).save()
+            no_fastmem=no_fastmem or not should_create,
+        )
+        if not should_create:
+            return account
+        return account.save()
 
     @staticmethod
     def getByUsername(username: str):

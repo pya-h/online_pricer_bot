@@ -17,11 +17,11 @@ from telegram import (
     Chat,
 )
 from telegram.ext import CallbackContext
-from telegram.error import BadRequest
+from telegram.error import BadRequest, Forbidden
 from api.currency_service import CurrencyService
 from api.crypto_service import CryptoCurrencyService
 from json import dumps as jsonify
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Tuple, Set, Coroutine, Any
 from bot.post import PostMan
 from models.account import Account
 from models.channel import Channel, PostInterval
@@ -1386,28 +1386,35 @@ class BotMan:
             community_type if not isinstance(community_type, BotMan.CommunityType) else community_type.value
         ).getByOwner(owner_id)
 
+    async def handle_channel_posting(self, channel: Channel, context: CallbackContext, update_last_post_time_targets: List[int]):
+        owner = Account.getById(channel.owner_id, no_fastmem=True)  # TODO: Implement SQL-JOIN for fast owner loading.
+        if not owner.is_premium:
+            return  # TODO: Maybe Deactivate the channel? or inform users of their premium plan ending?
+        try:
+            post = self.postman.create_channel_post(channel)
+            await context.bot.send_message(chat_id=channel.id, text=post)
+            update_last_post_time_targets.append(channel.id)
+        except Forbidden:
+            await context.bot.send_message(chat_id=owner.chat_id,
+                                           text=self.error('bot_was_kicked_from_your_channel', owner.language))
+        except Exception as x:
+            log(
+                f"Failed sending post to channel: {channel.id}, title:{channel.title}, at its due.",
+                x,
+                category_name="Channels",
+            )
+
     async def process_channels(self, context: CallbackContext):
         """loop through channels and send post in ones that their interval due has reached."""
         channels = Channel.actives()
         now = now_in_minute()
-        # FIXME: Find ways to optimize this mf
+
         update_last_post_time_targets = []
+        post_tasks: list[Coroutine[Any, Any, None]]  = []
         for channel in channels:
             if not channel.last_post_time or (now - channel.last_post_time >= channel.interval):
-                owner = Account.get(channel.owner_id, no_fastmem=True)
-                if not owner.is_premium:
-                    continue  # TODO: Maybe Deactivate the channel?
-                    # TODO: * Also implement SQL-JOIN for fast owner loading.
-                try:
-                    post = self.postman.create_channel_post(channel)
-                    await context.bot.send_message(chat_id=channel.id, text=post)
-                    update_last_post_time_targets.append(channel.id)
-                except Exception as x:
-                    log(
-                        f"Failed sending post to channel: {channel.id}, title:{channel.title}, at its due.",
-                        x,
-                        category_name="Channels",
-                    )
+                post_tasks.append(self.handle_channel_posting(channel, context, update_last_post_time_targets))
+        await asyncio.gather(*post_tasks)
         if update_last_post_time_targets:
             Channel.updateLastPostTimes(update_last_post_time_targets)
 

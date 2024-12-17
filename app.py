@@ -22,7 +22,7 @@ from telegram.error import BadRequest
 from models.account import Account
 import json
 from tools.manuwriter import log
-from tools.mathematix import cut_and_separate, persianify, n_days_later_timestamp, seconds_to_next_minute, seconds_to_next_tens
+from tools.mathematix import cut_and_separate, persianify, n_days_later_timestamp, seconds_to_next_minute, seconds_to_next_period
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinMarketCapService
@@ -40,6 +40,7 @@ from bot.post import PostMan
 from datetime import time
 from bot.settings import BotSettings
 import asyncio
+from typing import Coroutine, Any
 
 botman = BotMan()
 
@@ -195,7 +196,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     context.job_queue.run_repeating(
         update_markets,
         interval=botman.main_plan_interval * 60,
-        first=seconds_to_next_tens() - 1,
+        first=seconds_to_next_period(botman.main_plan_interval) - 1,
         name=botman.main_queue_id,
     )
     await update.message.reply_text(botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
@@ -1138,10 +1139,23 @@ async def handle_messages(update: Update, context: CallbackContext):
             await cmd_equalizer(update, context)
         case BotMan.Commands.MY_CHANNELS_FA.value | BotMan.Commands.MY_CHANNELS_EN.value:
             account = Account.get(update.message.chat)
-            if not Channel.userHasAnyChannels(account.chat_id):
+            channel = Channel.getByOwner(account.chat_id, take=1)
+            if not channel:
                 await cmd_start_using_in_channel(update, context)
                 return
-            await go_to_community_panel(update, account, BotMan.CommunityType.CHANNEL)
+            tasks = []
+            if not channel.is_active and account.is_premium:
+                tasks.append(update.message.reply_text(
+                    text=botman.text("channel_not_active", account.language),
+                    reply_markup=botman.action_inline_keyboard(
+                        BotMan.QueryActions.START_CHANNEL_POSTING,
+                        {channel.id: "start"},
+                        account.language,
+                        columns_in_a_row=1,
+                    ),
+                ))
+            tasks.append(go_to_community_panel(update, account, BotMan.CommunityType.CHANNEL))
+            await asyncio.gather(*tasks)
         case BotMan.Commands.MY_GROUPS_FA.value | BotMan.Commands.MY_GROUPS_EN.value:
             account = Account.get(update.message.chat)
             if not Group.userHasAnyGroups(account.chat_id):
@@ -1701,8 +1715,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                             except:
                                 pass
                             targets_count = len(all_accounts) - 1
-                            post_tasks: List[MessageId] = [None] * targets_count
-                            chat_ids: List[int] = [None] * targets_count
+                            post_tasks: List[MessageId | None | Coroutine[Any, Any, MessageId]] = [None] * targets_count
+                            chat_ids: List[int | None] = [None] * targets_count
                             target_index = 0
                             for index, chat_id in enumerate(all_accounts):
                                 try:
@@ -1855,7 +1869,7 @@ async def handle_group_messages(update: Update, context: CallbackContext):
         return
     crypto_amounts, currency_amounts = botman.extract_symbols_and_amounts(update.message.text)
     group: Group = Group.get(update.message.chat.id)
-    to_user: Account = Account.getById(update.message.from_user.id)
+    to_user: Account = Account.getById(update.message.from_user.id, should_create=False)
 
     if not group or not group.is_active:
         return
@@ -1967,7 +1981,6 @@ def main(run_webhook: bool = True):
 if __name__ == "__main__":
     try:
         from decouple import config
-
         run_method = config("RUN_METHOD", "webhook")
         main(run_webhook=run_method.lower() == "webhook")
     except Exception as ex:
