@@ -17,6 +17,8 @@ class MarketOptions(Enum):
             if option.value == value:
                 return option
         return None
+
+
 class SelectionListTypes(Enum):
     USER_TOKENS = 1
     CALCULATOR = 2

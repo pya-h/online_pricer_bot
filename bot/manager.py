@@ -558,6 +558,17 @@ class BotMan:
             data["pg"] = page
         return jsonify(data)
 
+    @staticmethod
+    def inlineKeyboardChoiceCallbackData(list_type: Enum, button_type: Enum, value: str | int | float | bool | None = None, page: int = 0):
+        return jsonify(
+            {
+                "lt": list_type.value if list_type else None,
+                "bt": button_type.value,
+                "pg": page,
+                "v": value,
+            }
+        )
+
     def inline_keyboard(
         self,
         list_type: Enum,
@@ -568,29 +579,9 @@ class BotMan:
         max_page_buttons: int = 90,
         close_button: bool = False,
         language: str = "fa",
+        choices_start_offset: int = 0,
     ):
         """this function creates inline keyboard for selecting/deselecting some options"""
-
-        def choice_callback_data(value: str | int | float | bool | None = None, page: int = 0):
-            return jsonify(
-                {
-                    "lt": list_type.value if list_type else None,
-                    "bt": button_type.value,
-                    "pg": page,
-                    "v": value,
-                }
-            )
-
-        def special_button_callback_data(command: str | int | float | bool, page: int = 0):
-            return jsonify(
-                {
-                    "lt": list_type.value if list_type else None,
-                    "bt": button_type.value,
-                    "pg": page,
-                    "v": f"${command}",
-                }
-            )
-
         if not selected_ones:
             selected_ones = []
         buttons: List[List[InlineKeyboardButton]] = []
@@ -603,38 +594,45 @@ class BotMan:
                 idx_last = buttons_count
 
             pages_count = int(buttons_count / max_page_buttons)
-            choice_keys = list(choices.keys())[idx_first:idx_last]
+            choice_keys = list(choices.keys())[(idx_first if idx_first else choices_start_offset):idx_last]
             pagination_menu = [
-                InlineKeyboardButton("<<", callback_data=choice_callback_data(page=0)),
+                InlineKeyboardButton("<<", callback_data=BotMan.inlineKeyboardChoiceCallbackData(list_type, button_type, page=0)),
                 InlineKeyboardButton(
                     "<",
-                    callback_data=choice_callback_data(page=page - 1 if page > 0 else 0),
+                    callback_data=BotMan.inlineKeyboardChoiceCallbackData(list_type, button_type, page=page - 1 if page > 0 else 0),
                 ),
                 InlineKeyboardButton(
                     f"({page+1}/{pages_count+1})" if language != "fa" else persianify(f"({page+1}/{pages_count+1})"),
-                    callback_data=special_button_callback_data(f"#{idx_first}:{idx_last}", page),
+                    callback_data=jsonify(
+                            {
+                                "lt": list_type.value if list_type else None,
+                                "bt": button_type.value,
+                                "pg": page,
+                                "v": f"$#{idx_first}:{idx_last}",
+                            }
+                        )
                 ),
                 InlineKeyboardButton(
                     ">",
-                    callback_data=choice_callback_data(page=page + 1 if page < pages_count else pages_count),
+                    callback_data=BotMan.inlineKeyboardChoiceCallbackData(list_type, button_type, page=page + 1 if page < pages_count else pages_count),
                 ),
-                InlineKeyboardButton(">>", callback_data=choice_callback_data(page=pages_count)),
+                InlineKeyboardButton(">>", callback_data=BotMan.inlineKeyboardChoiceCallbackData(list_type, button_type, page=pages_count)),
             ]
         else:
-            choice_keys = choices
+            choice_keys = choices.keys() if not choices_start_offset else list(choices.keys())[choices_start_offset:]
 
-        i: int = 0
+        row_length: int = 0
         row: List[InlineKeyboardButton] = []
         for choice in choice_keys:
             btn_text = choice if language != "fa" else choices[choice]
-            i += 1 + int(len(btn_text) / 5)
+            row_length += 1 + int(len(btn_text) / 5)
             if choice in selected_ones:
                 btn_text += "✅"
-            row.append(InlineKeyboardButton(btn_text, callback_data=choice_callback_data(choice, page)))
-            if i >= 5:
+            row.append(InlineKeyboardButton(btn_text, callback_data=BotMan.inlineKeyboardChoiceCallbackData(list_type, button_type, choice, page)))
+            if row_length >= 5:
                 buttons.append(row)
                 row = []
-                i = 0
+                row_length = 0
         if row:
             buttons.append(row)
 
@@ -646,7 +644,7 @@ class BotMan:
                 [
                     InlineKeyboardButton(
                         self.resourceman.keyboard("close", language),
-                        callback_data=choice_callback_data(page=-1),
+                        callback_data=BotMan.inlineKeyboardChoiceCallbackData(list_type, button_type, page=-1),
                     )
                 ]
             )

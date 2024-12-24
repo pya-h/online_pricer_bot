@@ -62,7 +62,7 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
     if not await botman.has_subscribed_us(account.chat_id, context):
         await botman.ask_for_subscription(update, account.language)
         return
-    list_type = account.match_state_with_selection_type()
+    list_type: SelectionListTypes|None = account.match_state_with_selection_type()
 
     await update.message.reply_text(
         botman.text("select_your_set", account.language),
@@ -81,6 +81,10 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
             BotMan.handleMarketSelection(account, list_type, market),
             close_button=True,
             language=account.language,
+            choices_start_offset=int(market != MarketOptions.CURRENCY or
+                                     list_type not in [SelectionListTypes.GROUP_TOKENS,
+                                                   SelectionListTypes.CALCULATOR,
+                                                   SelectionListTypes.EQUALIZER_UNIT])
         ),
     )
 
