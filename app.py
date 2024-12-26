@@ -118,8 +118,10 @@ async def notify_source_change(context: CallbackContext):
 
 async def update_markets(context: CallbackContext):
     res = await botman.next_post()
-    await botman.handle_possible_alarms(context.bot.send_message)
-    await context.bot.send_message(chat_id=botman.channels[0]["id"], text=res)
+    await asyncio.gather(
+        botman.handle_possible_alarms(context.bot.send_message),
+        context.bot.send_message(chat_id=botman.channels[0]["id"], text=res)
+    )
 
 
 async def cmd_welcome(update: Update | CallbackQuery, context: CallbackContext):
@@ -1440,7 +1442,7 @@ async def handle_messages(update: Update, context: CallbackContext):
             # check account state first, to see if he/she is in input state
             account = Account.get(update.message.chat)
             msg = update.message.text
-            if account.is_admin:
+            if account.mode:
                 # admin options:
                 match msg:
                     case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:

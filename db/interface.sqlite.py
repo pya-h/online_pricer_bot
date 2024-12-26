@@ -22,7 +22,7 @@ class DatabaseInterface:
         ACCOUNT_PLUS_END_DATE,
         ACCOUNT_STATE,
         ACCOUNT_CACHE,
-        ACCOUNT_IS_ADMIN,
+        ACCOUNT_MODE,
         ACCOUNT_LANGUAGE,
     ) = (
         "id",
@@ -35,7 +35,7 @@ class DatabaseInterface:
         "plus_end_date",
         "state",
         "cache",
-        "admin",
+        "MODE",
         "language",
     )
 
@@ -116,7 +116,7 @@ class DatabaseInterface:
                     f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} INTEGER PRIMARY KEY,"
                     + f"{self.ACCOUNT_CURRENCIES} TEXT, {self.ACCOUNT_CRYPTOS} TEXT, {self.ACCOUNT_CALC_CURRENCIES} TEXT, {self.ACCOUNT_CALC_CRYPTOS} TEXT, {self.ACCOUNT_USERNAME} TEXT, "
                     + f"{self.ACCOUNT_LAST_INTERACTION} DATE, {self.ACCOUNT_PLUS_END_DATE} DATE, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} TEXT DEFAULT NULL, "
-                    + f"{self.ACCOUNT_IS_ADMIN} INTEGER DEFAULT 0, {self.ACCOUNT_LANGUAGE} TEXT)"
+                    + f"{self.ACCOUNT_MODE} INTEGER DEFAULT 0, {self.ACCOUNT_LANGUAGE} TEXT)"
                 )
                 # create table account
                 cursor.execute(query)
@@ -188,7 +188,7 @@ class DatabaseInterface:
                 account.plus_end_date,
                 account.state.value,
                 account.scache_as_str,
-                account.is_admin,
+                account.mode,
                 account.language,
             )
             log(f"New account: {account} saved into database successfully.", category_name="DatabaseInfo")
@@ -206,7 +206,7 @@ class DatabaseInterface:
             return [datetime.strptime(row[0], self.DATE_FORMAT) if row[0] else None for row in rows]
         return [row[0] for row in rows]  # just return a list of ids
 
-    def get_special_accounts(self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
+    def get_special_accounts(self, property_field: str = ACCOUNT_MODE, value: any = 1) -> list:
         return self.execute(True, f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=?", value)
 
     def get_premium_accounts(self, from_date: datetime | None = None) -> list:
@@ -230,7 +230,7 @@ class DatabaseInterface:
                 account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                 account.state.value,
                 account.scache_as_str,
-                account.is_admin,
+                account.mode,
                 account.language,
                 account.chat_id,
             ),
@@ -251,7 +251,7 @@ class DatabaseInterface:
                     account.plus_end_date.strftime(self.DATE_FORMAT) if account.plus_end_date else None,
                     account.state.value,
                     account.cache_as_str,
-                    account.is_admin,
+                    account.mode,
                     account.language,
                 ),
             )

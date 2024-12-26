@@ -549,7 +549,7 @@ class BotMan:
         )
 
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
-        return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account.language)
+        return self.get_main_keyboard(account) if not account.mode else self.get_admin_keyboard(account.language)
 
     @staticmethod
     def actionCallbackData(action: QueryActions, value: any, page: int | None = None):

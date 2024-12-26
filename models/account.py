@@ -51,6 +51,23 @@ class Account:
                 pass
             return Account.States.NONE
 
+    class Modes(Enum):
+        NORMAL = 0,
+        ADMIN = 1,
+        GOD = 2,
+
+        @staticmethod
+        def which(value: int):
+            try:
+                return Account.UserModes[int(value)]
+            except:
+                pass
+            return Account.Modes.NORMAL
+
+        @property
+        def is_admin(self):
+            return self.value != self.NORMAL.value
+
     UserStates = (
         States.NONE,
         States.SEND_POST,
@@ -70,6 +87,12 @@ class Account:
         States.SET_MESSAGE_HEADER,
         States.CHANGE_GROUP,
         States.CHANGE_CHANNEL,
+    )
+
+    UserModes = (
+        Modes.NORMAL,
+        Modes.ADMIN,
+        Modes.GOD
     )
 
     _database = None
@@ -101,12 +124,11 @@ class Account:
         plus_end_date: datetime = None,
         state: States = States.NONE,
         cache=None,
-        is_admin: bool = False,
+        mode: int | Modes = Modes.NORMAL,
         username: str | None = None,
         firstname: str | None = None,
         no_fastmem: bool = False,
     ) -> None:
-
         self.chat_id: int = int(chat_id)
         self.desired_cryptos: List[str] = cryptos or []
         self.desired_currencies: List[str] = currencies or []
@@ -121,7 +143,10 @@ class Account:
         self.plus_end_date: datetime = plus_end_date
         self.username: str | None = username[1:] if username and (username[0] == "@") else username
         self.firstname: str | None = firstname
-        self.is_admin: bool = is_admin or (self.chat_id == HARDCODE_ADMIN_CHATID)
+        self.mode: Account.Modes = (mode if isinstance(mode, Account.Modes) else Account.Modes.which(mode))\
+            if self.chat_id != HARDCODE_ADMIN_CHATID \
+            else Account.Modes.GOD
+
         if not no_fastmem:
             self.organize_fastmem()
 
@@ -157,16 +182,15 @@ class Account:
         return f"@{self.username}" if self.username else str(self.chat_id)
 
     def authorization(self, args):
-        if self.is_admin:
+        if self.mode.is_admin:
             return True
 
         if args and len(args) >= 2:
             username = args[0]
             password = args[1]
-            self.is_admin = password == ADMIN_PASSWORD and username == ADMIN_USERNAME
-            if self.is_admin:
-                self.save()
-            return self.is_admin
+            self.mode = Account.Modes.GOD if password == ADMIN_PASSWORD and username == ADMIN_USERNAME else Account.Modes.NORMAL
+            self.save()
+            return self.mode.is_admin
 
         return False
 
@@ -210,7 +234,7 @@ class Account:
     @property
     def is_premium(self) -> bool:
         """Check if the account has still plus subscription."""
-        return self.is_admin or ((self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
+        return self.mode or ((self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
 
     @property
     def cache_as_str(self) -> str | None:
@@ -279,7 +303,7 @@ class Account:
 
     @property
     def user_type(self) -> BotSettings.UserTypes:
-        if self.is_admin:
+        if self.mode:
             return BotSettings.UserTypes.ADMIN
         return BotSettings.UserTypes.FREE if not self.is_premium else BotSettings.UserTypes.PREMIUM
 
@@ -334,7 +358,7 @@ class Account:
         plus_end_date = row[-5]
         state = Account.States.which(row[-4])
         cache = Account.loadCache(row[-3])
-        is_admin = row[-2]
+        mode = int(row[-2])
         language = row[-1]
         return Account(
             chat_id=int(row[0]),
@@ -345,7 +369,7 @@ class Account:
             plus_start_date=plus_start_date,
             calc_currencies=DatabaseInterface.stringToList(calc_currs),
             calc_cryptos=DatabaseInterface.stringToList(calc_cryptos),
-            is_admin=is_admin,
+            mode=mode,
             username=username,
             firstname=firstname,
             language=language,

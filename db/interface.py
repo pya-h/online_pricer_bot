@@ -27,7 +27,7 @@ class DatabaseInterface:
         ACCOUNT_PLUS_END_DATE,
         ACCOUNT_STATE,
         ACCOUNT_CACHE,
-        ACCOUNT_IS_ADMIN,
+        ACCOUNT_MODE,
         ACCOUNT_LANGUAGE,
     ) = (
         "id",
@@ -43,7 +43,7 @@ class DatabaseInterface:
         "plus_end_date",
         "state",
         "cache",
-        "admin",
+        "mode",
         "language",
     )
 
@@ -222,7 +222,7 @@ class DatabaseInterface:
                     f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY,"
                     + f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), {self.ACCOUNT_FIRSTNAME} VARCHAR(256) DEFAULT NULL,"
                     + f"{self.ACCOUNT_JOIN_DATE} DATETIME, {self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_START_DATE} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} JSON DEFAULT NULL, "
-                    + f"{self.ACCOUNT_IS_ADMIN} BOOLEAN DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) {tables_common_charset};"
+                    + f"{self.ACCOUNT_MODE} TINYINT DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) {tables_common_charset};"
                 )
                 # create table account
                 cursor.execute(query)
@@ -331,7 +331,7 @@ class DatabaseInterface:
                 account.plus_end_date,
                 account.state.value,
                 account.cache_as_str,
-                account.is_admin,
+                account.mode,
                 account.language,
             )
             log(
@@ -358,7 +358,7 @@ class DatabaseInterface:
         rows = self.execute(True, f"SELECT ({by_column}) FROM {self.TABLE_ACCOUNTS}")
         return [row[0] for row in rows]  # just return a list of ids
 
-    def get_special_accounts(self, property_field: str = ACCOUNT_IS_ADMIN, value: any = 1) -> list:
+    def get_special_accounts(self, property_field: str = ACCOUNT_MODE, value: any = 1) -> list:
         return self.execute(
             True,
             f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s",
@@ -398,7 +398,7 @@ class DatabaseInterface:
                 account.plus_end_date,
                 account.state.value,
                 account.cache_as_str,
-                account.is_admin,
+                account.mode,
                 account.language,
                 account.chat_id,
             ),
@@ -430,7 +430,7 @@ class DatabaseInterface:
                     account.plus_end_date,
                     account.state.value,
                     account.cache_as_str,
-                    account.is_admin,
+                    account.mode,
                     account.language,
                 ),
             )
@@ -803,7 +803,7 @@ class DatabaseInterface:
 
     def get_alarms(self, token: str | None = None, market: int | None = None):
         return (
-            self.execute(True, f"SELECT * from {self.TABLE_PRICE_ALARMS}")
+            self.execute(True, f"SELECT * FROM {self.TABLE_PRICE_ALARMS}")
             if not token
             else self.execute(
                 True,
