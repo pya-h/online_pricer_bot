@@ -1,10 +1,12 @@
 from decouple import config
+from telegram.error import Forbidden
+
 from db.interface import *
 from datetime import datetime, date
 from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from tools.manuwriter import log
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Self
 from bot.types import SelectionListTypes
 from json import loads as json_parse, dumps as jsonify
 from telegram import Chat, User
@@ -63,10 +65,6 @@ class Account:
             except:
                 pass
             return Account.Modes.NORMAL
-
-        @property
-        def is_admin(self):
-            return self.value != self.NORMAL.value
 
     UserStates = (
         States.NONE,
@@ -181,18 +179,24 @@ class Account:
     def __str__(self) -> str:
         return f"@{self.username}" if self.username else str(self.chat_id)
 
-    def authorization(self, args):
-        if self.mode.is_admin:
+    def is_authorized(self, args):
+        if self.is_god:
             return True
 
-        if args and len(args) >= 2:
+        if args and len(args) == 2:
             username = args[0]
             password = args[1]
-            self.mode = Account.Modes.GOD if password == ADMIN_PASSWORD and username == ADMIN_USERNAME else Account.Modes.NORMAL
-            self.save()
-            return self.mode.is_admin
-
+            if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+                self.mode = Account.Modes.GOD
+                self.save()
+            return self.is_god
         return False
+
+    def make_admin(self, operator: Self):
+        if not operator.is_god:
+            raise Forbidden('Non-God users are not allowed to upgrade account mode.')
+        self.mode = Account.Modes.ADMIN
+        self.save()
 
     def upgrade(self, duration_in_days: int):
         Account.database().upgrade_account(self, duration_in_days)
@@ -239,6 +243,14 @@ class Account:
     @property
     def cache_as_str(self) -> str | None:
         return jsonify(self.cache) if self.cache else None
+
+    @property
+    def is_admin(self):
+        return self.mode.value > Account.Modes.NORMAL.value
+
+    @property
+    def is_god(self):
+        return self.mode == Account.Modes.GOD
 
     def save(self):
         self.database().update_account(self)

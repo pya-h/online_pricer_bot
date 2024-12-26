@@ -181,7 +181,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
 
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     try:
@@ -210,7 +210,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     current_jobs = context.job_queue.get_jobs_by_name(botman.main_queue_id)
@@ -223,7 +223,7 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
 
 async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     # botman.crypto_serv = CoinGeckoService()
@@ -236,7 +236,7 @@ async def cmd_change_source_to_coingecko(update: Update, context: CallbackContex
 
 async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     botman.crypto_serv = CoinMarketCapService(botman.postman.coinmarketcap_api_key)
@@ -249,7 +249,7 @@ async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackCo
 
 async def cmd_admin_login(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     await update.message.reply_text(
@@ -260,7 +260,7 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
 
 async def cmd_upgrade_user(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
     account.change_state(
         Account.States.UPGRADE_USER,
@@ -274,7 +274,7 @@ async def cmd_upgrade_user(update: Update, context: CallbackContext):
 
 async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     account.change_state(Account.States.DOWNGRADE_USER)
@@ -287,7 +287,7 @@ async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
 
 async def cmd_send_post(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     account.change_state(Account.States.SEND_POST)
@@ -299,7 +299,7 @@ async def cmd_send_post(update: Update, context: CallbackContext):
 
 async def cmd_report_statistics(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     reports = botman.collect_bot_stats(account.language)
@@ -322,7 +322,7 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
 
 async def cmd_send_plans_post(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
     account.change_state(Account.States.ADMIN_CHANGE_PREMIUM_PLANS)
     await update.message.reply_text(
@@ -739,7 +739,7 @@ async def handle_action_queries(
                 await asyncio.gather(cmd_welcome(query, context), query.message.delete(), return_exceptions=True)
                 return
         case _:
-            if not account.authorization(context.args):
+            if not account.is_authorized(context.args):
                 await asyncio.gather(
                     query.message.edit_text(botman.error("what_the_fuck", account.language)),
                     context.bot.send_message(
@@ -1077,7 +1077,7 @@ async def cmd_show_my_plan_status(update: Update, context: CallbackContext):
 async def admin_renew_plans(update: Update, context: CallbackContext, account: Account | None = None):
     if not account:
         account = Account.get(update.message.chat)
-    if account.authorization(context.args):
+    if account.is_authorized(context.args):
         if account.state == Account.States.ADMIN_CHANGE_PREMIUM_PLANS:
             post: str | None = None
             photo_file_id: str | None = None
@@ -1624,7 +1624,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     )
                     account.change_state()
                 case _:
-                    if not account.authorization(context.args):
+                    if not account.is_authorized(context.args):
                         await update.message.reply_text(
                             botman.error("what_the_fuck", account.language),
                             reply_markup=botman.mainkeyboard(account),
@@ -1856,7 +1856,7 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
 
 async def cmd_refresh(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.authorization(context.args):
+    if not account.is_authorized(context.args):
         await update.message.reply_text(
             botman.error("what_the_fuck", account.language),
             reply_markup=botman.mainkeyboard(account),
