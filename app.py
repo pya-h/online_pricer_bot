@@ -1,3 +1,4 @@
+import telegram.ext
 from telegram.ext import (
     CallbackContext,
     filters,
@@ -179,6 +180,18 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
     )
 
 
+async def plan_main_channel(context: CallbackContext | telegram.ext.Application, interval: float | int = 10):
+    if botman.is_main_plan_on:
+        raise InvalidInputException('Command; Channel already planned!')
+
+    botman.is_main_plan_on = True
+    context.job_queue.run_repeating(
+        update_markets,
+        interval=interval * 60,
+        first=seconds_to_next_period(interval) - 1,
+        name=botman.main_queue_id,
+    )
+
 async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.is_authorized(context.args):
@@ -194,19 +207,14 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
     except Exception as e:
         log("Something went wrong while scheduling: ", e)
 
-    if botman.is_main_plan_on:
-        await update.message.reply_text()
-        return
-
-    botman.is_main_plan_on = True
-    context.job_queue.run_repeating(
-        update_markets,
-        interval=botman.main_plan_interval * 60,
-        first=seconds_to_next_period(botman.main_plan_interval) - 1,
-        name=botman.main_queue_id,
-    )
-    await update.message.reply_text(botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
-
+    try:
+        await plan_main_channel(context, botman.main_plan_interval)
+        await update.message.reply_text(
+            botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
+    except InvalidInputException:
+        await update.message.reply_text(botman.text('channel_already_planned', account.language))
+    except:
+        await unhandled_error_happened(update, context)
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
@@ -1454,12 +1462,6 @@ async def handle_messages(update: Update, context: CallbackContext):
                     case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
                         await cmd_send_post(update, context)
                         return
-                    case BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value | BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value:
-                        await cmd_schedule_channel_update(update, context)
-                        return
-                    case BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value | BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value:
-                        await cmd_stop_schedule(update, context)
-                        return
                     case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
                         await cmd_report_statistics(update, context)
                         return
@@ -1967,7 +1969,7 @@ def main(run_webhook: bool = True):
     app.add_handler(MessageHandler(filters.ALL & filters.ChatType.PRIVATE, handle_multimedia_messages))
     app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
     # app.add_error_handler(unhandled_error_happened)
-
+    plan_main_channel(app, float(config('MAIN_CHANNEL_DEFAULT_INTERVAL', 10)))
     app.job_queue.run_repeating(botman.process_channels, interval=30, first=seconds_to_next_minute() - 1, name="PLUS_CHANNELS")
     app.job_queue.run_daily(botman.do_daily_check, name="DAILY_REFRESH", time=time(0, 0))
 

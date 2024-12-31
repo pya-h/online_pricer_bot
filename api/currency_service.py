@@ -360,6 +360,7 @@ class NavasanService(CurrencyService):
         usd_price = currency_data["value"]
         return self.to_irt_exact(usd_price) if price_unit != "usd" else usd_price
 
+    @staticmethod
     def getEnglishTitle(symbol: str) -> str:
         return symbol if symbol not in NavasanService.goldsInEnglish else NavasanService.goldsInEnglish[symbol]
 
