@@ -506,6 +506,10 @@
     "fa": "زمان بندی %d دقیقه ای شروع شد.",
     "en": "Channel planning for every %d minutes has been started."
   },
+  "channel_already_planned": {
+    "fa": "کانال قبلا زمان بندی شده است. اگر مایل به تغییر واحد زمانی هستید، ابتدا زمان بندی حال حاضر را متوقف کنید.",
+    "en": "Channel plan has been already started. If you intend to change the interval, please first stop current plan."
+  },
   "channel_planning_stopped": {
     "fa": "به روزرسانی خودکار کانال متوقف شد.",
     "en": "Channel planning has been stopped."

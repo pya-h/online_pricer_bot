@@ -22,19 +22,19 @@ class RequestMethod(Enum):
 class Response:
     def __init__(self, response: aiohttp.ClientResponse) -> None:
         self.response: aiohttp.ClientResponse = response
-        self.__raw: str = None
-        self.__decoded: Dict[str, any] | str = self.__raw
+        self.__raw: str | None = None
+        self.__decoded: Dict[str, any] | str | None = None
 
     async def read(self):
         self.__raw = await self.response.text()
 
         if self.response.content_type == "application/json":
             self.__decoded = await self.response.json()
-
-        try:
-            self.__decoded = json_parse(self.__raw)
-        except:
-            pass
+        else:
+            try:
+                self.__decoded = json_parse(self.__raw)
+            except:
+                self.__decoded = self.__raw
 
         return self
 

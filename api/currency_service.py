@@ -5,7 +5,7 @@ from api.tether_service import AbanTetherService, NobitexService
 from tools.manuwriter import log, load_json
 from tools.mathematix import persianify
 from tools.exceptions import NoLatestDataException
-from typing import Union, List
+from typing import Union, List, Tuple, Any, override
 
 
 def get_gold_names(filename: str):
@@ -49,7 +49,7 @@ class CurrencyService(APIService):
         super(CurrencyService, self).__init__(url=url, source=source, cache_file_name=cache_file_name)
         self.token = token
         self.tether_service_token = tether_service_token
-
+        self.latest_data = []
         if not self.usdInTomans:
             self.usdInTomans = self.defaultUsdInTomans
         if not self.tetherInTomans:
@@ -75,15 +75,14 @@ class GoldService(BaseAPIService):
 
     async def append_gold_prices(self, api_data: dict):
         try:
-            self.latest_data = await self.get_request()  # update latest
+            self.latest_data = await self.get_request()
         except Exception as x:
-            log("Gold Price Update Failure, using old prices.", x, "SourceArenaGolds")
+            log("SourceArena Failure, Fetching Extra Gold Prices", x, "SourceArena")
 
         for curr in self.latest_data:
             slug = curr["slug"].upper()
 
             if slug in GoldService.goldsInPersian:
-                # repetitive code OR using multiple conditions (?)
                 if slug not in GoldService.entitiesInDollars:
                     api_data[slug.lower()] = {
                         "value": float(curr["price"]) / 10,
@@ -94,10 +93,12 @@ class GoldService(BaseAPIService):
                         "usd": True,
                     }
 
-    # --------- Currency -----------
-    async def get_request(self):
-        response = await super(GoldService, self).get_request()
-        return response["data"] if "data" in response else []
+    @override
+    async def get_request(self, headers: dict = None, no_cache: bool = True):
+        response = await super(GoldService, self).get_request(headers, no_cache)
+        if "data" not in response:
+            raise Exception("No data provided by endpoint.")
+        return response["data"]
 
     def load_cache(self) -> list | dict:
         try:
@@ -143,14 +144,12 @@ class NavasanService(CurrencyService):
     def __init__(
         self,
         token: str,
-        nobitex_tether_service_token: str = None,
+        nobitex_tether_service_token: str,
         aban_tether_service_token: str = None,
     ) -> None:
-        self.tether_service = (
-            NobitexService(nobitex_tether_service_token)
-            if nobitex_tether_service_token
-            else AbanTetherService(aban_tether_service_token)
-        )
+        self.tether_service = NobitexService(nobitex_tether_service_token)
+
+        self.alternate_tether_service = AbanTetherService(aban_tether_service_token) if aban_tether_service_token else None
 
         super().__init__(
             url=f"https://sourcearena.ir/api/?token={token}&currency&v2",
@@ -161,6 +160,7 @@ class NavasanService(CurrencyService):
         )
 
         self.gold_service: GoldService = GoldService(self.token)
+
         if (
             not NavasanService.currenciesInPersian
             or not NavasanService.nationalCurrenciesInPersian
@@ -208,7 +208,7 @@ class NavasanService(CurrencyService):
         desired_ones: List[str] = None,
         language: str = "fa",
         no_price_message: str | None = None,
-    ) -> str:
+    ) -> Tuple[str, str]:
         desired_ones = self.get_desired_ones(desired_ones)
         res_curr = ""
         res_gold = ""
@@ -221,39 +221,44 @@ class NavasanService(CurrencyService):
                 res_gold += f"🔸 {row}\n"
         return res_curr, res_gold
 
-    async def update_services(self):
-        try:
-            await self.tether_service.get()
-        except Exception as ex:
-            log("USDT(Tether) Update Failure", ex, "USD_T")
-
     # --------- Currency -----------
-    async def get_request(self):
-        await self.update_services()
-        response = await super(NavasanService, self).get_request(no_cache=True)
-        return response.data
+    async def get_request(self, _: dict = None, __: bool = False):
+        await self.tether_service.get()
+        return await super(NavasanService, self).get_request()
+
+    async def select_best_tether_price(self):
+        if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
+            self.set_tether_tomans(self.tether_service.recent_value)
+            return
+
+        await self.alternate_tether_service.get()
+        if self.alternate_tether_service.recent_value and self.alternate_tether_service.no_response_counts < 3:
+            self.set_tether_tomans(self.alternate_tether_service.recent_value)
+            return
+
+        self.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
 
     async def get(
         self,
         desired_ones: List[str] = None,
         language: str = "fa",
         no_price_message: str | None = None,
-    ) -> str:
+    ) -> Tuple[str, str]:
         try:
             self.latest_data = await self.get_request()  # update latest
         except Exception as ex:
-            log('Navasan prices failed to fetch:', ex, 'NavasanAPI')
+            log('Navasan API Error:', ex, 'Navasan')
+
         try:
             await self.gold_service.append_gold_prices(self.latest_data)
         except Exception as ex:
-            log("Failed to append gold prices to navasan", ex, "NavasanAPI")
+            log("Extend Navasan Data Error: Failed appending SourceArena Golds to Navasan data", ex, "Navasan")
 
-        if self.tether_service.recent_value:
-            self.set_tether_tomans(self.tether_service.recent_value)
+        await self.select_best_tether_price()
         try:
             self.set_usd_price(self.latest_data["usd"]["value"])
         except Exception as ex:
-            log("USD(Dollar) Update Failure", ex, "USD_T")
+            log("Update USD Price Error", ex, "Navasan")
 
         self.latest_data[self.tomanSymbol.lower()] = {"value": 1 / self.usdInTomans}
         self.cache_data(json.dumps(self.latest_data))
@@ -307,7 +312,7 @@ class NavasanService(CurrencyService):
         amount: float | int,
         target_currencies: List[str] | None = None,
         language: str = "fa",
-    ) -> Union[str, float | int, float | int]:
+    ) -> Tuple[Any, Any, float | int, float]:
         """This function gets an amount param, alongside with a source_unit_symbol [and obviously with the users desired coins]
         and it returns a text string, that in each row of that, shows that amount equivalent in another currency unit.
         """
@@ -360,6 +365,7 @@ class NavasanService(CurrencyService):
         usd_price = currency_data["value"]
         return self.to_irt_exact(usd_price) if price_unit != "usd" else usd_price
 
+    @staticmethod
     def getEnglishTitle(symbol: str) -> str:
         return symbol if symbol not in NavasanService.goldsInEnglish else NavasanService.goldsInEnglish[symbol]
 
@@ -370,7 +376,7 @@ class NavasanService(CurrencyService):
             currency_data: Dict[str, float | int | bool | str]
             currency_data = self.latest_data[symbol.lower()]
             price = float(currency_data["value"])
-            toman: float = 0.0
+            toman: float | str
             usd: float | None = None
             if "usd" not in currency_data or not currency_data["usd"]:
                 toman, _ = self.rounded_prices(price, False)

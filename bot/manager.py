@@ -125,10 +125,6 @@ class BotMan:
 
         ADMIN_NOTICES_FA = resourceman.keyboard("admin_notices", "fa")
         ADMIN_NOTICES_EN = resourceman.keyboard("admin_notices", "en")
-        ADMIN_PLAN_CHANNEL_FA = resourceman.keyboard("admin_plan_channel", "fa")
-        ADMIN_PLAN_CHANNEL_EN = resourceman.keyboard("admin_plan_channel", "en")
-        ADMIN_STOP_CHANNEL_PLAN_FA = resourceman.keyboard("admin_stop_channel_plan", "fa")
-        ADMIN_STOP_CHANNEL_PLAN_EN = resourceman.keyboard("admin_stop_channel_plan", "en")
         ADMIN_STATISTICS_FA = resourceman.keyboard("admin_statistics", "fa")
         ADMIN_STATISTICS_EN = resourceman.keyboard("admin_statistics", "en")
         ADMIN_UPGRADE_TO_PREMIUM_FA = resourceman.keyboard("admin_upgrade_to_premium", "fa")
@@ -228,7 +224,7 @@ class BotMan:
                     return BotMan.MenuSections.COMMUNITY_PANEL
             return BotMan.MenuSections.NONE
 
-    def __init__(self, main_plan_interval: float = 10.0, plan_manager_interval: float = 1.0) -> None:
+    def __init__(self, main_plan_interval: float | None = None, plan_manager_interval: float = 1.0) -> None:
         self.resourceman = resourceman
         # environment values
         self.token: str = config("BOT_TOKEN")
@@ -266,7 +262,7 @@ class BotMan:
             self.channels[-1]["username"] = config("SECOND_CHANNEL_USERNAME", self.channels[-1]["url"])
 
         self.main_queue_id: str = "mainplan"
-        self.main_plan_interval: float = main_plan_interval
+        self.main_plan_interval: float = main_plan_interval or float(config('MAIN_CHANNEL_DEFAULT_INTERVAL', 10.0))
         self.plan_manager_interval: float = plan_manager_interval
 
         self.text = self.resourceman.text
@@ -424,10 +420,6 @@ class BotMan:
                         KeyboardButton(BotMan.Commands.ADMIN_NOTICES_FA.value),
                         KeyboardButton(BotMan.Commands.ADMIN_STATISTICS_FA.value),
                     ],
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_PLAN_CHANNEL_FA.value),
-                        KeyboardButton(BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_FA.value),
-                    ],
                     *self.common_menu_main_keys,
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_FA.value),
@@ -446,10 +438,6 @@ class BotMan:
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_NOTICES_EN.value),
                         KeyboardButton(BotMan.Commands.ADMIN_STATISTICS_EN.value),
-                    ],
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_PLAN_CHANNEL_EN.value),
-                        KeyboardButton(BotMan.Commands.ADMIN_STOP_CHANNEL_PLAN_EN.value),
                     ],
                     *self.common_menu_main_keys_en,
                     [
@@ -799,7 +787,7 @@ class BotMan:
         )
         return InlineKeyboardMarkup(buttons)
 
-    def keyboard_from(self, language: str, *row_keys: List[str]):
+    def keyboard_from(self, language: str, *row_keys: str):
         buttons = []
         for key in row_keys:
             buttons.append([self.resourceman.keyboard(key, language)])

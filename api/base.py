@@ -1,4 +1,4 @@
-import requests, json
+import json
 from tools import mathematix, manuwriter
 from tools.exceptions import CacheFailureException
 import api.api_async as api
@@ -25,7 +25,7 @@ class BaseAPIService:
         self.latest_data = (
             []
         )  # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
-        # Causing: App enhancement, less APi Calls(For best managemnt of non-free API uses), Less cache file read for improving bot performance and speed and prevention of lags
+        # Causing: App enhancement, less APi Calls(For best management of non-free API uses), Less cache file read for improving bot performance and speed and prevention of lags
 
     def cache_data(self, data: str, custom_file_name: str = None) -> None:
         if not self.cache_folder_created:
@@ -42,42 +42,26 @@ class BaseAPIService:
             manuwriter.log("Caching failure!", ex, category_name="FATALITY")
             raise CacheFailureException(ex)
 
-    async def get_request(self, headers: dict = None, no_cache: bool = False):
-        response: api.Response | None = None
-        try:
-            request = api.Request(self.URL, headers=headers, payload=self.params)
-            response = await request.get()
-            if not response or not response.OK:
-                return None
-            if no_cache:
-                return response
+    async def get_request(self, headers: dict = None, no_cache: bool = True):
+        request = api.Request(self.URL, headers=headers, payload=self.params)
+        response = await request.get()
 
-            if self.cache_file_name and response.text is not None:
-                self.cache_data(response.text)
+        if not response or not response.OK:
+            raise Exception(f'GET Failure @ {self.Source}.\nStatus Code: {response.status}\nError: {response.text}')
 
-        except Exception as e:
-            # Handle any other exceptions
-            manuwriter.log("An unexpected error occurred:", e, category_name=self.Source)
+        if not no_cache and self.cache_file_name and response.text is not None:
+            self.cache_data(response.text)
 
         return response.data
 
-    async def post_request(self, payload: Dict[str, str], headers: dict = None, no_cache: bool = False):
-        response: api.Response | None = None
-        try:
-            request = api.Request(self.URL, headers=headers, payload=payload)
-            response = await request.post()
-            if not response or not response.OK:
-                return None
-            if no_cache:
-                return response
+    async def post_request(self, payload: Dict[str, str], headers: dict = None, no_cache: bool = True):
+        request = api.Request(self.URL, headers=headers, payload=payload)
+        response = await request.post()
+        if not response or not response.OK:
+            raise Exception(f'POST Failure @ {self.Source}.\nStatus Code: {response.status}\nError: {response.text}')
 
-            if self.cache_file_name and response.text is not None:
-                self.cache_data(response.text)
-
-        except Exception as e:
-            # Handle any other exceptions
-            manuwriter.log("An unexpected error occurred:", e, category_name=self.Source)
-
+        if not no_cache and self.cache_file_name and response.text is not None:
+            self.cache_data(response.text)
         return response.data
 
     def load_cache(self) -> list | dict:
@@ -117,7 +101,7 @@ class APIService(BaseAPIService):
     def get_latest(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
         return self.extract_api_response(desired_ones, language, no_price_message)
 
-    def get_desired_cache(self, desired_ones: List[str] = None, force_reload: bool = False) -> str:
+    def get_desired_cache(self, desired_ones: List[str] = None, force_reload: bool = False) -> Tuple[str, str]:
         """This is for the channel planner bot"""
         try:
             if force_reload or not self.latest_data:
@@ -129,13 +113,10 @@ class APIService(BaseAPIService):
                 try:
                     manuwriter.log("couldn't read cache; Using Direct api call to obtain data.", ex, category_name="CACHE")
                     self.latest_data = self.get_request()  # the condition that is happened, may be due to lack of cache file,
-                    # This may be cause when this app is run before online_pricer_bot for the first time.
-                    # sending a request will make new cache and solve this issue.
                 except Exception as fex:
                     manuwriter.log(
-                        "Couldn't get cache and API both. There's something seriously wrong!!", ex, category_name="PLUS_FATALITY"
+                        "Couldn't get cache and API both. There's something seriously wrong!!", fex, category_name="PLUS_FATALITY"
                     )
-                    # TODO: send an email or notification or whatever to the admin?
 
         return self.extract_api_response(desired_ones)
 

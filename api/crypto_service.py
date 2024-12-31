@@ -1,7 +1,7 @@
 import coinmarketcapapi as cmc_api
 from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from typing import Union, List
+from typing import Union, List, Tuple, override
 
 
 # Parent Class
@@ -88,7 +88,7 @@ class CoinGeckoService(CryptoCurrencyService):
 class CoinMarketCapService(CryptoCurrencyService):
     """CoinMarketCap Class. The object of this class will get the cryptocurrency prices from CoinMarketCap."""
 
-    def __init__(self, api_key, price_unit="USD", cmc_coin_fetch_limit: int = 1000, params=None) -> None:
+    def __init__(self, api_key, price_unit="USD", cmc_coin_fetch_limit: int = 500, params=None) -> None:
         super(CoinMarketCapService, self).__init__(
             url="https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest",
             source="CoinMarketCap.com",
@@ -106,26 +106,29 @@ class CoinMarketCapService(CryptoCurrencyService):
         result = {}
 
         for item in source_list:
-            try:
-                symbol = item[key_as].upper()
-                if symbol not in result:
-                    result[symbol] = item["quote"][self.price_unit]
-            except:
-                pass
+            symbol = item[key_as].upper()
+            if symbol not in result: # TODO: Re-Check why this is required
+                result[symbol] = item["quote"][self.price_unit]
+
         return result
 
+    @override
     async def get_request(self):
         """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService children"""
-        latest_cap = None
-        result: dict = {}
-        try:
-            latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=self.cmc_coin_fetch_limit)
-            if latest_cap and latest_cap.data:
-                result = self.raw_data_to_price_dict(latest_cap.data)
-            self.cache_data(json.dumps(result))
-        except Exception as ex:
-            manuwriter.log("CoinMarketCap Api Failure", exception=ex, category_name="CoinMarketCapFailure")
+        latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=self.cmc_coin_fetch_limit)
+        if not latest_cap or not latest_cap.data:
+            raise Exception('CoinMarketCap API Error: Missing data')
+        result = self.raw_data_to_price_dict(latest_cap.data)
+        self.cache_data(json.dumps(result))
         return result
+
+    @override
+    async def get(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+        try:
+            self.latest_data = await self.get_request()  # update latest
+        except Exception as x:
+            manuwriter.log('Failed obtaining newest Cryptocurrency prices', x, category_name='CoinMarketCap')
+        return self.extract_api_response(desired_ones, language, no_price_message)
 
     def extract_api_response(self, desired_coins: List[str] = None, language: str = 'fa', no_price_message: str | None = None):
         """This function constructs a text string that in each row has the latest price of a
@@ -146,8 +149,9 @@ class CoinMarketCapService(CryptoCurrencyService):
             if coin == source_unit_symbol:
                 continue
             try:
-                coin_equalized_price = absolute_amount / float(self.latest_data[coin]["price"])
-                coin_equalized_price = mathematix.cut_and_separate(coin_equalized_price)
+                coin_equalized_price = mathematix.cut_and_separate(
+                    absolute_amount / float(self.latest_data[coin]["price"])
+                )
             except Exception as x:
                 manuwriter.log('No Price Data:', x, 'PriceData')
                 coin_equalized_price = '?'
@@ -159,7 +163,7 @@ class CoinMarketCapService(CryptoCurrencyService):
 
     def equalize(
         self, source_unit_symbol: str, amount: float | int, desired_cryptos: List[str] | None = None, language: str = 'fa'
-    ) -> Union[str, float | int, float | int]:
+    ) -> Tuple[str | None, float, float | int]:
         """This function gets an amount param, alongside with a source_unit_symbol [and obviously with the users desired coins]
         and it returns a text string, that in each row of that, shows that amount equivalent in another cryptocurrency unit."""
         # First check the required data is prepared
@@ -174,11 +178,10 @@ class CoinMarketCapService(CryptoCurrencyService):
         except:
             raise ValueError(f"{source_unit_symbol} has not been received from the API.")
 
-        return (
-            self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos, language) if desired_cryptos else None,
-            absolute_amount,
-            self.to_irt_exact(absolute_amount, True)
-        )
+        return (self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos, language) if desired_cryptos else None,
+                absolute_amount,
+                self.to_irt_exact(absolute_amount, True))
+
 
     def get_single_price(self, crypto_symbol: str, price_unit: str = "usd", tether_instead_of_dollars: bool = True):
         if not isinstance(self.latest_data, dict):

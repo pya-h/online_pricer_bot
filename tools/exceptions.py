@@ -14,11 +14,11 @@ class InvalidInputException(Exception):
 
 class CacheFailureException(Exception):
 
-    def __init__(self, cause: Exception) -> None:
+    def __init__(self, cause: Exception | str) -> None:
         self.message = (
             f"ذخیره نتایج API برای استفاده کاربران VIP با خطا مواجه شد. لطفا هر جه سریع تر موضوع را به دولوپر اطلاع دهید."
         )
-        self.message += f"\nعلت خطا: {cause.__str__()}"
+        self.message += f"\nعلت خطا: {str(cause)}"
         super().__init__(f"Invalid {self.message}")
 
 
