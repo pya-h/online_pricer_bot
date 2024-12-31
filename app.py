@@ -233,32 +233,6 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
     await update.message.reply_text(botman.text("channel_planning_stopped", account.language))
 
 
-async def cmd_change_source_to_coingecko(update: Update, context: CallbackContext):
-    account = Account.get(update.message.chat)
-    if not account.is_authorized(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account)
-
-    # botman.crypto_serv = CoinGeckoService()
-    await update.message.reply_text(
-        botman.error("not_available_rn", account.language),
-        reply_markup=botman.get_admin_keyboard(account.language),
-    )
-    # await notify_source_change(context)
-
-
-async def cmd_change_source_to_coinmarketcap(update: Update, context: CallbackContext):
-    account = Account.get(update.message.chat)
-    if not account.is_authorized(context.args):
-        return await say_youre_not_allowed(update.message.reply_text, account)
-
-    botman.crypto_serv = CoinMarketCapService(botman.postman.coinmarketcap_api_key)
-    await update.message.reply_text(
-        botman.text("price_source_changed_cmc", account.language),
-        reply_markup=botman.get_admin_keyboard(account.language),
-    )
-    await notify_source_change(context)
-
-
 async def cmd_admin_login(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.is_authorized(context.args):
@@ -1972,8 +1946,6 @@ def main(run_webhook: bool = True):
     app.add_handler(CommandHandler("schedule", cmd_schedule_channel_update))
     app.add_handler(CommandHandler("stop", cmd_stop_schedule))
     app.add_handler(CommandHandler("stats", cmd_report_statistics))
-    app.add_handler(CommandHandler("gecko", cmd_change_source_to_coingecko))
-    app.add_handler(CommandHandler("marketcap", cmd_change_source_to_coinmarketcap))
 
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
     app.add_handler(ChatMemberHandler(handle_new_group_members, ChatMemberHandler.MY_CHAT_MEMBER))
