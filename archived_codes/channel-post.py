@@ -17,16 +17,16 @@ class ChannelPostMan(PostMan):
         currencies = cryptos = ""
 
         try:
-            if account.desired_currencies or (not account.desired_coins and not account.desired_currencies):
+            if account.desired_currencies or (not account.desired_cryptos and not account.desired_currencies):
                 # this condition is for preventing default values, when user has selected just cryptos
                 currencies = self.currency_service.get_desired_cache(account.desired_currencies)
         except Exception as ex:
             manuwriter.log("Cannot obtain Currencies! ", ex, self.currency_service.Source)
 
         try:
-            if account.desired_coins or (not account.desired_coins and not account.desired_currencies):
+            if account.desired_cryptos or (not account.desired_cryptos and not account.desired_currencies):
                 # this condition is for preventing default values, when user has selected just currencies
-                cryptos = self.crypto_service.get_desired_cache(account.desired_coins)
+                cryptos = self.crypto_service.get_desired_cache(account.desired_cryptos)
         except Exception as ex:
             manuwriter.log("Cannot obtain Cryptos! ", ex, self.crypto_service.Source)
 
