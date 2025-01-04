@@ -590,6 +590,10 @@
     "fa": "۴ انتخاب کاربر از لیست کاربران پریمیوم 👇\n",
     "en": "4 Select from the Premium Users list 👇\n"
   },
+  "remove_by_admin_list": {
+    "fa": "کاربرانی را که می خواهید دسترسی ادمین شان را لغو کنید، انتخاب کنید:",
+    "en": "Select the users you want to remove their Admin access:"
+  },
   "not_a_premium": {
     "fa": "اکانت موردنظر شما در حال حاضر دارای تعرفه عادی است پس نیازی به این عملیات نیست!",
     "en": "Actually this account is already a free user and there is no need to downgrade it."
@@ -809,5 +813,13 @@
   "channel_not_active": {
     "fa": "⚠ با اینکه شما کانال خود را به ربات اضافه کرده اید اما تاکنون اقدام به فعال سازی آن نکرده اید. برای فعال سازی می توانید روی شروع کلیک کنید.",
     "en": "⚠ Although you have added your channel to the bot, you haven't activated it yet. You can do so by clicking the Start button."
+  },
+  "user_is_admin_now": {
+    "fa": "%s\n\n✅ کاربر فوق هم اکنون به سطح کاربری ادمین ارتقا پیدا کرد. در صورت عدم تمایل می توانید از منوی حذف ادمین، دسترسی او را لغو کنید.",
+    "en": "%s\n\n✅ User described above has been upgraded to Admin level from now on. You can remove this access any time you want, using the Remove Admin section."
+  },
+  "youre_admin_now": {
+    "fa": "✅ تبریک! دسترسی شما به سطح ادمین ارتقا یافت.",
+    "en": "✅ Congrats! You've been upgraded to Admin Level."
   }
 }

@@ -157,6 +157,7 @@ class BotMan:
         RECONNECT_COMMUNITY = 15
         LIST_ENTITY = 16
         IVE_SUBSCRIBED = 17
+        REMOVE_ADMIN = 18
         NONE = 0
 
         @staticmethod
@@ -168,6 +169,7 @@ class BotMan:
             return Account.States.NONE
 
     QueryActionOptions = (
+        QueryActions.NONE,
         QueryActions.CHOOSE_LANGUAGE,
         QueryActions.SELECT_PRICE_UNIT,
         QueryActions.DISABLE_ALARM,
@@ -184,6 +186,8 @@ class BotMan:
         QueryActions.REQUEST_RECONNECT_COMMUNITY,
         QueryActions.RECONNECT_COMMUNITY,
         QueryActions.LIST_ENTITY,
+        QueryActions.IVE_SUBSCRIBED,
+        QueryActions.REMOVE_ADMIN
     )
 
     class CommunityType(Enum):
@@ -361,7 +365,7 @@ class BotMan:
             resize_keyboard=True,
         )
 
-    def get_main_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
+    def get_normal_primary_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup(
             (
                 [
@@ -391,7 +395,7 @@ class BotMan:
             resize_keyboard=True,
         )
 
-    def get_admin_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
+    def get_admin_primary_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return (
             ReplyKeyboardMarkup(
                 [
@@ -527,7 +531,7 @@ class BotMan:
         )
 
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
-        return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account)
+        return self.get_normal_primary_keyboard(account) if not account.is_admin else self.get_admin_primary_keyboard(account)
 
     @staticmethod
     def actionCallbackData(action: QueryActions, value: any, page: int | None = None):
@@ -800,7 +804,7 @@ class BotMan:
     async def inform_admins(self, message_key: str, context: CallbackContext, is_error: bool = False):
         message_text = self.error if is_error else self.text
         tasks = []
-        for admin in Account.getAdmins(just_hardcode_admin=False):
+        for admin in Account.getGodUsers(just_hardcode_admin=False):
             try:
                 tasks.append(
                     context.bot.send_message(
@@ -1000,34 +1004,34 @@ class BotMan:
         except Exception as x:
             log("Problem while listing premium users:", x, "Admin")
 
-    def identify_user(self, update: Update) -> Account | None:
+    @staticmethod
+    def identifyUser(update: Update) -> Account | None:
         """Get the user's Account object from update object by one of these methods:
-        1- providing a forwarded message from the desired user
-        2- providing the username of the user
-        3- providing the chat_id of the user.
+            1- providing a forwarded message from the desired user
+            2- providing the username of the user
+            3- providing the chat_id of the user.
         """
-        user: Account | None = None
         if update.message.forward_from:
-            upgrading_chat_id = update.message.forward_from.id
-            user = Account.getById(upgrading_chat_id)
+            target_chat_id = update.message.forward_from.id
+            user = Account.getById(target_chat_id)
             user.name = update.message.forward_from
             user.firstname = update.message.forward_from.first_name
-        elif update.message.text[0] == "@":
-            try:
-                user = Account.getByUsername(update.message.text)
-                if user:
-                    upgrading_chat_id = user.chat_id
-            except:
-                upgrading_chat_id = None
-        else:
-            try:
-                upgrading_chat_id = int(update.message.text)
-                user = Account.getById(upgrading_chat_id)
-            except:
-                upgrading_chat_id = None
-        return user
+            return user
 
-    def string_to_number(self, num: str) -> int | float:
+        if update.message.text[0] == "@":
+            if user := Account.getByUsername(update.message.text):
+                return user
+            return None
+
+        try:
+            target_chat_id = int(update.message.text)
+            return Account.getById(target_chat_id)
+        except:
+            pass
+        return None
+
+    @staticmethod
+    def stringToNumber(num: str) -> int | float:
         thousands = 1
         if num[0].isdigit() and not num[-1].isdigit():
             thousands, num = extract_thousands(num)
@@ -1035,9 +1039,10 @@ class BotMan:
         intf = int(f)
         return f if intf != f else intf
 
-    def extract_coef(self, word: str):
+    @staticmethod
+    def extractMultiplier(word: str):
         try:
-            return self.string_to_number(word)
+            return BotMan.stringToNumber(word)
         except:
             pass
         return 1
@@ -1054,16 +1059,16 @@ class BotMan:
             prev_word: str | float = words[i - 1] if i else 1.0
             slug, word_count = finder.search_around(self.crypto_serv.coinsInPersian, i)
             if slug:
-                coef = self.extract_coef(prev_word)
-                crypto_amounts.add(f"{coef} {slug}")
+                multiplier = BotMan.extractMultiplier(prev_word)
+                crypto_amounts.add(f"{multiplier} {slug}")
             else:
                 slug, word_count = finder.search_around(self.currency_serv.currenciesInPersian, i)
 
                 if not slug:
                     slug, word_count = finder.search_around(self.currency_serv.persianShortcuts, i)
                 if slug:
-                    coef = self.extract_coef(prev_word)
-                    currency_amounts.add(f"{coef} {slug}")
+                    multiplier = BotMan.extractMultiplier(prev_word)
+                    currency_amounts.add(f"{multiplier} {slug}")
             i += word_count
         return crypto_amounts, currency_amounts
 
