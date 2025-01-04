@@ -358,10 +358,11 @@ class DatabaseInterface:
         rows = self.execute(True, f"SELECT ({by_column}) FROM {self.TABLE_ACCOUNTS}")
         return [row[0] for row in rows]  # just return a list of ids
 
-    def get_special_accounts(self, property_field: str = ACCOUNT_MODE, value: any = 1) -> list:
+    def get_special_accounts(self, property_field: str = ACCOUNT_MODE, value: any = 1, limit: int | None = None) -> list:
+        limit_exp = '' if not limit else f"LIMIT {limit}"
         return self.execute(
             True,
-            f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s",
+            f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s {limit_exp}",
             value,
         )
 

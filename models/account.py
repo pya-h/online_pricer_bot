@@ -43,7 +43,9 @@ class Account:
         SET_MESSAGE_HEADER = 15
         CHANGE_GROUP = 16
         CHANGE_CHANNEL = 17
-        ADMIN_CHANGE_PREMIUM_PLANS = 18
+        CHANGE_PREMIUM_PLANS = 18
+        ADD_ADMIN = 19
+        REMOVE_ADMIN = 20
 
         @staticmethod
         def which(value: int):
@@ -85,6 +87,9 @@ class Account:
         States.SET_MESSAGE_HEADER,
         States.CHANGE_GROUP,
         States.CHANGE_CHANNEL,
+        States.CHANGE_PREMIUM_PLANS,
+        States.ADD_ADMIN,
+        States.REMOVE_ADMIN
     )
 
     UserModes = (
@@ -192,11 +197,17 @@ class Account:
             return self.is_god
         return False
 
-    def make_admin(self, operator: Self):
-        if not operator.is_god:
+    def make_admin(self, target: Self):
+        if not self.is_god:
             raise Forbidden('Non-God users are not allowed to upgrade account mode.')
-        self.mode = Account.Modes.ADMIN
-        self.save()
+        target.mode = Account.Modes.ADMIN
+        target.save()
+
+    def downgrade_to_normal(self, target: Self):
+        if not self.is_god:
+            raise Forbidden('Non-God users are not allowed to downgrade account mode.')
+        target.mode = Account.Modes.NORMAL
+        target.save()
 
     def upgrade(self, duration_in_days: int):
         Account.database().upgrade_account(self, duration_in_days)
@@ -246,7 +257,7 @@ class Account:
 
     @property
     def is_admin(self):
-        return self.mode.value > Account.Modes.NORMAL.value
+        return self.mode.value >= Account.Modes.ADMIN.value
 
     @property
     def is_god(self):
@@ -401,7 +412,7 @@ class Account:
         if chat_id < 0:
             raise ValueError(
                 "Account chat_id must be positive."
-            )  # FIXME: Find the root of the problem: groups are creating negative ID accounts, alongside their Group model instance.
+            )
         if chat_id in Account.fastMemInstances:
             account: Account = Account.fastMemInstances[chat_id]
             account.last_interaction = tz_today()
@@ -429,14 +440,13 @@ class Account:
             return None
         if username[0] == "@":
             username = username[1:]
-        accounts = list(filter(lambda acc: acc.username == username, list(Account.fastMemInstances.values())))
-        if accounts:
-            return accounts[0]
+        try:
+            return next(account for account in Account.fastMemInstances.values() if account.username == username)
+        except:
+            pass
 
-        accounts = Account.database().get_special_accounts(DatabaseInterface.ACCOUNT_USERNAME, username)
-        if accounts:
-            return Account.extractQueryRowData(accounts[0])
-        return None
+        accounts = Account.database().get_special_accounts(DatabaseInterface.ACCOUNT_USERNAME, username, limit=1)
+        return Account.extractQueryRowData(accounts[0]) if accounts else None
 
     @staticmethod
     def getHardcodeAdmin():
@@ -495,17 +505,24 @@ class Account:
         }
 
     @staticmethod
-    def getAdmins(just_hardcode_admin: bool = True):
+    def getGodUsers(just_hardcode_admin: bool = True):
         if not just_hardcode_admin:
             admins = list(
-                map(lambda data: Account.extractQueryRowData(data), Account.database().get_special_accounts())
+                map(lambda data: Account.extractQueryRowData(data), Account.database().get_special_accounts(value=Account.Modes.GOD.value))
             )
-            if HARDCODE_ADMIN_CHATID:
-                admins.insert(0, Account.getHardcodeAdmin()["account"])
+
             return admins
         return [
             Account.getHardcodeAdmin()["account"],
         ]
+
+    @staticmethod
+    def getStaffAdmins():
+        admins = list(
+            map(lambda data: Account.extractQueryRowData(data), Account.database().get_special_accounts(value=Account.Modes.ADMIN.value))
+        )
+
+        return admins
 
     def mayInteract(self):
         long_time_no_see = (

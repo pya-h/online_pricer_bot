@@ -21,7 +21,7 @@ from telegram.error import BadRequest, Forbidden
 from api.currency_service import CurrencyService
 from api.crypto_service import CryptoCurrencyService
 from json import dumps as jsonify
-from typing import List, Dict, Tuple, Set, Coroutine, Any
+from typing import List, Dict, Tuple, Set, Coroutine, Any, Callable
 from bot.post import PostMan
 from models.account import Account
 from models.channel import Channel, PostInterval
@@ -123,16 +123,21 @@ class BotMan:
         CANCEL_FA = resourceman.keyboard("cancel", "fa")
         CANCEL_EN = resourceman.keyboard("cancel", "en")
 
-        ADMIN_NOTICES_FA = resourceman.keyboard("admin_notices", "fa")
-        ADMIN_NOTICES_EN = resourceman.keyboard("admin_notices", "en")
-        ADMIN_STATISTICS_FA = resourceman.keyboard("admin_statistics", "fa")
-        ADMIN_STATISTICS_EN = resourceman.keyboard("admin_statistics", "en")
         ADMIN_UPGRADE_TO_PREMIUM_FA = resourceman.keyboard("admin_upgrade_to_premium", "fa")
         ADMIN_UPGRADE_TO_PREMIUM_EN = resourceman.keyboard("admin_upgrade_to_premium", "en")
         ADMIN_DOWNGRADE_USER_FA = resourceman.keyboard("admin_downgrade_user", "fa")
         ADMIN_DOWNGRADE_USER_EN = resourceman.keyboard("admin_downgrade_user", "en")
-        ADMIN_CHANGE_PREMIUM_PLANS_FA = resourceman.keyboard("change_premium_plans", "fa")
-        ADMIN_CHANGE_PREMIUM_PLANS_EN = resourceman.keyboard("change_premium_plans", "en")
+
+        GOD_ADD_ADMIN_FA = resourceman.keyboard("add_admin", "fa")
+        GOD_ADD_ADMIN_EN = resourceman.keyboard("add_admin", "en")
+        GOD_REMOVE_ADMIN_FA = resourceman.keyboard("remove_admin", "fa")
+        GOD_REMOVE_ADMIN_EN = resourceman.keyboard("remove_admin", "en")
+        GOD_NOTICES_FA = resourceman.keyboard("admin_notices", "fa")
+        GOD_NOTICES_EN = resourceman.keyboard("admin_notices", "en")
+        GOD_STATISTICS_FA = resourceman.keyboard("admin_statistics", "fa")
+        GOD_STATISTICS_EN = resourceman.keyboard("admin_statistics", "en")
+        GOD_CHANGE_PREMIUM_PLANS_FA = resourceman.keyboard("change_premium_plans", "fa")
+        GOD_CHANGE_PREMIUM_PLANS_EN = resourceman.keyboard("change_premium_plans", "en")
 
     class QueryActions(Enum):
         CHOOSE_LANGUAGE = 1
@@ -152,6 +157,7 @@ class BotMan:
         RECONNECT_COMMUNITY = 15
         LIST_ENTITY = 16
         IVE_SUBSCRIBED = 17
+        REMOVE_ADMIN = 18
         NONE = 0
 
         @staticmethod
@@ -163,6 +169,7 @@ class BotMan:
             return Account.States.NONE
 
     QueryActionOptions = (
+        QueryActions.NONE,
         QueryActions.CHOOSE_LANGUAGE,
         QueryActions.SELECT_PRICE_UNIT,
         QueryActions.DISABLE_ALARM,
@@ -179,6 +186,8 @@ class BotMan:
         QueryActions.REQUEST_RECONNECT_COMMUNITY,
         QueryActions.RECONNECT_COMMUNITY,
         QueryActions.LIST_ENTITY,
+        QueryActions.IVE_SUBSCRIBED,
+        QueryActions.REMOVE_ADMIN
     )
 
     class CommunityType(Enum):
@@ -356,29 +365,7 @@ class BotMan:
             resize_keyboard=True,
         )
 
-    def keyboard_for_unknown_user(self, language: str = "fa"):
-        return ReplyKeyboardMarkup(
-            (
-                [
-                    *self.common_menu_main_keys,
-                    [
-                        KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value),
-                        KeyboardButton(BotMan.Commands.SETTINGS_FA.value),
-                    ],
-                ]
-                if language != "en"
-                else [
-                    *self.common_menu_main_keys_en,
-                    [
-                        KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value),
-                        KeyboardButton(BotMan.Commands.SETTINGS_EN.value),
-                    ],
-                ]
-            ),
-            resize_keyboard=True,
-        )
-
-    def get_main_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
+    def get_normal_primary_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup(
             (
                 [
@@ -408,7 +395,7 @@ class BotMan:
             resize_keyboard=True,
         )
 
-    def get_admin_keyboard(self, lang: str = "fa") -> ReplyKeyboardMarkup:
+    def get_admin_primary_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return (
             ReplyKeyboardMarkup(
                 [
@@ -416,34 +403,41 @@ class BotMan:
                         KeyboardButton(BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value),
                         KeyboardButton(BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value),
                     ],
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_NOTICES_FA.value),
-                        KeyboardButton(BotMan.Commands.ADMIN_STATISTICS_FA.value),
-                    ],
-                    *self.common_menu_main_keys,
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_FA.value),
-                        KeyboardButton(BotMan.Commands.SETTINGS_FA.value),
-                    ],
+                    *(
+                        [
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_NOTICES_FA.value),
+                                KeyboardButton(BotMan.Commands.GOD_STATISTICS_FA.value),
+                            ],
+                            *self.common_menu_main_keys,
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_CHANGE_PREMIUM_PLANS_FA.value),
+                                KeyboardButton(BotMan.Commands.SETTINGS_FA.value),
+                            ]
+                        ] if account.is_god else self.common_menu_main_keys
+                    )
                 ],
                 resize_keyboard=True,
-            )
-            if lang != "en"
+            ) if account.language != "en"
             else ReplyKeyboardMarkup(
                 [
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value),
                         KeyboardButton(BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value),
                     ],
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_NOTICES_EN.value),
-                        KeyboardButton(BotMan.Commands.ADMIN_STATISTICS_EN.value),
-                    ],
-                    *self.common_menu_main_keys_en,
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_EN.value),
-                        KeyboardButton(BotMan.Commands.SETTINGS_EN.value),
-                    ],
+                    *(
+                        [
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_NOTICES_EN.value),
+                                KeyboardButton(BotMan.Commands.GOD_STATISTICS_EN.value),
+                            ],
+                            *self.common_menu_main_keys_en,
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_CHANGE_PREMIUM_PLANS_EN.value),
+                                KeyboardButton(BotMan.Commands.SETTINGS_EN.value),
+                            ]
+                        ] if account.is_god else self.common_menu_main_keys_en
+                    )
                 ],
                 resize_keyboard=True,
             )
@@ -537,7 +531,7 @@ class BotMan:
         )
 
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
-        return self.get_main_keyboard(account) if not account.mode else self.get_admin_keyboard(account.language)
+        return self.get_normal_primary_keyboard(account) if not account.is_admin else self.get_admin_primary_keyboard(account)
 
     @staticmethod
     def actionCallbackData(action: QueryActions, value: any, page: int | None = None):
@@ -685,9 +679,8 @@ class BotMan:
         buttons = [
             [
                 InlineKeyboardButton(
-                    text=(self.resourceman.keyboard if not in_main_keyboard else self.resourceman.mainkeyboard)(
-                        data[keys[col + row * columns_in_a_row]], language
-                    ),
+                    text=self.resourceman.keyboard(data[keys[col + row * columns_in_a_row]], language) if not in_main_keyboard
+                        else self.resourceman.mainkeyboard(data[keys[col + row * columns_in_a_row]], language),
                     callback_data=self.actionCallbackData(action, keys[col + row * columns_in_a_row]),
                 )
                 for col in range(columns_in_a_row)
@@ -721,7 +714,7 @@ class BotMan:
         buttons_count = len(users)
 
         pagination_menu: List[InlineKeyboardButton] | None = None
-        pagination_callback_data = lambda page: self.actionCallbackData(list_type, None, page)
+        pagination_callback_data = lambda page: BotMan.actionCallbackData(list_type, None, page)
 
         if buttons_count > max_page_buttons:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
@@ -787,6 +780,33 @@ class BotMan:
         )
         return InlineKeyboardMarkup(buttons)
 
+    async def handle_users_menu_page_change(self, operator: Account, query: CallbackQuery,
+                                            callback_data: Dict[str, str | int | None],
+                                            source_func: Callable[...,List[Account]], action: QueryActions):
+        try:
+            if callback_data["pg"] is None or (page := int(callback_data["pg"])) == -1:
+                operator.change_state()
+                await asyncio.gather(
+                    query.message.reply_text(
+                        text=self.text("what_can_i_do", operator.language),
+                        reply_markup=self.mainkeyboard(operator),
+                    ),
+                    query.message.edit_text(self.text("list_updated", operator.language)),
+                    return_exceptions=True,
+                )
+                return True
+            menu = self.users_list_menu(
+                source_func(),
+                action,
+                columns_in_a_row=3,
+                page=page,
+                language=operator.language,
+            )
+            await query.message.edit_reply_markup(reply_markup=menu)
+        except:
+            return False # Indicator of sth went wrong
+        return True
+
     def keyboard_from(self, language: str, *row_keys: str):
         buttons = []
         for key in row_keys:
@@ -810,7 +830,7 @@ class BotMan:
     async def inform_admins(self, message_key: str, context: CallbackContext, is_error: bool = False):
         message_text = self.error if is_error else self.text
         tasks = []
-        for admin in Account.getAdmins(just_hardcode_admin=False):
+        for admin in Account.getGodUsers(just_hardcode_admin=False):
             try:
                 tasks.append(
                     context.bot.send_message(
@@ -1010,34 +1030,34 @@ class BotMan:
         except Exception as x:
             log("Problem while listing premium users:", x, "Admin")
 
-    def identify_user(self, update: Update) -> Account | None:
+    @staticmethod
+    def identifyUser(update: Update) -> Account | None:
         """Get the user's Account object from update object by one of these methods:
-        1- providing a forwarded message from the desired user
-        2- providing the username of the user
-        3- providing the chat_id of the user.
+            1- providing a forwarded message from the desired user
+            2- providing the username of the user
+            3- providing the chat_id of the user.
         """
-        user: Account | None = None
         if update.message.forward_from:
-            upgrading_chat_id = update.message.forward_from.id
-            user = Account.getById(upgrading_chat_id)
+            target_chat_id = update.message.forward_from.id
+            user = Account.getById(target_chat_id)
             user.name = update.message.forward_from
             user.firstname = update.message.forward_from.first_name
-        elif update.message.text[0] == "@":
-            try:
-                user = Account.getByUsername(update.message.text)
-                if user:
-                    upgrading_chat_id = user.chat_id
-            except:
-                upgrading_chat_id = None
-        else:
-            try:
-                upgrading_chat_id = int(update.message.text)
-                user = Account.getById(upgrading_chat_id)
-            except:
-                upgrading_chat_id = None
-        return user
+            return user
 
-    def string_to_number(self, num: str) -> int | float:
+        if update.message.text[0] == "@":
+            if user := Account.getByUsername(update.message.text):
+                return user
+            return None
+
+        try:
+            target_chat_id = int(update.message.text)
+            return Account.getById(target_chat_id)
+        except:
+            pass
+        return None
+
+    @staticmethod
+    def stringToNumber(num: str) -> int | float:
         thousands = 1
         if num[0].isdigit() and not num[-1].isdigit():
             thousands, num = extract_thousands(num)
@@ -1045,9 +1065,10 @@ class BotMan:
         intf = int(f)
         return f if intf != f else intf
 
-    def extract_coef(self, word: str):
+    @staticmethod
+    def extractMultiplier(word: str):
         try:
-            return self.string_to_number(word)
+            return BotMan.stringToNumber(word)
         except:
             pass
         return 1
@@ -1064,16 +1085,16 @@ class BotMan:
             prev_word: str | float = words[i - 1] if i else 1.0
             slug, word_count = finder.search_around(self.crypto_serv.coinsInPersian, i)
             if slug:
-                coef = self.extract_coef(prev_word)
-                crypto_amounts.add(f"{coef} {slug}")
+                multiplier = BotMan.extractMultiplier(prev_word)
+                crypto_amounts.add(f"{multiplier} {slug}")
             else:
                 slug, word_count = finder.search_around(self.currency_serv.currenciesInPersian, i)
 
                 if not slug:
                     slug, word_count = finder.search_around(self.currency_serv.persianShortcuts, i)
                 if slug:
-                    coef = self.extract_coef(prev_word)
-                    currency_amounts.add(f"{coef} {slug}")
+                    multiplier = BotMan.extractMultiplier(prev_word)
+                    currency_amounts.add(f"{multiplier} {slug}")
             i += word_count
         return crypto_amounts, currency_amounts
 
