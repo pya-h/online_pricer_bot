@@ -43,7 +43,9 @@ class Account:
         SET_MESSAGE_HEADER = 15
         CHANGE_GROUP = 16
         CHANGE_CHANNEL = 17
-        ADMIN_CHANGE_PREMIUM_PLANS = 18
+        CHANGE_PREMIUM_PLANS = 18
+        ADD_ADMIN = 19
+        REMOVE_ADMIN = 20
 
         @staticmethod
         def which(value: int):
@@ -85,6 +87,9 @@ class Account:
         States.SET_MESSAGE_HEADER,
         States.CHANGE_GROUP,
         States.CHANGE_CHANNEL,
+        States.CHANGE_PREMIUM_PLANS,
+        States.ADD_ADMIN,
+        States.REMOVE_ADMIN
     )
 
     UserModes = (

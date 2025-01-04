@@ -123,16 +123,21 @@ class BotMan:
         CANCEL_FA = resourceman.keyboard("cancel", "fa")
         CANCEL_EN = resourceman.keyboard("cancel", "en")
 
-        ADMIN_NOTICES_FA = resourceman.keyboard("admin_notices", "fa")
-        ADMIN_NOTICES_EN = resourceman.keyboard("admin_notices", "en")
-        ADMIN_STATISTICS_FA = resourceman.keyboard("admin_statistics", "fa")
-        ADMIN_STATISTICS_EN = resourceman.keyboard("admin_statistics", "en")
         ADMIN_UPGRADE_TO_PREMIUM_FA = resourceman.keyboard("admin_upgrade_to_premium", "fa")
         ADMIN_UPGRADE_TO_PREMIUM_EN = resourceman.keyboard("admin_upgrade_to_premium", "en")
         ADMIN_DOWNGRADE_USER_FA = resourceman.keyboard("admin_downgrade_user", "fa")
         ADMIN_DOWNGRADE_USER_EN = resourceman.keyboard("admin_downgrade_user", "en")
-        ADMIN_CHANGE_PREMIUM_PLANS_FA = resourceman.keyboard("change_premium_plans", "fa")
-        ADMIN_CHANGE_PREMIUM_PLANS_EN = resourceman.keyboard("change_premium_plans", "en")
+
+        GOD_ADD_ADMIN_FA = resourceman.keyboard("add_admin", "fa")
+        GOD_ADD_ADMIN_EN = resourceman.keyboard("add_admin", "en")
+        GOD_REMOVE_ADMIN_FA = resourceman.keyboard("remove_admin", "fa")
+        GOD_REMOVE_ADMIN_EN = resourceman.keyboard("remove_admin", "en")
+        GOD_NOTICES_FA = resourceman.keyboard("admin_notices", "fa")
+        GOD_NOTICES_EN = resourceman.keyboard("admin_notices", "en")
+        GOD_STATISTICS_FA = resourceman.keyboard("admin_statistics", "fa")
+        GOD_STATISTICS_EN = resourceman.keyboard("admin_statistics", "en")
+        GOD_CHANGE_PREMIUM_PLANS_FA = resourceman.keyboard("change_premium_plans", "fa")
+        GOD_CHANGE_PREMIUM_PLANS_EN = resourceman.keyboard("change_premium_plans", "en")
 
     class QueryActions(Enum):
         CHOOSE_LANGUAGE = 1
@@ -356,28 +361,6 @@ class BotMan:
             resize_keyboard=True,
         )
 
-    def keyboard_for_unknown_user(self, language: str = "fa"):
-        return ReplyKeyboardMarkup(
-            (
-                [
-                    *self.common_menu_main_keys,
-                    [
-                        KeyboardButton(BotMan.Commands.GO_PREMIUM_FA.value),
-                        KeyboardButton(BotMan.Commands.SETTINGS_FA.value),
-                    ],
-                ]
-                if language != "en"
-                else [
-                    *self.common_menu_main_keys_en,
-                    [
-                        KeyboardButton(BotMan.Commands.GO_PREMIUM_EN.value),
-                        KeyboardButton(BotMan.Commands.SETTINGS_EN.value),
-                    ],
-                ]
-            ),
-            resize_keyboard=True,
-        )
-
     def get_main_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup(
             (
@@ -408,7 +391,7 @@ class BotMan:
             resize_keyboard=True,
         )
 
-    def get_admin_keyboard(self, lang: str = "fa") -> ReplyKeyboardMarkup:
+    def get_admin_keyboard(self, account: Account) -> ReplyKeyboardMarkup:
         return (
             ReplyKeyboardMarkup(
                 [
@@ -416,34 +399,41 @@ class BotMan:
                         KeyboardButton(BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value),
                         KeyboardButton(BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value),
                     ],
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_NOTICES_FA.value),
-                        KeyboardButton(BotMan.Commands.ADMIN_STATISTICS_FA.value),
-                    ],
-                    *self.common_menu_main_keys,
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_FA.value),
-                        KeyboardButton(BotMan.Commands.SETTINGS_FA.value),
-                    ],
+                    *(
+                        [
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_NOTICES_FA.value),
+                                KeyboardButton(BotMan.Commands.GOD_STATISTICS_FA.value),
+                            ],
+                            *self.common_menu_main_keys,
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_CHANGE_PREMIUM_PLANS_FA.value),
+                                KeyboardButton(BotMan.Commands.SETTINGS_FA.value),
+                            ]
+                        ] if account.is_god else self.common_menu_main_keys
+                    )
                 ],
                 resize_keyboard=True,
-            )
-            if lang != "en"
+            ) if account.language != "en"
             else ReplyKeyboardMarkup(
                 [
                     [
                         KeyboardButton(BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value),
                         KeyboardButton(BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value),
                     ],
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_NOTICES_EN.value),
-                        KeyboardButton(BotMan.Commands.ADMIN_STATISTICS_EN.value),
-                    ],
-                    *self.common_menu_main_keys_en,
-                    [
-                        KeyboardButton(BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_EN.value),
-                        KeyboardButton(BotMan.Commands.SETTINGS_EN.value),
-                    ],
+                    *(
+                        [
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_NOTICES_EN.value),
+                                KeyboardButton(BotMan.Commands.GOD_STATISTICS_EN.value),
+                            ],
+                            *self.common_menu_main_keys_en,
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_CHANGE_PREMIUM_PLANS_EN.value),
+                                KeyboardButton(BotMan.Commands.SETTINGS_EN.value),
+                            ]
+                        ] if account.is_god else self.common_menu_main_keys_en
+                    )
                 ],
                 resize_keyboard=True,
             )
@@ -537,7 +527,7 @@ class BotMan:
         )
 
     def mainkeyboard(self, account: Account) -> ReplyKeyboardMarkup:
-        return self.get_main_keyboard(account) if not account.mode else self.get_admin_keyboard(account.language)
+        return self.get_main_keyboard(account) if not account.is_admin else self.get_admin_keyboard(account)
 
     @staticmethod
     def actionCallbackData(action: QueryActions, value: any, page: int | None = None):

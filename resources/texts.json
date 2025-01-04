@@ -94,6 +94,14 @@
       "fa": "دیگر مجموعه های ما",
       "en": "Our Other Collections"
     },
+    "add_admin": {
+      "fa": "افزودن ادمین",
+      "en": "Add Admin"
+    },
+    "remove_admin": {
+      "fa": "حذف ادمین",
+      "en": "Remove Admin"
+    },
     "admin_notices": {
       "fa": "⚠️ اطلاع رسانی",
       "en": "⚠️ Notices"
