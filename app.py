@@ -246,7 +246,7 @@ async def cmd_admin_login(update: Update, context: CallbackContext):
 
 async def cmd_upgrade_user(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.is_authorized(context.args):
+    if not account.is_admin and not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
     account.change_state(
         Account.States.UPGRADE_USER,
@@ -260,13 +260,12 @@ async def cmd_upgrade_user(update: Update, context: CallbackContext):
 
 async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
-    if not account.is_authorized(context.args):
+    if not account.is_admin and not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
     account.change_state(Account.States.DOWNGRADE_USER)
     await update.message.reply_text(
-        botman.text("specify_user", account.language) + "\n" + botman.text("downgrade_by_premiums_list",
-                                                                           account.language),
+        botman.text("specify_user", account.language) + "\n" + botman.text("downgrade_by_premiums_list", account.language),
         reply_markup=botman.cancel_menu(account.language),
     )
     await botman.list_premiums(update, BotMan.QueryActions.ADMIN_DOWNGRADE_USER)
@@ -729,7 +728,129 @@ async def handle_action_queries(
                 await asyncio.gather(cmd_welcome(query, context), query.message.delete(), return_exceptions=True)
                 return
         case _:
-            if not account.is_authorized(context.args):
+            if action == BotMan.QueryActions.ADMIN_DOWNGRADE_USER.value and account.is_admin:
+                if "v" not in callback_data or not value:
+                    page: int
+
+                    try:
+                        page = int(callback_data["pg"])
+                        # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
+                        if page == -1 or callback_data["pg"] is None:
+                            account.change_state()
+                            await asyncio.gather(
+                                query.message.edit_text(botman.text("list_updated", account.language)),
+                                context.bot.send_message(
+                                    chat_id=account.chat_id,
+                                    text=botman.text("what_can_i_do", account.language),
+                                    reply_markup=botman.mainkeyboard(account),
+                                ),
+                                return_exceptions=True,
+                            )
+                            return
+                        menu = botman.users_list_menu(
+                            Account.getPremiumUsers(),
+                            BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
+                            columns_in_a_row=3,
+                            page=page,
+                            language=account.language,
+                        )
+                        await query.message.edit_reply_markup(reply_markup=menu)
+                    except:
+                        pass
+                    return
+
+                chat_id: int | None = None
+                values = str(value).split(BotMan.CALLBACK_DATA_DELIMITER)
+                try:
+                    chat_id = int(values[0])
+                except:
+                    pass
+                if not chat_id:
+                    await query.message.edit_text(botman.error("invalid_user_specification", account.language))
+                    return
+                target_user = Account.getById(chat_id)
+                if len(values) > 1:
+                    if values[1] == "y":
+                        if target_user.is_premium:
+                            await asyncio.gather(
+                                botman.downgrade_user(target_user, context=context),
+                                query.message.edit_text(botman.text("account_downgraded", account.language)),
+                            )
+                            msg_to_edit = account.get_cache("msg2edit")
+                            if msg_to_edit:
+                                premiums = await botman.list_premiums(
+                                    update=query,
+                                    list_type=BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
+                                    only_menu=True,
+                                )
+                                await context.bot.edit_message_reply_markup(
+                                    chat_id=account.chat_id,
+                                    message_id=int(msg_to_edit),
+                                    reply_markup=premiums,
+                                )
+                                account.delete_specific_cache("msg2edit")
+                            return
+                        await query.message.edit_text(botman.text("not_a_premium", account.language))
+                    else:
+                        await query.message.edit_text(botman.text("operation_canceled", account.language))
+                    account.delete_specific_cache("msg2edit")
+                    # downgrade user
+                else:
+                    account.add_cache("msg2edit", query.message.message_id)
+                    await send_r_u_sure_to_downgrade_message(context, account, target_user)
+            elif action == BotMan.QueryActions.LIST_ENTITY.value and account.is_god:
+                post_body: str = ""
+                limit: int = 10
+                community, page = (int(x) for x in value.split(BotMan.CALLBACK_DATA_DELIMITER))
+                communities: List[Channel | Group] | None = None
+                total: int
+                match (community := BotMan.CommunityType.which(community)):
+                    case BotMan.CommunityType.GROUP:
+                        communities = Group.selectGroups(take=limit, page=page)
+                        total = Group.getAllGroupsCount()
+                    case BotMan.CommunityType.CHANNEL:
+                        communities = Channel.selectActiveChannels(take=limit, page=page)
+                        total = Channel.getActiveChannelsCount()
+                    case _:
+                        limit *= 2
+                        accounts = Account.selectAccounts(take=limit, page=page, only_premiums=True)
+                        total = Account.getPremiumUsersCount()
+                        for i, user in enumerate(accounts):
+                            post_body += f"{page * limit + i + 1}. {user.description}\n"
+                if communities:
+                    template = botman.text(
+                        f"{community.__str__()}_description_template",
+                        account.language,
+                    )
+                    number = page * limit + 1
+
+                    for comm in communities:
+                        premium_days = comm.owner.premium_days_remaining
+                        premium_days, str_number = (
+                            (persianify(premium_days), persianify(number))
+                            if account.language == "fa"
+                            else (str(premium_days), str(number))
+                        )
+                        post_body += template % (
+                            str_number,
+                            comm.name,
+                            comm.title,
+                            str(comm.owner),
+                            comm.owner.firstname,
+                            premium_days,
+                        )
+                        number += 1
+                buttons: dict = dict()
+                if page:
+                    buttons[f"{community.value}{BotMan.CALLBACK_DATA_DELIMITER}{page - 1}"] = "prev_page"
+                if (page + 1) * limit < total:
+                    buttons[f"{community.value}{BotMan.CALLBACK_DATA_DELIMITER}{page + 1}"] = "next_page"
+                await query.message.edit_text(
+                    post_body or "Nothing!",
+                    reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.LIST_ENTITY, buttons,
+                                                               account.language),
+                )
+            else:
                 await asyncio.gather(
                     query.message.edit_text(botman.error("what_the_fuck", account.language)),
                     context.bot.send_message(
@@ -739,132 +860,6 @@ async def handle_action_queries(
                     ),
                     return_exceptions=True,
                 )
-                return
-
-            # if admin:
-            match action:
-                case BotMan.QueryActions.ADMIN_DOWNGRADE_USER.value:
-                    if "v" not in callback_data or not value:
-                        page: int
-
-                        try:
-                            page = int(callback_data["pg"])
-                            # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
-                            if page == -1 or callback_data["pg"] is None:
-                                account.change_state()
-                                await asyncio.gather(
-                                    query.message.edit_text(botman.text("list_updated", account.language)),
-                                    context.bot.send_message(
-                                        chat_id=account.chat_id,
-                                        text=botman.text("what_can_i_do", account.language),
-                                        reply_markup=botman.mainkeyboard(account),
-                                    ),
-                                    return_exceptions=True,
-                                )
-                                return
-                            menu = botman.users_list_menu(
-                                Account.getPremiumUsers(),
-                                BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
-                                columns_in_a_row=3,
-                                page=page,
-                                language=account.language,
-                            )
-                            await query.message.edit_reply_markup(reply_markup=menu)
-                        except:
-                            pass
-                        return
-
-                    chat_id: int | None = None
-                    values = str(value).split(BotMan.CALLBACK_DATA_DELIMITER)
-                    try:
-                        chat_id = int(values[0])
-                    except:
-                        pass
-                    if not chat_id:
-                        await query.message.edit_text(botman.error("invalid_user_specification", account.language))
-                        return
-                    target_user = Account.getById(chat_id)
-                    if len(values) > 1:
-                        if values[1] == "y":
-                            if target_user.is_premium:
-                                await asyncio.gather(
-                                    botman.downgrade_user(target_user, context=context),
-                                    query.message.edit_text(botman.text("account_downgraded", account.language)),
-                                )
-                                msg_to_edit = account.get_cache("msg2edit")
-                                if msg_to_edit:
-                                    premiums = await botman.list_premiums(
-                                        update=query,
-                                        list_type=BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
-                                        only_menu=True,
-                                    )
-                                    await context.bot.edit_message_reply_markup(
-                                        chat_id=account.chat_id,
-                                        message_id=int(msg_to_edit),
-                                        reply_markup=premiums,
-                                    )
-                                    account.delete_specific_cache("msg2edit")
-                                return
-                            await query.message.edit_text(botman.text("not_a_premium", account.language))
-                        else:
-                            await query.message.edit_text(botman.text("operation_canceled", account.language))
-                        account.delete_specific_cache("msg2edit")
-                        # downgrade user
-                    else:
-                        account.add_cache("msg2edit", query.message.message_id)
-                        await send_r_u_sure_to_downgrade_message(context, account, target_user)
-                case BotMan.QueryActions.LIST_ENTITY.value:
-                    post_body: str = ""
-                    limit: int = 10
-                    community, page = (int(x) for x in value.split(BotMan.CALLBACK_DATA_DELIMITER))
-                    communities: List[Channel | Group] | None = None
-                    total: int
-                    match (community := BotMan.CommunityType.which(community)):
-                        case BotMan.CommunityType.GROUP:
-                            communities = Group.selectGroups(take=limit, page=page)
-                            total = Group.getAllGroupsCount()
-                        case BotMan.CommunityType.CHANNEL:
-                            communities = Channel.selectActiveChannels(take=limit, page=page)
-                            total = Channel.getActiveChannelsCount()
-                        case _:
-                            limit *= 2
-                            accounts = Account.selectAccounts(take=limit, page=page, only_premiums=True)
-                            total = Account.getPremiumUsersCount()
-                            for i, user in enumerate(accounts):
-                                post_body += f"{page * limit + i + 1}. {user.description}\n"
-                    if communities:
-                        template = botman.text(
-                            f"{community.__str__()}_description_template",
-                            account.language,
-                        )
-                        number = page * limit + 1
-
-                        for comm in communities:
-                            premium_days = comm.owner.premium_days_remaining
-                            premium_days, str_number = (
-                                (persianify(premium_days), persianify(number))
-                                if account.language == "fa"
-                                else (str(premium_days), str(number))
-                            )
-                            post_body += template % (
-                                str_number,
-                                comm.name,
-                                comm.title,
-                                str(comm.owner),
-                                comm.owner.firstname,
-                                premium_days,
-                            )
-                            number += 1
-                    buttons: dict = dict()
-                    if page:
-                        buttons[f"{community.value}{BotMan.CALLBACK_DATA_DELIMITER}{page - 1}"] = "prev_page"
-                    if (page + 1) * limit < total:
-                        buttons[f"{community.value}{BotMan.CALLBACK_DATA_DELIMITER}{page + 1}"] = "next_page"
-                    await query.message.edit_text(
-                        post_body or "Nothing!",
-                        reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.LIST_ENTITY, buttons,
-                                                                   account.language),
-                    )
     await query.answer()
 
 
@@ -1121,8 +1116,9 @@ async def go_to_community_panel(update: Update, account: Account, community: Bot
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:
         return
+    message_text = update.message.text
 
-    match update.message.text:
+    match message_text:
         case BotMan.Commands.GET_FA.value | BotMan.Commands.GET_EN.value:
             await cmd_get_prices(update, context)
         case BotMan.Commands.CONFIG_PRICE_LIST_FA.value | BotMan.Commands.CONFIG_PRICE_LIST_EN.value:
@@ -1263,8 +1259,8 @@ async def handle_messages(update: Update, context: CallbackContext):
         ):
             (section, state) = (
                 ("header", Account.States.SET_MESSAGE_HEADER)
-                if update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value
-                   and update.message.text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value
+                if message_text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_FA.value
+                   and message_text != BotMan.Commands.COMMUNITY_SET_MESSAGE_FOOTNOTE_EN.value
                 else ("footer", Account.States.SET_MESSAGE_FOOTNOTE)
             )
             account = Account.get(update.message.chat)
@@ -1417,13 +1413,13 @@ async def handle_messages(update: Update, context: CallbackContext):
                         return
             await botman.deleteRedundantMessage(account, context, delete_cache=False)
             account.change_state(
-                clear_cache=update.message.text == BotMan.Commands.RETURN_FA.value or update.message.text == BotMan.Commands.RETURN_EN.value
+                clear_cache=message_text == BotMan.Commands.RETURN_FA.value or message_text == BotMan.Commands.RETURN_EN.value
             )
             await update.message.reply_text(
                 botman.text(
                     (
                         "operation_canceled"
-                        if update.message.text != BotMan.Commands.RETURN_FA.value and update.message.text != BotMan.Commands.RETURN_EN.value
+                        if message_text != BotMan.Commands.RETURN_FA.value and message_text != BotMan.Commands.RETURN_EN.value
                         else "what_can_i_do"
                     ),
                     account.language,
@@ -1435,31 +1431,33 @@ async def handle_messages(update: Update, context: CallbackContext):
         case _:
             # check account state first, to see if he/she is in input state
             account = Account.get(update.message.chat)
-            msg = update.message.text
-            if account.mode:
-                # admin options:
-                match msg:
+            if account.is_admin:
+                match message_text:
                     case BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_FA.value | BotMan.Commands.ADMIN_UPGRADE_TO_PREMIUM_EN.value:
                         await cmd_upgrade_user(update, context)
                         return
                     case BotMan.Commands.ADMIN_DOWNGRADE_USER_FA.value | BotMan.Commands.ADMIN_DOWNGRADE_USER_EN.value:
                         await cmd_list_users_to_downgrade(update, context)
                         return
-                    case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
-                        await cmd_send_post(update, context)
-                        return
-                    case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
-                        await cmd_report_statistics(update, context)
-                        return
-                    case BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_FA.value | BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_EN.value:
-                        await cmd_send_plans_post(update, context)
-                        return
+
+                if account.is_god:
+                    # admin options:
+                    match message_text:
+                        case BotMan.Commands.ADMIN_NOTICES_FA.value | BotMan.Commands.ADMIN_NOTICES_EN.value:
+                            await cmd_send_post(update, context)
+                            return
+                        case BotMan.Commands.ADMIN_STATISTICS_FA.value | BotMan.Commands.ADMIN_STATISTICS_EN.value:
+                            await cmd_report_statistics(update, context)
+                            return
+                        case BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_FA.value | BotMan.Commands.ADMIN_CHANGE_PREMIUM_PLANS_EN.value:
+                            await cmd_send_plans_post(update, context)
+                            return
 
             match account.state:
                 case Account.States.INPUT_EQUALIZER_AMOUNT:
-                    params = msg.split()
+                    params = message_text.split()
                     count_of_params = len(params)
-                    # todo: for now input must be first price and then symbols => you could make the order dynamic
+
                     # extract parameters and categorize them into units and amounts
                     amounts = []
                     units = account.get_cache("input_symbols") or []
@@ -1511,7 +1509,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 case Account.States.CREATE_ALARM:
                     props = account.get_cache("create_alarm_props")
                     try:
-                        price = float(msg)
+                        price = float(message_text)
                     except:
                         await update.message.reply_text(
                             botman.error("invalid_price", account.language),
@@ -1535,7 +1533,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     )
                     account.delete_specific_cache("create_alarm_props")
 
-                case Account.States.ADD_BOT_AS_ADMIN:  # TODO: Add code to automatically add channel, just like groups
+                case Account.States.ADD_BOT_AS_ADMIN:
                     channel_chat: Chat | None = None
                     if update.message.forward_from_chat:
                         channel_chat = update.message.forward_from_chat
@@ -1543,9 +1541,9 @@ async def handle_messages(update: Update, context: CallbackContext):
                     if not channel_chat:
                         # send a message to the channel or group and retrieve chat_id
                         try:
-                            if "https://t.me/" in msg:
-                                msg = msg.replace("https://t.me/", "@")
-                            response: Message = await context.bot.send_message(chat_id=msg, text="Test")
+                            if "https://t.me/" in message_text:
+                                message_text = message_text.replace("https://t.me/", "@")
+                            response: Message = await context.bot.send_message(chat_id=message_text, text="Test")
                             channel_chat = response.chat
                             await context.bot.delete_message(chat_id=channel_chat.id, message_id=response.message_id)
                         except Exception as x:
@@ -1553,7 +1551,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 botman.error("bot_seems_not_admin", account.language),
                                 reply_markup=botman.action_inline_keyboard(
                                     botman.QueryActions.VERIFY_BOT_IS_ADMIN,
-                                    {msg: "verify"},
+                                    {message_text: "verify"},
                                     in_main_keyboard=False,
                                 ),
                             )
@@ -1573,7 +1571,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                 case Account.States.SELECT_POST_INTERVAL | Account.States.CHANGE_POST_INTERVAL:
                     interval: int
                     try:
-                        interval = PostInterval.TimestampToMinutes(msg)
+                        interval = PostInterval.TimestampToMinutes(message_text)
                     except:
                         await update.message.reply_text(botman.error("unsupported_input_format", account.language))
                         return
@@ -1602,9 +1600,9 @@ async def handle_messages(update: Update, context: CallbackContext):
                         account.delete_specific_cache("community")
                         return
                     if account.state == Account.States.SET_MESSAGE_HEADER:
-                        community.message_header = msg
+                        community.message_header = message_text
                     else:
-                        community.message_footnote = msg
+                        community.message_footnote = message_text
                     community.save()
                     await update.message.reply_text(
                         botman.text("update_successful", account.language),
@@ -1612,18 +1610,16 @@ async def handle_messages(update: Update, context: CallbackContext):
                     )
                     account.change_state()
                 case _:
-                    if not account.is_authorized(context.args):
+                    if not account.is_admin:
                         await update.message.reply_text(
                             botman.error("what_the_fuck", account.language),
                             reply_markup=botman.mainkeyboard(account),
                         )
                         return
 
-                    # Admin states
                     match account.state:
                         case Account.States.UPGRADE_USER:
                             upgrading_chat_id = account.get_cache("upgrading")
-                            text = update.message.text
 
                             if not upgrading_chat_id:
                                 user = botman.identify_user(update)
@@ -1649,7 +1645,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             else:
                                 days: int | None = None
                                 try:
-                                    days = int(text)
+                                    days = int(message_text)
                                 except:
                                     pass
                                 if not days or (days < 0):
@@ -1680,6 +1676,16 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     botman.error("invalid_user_specification", account.language))
                                 return
                             await send_r_u_sure_to_downgrade_message(context, account, user)
+
+                    if not account.is_god:
+                        await update.message.reply_text(
+                            botman.error("what_the_fuck", account.language),
+                            reply_markup=botman.mainkeyboard(account),
+                        )
+                        return
+
+                    # God actions
+                    match account.state:
                         case Account.States.SEND_POST:
                             # admin is trying to send post
                             if update.message.text.isnumeric():

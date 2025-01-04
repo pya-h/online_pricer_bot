@@ -246,7 +246,7 @@ class Account:
 
     @property
     def is_admin(self):
-        return self.mode.value > Account.Modes.NORMAL.value
+        return self.mode.value >= Account.Modes.ADMIN.value
 
     @property
     def is_god(self):
