@@ -502,6 +502,32 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     account.save()
 
 
+
+def seconds_to_next_period(period_in_minutes: int | float = 10):
+    now = mathematix.tz_today()
+
+    next_period_in_minutes = ((now.minute // period_in_minutes) + 1) * period_in_minutes
+
+    minutes_remaining = next_period_in_minutes - now.minute
+    return minutes_remaining, (minutes_remaining * 60) - now.second - 1
+
+def schedule_channel_at_startup(context):
+    global is_channel_updates_started
+    current_jobs = context.job_queue.get_jobs_by_name(MAIN_SCHEDULER_IDENTIFIER)
+    for job in current_jobs:
+        job.schedule_removal()
+    is_channel_updates_started = False
+
+    minutes, first = seconds_to_next_period(schedule_interval)
+    context.job_queue.run_repeating(
+        announce_prices,
+        interval=schedule_interval * 60,
+        first=first,
+        name=MAIN_SCHEDULER_IDENTIFIER,
+    )
+    print(f'Main channel scheduled, starting after {first} sec [{minutes} minutes].')
+    is_channel_updates_started = True
+
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -525,6 +551,7 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
     print(HOST_URL)
     print("Server is up and running...")
+    schedule_channel_at_startup(app)
     # app.run_polling(poll_interval=0.5, timeout=25)
     app.run_webhook(
         listen='127.0.0.1',
