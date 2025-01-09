@@ -5,3 +5,6 @@
         while migrating to new bot, remove all these rows.
 
     * Enhance logging system -> Define a new Log class and LogType Enum and some other enhancements.
+
+    * After finishing this stage, Remove and throw away any function, class or whatever if its not needed,
+        after backing them up in a separate branch 

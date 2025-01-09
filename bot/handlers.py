@@ -862,6 +862,8 @@ async def handle_action_queries(
                     reply_markup=botman.action_inline_keyboard(BotMan.QueryActions.LIST_ENTITY, buttons,
                                                                account.language),
                 )
+            elif action == BotMan.QueryActions.REMOVE_ADMIN.value and account.is_god:
+                # TODO:
             else:
                 await asyncio.gather(
                     query.message.edit_text(botman.error("what_the_fuck", account.language)),
@@ -1959,13 +1961,13 @@ async def handle_group_messages(update: Update, _: CallbackContext):
 async def unhandled_error_happened(update: Update, _: CallbackContext | None = None):
     try:
         if update and update.message and isinstance(update.message.chat, Chat) and (
-        account := Account.get(update.message.chat)):
-            account.change_state(clear_cache=True)
-            await update.message.reply_text(
-                botman.error("unhandled_error_happened", account.language),
-                reply_markup=(botman.mainkeyboard(
-                    account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove()),
-            )
+            account := Account.get(update.message.chat)):
+                account.change_state(clear_cache=True)
+                await update.message.reply_text(
+                    botman.error("unhandled_error_happened", account.language),
+                    reply_markup=(botman.mainkeyboard(
+                        account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove()),
+                )
     except Exception as x:
         log("Fucked up error", x, category_name="FATALITY")
 

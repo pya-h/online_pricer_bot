@@ -679,9 +679,8 @@ class BotMan:
         buttons = [
             [
                 InlineKeyboardButton(
-                    text=(self.resourceman.keyboard if not in_main_keyboard else self.resourceman.mainkeyboard)(
-                        data[keys[col + row * columns_in_a_row]], language
-                    ),
+                    text=self.resourceman.keyboard(data[keys[col + row * columns_in_a_row]], language) if not in_main_keyboard
+                        else self.resourceman.mainkeyboard(data[keys[col + row * columns_in_a_row]], language),
                     callback_data=self.actionCallbackData(action, keys[col + row * columns_in_a_row]),
                 )
                 for col in range(columns_in_a_row)
@@ -715,7 +714,7 @@ class BotMan:
         buttons_count = len(users)
 
         pagination_menu: List[InlineKeyboardButton] | None = None
-        pagination_callback_data = lambda page: self.actionCallbackData(list_type, None, page)
+        pagination_callback_data = lambda page: BotMan.actionCallbackData(list_type, None, page)
 
         if buttons_count > max_page_buttons:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
