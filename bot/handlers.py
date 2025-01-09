@@ -262,13 +262,12 @@ async def amd_remove_admin(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
-
     admins = Account.getStaffAdmins()
-
     await update.message.reply_text(
         botman.text("remove_by_admin_list", account.language),
         reply_markup=botman.users_list_menu(admins, BotMan.QueryActions.REMOVE_ADMIN, columns_in_a_row=3, page=0, language=account.language),
     )
+
 
 async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
@@ -742,33 +741,7 @@ async def handle_action_queries(
         case _:
             if action == BotMan.QueryActions.ADMIN_DOWNGRADE_USER.value and account.is_admin:
                 if "v" not in callback_data or not value:
-                    page: int
-
-                    try:
-                        page = int(callback_data["pg"])
-                        # if previous line passes ok, means the value is as #Num and indicates the page number and is sending prev/next page signal
-                        if page == -1 or callback_data["pg"] is None:
-                            account.change_state()
-                            await asyncio.gather(
-                                query.message.edit_text(botman.text("list_updated", account.language)),
-                                context.bot.send_message(
-                                    chat_id=account.chat_id,
-                                    text=botman.text("what_can_i_do", account.language),
-                                    reply_markup=botman.mainkeyboard(account),
-                                ),
-                                return_exceptions=True,
-                            )
-                            return
-                        menu = botman.users_list_menu(
-                            Account.getPremiumUsers(),
-                            BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
-                            columns_in_a_row=3,
-                            page=page,
-                            language=account.language,
-                        )
-                        await query.message.edit_reply_markup(reply_markup=menu)
-                    except:
-                        pass
+                    await botman.handle_users_menu_page_change(account, query, callback_data, Account.getPremiumUsers, BotMan.QueryActions.ADMIN_DOWNGRADE_USER)
                     return
 
                 chat_id: int | None = None
@@ -863,7 +836,39 @@ async def handle_action_queries(
                                                                account.language),
                 )
             elif action == BotMan.QueryActions.REMOVE_ADMIN.value and account.is_god:
-                # TODO:
+                if "v" not in callback_data or not value:
+                    await botman.handle_users_menu_page_change(account, query, callback_data, Account.getStaffAdmins,
+                                                                BotMan.QueryActions.REMOVE_ADMIN)
+                    return
+                target: Account | None = None
+                try:
+                    target = Account.getById(int(value))
+                    if not target.is_admin:
+                        await query.message.reply_text(botman.text('not_an_admin', account.language))
+                        return
+                    if target.is_god:
+                        await query.message.reply_text(botman.error('not_allowed', account.language))
+                        return
+                    account.downgrade_to_normal(target)
+                    try:
+                        page: int = int(callback_data['pg'])
+                    except:
+                        page = 0
+                    await asyncio.gather(
+                        query.message.reply_text(botman.text('admin_downgraded_to_normal', account.language) % (target.__str__(),)),
+                        context.bot.send_message(chat_id=target.chat_id, text=botman.text('what_can_i_do', target.language),
+                                                 reply_markup=botman.mainkeyboard(target)),
+                        query.message.edit_reply_markup(
+                            reply_markup=botman.users_list_menu(
+                                Account.getStaffAdmins(), BotMan.QueryActions.REMOVE_ADMIN,
+                                page=page, language=account.language
+                            )
+                        )
+                    )
+                except Exception as ex:
+                    await query.message.reply_text(botman.error('unknown', account.language))
+                    log(f'Failed downgrading a user: {target or value}', ex, category_name='ADMIN_LEVEL')
+
             else:
                 await asyncio.gather(
                     query.message.edit_text(botman.error("what_the_fuck", account.language)),

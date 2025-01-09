@@ -21,7 +21,7 @@ from telegram.error import BadRequest, Forbidden
 from api.currency_service import CurrencyService
 from api.crypto_service import CryptoCurrencyService
 from json import dumps as jsonify
-from typing import List, Dict, Tuple, Set, Coroutine, Any
+from typing import List, Dict, Tuple, Set, Coroutine, Any, Callable
 from bot.post import PostMan
 from models.account import Account
 from models.channel import Channel, PostInterval
@@ -779,6 +779,33 @@ class BotMan:
             ]
         )
         return InlineKeyboardMarkup(buttons)
+
+    async def handle_users_menu_page_change(self, operator: Account, query: CallbackQuery,
+                                            callback_data: Dict[str, str | int | None],
+                                            source_func: Callable[...,List[Account]], action: QueryActions):
+        try:
+            if callback_data["pg"] is None or (page := int(callback_data["pg"])) == -1:
+                operator.change_state()
+                await asyncio.gather(
+                    query.message.reply_text(
+                        text=self.text("what_can_i_do", operator.language),
+                        reply_markup=self.mainkeyboard(operator),
+                    ),
+                    query.message.edit_text(self.text("list_updated", operator.language)),
+                    return_exceptions=True,
+                )
+                return True
+            menu = self.users_list_menu(
+                source_func(),
+                action,
+                columns_in_a_row=3,
+                page=page,
+                language=operator.language,
+            )
+            await query.message.edit_reply_markup(reply_markup=menu)
+        except:
+            return False # Indicator of sth went wrong
+        return True
 
     def keyboard_from(self, language: str, *row_keys: str):
         buttons = []

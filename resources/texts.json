@@ -821,5 +821,13 @@
   "youre_admin_now": {
     "fa": "✅ تبریک! دسترسی شما به سطح ادمین ارتقا یافت.",
     "en": "✅ Congrats! You've been upgraded to Admin Level."
+  },
+  "not_an_admin": {
+    "fa": "به نظر می رسد کاربر انتخابی در حال حاضر ادمین نیست! لطفا در انتخاب خود بیشتر دقت کنید.",
+    "en": "It seems that the specified user is not admin right now; Please be more accurate in your selections!"
+  },
+  "admin_downgraded_to_normal": {
+    "fa": "کاربر %s به دوباره به دسترسی عادی بازگشت.",
+    "en": "User %s is now downgraded to Normal access."
   }
 }

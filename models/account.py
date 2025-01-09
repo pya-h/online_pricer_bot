@@ -203,6 +203,12 @@ class Account:
         target.mode = Account.Modes.ADMIN
         target.save()
 
+    def downgrade_to_normal(self, target: Self):
+        if not self.is_god:
+            raise Forbidden('Non-God users are not allowed to downgrade account mode.')
+        target.mode = Account.Modes.NORMAL
+        target.save()
+
     def upgrade(self, duration_in_days: int):
         Account.database().upgrade_account(self, duration_in_days)
 
