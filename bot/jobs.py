@@ -1,9 +1,5 @@
 from typing import Callable
 from time import time
-from models.channel import Channel
-from models.account import Account
-from bot.post import PostMan
-
 
 class ParallelJob:
     """Define objects from this and use it in TelegramBot, it will does some parallel jobs in the bot by a specific interval [in minutes]"""
