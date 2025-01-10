@@ -38,7 +38,7 @@ def prepare_folder_with_subs(folder_path, sub_folder_path=None):
     return main_folder_created, sub_folder_created
 
 
-# FIXME: Your log system is TOKHMI; create a Log class, and LogType enum and you know what else.
+# FIXME: This log system is so basic; create a Log class, and LogType enum and you know what else.
 def log(msg, exception=None, category_name=None):
     ts = datetime.now(tz=timezone)
     content = ts.strftime("%Y-%m-%d %H:%M:%S")

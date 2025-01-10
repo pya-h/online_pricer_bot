@@ -243,17 +243,13 @@ class BotMan:
         self.host_url = config("HOST_URL")
         self.bot_tag = config("BOT_TAG")
         self.bot_port = int(config("BOT_PORT"))
-        CMC_API_KEY = config("COINMARKETCAP_API_KEY")
-        CURRENCY_TOKEN = config("CURRENCY_TOKEN")
-        NOBITEX_TOKEN = config("NOBITEX_TOKEN")
-        ABAN_TETHER_TOKEN = config("ABAN_TETHER_TOKEN")
 
         self.postman = PostMan(
             resourceman,
-            CURRENCY_TOKEN,
-            CMC_API_KEY,
-            aban_tether_api_token=ABAN_TETHER_TOKEN,
-            nobitex_api_token=NOBITEX_TOKEN,
+            source_arena_api_key=config("CURRENCY_TOKEN", cast=str),
+            coinmarketcap_api_key=config("COINMARKETCAP_API_KEY", cast=str),
+            nobitex_api_token=config("NOBITEX_TOKEN", cast=str),
+            aban_tether_api_token=config("ABAN_TETHER_TOKEN", cast=str),
         )
 
         self.channels = [
@@ -285,7 +281,7 @@ class BotMan:
 
         self.setup_main_keyboards()
         self.is_main_plan_on: bool = False
-
+        self.last_daily_check: int | None = None
         BotSettings.init()
 
     def setup_main_keyboards(self):
@@ -1431,12 +1427,19 @@ class BotMan:
             await context.bot.send_message(chat_id=user.chat_id, text=self.text("plan_expired", user.language))
         Channel.deactivateUserChannels(user.chat_id)
 
-    async def do_daily_check(self, context: CallbackContext):
+    async def do_hourly_check(self, context: CallbackContext):
         """Garbage collect fast mems, remove messages supposed to be removed, etc."""
         Account.garbageCollect()
         Group.garbageCollect()
 
+        if not self.last_daily_check or now_in_minute() - self.last_daily_check >= 1440:
+            await self.do_daily_checks(context)
+            log("Daily checks has been performed successfully.", category_name='Schedules')
+
+    async def do_daily_checks(self, context: CallbackContext):
         today = tz_today().date()
+        async_tasks: List[Coroutine[Any, Any, bool | Message]] = []
+
         possible_premiums = Account.getPremiumUsers(even_possibles=True)
         for user in possible_premiums:
             try:
@@ -1447,9 +1450,11 @@ class BotMan:
                     days_remaining = (today - user_premium_end_date).days
                     if days_remaining in (7, 3, 1):
                         days_remaining = str(days_remaining) if user.language != "fa" else persianify(days_remaining)
-                        await context.bot.send_message(
-                            chat_id=user.chat_id,
-                            text=self.text("premium_expiry_is_close", user.language) % (days_remaining,),
+                        async_tasks.append(
+                            context.bot.send_message(
+                                chat_id=user.chat_id,
+                                text=self.text("premium_expiry_is_close", user.language) % (days_remaining,),
+                            )
                         )
             except Exception as x:
                 log("User daily checkout failed", x, category_name="Checkouts")
@@ -1457,15 +1462,20 @@ class BotMan:
         db = Account.database()
         now = now_in_minute()
         deleting_messages = db.get_messages_passed_their_due()
+
         if deleting_messages:
-            for msg in deleting_messages:
+            for i, msg in enumerate(deleting_messages):
                 try:
                     (_, chat_id, msg_id) = msg
                     if chat_id and msg_id:
-                        await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+                        async_tasks.append(
+                            context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+                        )
                 except:
                     pass
             db.throw_away_messages_passed_time(from_time=now)
+
+        await asyncio.gather(*async_tasks)
 
     @staticmethod
     def refreshMemory():
@@ -1476,8 +1486,8 @@ class BotMan:
     @staticmethod
     def createReportByLabels(
         stats: Dict[str, int],
-        all_labels: Dict[str, str],
-        desired_labels: Tuple[str],
+        all_labels: Dict[str, Dict[str, Dict[str, str]]],
+        desired_labels: tuple,
         word_unknown: str,
         language: str = "fa",
     ):
@@ -1491,13 +1501,14 @@ class BotMan:
                 try:
                     current = text[language]
                     report += f"{current}: {stats[label]}\n"
-                except Exception as x:
+                except Exception:
                     if current:
                         report += f"{current}: {word_unknown}"
             report += "\n"
         return report
 
-    def collect_bot_stats(self, language: str = "fa"):
+    @staticmethod
+    def collectBotStats(language: str = "fa"):
         db = Account.database()
         account_stats = db.get_user_stats()
         channels_count = db.get_active_channels_count()

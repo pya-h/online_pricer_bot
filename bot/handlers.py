@@ -299,7 +299,7 @@ async def cmd_report_statistics(update: Update, context: CallbackContext):
     if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
-    reports = botman.collect_bot_stats(account.language)
+    reports = BotMan.collectBotStats(account.language)
     for report in reports:
         await update.message.reply_text(report, reply_markup=botman.get_admin_primary_keyboard(account))
 
