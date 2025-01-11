@@ -33,8 +33,8 @@ def main(run_webhook: bool = True):
 
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
-    app.add_handler(CommandHandler("add-admin", cmd_add_admin))
-    app.add_handler(CommandHandler("rem-admin", amd_remove_admin))
+    app.add_handler(CommandHandler("add_admin", cmd_add_admin))
+    app.add_handler(CommandHandler("rem_admin", amd_remove_admin))
     app.add_handler(CommandHandler("up", cmd_upgrade_user))
     app.add_handler(CommandHandler("down", cmd_list_users_to_downgrade))
     app.add_handler(CommandHandler("post", cmd_send_post))
@@ -61,7 +61,7 @@ def main(run_webhook: bool = True):
                                 first=seconds_to_next_period(period_in_minutes=60))
     app.add_error_handler(unhandled_error_happened)
 
-    print("Server is up and running.")
+    print("Server is up and running...")
     if not run_webhook:
         app.run_polling(poll_interval=0.2, timeout=10)
     else:

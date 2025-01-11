@@ -173,7 +173,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
     )
 
 
-async def plan_main_channel(context: CallbackContext | TelegramApplication, interval: float | int = 10):
+def plan_main_channel(context: CallbackContext | TelegramApplication, interval: float | int = 10):
     if botman.is_main_plan_on:
         raise InvalidInputException('Command; Channel already planned!')
 

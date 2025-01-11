@@ -249,7 +249,7 @@ class BotMan:
             source_arena_api_key=config("CURRENCY_TOKEN", cast=str),
             coinmarketcap_api_key=config("COINMARKETCAP_API_KEY", cast=str),
             nobitex_api_token=config("NOBITEX_TOKEN", cast=str),
-            aban_tether_api_token=config("ABAN_TETHER_TOKEN", cast=str),
+            aban_tether_api_token=config("ABAN_TETHER_TOKEN", cast=str)
         )
 
         self.channels = [

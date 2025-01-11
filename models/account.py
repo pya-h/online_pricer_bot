@@ -56,9 +56,9 @@ class Account:
             return Account.States.NONE
 
     class Modes(Enum):
-        NORMAL = 0,
-        ADMIN = 1,
-        GOD = 2,
+        NORMAL = 0
+        ADMIN = 1
+        GOD = 2
 
         @staticmethod
         def which(value: int):
@@ -146,9 +146,11 @@ class Account:
         self.plus_end_date: datetime = plus_end_date
         self.username: str | None = username[1:] if username and (username[0] == "@") else username
         self.firstname: str | None = firstname
-        self.mode: Account.Modes = (mode if isinstance(mode, Account.Modes) else Account.Modes.which(mode))\
-            if self.chat_id != HARDCODE_ADMIN_CHATID \
-            else Account.Modes.GOD
+
+        if self.chat_id != HARDCODE_ADMIN_CHATID:
+            self.mode: Account.Modes = mode if isinstance(mode, Account.Modes) else Account.Modes.which(mode)
+        else:
+            self.mode = Account.Modes.GOD
 
         if not no_fastmem:
             self.organize_fastmem()
@@ -249,7 +251,7 @@ class Account:
     @property
     def is_premium(self) -> bool:
         """Check if the account has still plus subscription."""
-        return self.mode or ((self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
+        return self.is_admin or ((self.plus_end_date is not None) and (tz_today().date() <= self.plus_end_date.date()))
 
     @property
     def cache_as_str(self) -> str | None:
@@ -326,7 +328,7 @@ class Account:
 
     @property
     def user_type(self) -> BotSettings.UserTypes:
-        if self.mode:
+        if self.is_admin:
             return BotSettings.UserTypes.ADMIN
         return BotSettings.UserTypes.FREE if not self.is_premium else BotSettings.UserTypes.PREMIUM
 

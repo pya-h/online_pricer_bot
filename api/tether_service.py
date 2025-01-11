@@ -53,6 +53,7 @@ class TetherService(BaseAPIService):
 
 
 class AbanTetherService(TetherService):
+
     def __init__(self, token: str) -> None:
         super(AbanTetherService, self).__init__(
             url=f"https://abantether.com/api/v1/otc/coin-price?coin={AbanTetherService.tetherSymbol}",
@@ -87,6 +88,8 @@ class AbanTetherService(TetherService):
 
 
 class NobitexService(TetherService):
+    tetherFieldName = f'{TetherService.tetherSymbol}-{TetherService.tomanSymbol}'
+
     def __init__(self, token: str) -> None:
         super(NobitexService, self).__init__(
             url="https://api.nobitex.ir/market/stats", token=token, source="Nobitex.ir", cache_name="Nobitex.json"
@@ -96,21 +99,27 @@ class NobitexService(TetherService):
     @override
     @property
     def mid(self) -> float:
-        if self.recent_response and NobitexService.tetherSymbol in self.recent_response:
-            value = self.recent_response[NobitexService.tetherSymbol]
+        if self.recent_response and NobitexService.tetherFieldName in self.recent_response:
+            value = self.recent_response[NobitexService.tetherFieldName]
             self.recent_value = (float(value["bestBuy"]) + float(value["bestSell"])) / 2.0
             return self.recent_value
+        print(self.recent_value)
         return 0.0
+
+    async def fetch_prices(self):
+        response = await self.post_request(
+            headers=self.headers, payload={"srcCurrency": self.tetherSymbol, "dstCurrency": self.tomanSymbol}
+        )
+        if 'status' in response and response['status'].lower() == 'ok':
+            return response['stats']
+        return None
 
     @override
     async def get(self):
         try:
-            self.recent_response = await self.post_request(
-                headers=self.headers, payload={"srcCurrency": self.tetherSymbol, "dstCurrency": self.tomanSymbol}
-            )
-            if "global" in self.recent_response:
-                del self.recent_response["global"]
-            value = self.recent_response["stats"][f"{self.tetherSymbol}-{self.tomanSymbol}"]
+            self.recent_response = await self.fetch_prices()
+
+            value = self.recent_response[NobitexService.tetherFieldName]
             value["bestBuy"] = float(value["bestBuy"]) / 10.0
             value["bestSell"] = float(value["bestSell"]) / 10.0
             self.no_response_counts = 0
@@ -121,4 +130,4 @@ class NobitexService(TetherService):
         return self.recent_value
 
     def summary(self) -> str:
-        return self.data_summary(self.recent_response[self.tetherSymbol], "bestPriceMid")
+        return self.data_summary(self.recent_response[NobitexService.tetherFieldName], "bestPriceMid")
