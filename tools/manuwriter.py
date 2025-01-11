@@ -2,6 +2,9 @@ from datetime import datetime
 import os
 from tools.mathematix import timezone, short_timestamp
 import json
+import traceback
+import sys
+
 
 LOG_FOLDER_PATH = "logs"
 
@@ -39,12 +42,13 @@ def prepare_folder_with_subs(folder_path, sub_folder_path=None):
 
 
 # FIXME: This log system is so basic; create a Log class, and LogType enum and you know what else.
-def log(msg, exception=None, category_name=None):
+def log(msg, exception: Exception=None, category_name=None):
     ts = datetime.now(tz=timezone)
     content = ts.strftime("%Y-%m-%d %H:%M:%S")
     log_folder_path = LOG_FOLDER_PATH
     if exception:
-        content = f"{content}\t->\tSHIT: {msg}\n\t\tX: {exception}"
+        ex_info = '\n\t\t\t\t\t'.join(traceback.format_exception(*sys.exc_info()))
+        content = f"{content}\t->\tSHIT: {msg}\n\t\tX: {exception}\n\t\t\t{ex_info}"
     else:
         content += f"\t->\t{msg}"
     try:
@@ -59,12 +63,13 @@ def log(msg, exception=None, category_name=None):
     )
     logfile = open(f"./{log_folder_path}/{log_file_name}", "a")
     logfile.write(
-        "%s\t=>\t%s\n\n"
+        "%s\t=>\t%s\n%s\n"
         % (
             short_timestamp(
                 time_delimiter=":", datetime_delimiter="\t", show_minutes=True
             ),
             content,
+            '- ' * 40
         )
     )
     logfile.close()

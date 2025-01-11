@@ -1,3 +1,5 @@
+import asyncio
+
 from api.base import *
 import json
 from tools.exceptions import InvalidInputException
@@ -77,7 +79,7 @@ class GoldService(BaseAPIService):
         try:
             self.latest_data = await self.get_request()
         except Exception as x:
-            log("SourceArena Failure, Fetching Extra Gold Prices", x, "SourceArena")
+            log("SourceArena Failed Fetching Extra Gold Prices. App will use recent prices.", x, "SourceArena")
 
         for curr in self.latest_data:
             slug = curr["slug"].upper()
@@ -148,7 +150,6 @@ class NavasanService(CurrencyService):
         aban_tether_service_token: str = None,
     ) -> None:
         self.tether_service = NobitexService(nobitex_tether_service_token)
-
         self.alternate_tether_service = AbanTetherService(aban_tether_service_token) if aban_tether_service_token else None
 
         super().__init__(
@@ -223,18 +224,26 @@ class NavasanService(CurrencyService):
 
     # --------- Currency -----------
     async def get_request(self, _: dict = None, __: bool = False):
-        await self.tether_service.get()
-        return await super(NavasanService, self).get_request()
+        _, response = await asyncio.gather(
+            self.tether_service.get(),
+            super(NavasanService, self).get_request()
+        )
+
+        return response
 
     async def select_best_tether_price(self):
-        if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
-            self.set_tether_tomans(self.tether_service.recent_value)
-            return
+        try:
+            if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
+                self.set_tether_tomans(self.tether_service.recent_value)
+                return
 
-        await self.alternate_tether_service.get()
-        if self.alternate_tether_service.recent_value and self.alternate_tether_service.no_response_counts < 3:
-            self.set_tether_tomans(self.alternate_tether_service.recent_value)
-            return
+            await self.alternate_tether_service.get()
+            if self.alternate_tether_service.recent_value and self.alternate_tether_service.no_response_counts < 3:
+                self.set_tether_tomans(self.alternate_tether_service.recent_value)
+                return
+
+        except Exception as x:
+            log('Failed updating USDT-IRT price through tether services. Navasan prices will be used.', x, category_name='TetherService')
 
         self.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
 
@@ -249,12 +258,14 @@ class NavasanService(CurrencyService):
         except Exception as ex:
             log('Navasan API Error:', ex, 'Navasan')
 
-        try:
-            await self.gold_service.append_gold_prices(self.latest_data)
-        except Exception as ex:
-            log("Extend Navasan Data Error: Failed appending SourceArena Golds to Navasan data", ex, "Navasan")
+        if not self.latest_data:
+            return '', ''  # TODO: Think on whats the best course of action?
 
-        await self.select_best_tether_price()
+        await asyncio.gather(
+            self.gold_service.append_gold_prices(self.latest_data),
+            self.select_best_tether_price(),
+        )
+
         try:
             self.set_usd_price(self.latest_data["usd"]["value"])
         except Exception as ex:
@@ -391,7 +402,7 @@ class NavasanService(CurrencyService):
                 toman = f"{toman[1:]}-"
             return f"{NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان" + (
                 f" / {usd}$" if usd else ""
-            )  # TODO: Remove language based text from this class
+            )
         except Exception as x:
             pass
         return (

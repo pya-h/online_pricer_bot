@@ -28,7 +28,7 @@ class PostMan:
         self.crypto_service: CoinGeckoService | CoinMarketCapService = CoinMarketCapService(
             self.coinmarketcap_api_key
         )  # api service object: instance of CoinGecko or CoinMarketCap
-        self.currency_service: NavasanService = NavasanService(self.source_arena_api_key, self.nobitex_api_token)
+        self.currency_service: NavasanService = NavasanService(self.source_arena_api_key, self.nobitex_api_token, self.aban_tether_api_token)
 
     def arrange_post_sections(
         self, fiat_body: str, gold_body: str, crypto_body: str, post_interval: float | None = None, language: str = "fa"

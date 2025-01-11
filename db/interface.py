@@ -331,7 +331,7 @@ class DatabaseInterface:
                 account.plus_end_date,
                 account.state.value,
                 account.cache_as_str,
-                account.mode,
+                account.mode.value,
                 account.language,
             )
             log(
@@ -382,8 +382,8 @@ class DatabaseInterface:
     def update_account(self, account):
         conn = self.connection()
         cursor = conn.cursor()
-
         columns_to_set = ", ".join([f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]])
+
         cursor.execute(
             f"UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s",
             (
@@ -399,7 +399,7 @@ class DatabaseInterface:
                 account.plus_end_date,
                 account.state.value,
                 account.cache_as_str,
-                account.mode,
+                account.mode.value,
                 account.language,
                 account.chat_id,
             ),
@@ -431,7 +431,7 @@ class DatabaseInterface:
                     account.plus_end_date,
                     account.state.value,
                     account.cache_as_str,
-                    account.mode,
+                    account.mode.value,
                     account.language,
                 ),
             )

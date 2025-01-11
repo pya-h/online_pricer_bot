@@ -145,7 +145,7 @@ class BotMan:
         DISABLE_ALARM = 3
         FACTORY_RESET = 4
         SELECT_TUTORIAL = 5
-        ADMIN_DOWNGRADE_USER = 6
+        ADMIN_DOWNGRADE_PREMIUM_USER = 6
         VERIFY_BOT_IS_ADMIN = 7
         SELECT_POST_INTERVAL = 8
         START_CHANNEL_POSTING = 9
@@ -175,7 +175,7 @@ class BotMan:
         QueryActions.DISABLE_ALARM,
         QueryActions.FACTORY_RESET,
         QueryActions.SELECT_TUTORIAL,
-        QueryActions.ADMIN_DOWNGRADE_USER,
+        QueryActions.ADMIN_DOWNGRADE_PREMIUM_USER,
         QueryActions.VERIFY_BOT_IS_ADMIN,
         QueryActions.SELECT_POST_INTERVAL,
         QueryActions.START_CHANNEL_POSTING,
@@ -249,7 +249,7 @@ class BotMan:
             source_arena_api_key=config("CURRENCY_TOKEN", cast=str),
             coinmarketcap_api_key=config("COINMARKETCAP_API_KEY", cast=str),
             nobitex_api_token=config("NOBITEX_TOKEN", cast=str),
-            aban_tether_api_token=config("ABAN_TETHER_TOKEN", cast=str),
+            aban_tether_api_token=config("ABAN_TETHER_TOKEN", cast=str)
         )
 
         self.channels = [
@@ -405,6 +405,10 @@ class BotMan:
                                 KeyboardButton(BotMan.Commands.GOD_NOTICES_FA.value),
                                 KeyboardButton(BotMan.Commands.GOD_STATISTICS_FA.value),
                             ],
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_REMOVE_ADMIN_FA.value),
+                                KeyboardButton(BotMan.Commands.GOD_ADD_ADMIN_FA.value),
+                            ],
                             *self.common_menu_main_keys,
                             [
                                 KeyboardButton(BotMan.Commands.GOD_CHANGE_PREMIUM_PLANS_FA.value),
@@ -426,6 +430,10 @@ class BotMan:
                             [
                                 KeyboardButton(BotMan.Commands.GOD_NOTICES_EN.value),
                                 KeyboardButton(BotMan.Commands.GOD_STATISTICS_EN.value),
+                            ],
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_ADD_ADMIN_EN.value),
+                                KeyboardButton(BotMan.Commands.GOD_REMOVE_ADMIN_EN.value),
                             ],
                             *self.common_menu_main_keys_en,
                             [
@@ -997,7 +1005,8 @@ class BotMan:
             reply_markup=keyboard,
         )
 
-    async def clear_unwanted_menu_messages(self, update: Update, context: CallbackContext, operation_result):
+    @staticmethod
+    async def clearUnwantedMenuMessages(update: Update, context: CallbackContext, operation_result):
         if isinstance(operation_result, Message):
             await asyncio.gather(
                 context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id),
@@ -1012,19 +1021,19 @@ class BotMan:
             account = Account.get(update.message.chat)
             premiums = Account.getPremiumUsers()
             if not premiums:
-                if only_menu:
-                    return None
-                await update.message.reply_text(
-                    text=self.text("no_premium_users_found", account.language),
-                    reply_markup=self.mainkeyboard(account),
-                )
+                if not only_menu:
+                    await update.message.reply_text(
+                        text=self.text("no_premium_users_found", account.language),
+                        reply_markup=self.mainkeyboard(account),
+                    )
                 return None
             menu = self.users_list_menu(premiums, list_type, columns_in_a_row=3, page=0, language=account.language)
-            if only_menu:
-                return menu
-            await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
+            if not only_menu:
+                await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
+            return menu
         except Exception as x:
             log("Problem while listing premium users:", x, "Admin")
+        return None
 
     @staticmethod
     def identifyUser(update: Update) -> Account | None:
