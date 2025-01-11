@@ -145,7 +145,7 @@ class BotMan:
         DISABLE_ALARM = 3
         FACTORY_RESET = 4
         SELECT_TUTORIAL = 5
-        ADMIN_DOWNGRADE_USER = 6
+        ADMIN_DOWNGRADE_PREMIUM_USER = 6
         VERIFY_BOT_IS_ADMIN = 7
         SELECT_POST_INTERVAL = 8
         START_CHANNEL_POSTING = 9
@@ -175,7 +175,7 @@ class BotMan:
         QueryActions.DISABLE_ALARM,
         QueryActions.FACTORY_RESET,
         QueryActions.SELECT_TUTORIAL,
-        QueryActions.ADMIN_DOWNGRADE_USER,
+        QueryActions.ADMIN_DOWNGRADE_PREMIUM_USER,
         QueryActions.VERIFY_BOT_IS_ADMIN,
         QueryActions.SELECT_POST_INTERVAL,
         QueryActions.START_CHANNEL_POSTING,
@@ -1012,19 +1012,19 @@ class BotMan:
             account = Account.get(update.message.chat)
             premiums = Account.getPremiumUsers()
             if not premiums:
-                if only_menu:
-                    return None
-                await update.message.reply_text(
-                    text=self.text("no_premium_users_found", account.language),
-                    reply_markup=self.mainkeyboard(account),
-                )
+                if not only_menu:
+                    await update.message.reply_text(
+                        text=self.text("no_premium_users_found", account.language),
+                        reply_markup=self.mainkeyboard(account),
+                    )
                 return None
             menu = self.users_list_menu(premiums, list_type, columns_in_a_row=3, page=0, language=account.language)
-            if only_menu:
-                return menu
-            await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
+            if not only_menu:
+                await update.message.reply_text(text=self.text("select_user", account.language), reply_markup=menu)
+            return menu
         except Exception as x:
             log("Problem while listing premium users:", x, "Admin")
+        return None
 
     @staticmethod
     def identifyUser(update: Update) -> Account | None:

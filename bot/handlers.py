@@ -274,12 +274,12 @@ async def cmd_list_users_to_downgrade(update: Update, context: CallbackContext):
     if not account.is_admin and not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
 
-    account.change_state(Account.States.DOWNGRADE_USER)
     await update.message.reply_text(
         botman.text("specify_user", account.language) + "\n" + botman.text("downgrade_by_premiums_list", account.language),
         reply_markup=botman.cancel_menu(account.language),
     )
-    await botman.list_premiums(update, BotMan.QueryActions.ADMIN_DOWNGRADE_USER)
+    if await botman.list_premiums(update, BotMan.QueryActions.ADMIN_DOWNGRADE_PREMIUM_USER):
+        account.change_state(Account.States.DOWNGRADE_USER)
 
 
 async def cmd_send_post(update: Update, context: CallbackContext):
@@ -425,7 +425,7 @@ async def send_r_u_sure_to_downgrade_message(context: CallbackContext, admin_use
         chat_id=admin_user.chat_id,
         text=target_user.user_detail + "\n\n" + botman.text("r_u_sure_to_downgrade", admin_user.language),
         reply_markup=botman.action_inline_keyboard(
-            BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
+            BotMan.QueryActions.ADMIN_DOWNGRADE_PREMIUM_USER,
             {
                 f"{target_user.chat_id}{BotMan.CALLBACK_DATA_DELIMITER}y": "yes",
                 f"{target_user.chat_id}{BotMan.CALLBACK_DATA_DELIMITER}n": "no",
@@ -739,9 +739,9 @@ async def handle_action_queries(
                 await asyncio.gather(cmd_welcome(query, context), query.message.delete(), return_exceptions=True)
                 return
         case _:
-            if action == BotMan.QueryActions.ADMIN_DOWNGRADE_USER.value and account.is_admin:
+            if action == BotMan.QueryActions.ADMIN_DOWNGRADE_PREMIUM_USER.value and account.is_admin:
                 if "v" not in callback_data or not value:
-                    await botman.handle_users_menu_page_change(account, query, callback_data, Account.getPremiumUsers, BotMan.QueryActions.ADMIN_DOWNGRADE_USER)
+                    await botman.handle_users_menu_page_change(account, query, callback_data, Account.getPremiumUsers, BotMan.QueryActions.ADMIN_DOWNGRADE_PREMIUM_USER)
                     return
 
                 chat_id: int | None = None
@@ -765,7 +765,7 @@ async def handle_action_queries(
                             if msg_to_edit:
                                 premiums = await botman.list_premiums(
                                     update=query,
-                                    list_type=BotMan.QueryActions.ADMIN_DOWNGRADE_USER,
+                                    list_type=BotMan.QueryActions.ADMIN_DOWNGRADE_PREMIUM_USER,
                                     only_menu=True,
                                 )
                                 await context.bot.edit_message_reply_markup(
@@ -1687,6 +1687,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     reply_markup=botman.mainkeyboard(account),
                                 )
                                 account.change_state()
+                            return
                         case Account.States.DOWNGRADE_USER:
                             user = BotMan.identifyUser(update)
 
@@ -1695,6 +1696,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     botman.error("invalid_user_specification", account.language))
                                 return
                             await send_r_u_sure_to_downgrade_message(context, account, user)
+                            return
 
                     if not account.is_god:
                         await update.message.reply_text(
