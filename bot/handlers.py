@@ -252,13 +252,14 @@ async def cmd_add_admin(update: Update, context: CallbackContext):
     if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
     account.change_state(Account.States.ADD_ADMIN)
+
     await update.message.reply_text(
         botman.text("specify_user", account.language),
         reply_markup=botman.cancel_menu(account.language),
     )
 
 
-async def amd_remove_admin(update: Update, context: CallbackContext):
+async def cmd_remove_admin(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     if not account.is_authorized(context.args):
         return await say_youre_not_allowed(update.message.reply_text, account)
@@ -1475,7 +1476,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             await cmd_add_admin(update, context)
                             return
                         case BotMan.Commands.GOD_REMOVE_ADMIN_FA.value | BotMan.Commands.GOD_REMOVE_ADMIN_EN.value:
-                            await amd_remove_admin(update, context)
+                            await cmd_remove_admin(update, context)
                             return
             match account.state:
                 case Account.States.INPUT_EQUALIZER_AMOUNT:
@@ -1825,8 +1826,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     context.bot.send_message(
                                         chat_id=user.chat_id,
                                         text=botman.text("youre_admin_now", user.language),
-                                        reply_markup=botman.mainkeyboard(account)
-                                    ) #### FIXME: on first Congrats message, normal admin is seeing full god keyboard!
+                                        reply_markup=botman.mainkeyboard(user)
+                                    )
                                 )
                             except Forbidden:
                                 log(f'User#{account.chat_id} tried to upgrade another user to admin level, with no God Access.\nUser Detail:{account.user_detail}',

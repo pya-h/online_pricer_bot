@@ -34,7 +34,7 @@ def main(run_webhook: bool = True):
     # ADMIN SECTION
     app.add_handler(CommandHandler("god", cmd_admin_login))
     app.add_handler(CommandHandler("add_admin", cmd_add_admin))
-    app.add_handler(CommandHandler("rem_admin", amd_remove_admin))
+    app.add_handler(CommandHandler("rem_admin", cmd_remove_admin))
     app.add_handler(CommandHandler("up", cmd_upgrade_user))
     app.add_handler(CommandHandler("down", cmd_list_users_to_downgrade))
     app.add_handler(CommandHandler("post", cmd_send_post))
