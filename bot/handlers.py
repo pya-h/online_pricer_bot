@@ -1471,7 +1471,12 @@ async def handle_messages(update: Update, context: CallbackContext):
                         case BotMan.Commands.GOD_CHANGE_PREMIUM_PLANS_FA.value | BotMan.Commands.GOD_CHANGE_PREMIUM_PLANS_EN.value:
                             await cmd_send_plans_post(update, context)
                             return
-
+                        case BotMan.Commands.GOD_ADD_ADMIN_FA.value | BotMan.Commands.GOD_ADD_ADMIN_EN.value:
+                            await cmd_add_admin(update, context)
+                            return
+                        case BotMan.Commands.GOD_REMOVE_ADMIN_FA.value | BotMan.Commands.GOD_REMOVE_ADMIN_EN.value:
+                            await amd_remove_admin(update, context)
+                            return
             match account.state:
                 case Account.States.INPUT_EQUALIZER_AMOUNT:
                     params = message_text.split()
@@ -1821,7 +1826,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                         chat_id=user.chat_id,
                                         text=botman.text("youre_admin_now", user.language),
                                         reply_markup=botman.mainkeyboard(account)
-                                    )
+                                    ) #### FIXME: on first Congrats message, normal admin is seeing full god keyboard!
                                 )
                             except Forbidden:
                                 log(f'User#{account.chat_id} tried to upgrade another user to admin level, with no God Access.\nUser Detail:{account.user_detail}',

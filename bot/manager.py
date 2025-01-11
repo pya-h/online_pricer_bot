@@ -405,6 +405,10 @@ class BotMan:
                                 KeyboardButton(BotMan.Commands.GOD_NOTICES_FA.value),
                                 KeyboardButton(BotMan.Commands.GOD_STATISTICS_FA.value),
                             ],
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_REMOVE_ADMIN_FA.value),
+                                KeyboardButton(BotMan.Commands.GOD_ADD_ADMIN_FA.value),
+                            ],
                             *self.common_menu_main_keys,
                             [
                                 KeyboardButton(BotMan.Commands.GOD_CHANGE_PREMIUM_PLANS_FA.value),
@@ -426,6 +430,10 @@ class BotMan:
                             [
                                 KeyboardButton(BotMan.Commands.GOD_NOTICES_EN.value),
                                 KeyboardButton(BotMan.Commands.GOD_STATISTICS_EN.value),
+                            ],
+                            [
+                                KeyboardButton(BotMan.Commands.GOD_ADD_ADMIN_EN.value),
+                                KeyboardButton(BotMan.Commands.GOD_REMOVE_ADMIN_EN.value),
                             ],
                             *self.common_menu_main_keys_en,
                             [
@@ -997,7 +1005,8 @@ class BotMan:
             reply_markup=keyboard,
         )
 
-    async def clear_unwanted_menu_messages(self, update: Update, context: CallbackContext, operation_result):
+    @staticmethod
+    async def clearUnwantedMenuMessages(update: Update, context: CallbackContext, operation_result):
         if isinstance(operation_result, Message):
             await asyncio.gather(
                 context.bot.delete_message(chat_id=update.message.chat_id, message_id=operation_result.message_id),

@@ -383,7 +383,7 @@ class DatabaseInterface:
         conn = self.connection()
         cursor = conn.cursor()
         columns_to_set = ", ".join([f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]])
-        print(account.mode.value)
+
         cursor.execute(
             f"UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s",
             (
