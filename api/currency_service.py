@@ -385,7 +385,10 @@ class NavasanService(CurrencyService):
         try:
             price: float
             currency_data: Dict[str, float | int | bool | str]
-            currency_data = self.latest_data[symbol.lower()]
+            
+            if (sym_lower := symbol.lower()) not in self.latest_data:
+                raise ValueError(f"{sym_lower} not found in Navasan response data!")
+            currency_data = self.latest_data[sym_lower]
             price = float(currency_data["value"])
             toman: float | str
             usd: float | None = None
@@ -404,8 +407,12 @@ class NavasanService(CurrencyService):
                 f" / {usd}$" if usd else ""
             )
         except Exception as x:
+            log("Symbol not found!", x, "Navasan")
+        try:
+            return (
+                f"{NavasanService.getEnglishTitle(symbol_up) if language != 'fa' else NavasanService.goldsInPersian[symbol_up]}: "
+                + (no_price_message or "❗️")
+            )
+        except:
             pass
-        return (
-            f"{NavasanService.getEnglishTitle(symbol_up) if language != 'fa' else NavasanService.goldsInPersian[symbol_up]}: "
-            + (no_price_message or "❗️")
-        )
+        return f"{symbol}: " + (no_price_message or "❗️")

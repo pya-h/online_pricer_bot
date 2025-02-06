@@ -207,8 +207,10 @@ class CoinMarketCapService(CryptoCurrencyService):
 
     def get_price_description_row(self, symbol: str, language: str = 'fa', no_price_message: str | None = None) -> str:
         try:
+            if symbol not in self.latest_data:
+                raise ValueError(f"{symbol} not found in CoinMarketCap response data!")
             price: float
-            price = self.latest_data[symbol]["price"]
+            price = self.latest_data[symbol]["price"] 
 
             if isinstance(price, str):
                 price = float(price)
@@ -224,4 +226,6 @@ class CoinMarketCapService(CryptoCurrencyService):
             return f"🔸 {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
         except:
             pass
-        return f"{CryptoCurrencyService.coinsInPersian[symbol]}: " + (no_price_message or "❗️") + "\n"
+
+        return f"{CryptoCurrencyService.coinsInPersian[symbol] if symbol in CryptoCurrencyService.coinsInPersian else symbol}: " + \
+            (no_price_message or "❗️") + "\n"
