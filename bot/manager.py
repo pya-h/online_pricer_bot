@@ -1133,9 +1133,9 @@ class BotMan:
         language: str = "fa",
         use_tags: bool = True,
     ):
-        res_crypto, _, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos, (language := language))
+        res_crypto, absolute_usd, absolute_irt = self.crypto_serv.equalize(unit, amount, target_cryptos, (language := language))
         res_fiat, res_gold = (
-            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies, language) if target_currencies else (None, None)
+            self.currency_serv.irt_to_currencies(absolute_irt, unit, target_currencies, language, absolute_usd=absolute_usd) if target_currencies else (None, None)
         )
         post = self.construct_post(res_fiat, res_gold, res_crypto, language, use_tags)
         if not post:

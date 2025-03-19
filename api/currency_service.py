@@ -65,7 +65,7 @@ class GoldService(BaseAPIService):
 
     def __init__(self, token: str) -> None:
         super().__init__(
-            url=f"https://sourcearena.ir/api/?token={token}&currency",
+            url=f"https://apis.sourcearena.ir/api/?token={token}&currency",
             source="GoldService.ir",
             cache_file_name="SourceArenaGolds.json",
         )
@@ -153,7 +153,7 @@ class NavasanService(CurrencyService):
         self.alternate_tether_service = AbanTetherService(aban_tether_service_token) if aban_tether_service_token else None
 
         super().__init__(
-            url=f"https://sourcearena.ir/api/?token={token}&currency&v2",
+            url=f"https://apis.sourcearena.ir/api/?token={token}&currency&v2",
             source="Navasan.ir",
             cache_file_name="Navasan.json",
             tether_service_token=self.tether_service.token,
@@ -287,21 +287,20 @@ class NavasanService(CurrencyService):
 
     def irt_to_currencies(
         self,
-        absolute_amount: float | int,
+        absolute_irt: float | int,
         source_unit_slug: str,
         currencies: List[str] | None = None,
         language: str = "fa",
+        absolute_usd: float | int = None,
     ) -> Tuple[str, str]:
         currencies = self.get_desired_ones(currencies)
         res_gold, res_fiat = "", ""
         for slug in currencies:
             if slug == source_unit_slug:
                 continue
-            slug_equalized_price = (
-                absolute_amount / float(self.latest_data[slug.lower()]["value"])
-                if slug != self.tomanSymbol
-                else absolute_amount
-            )
+            slug_equalized_price = (absolute_irt / float(self.latest_data[slug.lower()]["value"]) if slug != self.dollarSymbol or source_unit_slug != self.tetherSymbol else absolute_usd) \
+                if slug != self.tomanSymbol else absolute_irt
+
             slug_equalized_price = mathematix.cut_and_separate(slug_equalized_price)
             if slug not in NavasanService.goldsInPersian:
                 if language != "fa":
@@ -350,7 +349,7 @@ class NavasanService(CurrencyService):
         return (
             res_fiat,
             res_gold,
-            self.irt_to_usd(absolute_amount),
+            self.irt_to_usd(absolute_amount) if source_unit_symbol != self.dollarSymbol else 1.0,
             absolute_amount,
         )
 
