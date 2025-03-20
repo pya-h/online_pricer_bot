@@ -862,6 +862,8 @@ class DatabaseInterface:
             self.TRASH_COLUMNS[1:-1]
         )  # in creation mode admin just defines persian title and description
         # if he wants to add english texts, he should go to edit menu
+
+        # TODO: If there is a old trash from the same type and trash_ident, remove it
         return self.execute(
             False,
             f"INSERT INTO {self.TABLE_TRASH} ({fields}) VALUES (%s{', %s' * (len(self.TRASH_COLUMNS) - 3)})",
@@ -890,7 +892,7 @@ class DatabaseInterface:
     def get_trash_by_identifier(self, trash_type: TrashType, identifier: int):
         rows = self.execute(
             True,
-            f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_IDENTIFIER}=%s LIMIT 1",
+            f"SELECT * FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_IDENTIFIER}=%s ORDER BY {self.TRASH_ID} DESC LIMIT 1",
             trash_type.value,
             identifier,
         )
