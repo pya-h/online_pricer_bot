@@ -392,7 +392,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
                 price = persianify(price)
                 currency_title = (
                     botman.crypto_serv.coinsInPersian[currency_title]
-                    if alarm.token == MarketOptions.CRYPTO
+                    if currency_title in botman.crypto_serv.coinsInPersian
                     else botman.currency_serv.currenciesInPersian[currency_title]
                 )
             unit = botman.text(f"price_unit_{alarm.target_unit}", "fa" if account.language == "fa" else "en")

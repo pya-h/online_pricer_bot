@@ -321,7 +321,7 @@
       "en": "Unfortunately your input is not a valid one! Price input must be a standard numeric value.\n\nIn case you do't want to continue this operation, you can simply use Cancel button."
     },
     "invalid_alarm_data": {
-      "fa": "مشکلی حین دریافت اطلاعات این هشئدار رخ داد.",
+      "fa": "مشکلی حین دریافت اطلاعات این هشدار رخ داد.",
       "en": "There was an error while getting this alarm data."
     },
     "error_while_disabling_alarm": {
