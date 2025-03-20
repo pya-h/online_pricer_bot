@@ -298,8 +298,10 @@ class NavasanService(CurrencyService):
         for slug in currencies:
             if slug == source_unit_slug:
                 continue
-            slug_equalized_price = (absolute_irt / float(self.latest_data[slug.lower()]["value"]) if slug != self.dollarSymbol or source_unit_slug != self.tetherSymbol else absolute_usd) \
-                if slug != self.tomanSymbol else absolute_irt
+            slug_equalized_price = absolute_irt if slug == self.tomanSymbol \
+                else (absolute_irt / float(self.latest_data[slug.lower()]["value"])
+                    if (slug != self.dollarSymbol and source_unit_slug != self.tetherSymbol) or not absolute_usd
+                        else absolute_usd)
 
             slug_equalized_price = mathematix.cut_and_separate(slug_equalized_price)
             if slug not in NavasanService.goldsInPersian:
@@ -349,7 +351,7 @@ class NavasanService(CurrencyService):
         return (
             res_fiat,
             res_gold,
-            self.irt_to_usd(absolute_amount) if source_unit_symbol != self.dollarSymbol else 1.0,
+            self.irt_to_usd(absolute_amount) if source_unit_symbol != self.dollarSymbol else amount,
             absolute_amount,
         )
 
