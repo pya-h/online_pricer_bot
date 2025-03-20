@@ -1183,7 +1183,7 @@ class BotMan:
             channel.create()
 
             post_interval, desc_en, desc_fa = PostInterval(minutes=interval).timestamps
-            interval_description: str = None
+
             if owner.language == "fa":
                 post_interval = persianify(post_interval)
                 interval_description = persianify(desc_fa)

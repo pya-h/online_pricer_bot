@@ -18,7 +18,6 @@ class MarketOptions(Enum):
                 return option
         return None
 
-
 class SelectionListTypes(Enum):
     USER_TOKENS = 1
     CALCULATOR = 2
@@ -45,6 +44,12 @@ class SelectionListTypes(Enum):
                 return option
         return None
 
+    def should_show_irt(self, market: MarketOptions) -> bool:
+        return market == MarketOptions.CURRENCY and self not in [
+            SelectionListTypes.GROUP_TOKENS,
+            SelectionListTypes.CALCULATOR,
+            SelectionListTypes.EQUALIZER_UNIT
+        ]
 
 class GroupInlineKeyboardButtonTemplate:
     @property

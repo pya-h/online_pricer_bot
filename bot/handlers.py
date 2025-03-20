@@ -74,10 +74,7 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
             BotMan.handleMarketSelection(account, list_type, market),
             close_button=True,
             language=account.language,
-            choices_start_offset=int(market != MarketOptions.CURRENCY or
-                                     list_type not in [SelectionListTypes.GROUP_TOKENS,
-                                                       SelectionListTypes.CALCULATOR,
-                                                       SelectionListTypes.EQUALIZER_UNIT])
+            choices_start_offset=int(list_type.should_show_irt(market))
         ),
     )
 
@@ -99,7 +96,6 @@ async def say_youre_not_allowed(reply, account: Account):
         botman.error("not_allowed", account.language),
         reply_markup=botman.get_normal_primary_keyboard(account),
     )
-    return None
 
 
 async def notify_source_change(context: CallbackContext):
@@ -958,6 +954,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                         page=page,
                         language=account.language,
                         close_button=True,
+                        choices_start_offset=int(market == MarketOptions.CURRENCY)
                     )
                 )
                 return
@@ -1001,6 +998,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 page=page,
                 language=account.language,
                 close_button=True,
+                choices_start_offset=int(list_type.should_show_irt(market))
             )
         )
 
