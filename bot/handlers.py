@@ -1730,7 +1730,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 except:
                                     pass
 
-                            all_accounts = Account.everybody()
+                            all_accounts: List[int] = list(filter(lambda chat_id: chat_id != account.chat_id, Account.everybody()))
                             telegram_response: Message = await update.message.reply_text(
                                 botman.text("sending_your_post", account.language))
                             message_id: int | None = None
@@ -1739,22 +1739,11 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 message_id = int(str(telegram_response.message_id))
                                 offset = int(account.get_cache("offset"))
                                 removal_time = n_days_later_timestamp(offset)
-                            except:
-                                pass
-                            targets_count = len(all_accounts) - 1
-                            post_tasks: List[MessageId | None | Coroutine[Any, Any, MessageId]] = [None] * targets_count
-                            chat_ids: List[int | None] = [None] * targets_count
-                            target_index = 0
-                            for index, chat_id in enumerate(all_accounts):
-                                try:
-                                    if chat_id != account.chat_id:
-                                        post_tasks[target_index] = update.message.copy(chat_id)
-                                        chat_ids[target_index] = chat_id
-                                        target_index += 1
-                                except:
-                                    pass  # maybe remove the account from database ?
+                            except Exception as x:
+                                log('Failed getting removal config: ', x, 'Admin')
 
-                            post_tasks = await asyncio.gather(*post_tasks, return_exceptions=True)
+                            post_tasks = await asyncio.gather(*[update.message.copy(chat_id) for chat_id in all_accounts])
+
                             await asyncio.gather(
                                 context.bot.delete_message(chat_id=account.chat_id, message_id=message_id),
                                 update.message.reply_text(
@@ -1767,13 +1756,14 @@ async def handle_messages(update: Update, context: CallbackContext):
                             account.change_state()
                             account.delete_specific_cache("offset")
                             if removal_time:
+                                trash_type = Account.database().TrashType.MESSAGE.value
                                 try:
                                     Account.schedulePostsForRemoval(
                                         [
                                             (
-                                                Account.database().TrashType.MESSAGE.value,
-                                                chat_ids[i],
-                                                task.message_id if not isinstance(task, Exception) else None,
+                                                trash_type,
+                                                all_accounts[i],
+                                                task.message_id, # in case use set the return_exception=True in gather post_tasks, you should check the task not be Exception here.
                                                 removal_time,
                                             )
                                             for i, task in enumerate(post_tasks)

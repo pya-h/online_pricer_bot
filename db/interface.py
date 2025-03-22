@@ -132,7 +132,7 @@ class DatabaseInterface:
         "trash_ident",
         "delete_at",
         "data",
-        "TRASH_trashed_at",
+        "trashed_at",
     )
 
     class TrashType(Enum):
