@@ -167,10 +167,10 @@ class DatabaseInterface:
         return DatabaseInterface._instance
 
     @staticmethod
-    def stringToList(string: str) -> list | None:
+    def stringToList(string: str) -> list:
         """Use this method to extract saved token list strings to List again."""
         if not string:
-            return None
+            return []
         string = string if string[-1] != ";" else string[:-1]
         return string.split(";")
 

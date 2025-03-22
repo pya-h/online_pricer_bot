@@ -1971,14 +1971,15 @@ async def handle_group_messages(update: Update, _: CallbackContext):
 
 async def unhandled_error_happened(update: Update, _: CallbackContext | None = None):
     try:
-        if update and update.message and isinstance(update.message.chat, Chat) and (
-            account := Account.get(update.message.chat)):
-                account.change_state(clear_cache=True)
-                await update.message.reply_text(
-                    botman.error("unhandled_error_happened", account.language),
-                    reply_markup=(botman.mainkeyboard(
-                        account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove()),
-                )
+        if update and update.message and isinstance(update.message.chat, Chat):
+                account = Account.getById(update.message.chat_id if update.message.chat_id > 0 else update.message.from_user.id, should_create=False)
+                if account:
+                    account.change_state(clear_cache=True)
+                    await update.message.reply_text(
+                        botman.error("unhandled_error_happened", account.language),
+                        reply_markup=(botman.mainkeyboard(
+                            account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove()),
+                    )
     except Exception as x:
         log("Fucked up error", x, category_name="FATALITY")
 
