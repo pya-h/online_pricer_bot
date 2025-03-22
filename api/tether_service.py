@@ -92,7 +92,7 @@ class NobitexService(TetherService):
 
     def __init__(self, token: str) -> None:
         super(NobitexService, self).__init__(
-            url="https://api.nobitex.ir/market/stats", token=token, source="Nobitex.ir", cache_name="Nobitex.json"
+            url="https://api.nobitex.ir/market/stats", token=token, source="Nobitex", cache_name="Nobitex.json"
         )
         self.headers = {"Authorization": f"Bearer {self.token}"}
 

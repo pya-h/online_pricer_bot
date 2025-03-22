@@ -155,7 +155,7 @@ class NavasanService(CurrencyService):
 
         super().__init__(
             url=f"https://apis.sourcearena.ir/api/?token={token}&currency&v2",
-            source="Navasan.ir",
+            source="Navasan",
             cache_file_name="Navasan.json",
             tether_service_token=self.tether_service.token,
             token=token,

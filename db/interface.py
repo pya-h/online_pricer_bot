@@ -435,10 +435,6 @@ class DatabaseInterface:
                     account.language,
                 ),
             )
-            log(
-                "New account started using this bot with chat_id=: " + account.__str__(),
-                category_name="DatabaseInfo",
-            )
         conn.commit()
         cursor.close()
         conn.close()
@@ -462,7 +458,7 @@ class DatabaseInterface:
             account.plus_end_date,
             account.chat_id,
         )
-        log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {account.plus_end_date}")
+        log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {account.plus_end_date}", category_name="VIP")
 
     def downgrade_account(self, account):
         account.plus_start_date = None

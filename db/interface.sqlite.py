@@ -255,7 +255,6 @@ class DatabaseInterface:
                     account.language,
                 ),
             )
-            log("New account started using this bot with chat_id=: " + account.__str__(), category_name="DatabaseInfo")
         connection.commit()
         cursor.close()
         connection.close()

@@ -91,7 +91,7 @@ class CoinMarketCapService(CryptoCurrencyService):
     def __init__(self, api_key, price_unit="USD", cmc_coin_fetch_limit: int = 500, params=None) -> None:
         super(CoinMarketCapService, self).__init__(
             url="https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest",
-            source="CoinMarketCap.com",
+            source="CoinMarketCap",
             cache_file_name="coinmarketcap.json",
         )
         self.api_key: str = api_key
@@ -153,7 +153,7 @@ class CoinMarketCapService(CryptoCurrencyService):
                     absolute_amount / float(self.latest_data[coin]["price"])
                 )
             except Exception as x:
-                manuwriter.log('No Price Data:', x, 'PriceData')
+                manuwriter.log('No Price Data:', x, 'CoinMarketCap')
                 coin_equalized_price = '?'
             if language != 'fa':
                 res += f"🔸 {coin_equalized_price} {coin}\n"

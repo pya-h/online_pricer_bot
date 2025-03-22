@@ -6,7 +6,7 @@ services:
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: ""
-      MYSQL_ALLOW_EMPTY_PASSWORD: true
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
       MYSQL_DATABASE: "online_pricer"
     ports:
       - "3306:3306"
