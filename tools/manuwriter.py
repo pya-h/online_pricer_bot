@@ -69,7 +69,7 @@ def log(msg, exception: Exception=None, category_name=None):
                 time_delimiter=":", datetime_delimiter="\t", show_minutes=True
             ),
             content,
-            '- ' * 40
+            '=' * 40
         )
     )
     logfile.close()
