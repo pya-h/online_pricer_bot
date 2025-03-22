@@ -1742,7 +1742,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             except Exception as x:
                                 log('Failed getting removal config: ', x, 'Admin')
 
-                            post_tasks = await asyncio.gather(*[update.message.copy(chat_id) for chat_id in all_accounts])
+                            post_tasks = await asyncio.gather(*[update.message.copy(chat_id) for chat_id in all_accounts], return_exceptions=True)
 
                             await asyncio.gather(
                                 context.bot.delete_message(chat_id=account.chat_id, message_id=message_id),
@@ -1763,10 +1763,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                                             (
                                                 trash_type,
                                                 all_accounts[i],
-                                                task.message_id, # in case use set the return_exception=True in gather post_tasks, you should check the task not be Exception here.
+                                                task.message_id,
                                                 removal_time,
                                             )
-                                            for i, task in enumerate(post_tasks)
+                                            for i, task in enumerate(post_tasks) if not isinstance(task, Exception)
                                         ]
                                     )
                                     await update.message.reply_text(

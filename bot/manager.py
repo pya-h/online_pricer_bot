@@ -1535,12 +1535,17 @@ class BotMan:
                 try:
                     (_, chat_id, msg_id) = msg
                     if chat_id and msg_id:
-                        async_tasks.append(context.bot.delete_message(chat_id=chat_id, message_id=msg_id))
-                except:
-                    pass
+                        async_tasks.append(context.bot.delete_message(chat_id=int(chat_id), message_id=int(msg_id)))
+                except Exception as x:
+                    log('Failed removing sent post:', x, category_name='Posts')
             db.throw_away_messages_passed_time(from_time=now)
 
-        await asyncio.gather(*async_tasks)
+        result = await asyncio.gather(*async_tasks, return_exceptions=True)
+        self.last_daily_check = now
+
+        for task in result:
+            if isinstance(task, Exception):
+                log('A Daily Job task failed: ', task, category_name='DailyJobs')
 
     @staticmethod
     def refreshMemory():

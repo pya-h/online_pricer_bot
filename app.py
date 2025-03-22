@@ -59,7 +59,7 @@ def main(run_webhook: bool = True):
         botman.process_channels, interval=30, first=seconds_to_next_minute() - 1, name="PLUS_CHANNELS"
     )
     app.job_queue.run_repeating(
-        botman.do_hourly_check, name="DAILY_REFRESH", interval=3600, first=seconds_to_next_period(period_in_minutes=60)
+        botman.do_hourly_check, name="HOURLY_REFRESH", interval=3600, first=seconds_to_next_period(period_in_minutes=60)
     )
     app.add_error_handler(unhandled_error_happened)
 

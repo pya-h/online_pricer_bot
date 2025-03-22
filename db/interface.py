@@ -917,8 +917,8 @@ class DatabaseInterface:
     def get_messages_passed_their_due(self):
         return self.execute(
             True,
-            f"SELECT ({self.TRASH_ID, self.TRASH_OWNER_ID, self.TRASH_IDENTIFIER}) FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_DELETE_AT} >= %s",
-            DatabaseInterface.TrashType.MESSAGE,
+            f"SELECT ({self.TRASH_ID, self.TRASH_OWNER_ID, self.TRASH_IDENTIFIER}) FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_DELETE_AT} <= %s",
+            DatabaseInterface.TrashType.MESSAGE.value,
             now_in_minute(),
         )
 
@@ -927,8 +927,8 @@ class DatabaseInterface:
             from_time = now_in_minute()
         return self.execute(
             False,
-            f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_DELETE_AT} >= %s",
-            DatabaseInterface.TrashType.MESSAGE,
+            f"DELETE FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_DELETE_AT} <= %s",
+            DatabaseInterface.TrashType.MESSAGE.value,
             from_time,
         )
 
