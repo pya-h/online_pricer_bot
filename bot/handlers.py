@@ -108,7 +108,7 @@ async def notify_source_change(context: CallbackContext):
 async def update_markets(context: CallbackContext):
     res = await botman.next_post()
     await asyncio.gather(
-        botman.handle_possible_alarms(context.bot.send_message),
+        botman.handle_possible_alarms(context),
         context.bot.send_message(chat_id=botman.channels[0]["id"], text=res)
     )
 
@@ -392,7 +392,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
                 price = persianify(price)
                 currency_title = (
                     botman.crypto_serv.coinsInPersian[currency_title]
-                    if currency_title in botman.crypto_serv.coinsInPersian
+                    if alarm.market == MarketOptions.CRYPTO
                     else botman.currency_serv.currenciesInPersian[currency_title]
                 )
             unit = botman.text(f"price_unit_{alarm.target_unit}", "fa" if account.language == "fa" else "en")

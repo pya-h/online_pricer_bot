@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Self
 from db.interface import DatabaseInterface
 from .account import Account
 from tools.exceptions import InvalidInputException
@@ -124,6 +124,10 @@ class PriceAlarm:
 
     def disable(self):
         self.database().delete_alarm(self.id)
+
+    @staticmethod
+    def batchDisable(alarms: List[Self]):
+        PriceAlarm.database().batch_delete_alarms([alarm.id for alarm in alarms])
 
     @staticmethod
     def disableById(alarm_id):

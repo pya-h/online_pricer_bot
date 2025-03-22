@@ -845,6 +845,13 @@ class DatabaseInterface:
             alarm_id,
         )
 
+    def batch_delete_alarms(self, id_list: List[int]):
+        self.execute(
+            False,
+            f"DELETE FROM {self.TABLE_PRICE_ALARMS} WHERE {self.PRICE_ALARM_ID} IN ({','.join(['%s'] * len(id_list))})",
+            *id_list,
+        )
+
     def get_table_columns(self, table: str):
         columns_info = self.execute(True, f"PRAGMA table_info({table});")
         column_names = [column[1] for column in columns_info]

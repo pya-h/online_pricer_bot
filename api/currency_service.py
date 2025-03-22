@@ -134,6 +134,7 @@ class NavasanService(CurrencyService):
     nationalCurrenciesInPersian = None
     goldsInPersian = None
     goldsInEnglish = None
+    majorPriceUnits: Dict[str, Dict[str, str]] = None
 
     @staticmethod
     def getDefaultCurrencies():
@@ -195,6 +196,10 @@ class NavasanService(CurrencyService):
         )
         NavasanService.goldsInEnglish = dict(GoldService.goldsInEnglish, **NavasanService.goldsInEnglish)
         NavasanService.persianShortcuts = get_shortcuts()
+        NavasanService.majorPriceUnits = {
+            "irt": {"fa": NavasanService.currenciesInPersian["IRT"], "FA": "IRT", "en": "IRT"},
+            "usd": {"fa": NavasanService.currenciesInPersian["USD"], "FA": "USD", "en": "USD"},
+        }
 
     @staticmethod
     def getPersianName(symbol: str) -> str:
