@@ -1075,7 +1075,7 @@ class DatabaseInterface:
                 "\n".join(rows),
             )
 
-    def __init__(self, pool_size: int = 10, connection_timeout: int = 60):
+    def __init__(self, pool_size: int = 0, connection_timeout: int = 60):
         self.__host = config("DATABASE_HOST")
         self.__username = config("DATABASE_USERNAME")
         self.__password = config("DATABASE_PASSWORD")
@@ -1090,5 +1090,5 @@ class DatabaseInterface:
             password=self.__password,
             database=self.__name,
         )
-
+        
         self.setup()
