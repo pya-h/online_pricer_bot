@@ -358,7 +358,7 @@ class Channel:
             raise NoSuchThingException(trash_identifier, "Trashed Channel")
         try:
             data = load_json(trash[-3])
-            channel = Channel(trash[2], trash_identifier).use_trash_data(data).save()
+            channel = Channel(trash_identifier, trash[2]).use_trash_data(data).save()
             db.throw_trash_away(trash[0])
             return channel
         except Exception as x:
