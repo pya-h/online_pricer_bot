@@ -94,7 +94,7 @@ class Group:
             if self.id in Group.fastMemInstances:
                 del Group.fastMemInstances[self.id]
         except Exception as ex:
-            log(f"Cannot remove Group:{self.id}", ex, category_name="Groups")
+            log(f"Cannot remove Group:{self.id}", ex, category_name="Group")
             return False
         return True
 

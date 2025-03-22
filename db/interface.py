@@ -228,7 +228,7 @@ class DatabaseInterface:
                 cursor.execute(query)
                 log(
                     f"Table {self.TABLE_ACCOUNTS} created successfully.",
-                    category_name="DatabaseInfo",
+                    category_name="INFO",
                 )
 
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_CHANNELS}'")
@@ -246,7 +246,7 @@ class DatabaseInterface:
                 cursor.execute(query)
                 log(
                     f"Table {self.TABLE_CHANNELS} created successfully.",
-                    category_name="DatabaseInfo",
+                    category_name="INFO",
                 )
 
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_GROUPS}'")
@@ -263,7 +263,7 @@ class DatabaseInterface:
                 cursor.execute(query)
                 log(
                     f"Table {self.TABLE_GROUPS} created successfully.",
-                    category_name="DatabaseInfo",
+                    category_name="INFO",
                 )
 
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_PRICE_ALARMS}'")
@@ -279,7 +279,7 @@ class DatabaseInterface:
                 cursor.execute(query)
                 log(
                     f"Table {self.TABLE_PRICE_ALARMS} created successfully.",
-                    category_name="DatabaseInfo",
+                    category_name="INFO",
                 )
 
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_TRASH}'")
@@ -293,10 +293,10 @@ class DatabaseInterface:
                 cursor.execute(query)
                 log(
                     f"Table {self.TABLE_TRASH} created successfully.",
-                    category_name="DatabaseInfo",
+                    category_name="INFO",
                 )
 
-            log("OnlinePricer Database setup completed.", category_name="DatabaseInfo")
+            log("OnlinePricer Database setup completed.", category_name="INFO")
 
             cursor.close()
             conn.close()
@@ -304,7 +304,7 @@ class DatabaseInterface:
             log(
                 "Failed setting up database, app cannot continue.",
                 ex,
-                category_name="FUX",
+                category_name="SETUP",
             )
 
     def add_account(self, account):
@@ -536,7 +536,7 @@ class DatabaseInterface:
         if cursor.rowcount:
             log(
                 f"Channel with the id of [{channel.id}, {channel.name}] has been RE-planned by: {channel.owner_id}",
-                category_name="DatabaseInfo",
+                category_name="INFO",
             )
         elif not old_chat_id:
             cursor.execute(
@@ -569,7 +569,7 @@ class DatabaseInterface:
             )
             log(
                 f"New channel with the id of [{channel.id}, {channel.name}] has been planned by: {channel.owner_id}",
-                category_name="DatabaseInfo",
+                category_name="INFO",
             )
         conn.commit()
         cursor.close()
@@ -677,10 +677,10 @@ class DatabaseInterface:
             )
             log(
                 f"New group: {group} saved into database successfully.",
-                category_name="DatabaseInfo",
+                category_name="INFO",
             )
         except Exception as ex:
-            log(f"Cannot save this group:{group}", ex, category_name="DatabaseError")
+            log(f"Cannot save this group:{group}", ex, category_name="Group")
             raise ex  # custom ex needed here too
 
     def update_group(self, group, old_chat_id: int = None):
@@ -734,7 +734,7 @@ class DatabaseInterface:
             )
             log(
                 "New group started using this bot with id=: " + group.__str__(),
-                category_name="DatabaseInfo",
+                category_name="INFO",
             )
         conn.commit()
         cursor.close()

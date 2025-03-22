@@ -931,7 +931,7 @@ class BotMan:
             log(
                 f"Failed examining Alarm state: id={alarm.id} account={alarm.chat_id}: {alarm}",
                 x,
-                category_name="ALARM",
+                category_name="Alarm",
             )
         return False
 
@@ -981,7 +981,7 @@ class BotMan:
             if auto_disable:
                 alarm.disable()
         except Exception as ex:
-            log("Failed notifying user of triggered alarm:", ex, category_name="ALARM")
+            log("Failed notifying user of triggered alarm:", ex, category_name="Alarm")
 
     async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
         if not account.is_premium:
@@ -1263,7 +1263,7 @@ class BotMan:
             log(
                 "Getting and planning channel data failed.",
                 ex,
-                category_name="Channels",
+                category_name="Channel",
             )
             return False
         return True
@@ -1471,7 +1471,7 @@ class BotMan:
             log(
                 f"Failed sending post to channel: {channel.id}, title:{channel.title}, at its due.",
                 x,
-                category_name="Channels",
+                category_name="Channel",
             )
 
     async def process_channels(self, context: CallbackContext):
@@ -1501,7 +1501,7 @@ class BotMan:
 
         if not self.last_daily_check or now_in_minute() - self.last_daily_check >= 1440:
             await self.do_daily_checks(context)
-            log("Daily checks has been performed successfully.", category_name="Schedules")
+            log("Daily checks has been performed successfully.", category_name="INFO")
 
     async def do_daily_checks(self, context: CallbackContext):
         today = tz_today().date()
@@ -1524,7 +1524,7 @@ class BotMan:
                             )
                         )
             except Exception as x:
-                log("User daily checkout failed", x, category_name="Checkouts")
+                log("User daily checkout failed", x, category_name="DailyJobs")
 
         db = Account.database()
         now = now_in_minute()
@@ -1537,7 +1537,7 @@ class BotMan:
                     if chat_id and msg_id:
                         async_tasks.append(context.bot.delete_message(chat_id=int(chat_id), message_id=int(msg_id)))
                 except Exception as x:
-                    log('Failed removing sent post:', x, category_name='Posts')
+                    log('Failed removing sent post:', x, category_name='DailyJobs')
             db.throw_away_messages_passed_time(from_time=now)
 
         result = await asyncio.gather(*async_tasks, return_exceptions=True)
@@ -1647,7 +1647,7 @@ class BotMan:
                 if delete_cache:
                     account.delete_specific_cache("msg2delete")
         except Exception as x:
-            log("Failed to remove redundant message:", x, category_name="Minors")
+            log("Failed to remove redundant message:", x, category_name="Minor")
 
     @staticmethod
     def getLongText(key: str, language: str = "fa"):

@@ -14,7 +14,7 @@ def get_gold_names(filename: str):
     try:
         return load_json(filename, "./api/data")
     except Exception as e:
-        log("Cannot get currency names", exception=e, category_name="Currency")
+        log("Cannot get currency names", exception=e, category_name="SETUP")
 
 
 def get_persian_currency_names():
@@ -24,7 +24,7 @@ def get_persian_currency_names():
         gold_names_en = load_json("golds.en", "./api/data")
         return currency_names_fa, gold_names_fa, gold_names_en
     except Exception as e:
-        log("Cannot get currency names", exception=e, category_name="Currency")
+        log("Cannot get currency names", exception=e, category_name="SETUP")
 
     return None, None, None
 
@@ -33,7 +33,7 @@ def get_shortcuts():
     try:
         return load_json("fiat-shortcut.fa", "./api/data")
     except Exception as e:
-        log("Cannot get currency names", exception=e, category_name="Currency")
+        log("Cannot get currency names", exception=e, category_name="SETUP")
 
 
 class CurrencyService(APIService):

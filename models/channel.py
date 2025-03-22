@@ -189,7 +189,7 @@ class Channel:
         try:
             Channel.database().delete_channel(self.id)
         except Exception as ex:
-            manuwriter.log(f"Cannot remove channel:{self.id}", ex, category_name="Channels")
+            manuwriter.log(f"Cannot remove channel:{self.id}", ex, category_name="Channel")
             return False
         return True
 
@@ -199,8 +199,8 @@ class Channel:
         if channel_s:
             channels = [channel_s] if isinstance(channel_s, Channel) else channel_s
             manuwriter.log(
-                f"\tUser had {len(channels)} active channels which are now disabled.",
-                category_name="Premiums",
+                f"\tUser#{owner_id} had {len(channels)} active channels which are now disabled.",
+                category_name="INFO",
             )
             for chan in channels:
                 chan.is_active = False

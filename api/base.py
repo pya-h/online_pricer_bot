@@ -39,7 +39,7 @@ class BaseAPIService:
             manuwriter.fwrite_from_scratch(f"./{CACHE_FOLDER_PATH}/{filename}", data, self.Source)
         except Exception as ex:  # caching is so important for the performance of second bot that :
             # as soon as something goes wrong in caching, the admin must be informed.
-            manuwriter.log("Caching failure!", ex, category_name="FATALITY")
+            manuwriter.log("Caching failure!", ex, category_name="CACHING")
             raise CacheFailureException(ex)
 
     async def get_request(self, headers: dict = None, no_cache: bool = True):
@@ -111,11 +111,11 @@ class APIService(BaseAPIService):
                 not self.latest_data
             ):  # if there is no cache, and the no latest data either, to prevent crashing, call the api for once
                 try:
-                    manuwriter.log("couldn't read cache; Using Direct api call to obtain data.", ex, category_name="CACHE")
+                    manuwriter.log("couldn't read cache; Using Direct api call to obtain data.", ex, category_name="CACHING")
                     self.latest_data = self.get_request()  # the condition that is happened, may be due to lack of cache file,
                 except Exception as fex:
                     manuwriter.log(
-                        "Couldn't get cache and API both. There's something seriously wrong!!", fex, category_name="PLUS_FATALITY"
+                        "Couldn't get cache and API both. There's something seriously wrong!!", fex, category_name="CACHING"
                     )
 
         return self.extract_api_response(desired_ones)

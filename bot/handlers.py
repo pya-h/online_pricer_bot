@@ -352,14 +352,14 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
                     )
                 tasks.append(func_send_message(response))
             except ValueError as value_x:
-                log("Error while equalizing", value_x, category_name="Calculator")
+                log("Error while equalizing", value_x, category_name="Equalizer")
                 tasks.append(func_send_message(botman.error("price_not_available", account.language) % (unit,)))
             except NoLatestDataException:
                 tasks.append(func_send_message(botman.error("api_not_available", account.language)))
             except InvalidInputException:
                 tasks.append(func_send_message(botman.error("invalid_symbol", account.language) % (unit,)))
             except Exception as x:
-                log("Error while equalizing", x, category_name="Calculator")
+                log("Error while equalizing", x, category_name="Equalizer")
                 tasks.append(func_send_message(botman.error("unknown", account.language)))
                 account.change_state()
     await asyncio.gather(*tasks, return_exceptions=True)
@@ -864,7 +864,7 @@ async def handle_action_queries(
                     )
                 except Exception as ex:
                     await query.message.reply_text(botman.error('unknown', account.language))
-                    log(f'Failed downgrading a user: {target or value}', ex, category_name='ADMIN_LEVEL')
+                    log(f'Failed downgrading a user: {target or value}', ex, category_name='ADMIN')
 
             else:
                 await asyncio.gather(
@@ -1581,7 +1581,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                             log(
                                 "Something fucked while identifying the channel",
                                 x,
-                                category_name="Channels",
+                                category_name="Channel",
                             )
                     if channel_chat:
                         await botman.use_input_channel_chat_info(
@@ -1819,7 +1819,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 )
                             except Forbidden:
                                 log(f'User#{account.chat_id} tried to upgrade another user to admin level, with no God Access.\nUser Detail:{account.user_detail}',
-                                    category_name='Security')
+                                    category_name='Admin')
                                 await update.message.reply_text(
                                     botman.error(
                                         "not_allowed",
@@ -1829,7 +1829,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                 )
                             except Exception as x:
                                 await  unhandled_error_happened(update)
-                                log('A god user tried to upgrade another user to admin but encountered unknown error:', x, category_name='Unexpected')
+                                log('A god user tried to upgrade another user to admin but encountered unknown error:', x, category_name='Admin')
                             account.change_state()
 
 async def handle_new_group_members(update: Update, context: CallbackContext):
@@ -1971,7 +1971,7 @@ async def unhandled_error_happened(update: Update, _: CallbackContext | None = N
                             account) if update.message.chat.type.lower() == "private" else ReplyKeyboardRemove()),
                     )
     except Exception as x:
-        log("Fucked up error", x, category_name="FATALITY")
+        log("Fucked up error", x, category_name="Unexpected")
 
 
 async def handle_multimedia_messages(update: Update, context: CallbackContext):
