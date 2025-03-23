@@ -2,7 +2,7 @@ from typing import Callable
 from time import time
 
 class ParallelJob:
-    """Define objects from this and use it in TelegramBot, it will does some parallel jobs in the bot by a specific interval [in minutes]"""
+    """Define objects from this and use it in TelegramBot, it will do some parallel jobs in the bot by a specific interval [in minutes]"""
 
     def __init__(self, interval: int, function: Callable[..., any], *params) -> None:
         self.interval: int = interval

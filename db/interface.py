@@ -917,7 +917,7 @@ class DatabaseInterface:
     def get_messages_passed_their_due(self):
         return self.execute(
             True,
-            f"SELECT ({self.TRASH_ID, self.TRASH_OWNER_ID, self.TRASH_IDENTIFIER}) FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_DELETE_AT} <= %s",
+            f"SELECT {self.TRASH_ID}, {self.TRASH_OWNER_ID}, {self.TRASH_IDENTIFIER} FROM {self.TABLE_TRASH} WHERE {self.TRASH_TYPE}=%s AND {self.TRASH_DELETE_AT} <= %s",
             DatabaseInterface.TrashType.MESSAGE.value,
             now_in_minute(),
         )
@@ -1075,7 +1075,7 @@ class DatabaseInterface:
                 "\n".join(rows),
             )
 
-    def __init__(self, pool_size: int = 32):
+    def __init__(self, pool_size: int = 6, connection_timeout: int = 30):
         self.__host = config("DATABASE_HOST")
         self.__username = config("DATABASE_USERNAME")
         self.__password = config("DATABASE_PASSWORD")
@@ -1084,7 +1084,7 @@ class DatabaseInterface:
             pool_name="main_pool",
             pool_size=pool_size,
             pool_reset_session=True,
-            # connection_timeout=connection_timeout,
+            connection_timeout=connection_timeout,
             host=self.__host,
             user=self.__username,
             password=self.__password,
@@ -1092,3 +1092,4 @@ class DatabaseInterface:
         )
         
         self.setup()
+        

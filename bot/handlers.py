@@ -15,7 +15,7 @@ from telegram.error import BadRequest, Forbidden
 from models.account import Account
 import json
 from tools.manuwriter import log
-from tools.mathematix import cut_and_separate, persianify, n_days_later_timestamp, seconds_to_next_period
+from tools.mathematix import cut_and_separate, persianify, n_days_later_timestamp, seconds_to_next_period, now_in_minute
 from bot.manager import BotMan
 from bot.types import MarketOptions, SelectionListTypes
 from api.crypto_service import CoinMarketCapService
@@ -1737,24 +1737,25 @@ async def handle_messages(update: Update, context: CallbackContext):
                             removal_time: int | None = None
                             try:
                                 message_id = int(str(telegram_response.message_id))
-                                offset = int(account.get_cache("offset"))
+                                offset = int(account.pop_cache("offset"))
                                 removal_time = n_days_later_timestamp(offset)
                             except Exception as x:
                                 log('Failed getting removal config: ', x, 'Admin')
 
                             post_tasks = await asyncio.gather(*[update.message.copy(chat_id) for chat_id in all_accounts], return_exceptions=True)
 
+                            users_count, not_received = len(all_accounts), len(list(filter(lambda t: isinstance(t, BaseException), post_tasks)))
+
                             await asyncio.gather(
                                 context.bot.delete_message(chat_id=account.chat_id, message_id=message_id),
                                 update.message.reply_text(
-                                    botman.text("post_successfully_sent", account.language) % (len(all_accounts),),
+                                    botman.text("post_successfully_sent", account.language) % (users_count, users_count - not_received),
                                     reply_markup=botman.get_admin_primary_keyboard(account),
                                 ),
                                 return_exceptions=True,
                             )
 
                             account.change_state()
-                            account.delete_specific_cache("offset")
                             if removal_time:
                                 trash_type = Account.database().TrashType.MESSAGE.value
                                 try:
@@ -1766,7 +1767,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                                 task.message_id,
                                                 removal_time,
                                             )
-                                            for i, task in enumerate(post_tasks) if not isinstance(task, Exception)
+                                            for i, task in enumerate(post_tasks) if not isinstance(task, BaseException)
                                         ]
                                     )
                                     await update.message.reply_text(

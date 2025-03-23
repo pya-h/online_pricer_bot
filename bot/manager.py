@@ -1498,7 +1498,6 @@ class BotMan:
         """Garbage collect fast mems, remove messages supposed to be removed, etc."""
         Account.garbageCollect()
         Group.garbageCollect()
-
         if not self.last_daily_check or now_in_minute() - self.last_daily_check >= 1440:
             await self.do_daily_checks(context)
             log("Daily checks has been performed successfully.", category_name="INFO")
@@ -1506,8 +1505,8 @@ class BotMan:
     async def do_daily_checks(self, context: CallbackContext):
         today = tz_today().date()
         async_tasks: List[Coroutine[Any, Any, bool | Message]] = []
-
         possible_premiums = Account.getPremiumUsers(even_possibles=True)
+
         for user in possible_premiums:
             try:
                 user_premium_end_date = user.premium_date
@@ -1528,8 +1527,8 @@ class BotMan:
 
         db = Account.database()
         now = now_in_minute()
-        deleting_messages = db.get_messages_passed_their_due()
 
+        deleting_messages = db.get_messages_passed_their_due()
         if deleting_messages:
             for i, msg in enumerate(deleting_messages):
                 try:

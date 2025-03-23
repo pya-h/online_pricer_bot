@@ -471,8 +471,8 @@
     "en": "I'm now sending this post to our users. This may take a while; After all messages are sent, I will notify you."
   },
   "post_successfully_sent": {
-    "fa": "✅ پیام شما با موفقیت برای تمامی کاربران ربات (%d نفر) ارسال شد.",
-    "en": "Your post has been successfully to all [%d] users."
+    "fa": "✅ پیام شما با موفقیت برای تمامی کاربران ربات (%d نفر) ارسال شد و %d نفر آن را با موفقیت دریافت کردند.",
+    "en": "Your post has been successfully to all [%d] users and %d users successfully received the post."
   },
   "select_price_currency_unit": {
     "fa": "حال واحد ارز مربوط به این مبلغ (ها) را انتخاب کنید:",

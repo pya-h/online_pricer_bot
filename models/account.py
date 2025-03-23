@@ -183,6 +183,9 @@ class Account:
     def get_cache(self, cache_key: str = None):
         return self.cache[cache_key] if cache_key in self.cache else None
 
+    def pop_cache(self, cache_key: str = None):
+        return self.cache.pop(cache_key) if cache_key in self.cache else None
+
     def __str__(self) -> str:
         return f"@{self.username}" if self.username else str(self.chat_id)
 
