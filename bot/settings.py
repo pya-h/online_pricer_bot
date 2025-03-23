@@ -50,12 +50,13 @@ class BotSettings:
         return BotSettings.singleInstance.rules['community_count_limit'][user_type.value]
 
     def PREMIUM_PLANS_TEXT(self, language: str):
-        return BotSettings.singleInstance.premium_plans_post_text[language]
+        return BotSettings.singleInstance.premium_plans_post_text[language.lower()]
     
     def PREMIUM_PLANS_IMAGE(self, language: str):
-        return BotSettings.singleInstance.premium_plans_post_file_id[language]
+        return BotSettings.singleInstance.premium_plans_post_file_id[language.lower()]
 
     def PREMIUM_PLANS_POST(self, language: str):
+        language = language.lower()
         text = BotSettings.singleInstance.premium_plans_post_text[language]
         file_id = BotSettings.singleInstance.premium_plans_post_file_id[language] or None
         return (text, file_id)

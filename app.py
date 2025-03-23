@@ -56,7 +56,7 @@ def main(run_webhook: bool = True):
     app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
     plan_main_channel(app, float(config("MAIN_CHANNEL_DEFAULT_INTERVAL", 10)))
     app.job_queue.run_repeating(
-        botman.process_channels, interval=30, first=seconds_to_next_minute() - 1, name="PLUS_CHANNELS"
+        botman.process_channels, interval=30, first=seconds_to_next_minute() - 1, name="PROCESS_CHANNELS"
     )
     app.job_queue.run_repeating(
         botman.do_hourly_check, name="HOURLY_REFRESH", interval=3600, first=seconds_to_next_period(period_in_minutes=60)

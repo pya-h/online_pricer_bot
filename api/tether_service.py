@@ -103,7 +103,6 @@ class NobitexService(TetherService):
             value = self.recent_response[NobitexService.tetherFieldName]
             self.recent_value = (float(value["bestBuy"]) + float(value["bestSell"])) / 2.0
             return self.recent_value
-        print(self.recent_value)
         return 0.0
 
     async def fetch_prices(self):

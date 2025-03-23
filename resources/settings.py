@@ -47,8 +47,8 @@ import json
 
 json_string = json.dumps(
     {
-        "premiums_plans_text": {"fa": plans_fa, "FA": plans_en, "en": plans_en},
-        "premiums_plans_file_id": {"fa": None, "FA": None, "en": None},
+        "premiums_plans_text": {"fa": plans_fa, "en": plans_en},
+        "premiums_plans_file_id": {"fa": None, "en": None},
         "rules": {
             "token_selection": {"free": 10, "plus": 100, "admin": 200},
             "calculator_token_selection": {
