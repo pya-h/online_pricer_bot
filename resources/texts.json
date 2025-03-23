@@ -759,8 +759,12 @@
     "en": "✅ Scheduling posts for removal completed successfully.\n\n⚠️ Unfortunately, auto-removal scheduling encountered a problem! Contact developer to fix the problem for next posts."
   },
   "enter_remove_interval_in_days": {
-    "fa": "ابتدا مشخص کنید که می خواهید این پست چند روز بعد پاک شود؟ تعداد روزها را به صورت عددی وارد کنید.\n\n* توجه: درصورتی که این یک پست دائمی است: یا عدد صفر را وارد کنید و یا اینکه این مرحله را نادیده بگیرید و مستقیما متن پیام را تایپ کنید تا برای همه کاربران بصورت دایمی ارسال شود..",
+    "fa": "ابتدا مشخص کنید که می خواهید این پست چند روز بعد پاک شود؟ تعداد روزها را به صورت عددی وارد کنید.\n\n* توجه: درصورتی که این یک پست دائمی است: یا عدد صفر را وارد کنید و یا اینکه این مرحله را نادیده بگیرید و مستقیما متن پیام را تایپ کنید تا برای همه کاربران بصورت دائمی ارسال شود..",
     "en": "Enter the number of days you wish the message to be deleted after?\n* Notice: If this is a permenant post: you can either enter zero [0] here, or you simply ignore this step and directly type your post text to sent it automatically to all users."
+  },
+  "failed_retrieving_post_message": {
+    "fa": "مشکلی حین دریافت اطلاعات پیام پیش آمد؛ لطفا از اول تلاش کنید ...",
+    "en": "Something went wrong while retrieving Message data; Please retry the operation ..."
   },
   "this_message_will_be_removed_after": {
     "fa": "(این پیام پس از %s روز بصورت خودکار از صفحه چت ربات تمام کاربران فعال پاک می گردد.)",

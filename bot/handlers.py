@@ -1733,19 +1733,26 @@ async def handle_messages(update: Update, context: CallbackContext):
                             all_accounts: List[int] = list(filter(lambda chat_id: chat_id != account.chat_id, Account.everybody()))
                             telegram_response: Message = await update.message.reply_text(
                                 botman.text("sending_your_post", account.language))
-                            message_id: int | None = None
+
                             removal_time: int | None = None
                             try:
                                 message_id = int(str(telegram_response.message_id))
+                            except Exception as x:
+                                log('Failed getting admin post message id:', x, category_name='Admin')
+                                await asyncio.gather(
+                                    update.message.reply_text(botman.text("failed_retrieving_post_message", account.language)),
+                                    cmd_send_post(update, context)
+                                )
+                                return
+                            try:
                                 offset = int(account.pop_cache("offset"))
                                 removal_time = n_days_later_timestamp(offset)
                             except Exception as x:
-                                log('Failed getting removal config: ', x, 'Admin')
+                                pass
 
                             post_tasks = await asyncio.gather(*[update.message.copy(chat_id) for chat_id in all_accounts], return_exceptions=True)
 
                             users_count, not_received = len(all_accounts), len(list(filter(lambda t: isinstance(t, BaseException), post_tasks)))
-
                             await asyncio.gather(
                                 context.bot.delete_message(chat_id=account.chat_id, message_id=message_id),
                                 update.message.reply_text(
