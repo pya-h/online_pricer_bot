@@ -6,7 +6,6 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
-    MessageId,
     Chat,
     ReplyKeyboardRemove,
     ChatMemberMember,
@@ -32,7 +31,6 @@ from models.channel import Channel, PostInterval
 from bot.post import PostMan
 from bot.settings import BotSettings
 import asyncio
-from typing import Coroutine, Any
 
 
 botman = BotMan()
@@ -1844,14 +1842,21 @@ async def handle_messages(update: Update, context: CallbackContext):
 async def handle_new_group_members(update: Update, context: CallbackContext):
     if not update.my_chat_member or not update.my_chat_member.new_chat_member:
         return
-
+    
     if update.my_chat_member.new_chat_member.user.id == context.bot.id:
         owner = Account.getById(update.my_chat_member.from_user.id)
-        if update.my_chat_member.new_chat_member and update.my_chat_member.new_chat_member.status != ChatMemberMember.MEMBER:
+        if update.my_chat_member.new_chat_member.status != ChatMemberMember.MEMBER:
             # TODO: Handle other Member states [if required]
             if update.my_chat_member.new_chat_member.status == ChatMemberMember.LEFT:
                 await context.bot.send_message(chat_id=owner.chat_id,
                                                text=botman.text("seems_bot_was_removed_from_group", owner.language))
+            return
+        elif update.my_chat_member.old_chat_member and update.my_chat_member.old_chat_member.status == ChatMemberMember.ADMINISTRATOR:
+            # This is a downgrade event, not a new addition
+            log(f"Bot was downgraded to normal member in group {update.my_chat_member.chat.id}",
+                category_name='GroupEvents')
+            await context.bot.send_message(chat_id=owner.chat_id,
+               text=botman.text("group_admin_downgraded_bot", owner.language))
             return
         try:
             if owner.state == Account.States.CHANGE_GROUP:
@@ -1948,23 +1953,26 @@ async def handle_group_messages(update: Update, _: CallbackContext):
     ]:
         inputs, equalizer_func = input_list
         for multiplier_and_unit in inputs:
-            multiplier, unit = multiplier_and_unit.split()
-            multiplier = BotMan.extractMultiplier(multiplier)
-            message = equalizer_func(
-                unit,
-                multiplier,
-                group.selected_coins,
-                group.selected_currencies,
-                to_user.language,
-                group.message_show_market_tags,
-            )
-
-            tasks.append(
-                update.message.reply_text(
-                    PostMan.customizePost(message, group, to_user.language),
-                    reply_markup=ReplyKeyboardRemove(),
+            try:
+                multiplier, unit = multiplier_and_unit.split()
+                multiplier = BotMan.extractMultiplier(multiplier)
+                message = equalizer_func(
+                    unit,
+                    multiplier,
+                    group.selected_coins,
+                    group.selected_currencies,
+                    to_user.language,
+                    group.message_show_market_tags,
                 )
-            )
+
+                tasks.append(
+                    update.message.reply_text(
+                        PostMan.customizePost(message, group, to_user.language),
+                        reply_markup=ReplyKeyboardRemove(),
+                    )
+                )
+            except Exception as x:
+                pass
     await asyncio.gather(*tasks, return_exceptions=True)
 
 

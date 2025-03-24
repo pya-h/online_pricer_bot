@@ -694,6 +694,10 @@
     "fa": "✅ ربات به گروه جدید شما متصل شد.",
     "en": "✅ Bot is now connected to the new group you've added it."
   },
+  "group_admin_downgraded_bot": {
+    "fa": "️⚠️ به نظر می رسد ربات در گروه از حالت ادمین خارج شده و به کاربر عادی تبدیل شده است؛ دئر این صورت، ربات تنها درصورتی قادر به پاسخ گویی خواهد بود که کاربران، پیام ربات را 'Reply' کرده باشند؛\n\nبهتر است برای کارایی بهتر ربات را دوباره به حالت ادمین بازگردانید. ",
+    "en": "⚠️ It seems that bot has been downgraded inside your group to a normal member; In this case, bot will only be able to respond to users which are 'Reply'ing bot messages.\n\nIt would be a better choice to re-upgrade the bot to admin to use it in full capability."
+  },
   "add_bot_to_new_group": {
     "fa": "بسیار خب! هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است. برای این منظور، وارد گروه جدید خود شوید و ربات را در گروه جدید اضافه و ادمین کنید. باقی فرایند بصورت خودکار انجام می شود.",
     "en": "Well! Now you should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete."
