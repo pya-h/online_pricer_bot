@@ -1217,6 +1217,26 @@ class BotMan:
         )
         return f"{header}\n\n{post}"
 
+    async def send_start_posting_button(self, channel: Channel, ctx: CallbackContext):
+        post_interval, desc_en, desc_fa = PostInterval(minutes=channel.interval).timestamps
+
+        if channel.owner.language == "fa":
+            post_interval = persianify(post_interval)
+            interval_description = persianify(desc_fa)
+        else:
+            interval_description = desc_en
+        await ctx.bot.send_message(
+            chat_id=channel.owner.chat_id,
+            text=self.text("click_to_start_channel_posting", channel.owner.language)
+            % (post_interval, interval_description),
+            reply_markup=self.action_inline_keyboard(
+                self.QueryActions.START_CHANNEL_POSTING,
+                {channel.id: "start"},
+                channel.owner.language,
+                columns_in_a_row=1,
+            ),
+        )
+
     async def prepare_channel(self, ctx: CallbackContext, owner: Account, channel_id: int, interval: int):
         try:
             channel_response = await ctx.bot.send_message(chat_id=channel_id, text="OK")
@@ -1228,31 +1248,17 @@ class BotMan:
                 channel_response.chat.username or None,
                 channel_response.chat.title or "Unnamed",
                 language=owner.language,
+                owner=owner,
             )
             channel.create()
 
-            post_interval, desc_en, desc_fa = PostInterval(minutes=interval).timestamps
-
-            if owner.language == "fa":
-                post_interval = persianify(post_interval)
-                interval_description = persianify(desc_fa)
-            else:
-                interval_description = desc_en
             await asyncio.gather(
                 ctx.bot.delete_message(chat_id=channel_id, message_id=channel_response.message_id),
-                ctx.bot.send_message(
-                    chat_id=owner.chat_id,
-                    text=self.text("click_to_start_channel_posting", owner.language)
-                    % (post_interval, interval_description),
-                    reply_markup=self.action_inline_keyboard(
-                        self.QueryActions.START_CHANNEL_POSTING,
-                        {channel_id: "start"},
-                        owner.language,
-                        columns_in_a_row=1,
-                    ),
-                ),
+                self.send_start_posting_button(channel, ctx),
                 return_exceptions=True,
             )
+        except Forbidden:
+            raise Forbidden('Bot is neither member nor admin')
         except MaxAddedCommunityException:
             await ctx.bot.send_message(
                 chat_id=owner.chat_id,
@@ -1335,7 +1341,13 @@ class BotMan:
                 channel.interval = interval
                 channel.last_post_time = None
                 channel.save()
-                await update.message.reply_text(self.text("update_successful", account.language))
+
+                if not channel.is_active:
+                    if not channel.owner:
+                        channel.owner = account
+                    await self.send_start_posting_button(channel, context)
+                else:
+                    await update.message.reply_text(self.text("update_successful", account.language))
             else:
                 raise InvalidInputException("Invalid account state.")
             return True
@@ -1349,6 +1361,8 @@ class BotMan:
                 self.error("error_while_planning_channel", account.language),
                 reply_markup=self.mainkeyboard(account),
             )
+        except Forbidden:
+            await update.message.reply_text(self.error("bot_seems_not_admin", account.language))
         return False
 
     @staticmethod

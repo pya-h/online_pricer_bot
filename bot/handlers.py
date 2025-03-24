@@ -570,9 +570,9 @@ async def handle_action_queries(
             await query.message.edit_text(text=BotMan.getLongText(value, account.language))
             return
         case BotMan.QueryActions.SELECT_POST_INTERVAL.value:
-            await asyncio.gather(botman.handle_set_interval_outcome(query, context, value), query.message.delete(),
-                                 return_exceptions=True)
-            account.change_state(clear_cache=True)
+            if await botman.handle_set_interval_outcome(query, context, value):
+                account.change_state(clear_cache=True)
+                await query.message.delete()
             return
 
         case BotMan.QueryActions.START_CHANNEL_POSTING.value:
@@ -1356,6 +1356,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                         None: "cancel",
                         f"{community_type.value}{BotMan.CALLBACK_DATA_DELIMITER}{community.id}": "community_disconnect",
                     },
+                    language=account.language,
                 ),
             )
         # settings sub menu:
@@ -1610,7 +1611,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                     account.delete_specific_cache("interval_menu_msg_id")
                 case Account.States.SET_MESSAGE_FOOTNOTE | Account.States.SET_MESSAGE_HEADER:
                     community_type = BotMan.CommunityType.which(account.get_cache("community"))
-                    if not community_type:
+                    if not community_type or community_type == BotMan.CommunityType.NONE:
                         await unknown_command_handler(update, context)
                         return
                     community = community_type.to_class().getByOwner(account.chat_id)
@@ -1836,7 +1837,7 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     reply_markup=botman.mainkeyboard(account),
                                 )
                             except Exception as x:
-                                await  unhandled_error_happened(update)
+                                await unhandled_error_happened(update)
                                 log('A god user tried to upgrade another user to admin but encountered unknown error:', x, category_name='Admin')
                             account.change_state()
 

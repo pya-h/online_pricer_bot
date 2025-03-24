@@ -354,7 +354,7 @@
     },
     "bot_seems_not_admin": {
       "fa": "به نظر می رسد ربات را ادمین نکرده اید و یا آدرس یا آیدی موردنظر اشتباه است. اکر آیدی یا آدرس اشتباه است، مقدار درست را دوباره وارد کنید، و اگر ربات را ادمین نکرده اید، آن را ادمین کرده و روی تایید کلیک کنید.",
-      "en": "It seems that bot has not been made admin or maybe the provided url or id is invalid. If the id or url is invalid, rewrite and send the correct one, and if you've forgotten to make the bot admin, make it admin and click verify.int"
+      "en": "It seems that bot has not been made admin or maybe the provided url or id is invalid. If the id or url is invalid, rewrite and send the correct one, and if you've forgotten to make the bot admin, make it admin and click verify"
     },
     "error_while_planning_channel": {
       "fa": "مشکلی حین ثبت اطلاعات کانال رخ داد. لطفا دوباره از اول تلاش کنید.",

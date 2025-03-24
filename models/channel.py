@@ -182,6 +182,7 @@ class Channel:
             return False  # Plan removed
 
         Channel.Instances[self.id] = self
+        self.is_active = True
         Channel.database().set_channel_state(self.id, True)
         return True
 
@@ -226,8 +227,8 @@ class Channel:
         self.title = new_chat.title
 
         Channel.database().update_channel(self, old_chat_id=old_chat_id)
-        # if Channel.fastMemInstances[old_chat_id]:
-        #     del Channel.fastMemInstances[old_chat_id]
+        if old_chat_id in Channel.Instances:
+             del Channel.Instances[old_chat_id]
         return self
 
     def throw_in_trashcan(self):
