@@ -196,14 +196,13 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         log("Something went wrong while scheduling: ", e)
 
     try:
-        await plan_main_channel(context, botman.main_plan_interval)
+        plan_main_channel(context, botman.main_plan_interval)
         await update.message.reply_text(
             botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
     except InvalidInputException:
         await update.message.reply_text(botman.text('channel_already_planned', account.language))
-    except:
+    except Exception as x:
         await unhandled_error_happened(update, context)
-
 
 async def cmd_stop_schedule(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
