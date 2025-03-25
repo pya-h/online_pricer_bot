@@ -187,33 +187,49 @@ class DatabaseInterface:
         """Execute queries that doesn't return result such as insert or delete"""
         conn = self.connection()
         cursor = conn.cursor()
-        cursor.execute(query, (*params,))
-        if is_fetch_query:
-            result = cursor.fetchall()
-        else:
-            result = cursor.lastrowid
-            conn.commit()
-        cursor.close()
-        conn.close()
+        result = None
+        try:
+            cursor.execute(query, (*params,))
+            if is_fetch_query:
+                result = cursor.fetchall()
+            else:
+                result = cursor.lastrowid
+                conn.commit()
+        except Exception as x:
+            log(
+                f"Failed running query:\nQuery: {query}\n Params: {', '.join(str(x) for x in params)}",
+                x,
+                category_name="Database.fux",
+            )
+        finally:
+            cursor.close()
+            conn.close()
 
         return result
 
     def bulk_query(self, query: str, params: list | tuple):
         conn = self.connection()
         cursor = conn.cursor()
-        res = cursor.executemany(query, params)
-        conn.commit()
-        cursor.close()
-        conn.close()
+        res = None
+        try:
+            res = cursor.executemany(query, params)
+            conn.commit()
+        except Exception as x:
+            log(
+                f"Failed running query:\nQuery: {query}\n Params: {', '.join(str(x) for x in params)}",
+                x,
+                category_name="Database.fux",
+            )
+        finally:
+            cursor.close()
+            conn.close()
         return res
 
     def setup(self):
-        try:
-            conn, cursor = self.set_timezone(close_connection=False)
+        conn, cursor = self.set_timezone(close_connection=False)
 
-            table_exist_query_start = (
-                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
-            )
+        try:
+            table_exist_query_start = f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
             tables_common_charset = "CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci"
             # check if the table accounts was created
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_ACCOUNTS}'")
@@ -297,24 +313,22 @@ class DatabaseInterface:
                 )
 
             log("OnlinePricer Database setup completed.", category_name="INFO")
-
-            cursor.close()
-            conn.close()
         except Error as ex:
             log(
                 "Failed setting up database, app cannot continue.",
                 ex,
                 category_name="SETUP",
             )
+        finally:
+            cursor.close()
+            conn.close()
 
     def add_account(self, account):
         if not account:
             raise Exception("You must provide an Account to save")
         try:
             columns = ", ".join(self.ACCOUNT_COLUMNS)
-            query = (
-                f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})"
-            )
+            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})"
             self.execute(
                 False,
                 query,
@@ -358,8 +372,13 @@ class DatabaseInterface:
         rows = self.execute(True, f"SELECT ({by_column}) FROM {self.TABLE_ACCOUNTS}")
         return [row[0] for row in rows]  # just return a list of ids
 
-    def get_special_accounts(self, property_field: str = ACCOUNT_MODE, value: any = 1, limit: int | None = None) -> list:
-        limit_exp = '' if not limit else f"LIMIT {limit}"
+    def get_special_accounts(
+        self,
+        property_field: str = ACCOUNT_MODE,
+        value: any = 1,
+        limit: int | None = None,
+    ) -> list:
+        limit_exp = "" if not limit else f"LIMIT {limit}"
         return self.execute(
             True,
             f"SELECT * FROM {self.TABLE_ACCOUNTS} WHERE {property_field}=%s {limit_exp}",
@@ -382,43 +401,14 @@ class DatabaseInterface:
     def update_account(self, account):
         conn = self.connection()
         cursor = conn.cursor()
-        columns_to_set = ", ".join([f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]])
-
-        cursor.execute(
-            f"UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s",
-            (
-                account.desired_currencies_as_str,
-                account.desired_cryptos_as_str,
-                account.calc_currencies_as_str,
-                account.calc_cryptos_as_str,
-                account.username,
-                account.firstname,
-                account.join_date,
-                account.last_interaction,
-                account.plus_start_date,
-                account.plus_end_date,
-                account.state.value,
-                account.cache_as_str,
-                account.mode.value,
-                account.language,
-                account.chat_id,
-            ),
-        )
-
-        if not cursor.rowcount:
-            cursor.execute(
-                f"SELECT 1 FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s",
-                (account.chat_id,),
+        try:
+            columns_to_set = ", ".join(
+                [f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]]
             )
-            if cursor.fetchone():
-                cursor.close()
-                conn.close()
-                return
-            columns: str = ", ".join(self.ACCOUNT_COLUMNS)
+
             cursor.execute(
-                f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})",
+                f"UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s",
                 (
-                    account.chat_id,
                     account.desired_currencies_as_str,
                     account.desired_cryptos_as_str,
                     account.calc_currencies_as_str,
@@ -433,11 +423,48 @@ class DatabaseInterface:
                     account.cache_as_str,
                     account.mode.value,
                     account.language,
+                    account.chat_id,
                 ),
             )
-        conn.commit()
-        cursor.close()
-        conn.close()
+
+            if not cursor.rowcount:
+                cursor.execute(
+                    f"SELECT 1 FROM {self.TABLE_ACCOUNTS} WHERE {self.ACCOUNT_ID}=%s",
+                    (account.chat_id,),
+                )
+                if cursor.fetchone():
+                    return
+                columns: str = ", ".join(self.ACCOUNT_COLUMNS)
+                cursor.execute(
+                    f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})",
+                    (
+                        account.chat_id,
+                        account.desired_currencies_as_str,
+                        account.desired_cryptos_as_str,
+                        account.calc_currencies_as_str,
+                        account.calc_cryptos_as_str,
+                        account.username,
+                        account.firstname,
+                        account.join_date,
+                        account.last_interaction,
+                        account.plus_start_date,
+                        account.plus_end_date,
+                        account.state.value,
+                        account.cache_as_str,
+                        account.mode.value,
+                        account.language,
+                    ),
+                )
+            conn.commit()
+        except Exception as x:
+            log(
+                f'Failed updating account data:\nchat_id: {account.chat_id}, username: {f"@{account.username}" if account.username else "-"}',
+                x,
+                category_name="Database.fux",
+            )
+        finally:
+            cursor.close()
+            conn.close()
 
     def update_account_names(self, account):
         self.execute(
@@ -458,7 +485,6 @@ class DatabaseInterface:
             account.plus_end_date,
             account.chat_id,
         )
-        log(f"Account with chat_id={account.chat_id} has extended its plus pre-villages until {account.plus_end_date}", category_name="VIP")
 
     def downgrade_account(self, account):
         account.plus_start_date = None
@@ -468,88 +494,42 @@ class DatabaseInterface:
             f"UPDATE {self.TABLE_ACCOUNTS} SET {self.ACCOUNT_PLUS_START_DATE}=NULL, {self.ACCOUNT_PLUS_END_DATE}=NULL WHERE {self.ACCOUNT_ID}=%s",
             account.chat_id,
         )
-        log(
-            f"Account with chat_id={account.chat_id} downgraded to free user.",
-            category_name="Premiums",
-        )
 
     def add_channel(self, channel):
         if not channel:
             raise Exception("You must provide an Group to add")
-        try:
-            columns = ", ".join(self.CHANNELS_COLUMNS)
-            query = (
-                f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})"
-            )
-            self.execute(
-                False,
-                query,
-                channel.id,
-                channel.name,
-                channel.title,
-                channel.interval,
-                int(channel.is_active),
-                channel.coins_as_str,
-                channel.currencies_as_str,
-                channel.message_header,
-                channel.message_footnote,
-                int(channel.message_show_date_tag),
-                int(channel.message_show_market_tags),
-                channel.owner.language,
-                channel.last_post_time,
-                channel.owner_id,
-            )
-            log(
-                f"New channel: {channel} saved into database successfully.",
-                category_name="DatabaseInfo",
-            )
-        except Exception as ex:
-            log(f"Cannot save this channel:{channel}", ex, category_name="DatabaseError")
-            raise ex  # custom ex needed here too
 
-    def update_channel(self, channel, old_chat_id: int = None):
-        channel_id = old_chat_id or channel.id
-        conn = self.connection()
-        cursor = conn.cursor()
-        columns_to_set = ", ".join([f"{field}=%s" for field in self.CHANNELS_COLUMNS])
-        cursor.execute(
-            f"UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s",
-            (
-                channel.id,
-                channel.name,
-                channel.title,
-                channel.interval,
-                int(channel.is_active),
-                channel.coins_as_str,
-                channel.currencies_as_str,
-                channel.message_header,
-                channel.message_footnote,
-                int(channel.message_show_date_tag),
-                int(channel.message_show_market_tags),
-                channel.language,
-                channel.last_post_time,
-                channel.owner_id,
-                channel_id,
-            ),
+        columns = ", ".join(self.CHANNELS_COLUMNS)
+        query = f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})"
+        self.execute(
+            False,
+            query,
+            channel.id,
+            channel.name,
+            channel.title,
+            channel.interval,
+            int(channel.is_active),
+            channel.coins_as_str,
+            channel.currencies_as_str,
+            channel.message_header,
+            channel.message_footnote,
+            int(channel.message_show_date_tag),
+            int(channel.message_show_market_tags),
+            channel.owner.language,
+            channel.last_post_time,
+            channel.owner_id,
         )
 
-        if cursor.rowcount:
-            log(
-                f"Channel with the id of [{channel.id}, {channel.name}] has been RE-planned by: {channel.owner_id}",
-                category_name="INFO",
+    def update_channel(self, channel, old_chat_id: int = None):
+        conn = self.connection()
+        cursor = conn.cursor()
+        try:
+            channel_id = old_chat_id or channel.id
+            columns_to_set = ", ".join(
+                [f"{field}=%s" for field in self.CHANNELS_COLUMNS]
             )
-        elif not old_chat_id:
             cursor.execute(
-                f"SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s",
-                (channel.id,),
-            )
-            if cursor.fetchone():
-                cursor.close()
-                conn.close()
-                return
-            columns = ", ".join(self.CHANNELS_COLUMNS)
-            cursor.execute(
-                f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})",
+                f"UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s",
                 (
                     channel.id,
                     channel.name,
@@ -565,15 +545,53 @@ class DatabaseInterface:
                     channel.language,
                     channel.last_post_time,
                     channel.owner_id,
+                    channel_id,
                 ),
             )
+
+            if cursor.rowcount:
+                log(
+                    f"Channel with the id of [{channel.id}, {channel.name}] has been RE-planned by: {channel.owner_id}",
+                    category_name="INFO",
+                )
+            elif not old_chat_id:
+                cursor.execute(
+                    f"SELECT 1 FROM {self.TABLE_CHANNELS} WHERE {self.CHANNEL_ID}=%s",
+                    (channel.id,),
+                )
+                if cursor.fetchone():
+                    return
+                columns = ", ".join(self.CHANNELS_COLUMNS)
+                cursor.execute(
+                    f"INSERT INTO {self.TABLE_CHANNELS} ({columns}) VALUES (%s{', %s' * (len(self.CHANNELS_COLUMNS) - 1)})",
+                    (
+                        channel.id,
+                        channel.name,
+                        channel.title,
+                        channel.interval,
+                        int(channel.is_active),
+                        channel.coins_as_str,
+                        channel.currencies_as_str,
+                        channel.message_header,
+                        channel.message_footnote,
+                        int(channel.message_show_date_tag),
+                        int(channel.message_show_market_tags),
+                        channel.language,
+                        channel.last_post_time,
+                        channel.owner_id,
+                    ),
+                )
+
+            conn.commit()
+        except Exception as x:
             log(
-                f"New channel with the id of [{channel.id}, {channel.name}] has been planned by: {channel.owner_id}",
-                category_name="INFO",
+                f"Failed updating channel:\nChannel id: {channel.id}, username: {channel.name}, old_channel_id: {old_chat_id}",
+                x,
+                category_name="Database.fux",
             )
-        conn.commit()
-        cursor.close()
-        conn.close()
+        finally:
+            cursor.close()
+            conn.close()
 
     def get_channel(self, channel_id: int):
         channels = self.execute(
@@ -629,15 +647,12 @@ class DatabaseInterface:
         )
 
     def update_channels_last_post_times(self, id_list: List[int]):
-        try:
-            return self.execute(
-                False,
-                f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_LAST_POST_TIME}=%s WHERE {self.CHANNEL_ID} IN ({','.join(['%s'] * len(id_list))})",
-                now_in_minute(),
-                *id_list,
-            )
-        except Exception:
-            pass
+        return self.execute(
+            False,
+            f"UPDATE {self.TABLE_CHANNELS} SET {self.CHANNEL_LAST_POST_TIME}=%s WHERE {self.CHANNEL_ID} IN ({','.join(['%s'] * len(id_list))})",
+            now_in_minute(),
+            *id_list,
+        )
 
     def update_user_channels_language(self, owner):
         return self.execute(
@@ -658,67 +673,33 @@ class DatabaseInterface:
     def add_group(self, group):
         if not group:
             raise Exception("You must provide an Group to add")
-        try:
-            columns = ", ".join(self.GROUPS_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})"
-            self.execute(
-                False,
-                query,
-                group.id,
-                group.name,
-                group.title,
-                group.coins_as_str,
-                group.currencies_as_str,
-                group.message_header,
-                group.message_footnote,
-                int(group.message_show_date_tag),
-                int(group.message_show_market_tags),
-                group.owner_id,
-            )
-            log(
-                f"New group: {group} saved into database successfully.",
-                category_name="INFO",
-            )
-        except Exception as ex:
-            log(f"Cannot save this group:{group}", ex, category_name="Group")
-            raise ex  # custom ex needed here too
 
-    def update_group(self, group, old_chat_id: int = None):
-        group_id = old_chat_id or group.id
-        conn = self.connection()
-        cursor = conn.cursor()
-
-        columns_to_set = ", ".join([f"{field}=%s" for field in self.GROUPS_COLUMNS])
-
-        cursor.execute(
-            f"UPDATE {self.TABLE_GROUPS} SET {columns_to_set} WHERE {self.GROUP_ID}=%s",
-            (
-                group.id,
-                group.name,
-                group.title,
-                group.coins_as_str,
-                group.currencies_as_str,
-                group.message_header,
-                group.message_footnote,
-                int(group.message_show_date_tag),
-                int(group.message_show_market_tags),
-                group.owner_id,
-                group_id,
-            ),
+        columns = ", ".join(self.GROUPS_COLUMNS)
+        query = f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})"
+        self.execute(
+            False,
+            query,
+            group.id,
+            group.name,
+            group.title,
+            group.coins_as_str,
+            group.currencies_as_str,
+            group.message_header,
+            group.message_footnote,
+            int(group.message_show_date_tag),
+            int(group.message_show_market_tags),
+            group.owner_id,
         )
 
-        if not cursor.rowcount and not old_chat_id:
+    def update_group(self, group, old_chat_id: int = None):
+        conn = self.connection()
+        cursor = conn.cursor()
+        try:
+            group_id = old_chat_id or group.id
+            columns_to_set = ", ".join([f"{field}=%s" for field in self.GROUPS_COLUMNS])
+
             cursor.execute(
-                f"SELECT 1 FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s",
-                (group.id,),
-            )
-            if cursor.fetchone():
-                cursor.close()
-                conn.close()
-                return
-            columns: str = ", ".join(self.GROUPS_COLUMNS)
-            cursor.execute(
-                f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})",
+                f"UPDATE {self.TABLE_GROUPS} SET {columns_to_set} WHERE {self.GROUP_ID}=%s",
                 (
                     group.id,
                     group.name,
@@ -730,15 +711,44 @@ class DatabaseInterface:
                     int(group.message_show_date_tag),
                     int(group.message_show_market_tags),
                     group.owner_id,
+                    group_id,
                 ),
             )
+
+            if not cursor.rowcount and not old_chat_id:
+                cursor.execute(
+                    f"SELECT 1 FROM {self.TABLE_GROUPS} WHERE {self.GROUP_ID}=%s",
+                    (group.id,),
+                )
+                if cursor.fetchone():
+                    return
+                columns: str = ", ".join(self.GROUPS_COLUMNS)
+                cursor.execute(
+                    f"INSERT INTO {self.TABLE_GROUPS} ({columns}) VALUES (%s{', %s' * (len(self.GROUPS_COLUMNS) - 1)})",
+                    (
+                        group.id,
+                        group.name,
+                        group.title,
+                        group.coins_as_str,
+                        group.currencies_as_str,
+                        group.message_header,
+                        group.message_footnote,
+                        int(group.message_show_date_tag),
+                        int(group.message_show_market_tags),
+                        group.owner_id,
+                    ),
+                )
+
+            conn.commit()
+        except Exception as x:
             log(
-                "New group started using this bot with id=: " + group.__str__(),
-                category_name="INFO",
+                f"Failed updating group:\nGroup id: {group.id}, username: {group.name}, old_group_id: {old_chat_id}",
+                x,
+                category_name="Database.fux",
             )
-        conn.commit()
-        cursor.close()
-        conn.close()
+        finally:
+            cursor.close()
+            conn.close()
 
     def get_group(self, group_id: int):
         groups = self.execute(
@@ -908,7 +918,9 @@ class DatabaseInterface:
             trash_id,
         )
 
-    def schedule_messages_for_removal(self, messages_data: List[Tuple[int, int, int, int]]):
+    def schedule_messages_for_removal(
+        self, messages_data: List[Tuple[int, int, int, int]]
+    ):
         return self.bulk_query(
             f"INSERT INTO {self.TABLE_TRASH} ({self.TRASH_TYPE}, {self.TRASH_OWNER_ID}, {self.TRASH_IDENTIFIER}, {self.TRASH_DELETE_AT}) VALUES (%s, %s, %s, %s)",
             messages_data,
@@ -933,7 +945,9 @@ class DatabaseInterface:
         )
 
     def count_query(self, table: str, where: str | None = None):
-        res = self.execute(True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else "")
+        res = self.execute(
+            True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else ""
+        )
         return res[0] if res else 0
 
     def set_timezone(
@@ -944,51 +958,58 @@ class DatabaseInterface:
     ):
         conn = self.connection()
         cursor = conn.cursor(dictionary=cursor_dictionary_param)
-        cursor.execute(f"SET time_zone=%s;", (tz,))
-        conn.commit()
-        if close_connection:
-            cursor.close()
-            conn.close()
-            return None
+        try:
+            cursor.execute(f"SET time_zone=%s;", (tz,))
+            conn.commit()
+        except Exception as x:
+            log(f'Failed setting timezone to: {tz}', x, category_name='Admin')
+        finally:
+            if close_connection:
+                cursor.close()
+                conn.close()
+                return None, None
         return conn, cursor
 
     def get_user_stats(self):
+        conn, cursor = self.set_timezone(
+            close_connection=False, cursor_dictionary_param=True
+        )
+        result = None
         try:
-            conn, cursor = self.set_timezone(close_connection=False, cursor_dictionary_param=True)
             cursor.execute(
                 f"""SELECT 
-                COUNT(*) as all_users,
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL THEN 1 END) as free,
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL THEN 1 END) as plus,
+                        COUNT(*) as all_users,
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL THEN 1 END) as free,
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL THEN 1 END) as plus,
 
-                COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE})=DATE(NOW()) THEN 1 END) as all_join_today,
-                COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as all_join_yesterday,
-                COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as all_join_lastweek,
-                COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as all_join_lastmonth,
+                        COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE})=DATE(NOW()) THEN 1 END) as all_join_today,
+                        COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as all_join_yesterday,
+                        COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as all_join_lastweek,
+                        COUNT(CASE WHEN DATE({self.ACCOUNT_JOIN_DATE}) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as all_join_lastmonth,
 
-                COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE})=DATE(NOW()) THEN 1 END) as plus_today,
-                COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_yesterday,
-                COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_lastweek,
-                COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_lastmonth,
-                
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction)=DATE(NOW()) THEN 1 END) as free_int_today,
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as free_int_yesterday,
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as free_int_lastweek,
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as free_int_lastmonth,
-                
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction)=DATE(NOW()) THEN 1 END) as plus_int_today,
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_int_yesterday,
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastweek,
-                COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastmonth
-        FROM {self.TABLE_ACCOUNTS};"""
+                        COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE})=DATE(NOW()) THEN 1 END) as plus_today,
+                        COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_yesterday,
+                        COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_lastweek,
+                        COUNT(CASE WHEN DATE({self.ACCOUNT_PLUS_START_DATE}) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_lastmonth,
+                        
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction)=DATE(NOW()) THEN 1 END) as free_int_today,
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as free_int_yesterday,
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as free_int_lastweek,
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as free_int_lastmonth,
+                        
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction)=DATE(NOW()) THEN 1 END) as plus_int_today,
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 1 DAY AND DATE(NOW()) THEN 1 END) as plus_int_yesterday,
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 7 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastweek,
+                        COUNT(CASE WHEN {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL AND DATE(last_interaction) BETWEEN DATE(NOW()) - INTERVAL 30 DAY AND DATE(NOW()) THEN 1 END) as plus_int_lastmonth
+                FROM {self.TABLE_ACCOUNTS};"""
             )
             result = cursor.fetchall()
+        except Exception as x:
+            log('Failed calculating bot stats:', x, category_name='Admin')
+        finally:
             cursor.close()
             conn.close()
-            return result[0] if result else None
-        except:
-            pass
-        return None
+        return result[0] if result else None
 
     def get_active_channels_count(self):
         try:
@@ -1003,7 +1024,9 @@ class DatabaseInterface:
 
     def get_all_groups_count(self):
         try:
-            result = self.execute(True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;")
+            result = self.execute(
+                True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;"
+            )
             return result[0][0] if result and result[0] else 0
         except:
             pass
@@ -1020,8 +1043,12 @@ class DatabaseInterface:
             pass
         return 0
 
-    def select_accounts(self, limit: int = 20, offset: int = 0, only_premiums: bool = True):
-        where: str = f"WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL" if only_premiums else ""
+    def select_accounts(
+        self, limit: int = 20, offset: int = 0, only_premiums: bool = True
+    ):
+        where: str = (
+            f"WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL" if only_premiums else ""
+        )
         return self.execute(
             True,
             f"SELECT * FROM `{self.TABLE_ACCOUNTS}` {where} LIMIT {limit} OFFSET {offset}",
@@ -1040,13 +1067,13 @@ class DatabaseInterface:
         )
 
     def delete_all_user_groups(self, user_id: int):
-        """ *Warning: delete all groups owned by a user, all at once"""
+        """*Warning: delete all groups owned by a user, all at once"""
         self.execute(
             False,
             f"DELETE FROM {self.TABLE_GROUPS} WHERE {self.GROUP_OWNER_ID} = %s",
             user_id,
         )
-    
+
     def delete_all_user_channels(self, user_id: int):
         """*Warning: delete all channels owned by a user, all at once"""
         self.execute(
@@ -1055,7 +1082,9 @@ class DatabaseInterface:
             user_id,
         )
 
-    def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
+    def backup(
+        self, single_table_name: str = None, output_filename_suffix: str = "backup"
+    ):
         tables = (
             [single_table_name]
             if single_table_name
@@ -1075,7 +1104,7 @@ class DatabaseInterface:
                 "\n".join(rows),
             )
 
-    def __init__(self, pool_size: int = 6, connection_timeout: int = 30):
+    def __init__(self, pool_size: int = 6, connection_timeout: int = 20):
         self.__host = config("DATABASE_HOST")
         self.__username = config("DATABASE_USERNAME")
         self.__password = config("DATABASE_PASSWORD")
@@ -1090,6 +1119,5 @@ class DatabaseInterface:
             password=self.__password,
             database=self.__name,
         )
-        
+
         self.setup()
-        
