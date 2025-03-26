@@ -1841,16 +1841,17 @@ async def handle_messages(update: Update, context: CallbackContext):
 async def handle_new_group_members(update: Update, context: CallbackContext):
     if not update.my_chat_member or not update.my_chat_member.new_chat_member:
         return
-    
+
     if update.my_chat_member.new_chat_member.user.id == context.bot.id:
         owner = Account.getById(update.my_chat_member.from_user.id)
-        if update.my_chat_member.new_chat_member.status != ChatMemberMember.MEMBER:
-            # TODO: Handle other Member states [if required]
-            if update.my_chat_member.new_chat_member.status == ChatMemberMember.LEFT:
-                await context.bot.send_message(chat_id=owner.chat_id,
-                                               text=botman.text("seems_bot_was_removed_from_group", owner.language))
+        if update.my_chat_member.new_chat_member.status == ChatMemberMember.LEFT:
+            await context.bot.send_message(
+                chat_id=owner.chat_id,
+                text=botman.text("seems_bot_was_removed_from_group", owner.language)
+            )
             return
-        elif update.my_chat_member.old_chat_member and update.my_chat_member.old_chat_member.status == ChatMemberMember.ADMINISTRATOR:
+        elif update.my_chat_member.old_chat_member and update.my_chat_member.old_chat_member.status == ChatMemberMember.ADMINISTRATOR \
+                and update.my_chat_member.new_chat_member.status != ChatMemberMember.ADMINISTRATOR:
             # This is a downgrade event, not a new addition
             log(f"Bot was downgraded to normal member in group {update.my_chat_member.chat.id}",
                 category_name='GroupEvents')
