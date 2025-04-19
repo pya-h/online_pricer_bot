@@ -152,7 +152,6 @@ class NavasanService(CurrencyService):
     ) -> None:
         self.tether_service = NobitexService(nobitex_tether_service_token)
         self.alternate_tether_service = AbanTetherService(aban_tether_service_token) if aban_tether_service_token else None
-
         super().__init__(
             url=f"https://apis.sourcearena.ir/api/?token={token}&currency&v2",
             source="Navasan",
@@ -160,8 +159,8 @@ class NavasanService(CurrencyService):
             tether_service_token=self.tether_service.token,
             token=token,
         )
-
         self.gold_service: GoldService = GoldService(self.token)
+        self.pre_latest_data: dict | None = None
 
         if (
             not NavasanService.currenciesInPersian
@@ -222,9 +221,9 @@ class NavasanService(CurrencyService):
         for slug in desired_ones:
             row = self.get_price_description_row(slug.lower(), language, no_price_message)
             if slug not in NavasanService.goldsInPersian:
-                res_curr += f"🔸 {row}\n"
+                res_curr += f"{row}\n"
             else:
-                res_gold += f"🔸 {row}\n"
+                res_gold += f"{row}\n"
         return res_curr, res_gold
 
     # --------- Currency -----------
@@ -259,7 +258,9 @@ class NavasanService(CurrencyService):
         no_price_message: str | None = None,
     ) -> Tuple[str, str]:
         try:
-            self.latest_data = await self.get_request()  # update latest
+            new_data = await self.get_request()
+            self.pre_latest_data = self.latest_data # only update pre_latest when the api call was ok
+            self.latest_data = new_data
         except Exception as ex:
             log('Navasan API Error:', ex, 'Navasan')
 
@@ -391,34 +392,36 @@ class NavasanService(CurrencyService):
         try:
             price: float
             currency_data: Dict[str, float | int | bool | str]
-            
+
             if (sym_lower := symbol.lower()) not in self.latest_data:
                 raise ValueError(f"{sym_lower} not found in Navasan response data!")
             currency_data = self.latest_data[sym_lower]
             price = float(currency_data["value"])
             toman: float | str
             usd: float | None = None
+            previous_price = self.pre_latest_data[sym_lower]['value'] if self.pre_latest_data and \
+                    sym_lower in self.pre_latest_data and 'value' in self.pre_latest_data[sym_lower] else price
             if "usd" not in currency_data or not currency_data["usd"]:
                 toman, _ = self.rounded_prices(price, False)
             else:
                 usd, toman = self.rounded_prices(price)
             if language != "fa":
-                return f"{NavasanService.getEnglishTitle(symbol_up)}: {toman} {self.tomanSymbol}" + (
+                return f"{self.getTokenState(price, previous_price)} {NavasanService.getEnglishTitle(symbol_up)}: {toman} {self.tomanSymbol}" + (
                     f" / {usd}$" if usd else ""
                 )
             toman = persianify(toman)
             if price < 0:
                 toman = f"{toman[1:]}-"
-            return f"{NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان" + (
+            return f"{self.getTokenState(price, previous_price)} {NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان" + (
                 f" / {usd}$" if usd else ""
             )
         except Exception as x:
             log("Symbol not found!", x, "Navasan")
         try:
             return (
-                f"{NavasanService.getEnglishTitle(symbol_up) if language != 'fa' else NavasanService.goldsInPersian[symbol_up]}: "
+                f"🔸 {NavasanService.getEnglishTitle(symbol_up) if language != 'fa' else NavasanService.goldsInPersian[symbol_up]}: "
                 + (no_price_message or "❗️")
             )
         except:
             pass
-        return f"{symbol}: " + (no_price_message or "❗️")
+        return f"🔸 {symbol}: " + (no_price_message or "❗️")

@@ -22,9 +22,7 @@ class BaseAPIService:
         self.params: dict = params or dict()
         self.cache_file_name: str = cache_file_name
         self.cache_folder_created: bool = False
-        self.latest_data = (
-            []
-        )  # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
+        self.latest_data = dict() # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
         # Causing: App enhancement, less APi Calls(For best management of non-free API uses), Less cache file read for improving bot performance and speed and prevention of lags
 
     def cache_data(self, data: str, custom_file_name: str = None) -> None:
@@ -133,3 +131,7 @@ class APIService(BaseAPIService):
             return mathematix.cut_and_separate(price), mathematix.cut_and_separate(converted_price)
 
         return mathematix.cut_and_separate(price), None
+
+    @staticmethod
+    def getTokenState(current_price: float | int, previous_price: float | int) -> str:
+        return '🟢' if current_price > previous_price else '🔴' if current_price < previous_price else '⚪️'

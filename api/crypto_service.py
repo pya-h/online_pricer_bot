@@ -1,7 +1,7 @@
 import coinmarketcapapi as cmc_api
 from api.base import *
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from typing import Union, List, Tuple, override
+from typing import List, Tuple, override
 
 
 # Parent Class
@@ -98,6 +98,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         self.price_unit: str = price_unit
         self.cmc_api = cmc_api.CoinMarketCapAPI(self.api_key)
         self.cmc_coin_fetch_limit = cmc_coin_fetch_limit
+        self.pre_latest_data: dict | None = None
 
     def set_price_unit(self, pu):
         self.price_unit = pu
@@ -113,19 +114,22 @@ class CoinMarketCapService(CryptoCurrencyService):
         return result
 
     @override
-    async def get_request(self):
+    async def get_request(self, _headers: dict = None, no_cache: bool = False):
         """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService children"""
         latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=self.cmc_coin_fetch_limit)
         if not latest_cap or not latest_cap.data:
             raise Exception('CoinMarketCap API Error: Missing data')
         result = self.raw_data_to_price_dict(latest_cap.data)
-        self.cache_data(json.dumps(result))
+        if not no_cache:
+            self.cache_data(json.dumps(result))
         return result
 
     @override
     async def get(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
         try:
-            self.latest_data = await self.get_request()  # update latest
+            new_data = await self.get_request()  # update latest
+            self.pre_latest_data = self.latest_data # only update pre_latest when api call was ok
+            self.latest_data = new_data
         except Exception as x:
             manuwriter.log('Failed obtaining newest Cryptocurrency prices', x, category_name='CoinMarketCap')
         return self.extract_api_response(desired_ones, language, no_price_message)
@@ -209,23 +213,22 @@ class CoinMarketCapService(CryptoCurrencyService):
         try:
             if symbol not in self.latest_data:
                 raise ValueError(f"{symbol} not found in CoinMarketCap response data!")
-            price: float
-            price = self.latest_data[symbol]["price"] 
-
+            price = self.latest_data[symbol]["price"]
             if isinstance(price, str):
                 price = float(price)
 
+            previous_price = self.pre_latest_data[symbol]["price"] if self.pre_latest_data and symbol in self.pre_latest_data else price
             if symbol != "USDT":
                 rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
             else:
                 rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.tetherInTomans)
 
             if language != 'fa':
-                return f"🔸 {symbol}: {rp_toman} {self.tomanSymbol} / {rp_usd}$\n"
+                return f"{self.getTokenState(price, previous_price)} {symbol}: {rp_toman} {self.tomanSymbol} / {rp_usd}$\n"
             rp_toman = mathematix.persianify(rp_toman)
-            return f"🔸 {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
+            return f"{self.getTokenState(price, previous_price)} {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
         except:
             pass
 
-        return f"{CryptoCurrencyService.coinsInPersian[symbol] if symbol in CryptoCurrencyService.coinsInPersian else symbol}: " + \
+        return f"🔸 {CryptoCurrencyService.coinsInPersian[symbol] if symbol in CryptoCurrencyService.coinsInPersian else symbol}: " + \
             (no_price_message or "❗️") + "\n"
