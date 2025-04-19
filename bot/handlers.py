@@ -377,7 +377,7 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
     alarms_count = len(my_alarms)
     descriptions: List[str | None] = [None] * alarms_count
     buttons: List[InlineKeyboardButton | None] = [None] * alarms_count
-
+    next_alarm_text: str = ''
     for i, alarm in enumerate(my_alarms):
         index = i + 1
         try:
@@ -393,20 +393,22 @@ async def list_user_alarms(update: Update | CallbackQuery, context: CallbackCont
                     else botman.currency_serv.currenciesInPersian[currency_title]
                 )
             unit = botman.text(f"price_unit_{alarm.target_unit}", "fa" if account.language == "fa" else "en")
-            descriptions[i] = f"{index}) {currency_title}: {price} {unit}"
+            next_alarm_text = f"{index}) {currency_title}: {price} {unit}"
+            descriptions[i] = f"🚨 {next_alarm_text}"
         except:
-            descriptions[i] = f"{index}) " + botman.error("invalid_alarm_data", account.language)
+            next_alarm_text = f"{index}) " + botman.error("invalid_alarm_data", account.language)
+            descriptions[i] = f"❗️ {next_alarm_text}"
         buttons[i] = InlineKeyboardButton(
-            descriptions[i],
+            f"❌ {next_alarm_text}",
             callback_data=botman.actionCallbackData(BotMan.QueryActions.DISABLE_ALARM, alarm.id),
         )
 
     if account.language == "fa":
         alarms_count = persianify(alarms_count)
-    message_text = botman.text("u_have_n_alarms", account.language) % (str(alarms_count),) + (
+    message_text = (botman.text("u_have_n_alarms", account.language) % (str(alarms_count),) + (
         (":\n\n" + "\n".join(descriptions) + "\n\n" + botman.text("click_alarm_to_disable",
                                                                   account.language)) if my_alarms else "."
-    )
+    )) if alarms_count else botman.text("u_have_no_alarms", account.language)
 
     if isinstance(update, CallbackQuery):
         await update.message.edit_text(message_text, reply_markup=InlineKeyboardMarkup([[col] for col in buttons]))
@@ -528,7 +530,7 @@ async def handle_action_queries(
                                  )
                         )
                     else:
-                        await botman.show_reached_max_error(query, account, account.max_alarms_count)
+                        await botman.show_reached_max_error(query, account, account.max_alarms_count, 'alarms')
 
                 await query.message.reply_text(
                     botman.text("what_can_i_do", account.language),
@@ -578,7 +580,7 @@ async def handle_action_queries(
                 if not channel:
                     raise Exception()
                 if not account.is_premium:
-                    await query.message.reply_text(botman.text("go_premium_to_activate_feature", account.language))
+                    await botman.send_message_with_premium_button(query, botman.text("go_premium_to_activate_feature", account.language))
                     await query.answer()
                     return
                 channel.plan()  # TODO: check this again
@@ -1118,15 +1120,8 @@ async def unknown_command_handler(update: Update, _: CallbackContext):
 
 async def go_to_community_panel(update: Update, account: Account, community: BotMan.CommunityType):
     account.add_cache("community", community.value)
-    await update.message.reply_text(
-        (
-            botman.resourceman.mainkeyboard(f"my_{community.__str__()}s", account.language)
-            if account.is_premium
-            else botman.text("go_premium_to_activate_feature", account.language)
-        ),
-        reply_markup=botman.get_community_config_keyboard(community, account.language),
-    )
-
+    if not account.is_premium:
+        await botman.send_message_with_premium_button(update, botman.text("go_premium_to_activate_feature", account.language))
 
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:
@@ -1168,12 +1163,12 @@ async def handle_messages(update: Update, context: CallbackContext):
         case BotMan.Commands.MY_GROUPS_FA.value | BotMan.Commands.MY_GROUPS_EN.value:
             account = Account.get(update.message.chat)
             if not Group.userHasAnyGroups(account.chat_id):
-                await update.message.reply_text(
-                    botman.text(
-                        "add_bot_as_group_admin",
-                        Account.get(update.message.chat).language,
+                if account.is_premium:
+                    await update.message.reply_text(
+                        botman.text("add_bot_as_group_admin", account.language)
                     )
-                )
+                else:
+                    await botman.send_message_with_premium_button(update, botman.text("add_bot_as_group_admin_n_go_premium", account.language))
                 return
             await go_to_community_panel(update, account, BotMan.CommunityType.GROUP)
         case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
@@ -1569,10 +1564,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                             await context.bot.delete_message(chat_id=channel_chat.id, message_id=response.message_id)
                         except Exception as x:
                             await update.message.reply_text(
-                                botman.error("bot_seems_not_admin", account.language),
+                                botman.error("bot_seems_not_admin_or_url_invalid", account.language),
                                 reply_markup=botman.action_inline_keyboard(
                                     botman.QueryActions.VERIFY_BOT_IS_ADMIN,
-                                    {message_text: "verify"},
+                                    {message_text: "verify_admin"},
                                     in_main_keyboard=False,
                                 ),
                             )
@@ -1677,10 +1672,10 @@ async def handle_messages(update: Update, context: CallbackContext):
                                     return
                                 target = Account.getById(upgrading_chat_id)
                                 target.upgrade(days)
-
+                                days_remaining = persianify(target.premium_days_remaining) if target.language == 'fa' else str(target.premium_days_remaining)
                                 await context.bot.send_message(
                                     chat_id=target.chat_id,
-                                    text=botman.text("youre_upgraded_premium", target.language),
+                                    text=botman.text("youre_upgraded_premium", target.language) % (days_remaining, ),
                                     reply_markup=botman.mainkeyboard(target),
                                 )
 

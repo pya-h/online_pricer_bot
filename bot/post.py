@@ -35,7 +35,7 @@ class PostMan:
     ) -> str:
         post: str = ""
         if post_interval:
-            post_interval = str(int(post_interval)) if language != "fa" else persianify(post_interval.__str__())
+            post_interval = str(int(post_interval)) if language != "fa" else persianify(int(post_interval))
             post = self.resourceman.text("announcement_post_interval", language) % (post_interval,) + "\n"
         post += timestamp(language) + "\n"
         if fiat_body:
@@ -128,10 +128,10 @@ class PostMan:
 
     @staticmethod
     def customizePost(post_body: str, community: Group | Channel, language: str = "fa"):
-        if community.message_header:
-            post_body = f"{community.message_header}\n\n{post_body}"
-        if community.message_footnote:
-            post_body += f"\n\n{community.message_footnote}"
+        post_headers = f'{community.message_header}\n\n' if community.message_header else ''
         if community.message_show_date_tag:
-            return timestamp(language) + f"\n{post_body}"
+            post_headers += f'{timestamp(language)}\n\n'
+        post_body = f"{post_headers}{post_body}"
+        if community.message_footnote:
+            post_body += f"\n{community.message_footnote}"  # body has one \n at the end
         return post_body

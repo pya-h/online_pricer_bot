@@ -107,12 +107,9 @@ class Channel:
         return Channel.Instances
 
     SupportedIntervals: list[PostInterval] = [
-        PostInterval("1 MIN", minutes=1),
-        *[PostInterval(f"{m} MINS", minutes=m) for m in [2, 5, 10, 30, 45]],
-        PostInterval("1 HOUR", hours=1),
-        *[PostInterval(f"{h} HOURS", hours=h) for h in [2, 3, 4, 6, 12]],
-        PostInterval("1 DAY", days=1),
-        *[PostInterval(f"{d} DAYS", days=d) for d in [2, 3, 4, 5, 6, 7, 10, 14, 30, 60]],
+        *[PostInterval(f"{m}m", minutes=m) for m in [1, 5, 10, 15, 30]],
+        *[PostInterval(f"{h}h", hours=h) for h in [1, 2, 4, 6, 12]],
+        *[PostInterval(f"{d}d", days=d) for d in [1, 2, 7, 14, 30]],
     ]
 
     def __init__(

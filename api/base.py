@@ -134,4 +134,4 @@ class APIService(BaseAPIService):
 
     @staticmethod
     def getTokenState(current_price: float | int, previous_price: float | int) -> str:
-        return '🟢' if current_price > previous_price else '🔴' if current_price < previous_price else '⚪️'
+        return '🟢' if current_price > previous_price else ('🔴' if current_price < previous_price else '⚪️')

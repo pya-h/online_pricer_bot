@@ -1,27 +1,27 @@
 {
   "main_keyboard": {
     "get_prices": {
-      "fa": "مشاهده قیمت ها",
+      "fa": "🟢 مشاهده قیمت ها",
       "en": "View Prices"
     },
     "config_lists": {
-      "fa": "لیست مشاهده قیمت ها",
+      "fa": "📊 لیست قیمت ها",
       "en": "View List of Prices"
     },
     "calculator": {
-      "fa": "ماشین حساب",
+      "fa": "🧮 ماشین حساب",
       "en": "Calculator"
     },
     "config_calculator": {
-      "fa": "لیست ماشین حساب من",
+      "fa": "📊 لیست ماشین حساب من",
       "en": "My Calculator List"
     },
     "create_alarm": {
-      "fa": "ایجاد هشدار قیمت",
+      "fa": "🚨 هشدار قیمت",
       "en": "Create a Price Alert"
     },
     "list_alarms": {
-      "fa": "لیست هشدار قیمت من",
+      "fa": "📊 لیست هشدار قیمت",
       "en": "My Price Alert List"
     },
     "settings": {
@@ -29,11 +29,11 @@
       "en": "⚙️ Settings"
     },
     "my_channels": {
-      "fa": "پنل کانال من",
+      "fa": "📣 پنل کانال من",
       "en": "My Channel Panel"
     },
     "my_groups": {
-      "fa": "پنل گروه من",
+      "fa": "💬 پنل گروه من",
       "en": "My Group Panel"
     },
     "use_in_channel": {
@@ -47,7 +47,7 @@
   },
   "keyboard": {
     "crypto": {
-      "fa": "بازار ارز دیجیتال",
+      "fa": "بازار کریپتو",
       "en": "Cryptocurrency"
     },
     "currency": {
@@ -155,12 +155,16 @@
       "en": "No"
     },
     "my_premium_duration": {
-      "fa": "🕒 مدت زمان اشتراک من",
+      "fa": "🕒 مدت اشتراک من",
       "en": "🕒 My Plan Duration"
     },
     "verify": {
       "fa": "تایید",
       "en": "Verify"
+    },
+    "verify_admin": {
+      "fa": "بررسی ادمین بودن",
+      "en": "Verify Admin State"
     },
     "start": {
       "fa": "شروع",
@@ -276,9 +280,13 @@
       "fa": "⚠️ تعداد موارد انتخابی شما به سقف مجاز (%d عدد) رسیده است.",
       "en": "⚠️ The number of your selected items has reached the limit (10 items)."
     },
-    "get_premium": {
-      "fa": "\n\n💎 با پریمیوم کردن رباتتان می توانید تا ۱۰۰ قیمت را در لیست خود اضافه کنید",
-      "en": "\n\n💎 By premiumizing your bot, you can add up to 100 prices to your list."
+    "get_premium_for_extra_list_items": {
+      "fa": "\n\n💎 با پریمیوم کردن اکانتتان می‌توانید تا ۱۰۰ قیمت را در لیست خود اضافه کنید و از مزایا زیادی بهرمند شوید:",
+      "en": "\n\n💎 By upgrading your account to Premium level, you can add up to 100 prices to your list and many other features:"
+    },
+    "get_premium_for_extra_alarms": {
+      "fa": "\n\n💎 با پریمیوم کردن اکانتتان می‌توانید تا ۳۰ هشدار قیمت ثبت کنید و از مزایا زیادی بهرمند شوید:",
+      "en": "\n\n💎 By upgrading your account to Premium level, you can register up to 30 alarms and use many extra features:"
     },
     "unknown": {
       "fa": "یک مشکل غیرمنتظره اتفاق افتاده است. لطفا دوباره تلاش کنید.",
@@ -317,8 +325,8 @@
       "en": "Selected language is invalid!"
     },
     "invalid_price": {
-      "fa": "ورودی شما متاسفانه معتبر نیست. ورودی قیمت باید عددی معین باشد.\n\nدرصورتی که تمایل به ادامه این عملیات ندارید می توانید از دکمه لغو استفاده کنید.",
-      "en": "Unfortunately your input is not a valid one! Price input must be a standard numeric value.\n\nIn case you do't want to continue this operation, you can simply use Cancel button."
+      "fa": "❗️ ورودی شما معتبر نیست. ورودی قیمت باید عدد باشد.\n\n✅ درصورتی که تمایل به ادامه این عملیات ندارید، می توانید از گزینه [ لغو ] استفاده کنید.",
+      "en": "❗️ Unfortunately your input is not a valid one! Price input must be a standard numeric value.\n\n✅ In case you do't want to continue this operation, you can simply use [ Cancel ] button."
     },
     "invalid_alarm_data": {
       "fa": "مشکلی حین دریافت اطلاعات این هشدار رخ داد.",
@@ -353,8 +361,12 @@
       "en": "Unfortunately, Identifying the user was unsuccessful; You can try again, or Try another method for specifying the user."
     },
     "bot_seems_not_admin": {
-      "fa": "به نظر می رسد ربات را ادمین نکرده اید و یا آدرس یا آیدی موردنظر اشتباه است. اکر آیدی یا آدرس اشتباه است، مقدار درست را دوباره وارد کنید، و اگر ربات را ادمین نکرده اید، آن را ادمین کرده و روی تایید کلیک کنید.",
-      "en": "It seems that bot has not been made admin or maybe the provided url or id is invalid. If the id or url is invalid, rewrite and send the correct one, and if you've forgotten to make the bot admin, make it admin and click verify"
+      "fa": "❗️ ربات در کانال شما مدیر نیست.\n\n🔹 لطفا ربات را ادمین کرده و از نو تلاش کنید.",
+      "en": "❗️ It seems bot is not an admin of your channel.\n\n🔹 Please upgrade the bot as admin and then try again."
+    },
+    "bot_seems_not_admin_or_url_invalid": {
+      "fa": "❗️ ربات در کانال شما مدیر نیست و یا آدرس موردنظر اشتباه است.\n\n🔹 لطفا دوباره اقدام کنید:",
+      "en": "❗️ It seems that either the channel address is invalid or bot is not admin there\n\n🔹 Please try again:"
     },
     "error_while_planning_channel": {
       "fa": "مشکلی حین ثبت اطلاعات کانال رخ داد. لطفا دوباره از اول تلاش کنید.",
@@ -430,20 +442,20 @@
     "en": "❗️ Price not received."
   },
   "what_can_i_do": {
-    "fa": "خب! چه کمکی از دستم بر میاد؟",
-    "en": "Well, what can i do for you?"
+    "fa": "☺️ رئیس، دستور جدید بده!",
+    "en": "☺️ What can I do for you Boss?"
   },
   "select_your_set": {
     "fa": "🔹 بر روی گزینه های مدنظرتان کلیک کنید تا در لیستتان اضافه شوند:",
     "en": "🔹 Click on the options you want to add to your list:"
   },
   "calculator_hint": {
-    "fa": "🔹 مقدار مدنظرتان را همراه با نام اختصاریِ مدنظرتان (به انگلیسی) بنویسید: \n(بین مقدار و نام اختصاری یک فاصله قرار دهید)\n(شما می توانید در یک سطر یک الی چند مورد مانند مثال های زیر بنویسید)\n\nمثال ها:\n",
-    "en": "🔹 Write the amount you want along with the abbreviated name you want (in English):\n(Put a space between the value and the short name)\n(You can write one to several items in one line like the examples below)\n\nExamples:\n"
+    "fa": "🔹 مقدار مدنظرتان را همراه با نام اختصاریِ مدنظرتان (به انگلیسی) بنویسید: \n❗️ نکته: بین مقدار و نام اختصاری یک فاصله قرار دهید.\n❗️ نکته: شما می توانید در یک سطر یک الی چند مورد مانند مثال های زیر بنویسید:\nمثال:\n",
+    "en": "🔹 Write the amount you want along with the abbreviated name you want (in English):\n\n❗️ Notice: Put a space between the value and the short name\n\n❗️ Notice: You can write one to several items in one line like the examples below:\nExamples:\n"
   },
   "calculator_hint_footnote": {
-    "fa": "🔹 اگر نام اختصاری مورد نظرتان را نمی دانید کافیست فقط مقدار مورد نظرتان را بنویسید:\n\nمثال:\n50",
-    "en": "🔹 If you don't know the short name you want, just write the value you want:\n\nExamples:\n50"
+    "fa": "❗️ نکته: اگر نام اختصاری مورد نظرتان را نمی دانید فقط مقدار عددی بنویسید:\nمثال:\n10",
+    "en": "❗️ Notice: If you don't know the short name you want, just type the value:\n\nExamples:\n50"
   },
   "log_page_indices": {
     "fa": "توکن %d تا %d - صفحه %d",
@@ -463,8 +475,8 @@
     "en": "%s price is now %s %s"
   },
   "operation_canceled": {
-    "fa": "عملیات موردنظر لغو شد.",
-    "en": "Operation canceled."
+    "fa": "☺️ رئیس، دستور جدید بده!",
+    "en": "☺️ What can I do for you Boss?"
   },
   "sending_your_post": {
     "fa": "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد. پس از ارسال تمامی پیام ها بات به شما اطلاع می دهد.",
@@ -487,7 +499,7 @@
     "en": "Planning process is already started."
   },
   "welcome_user": {
-    "fa": "کاربر %s\nبه [ ربات قیمت لحظه ای] خوش آمدید🌷🙏",
+    "fa": "کاربر %s\nبه ربات [ قیمت لحظه ای] خوش آمدید🌷🙏",
     "en": "User %s\nWelcome to the [ Online pricer ] bot 🌷🙏"
   },
   "select_bot_language": {
@@ -495,11 +507,11 @@
     "en": "🔹 Set the language of bot:"
   },
   "whats_price_unit": {
-    "fa": "قیمت مورد نظر شما به تومان است یا دلار؟",
-    "en": "What's the price unit? Tomans or Dollors?"
+    "fa": "🔹 قیمت مورد نظر شما به تومان است یا دلار؟",
+    "en": "🔹 What's the price unit? Tomans or Dollors?"
   },
   "alarm_set": {
-    "fa": "✅ هشدار قیمت شما با ثبت شد.\n\n🚨 زمانی که قیمت %s به %s %s رسید این ربات به شما اطلاع خواهد داد.",
+    "fa": "✅ هشدار قیمت شما ثبت شد.\n\n🚨 زمانی که قیمت %s به %s %s رسید این ربات به شما اطلاع خواهد داد.",
     "en": "✅ Your price alarm has been registered.\n\n🚨 This bot will notify you when %s reaches %s %s."
   },
   "price_unit_irt": {
@@ -523,12 +535,16 @@
     "en": "Channel planning has been stopped."
   },
   "u_have_n_alarms": {
-    "fa": "شما %s هشدار قیمت دارید",
-    "en": "You have %s price alarms"
+    "fa": "✅ شما %s هشدار قیمت دارید",
+    "en": "✅ You have %s price alarms"
+  },
+  "u_have_no_alarms": {
+    "fa": "❗️ .شما هیچ هشدار قیمتی ندارید",
+    "en": "❗️ You have no alarms."
   },
   "click_alarm_to_disable": {
-    "fa": "❗️ روی هر کدام از موارد زیر کلیک کنید از لیست هشدار شما حذف می شود.",
-    "en": "❗️ By clicking on any of the following, it will be removed from your alerms list."
+    "fa": "❗️ روی هر کدام از موارد زیر اگر کلیک کنید از لیست هشدار شما حذف می‌شود:",
+    "en": "❗️ Clicking on any of the following alrams, Will disable and remove it from your list:"
   },
   "factory_reset_confirmation": {
     "fa": "🔹 آیا می خواهید ربات به حالت پیشفرض برگردد?\n\n❗️ با کلیک بر روی گزینه زیر، ربات به حالت پیشفرض برمیگردد و تمام داده های شما در این ربات حذف می شود.\n\n❗️ هیچ تغییری بر روی پریمیوم بودن اکانتتان اعمال نمی شود.",
@@ -555,16 +571,16 @@
     "en": "Specify the user being upgraded by one of these ways:\n1 Enter telegram chat id\n2 Enter username\n3 Forward message from the user [If he/she has not enabled the telegram hidden mode.]"
   },
   "continues_calculator_hint": {
-    "fa": "حالا می توانید دوباره با وارد کردن ورودی جدید، محاسبات جدیدی انجام بدهید و یا با استفاده از گزینه لغو از بخش ماشین حساب خارج شوید.",
-    "en": "Now you can enter your next input to perform another calculation, or you can use Cancel button to exit calculator section."
+    "fa": "🔹 حالا می توانید دوباره با وارد کردن ورودی جدید، محاسبات جدیدی انجام بدهید و یا با استفاده از گزینه [ لغو ] از بخش ماشین حساب خارج شوید.",
+    "en": "🔹 Now you can enter your next input to perform another calculation, or you can use [ Cancel ] button to exit calculator section."
   },
   "enter_upgrade_premium_duration": {
     "fa": "اگر اطلاعات نمایش داده شده کاربر انتخابی معتبر است، تعداد روز های پریمیوم بودن کاربر را به صورت یک عدد صحیح وارد کنید:",
     "en": "Now if the detail provided about your selected user is correct, specify how many days this user is going to be premium:"
   },
   "youre_upgraded_premium": {
-    "fa": "اکانت شما به سطح کاربری پریمیوم ارتقا یافت.",
-    "en": "Your account is now upgraded to premium."
+    "fa": "✅ اکانت شما به سطح پریمیوم ارتقا یافت.\n\n⏳ مدت اشتراک شما: %s روز",
+    "en": "✅ Your account is now upgraded to premium.\n\n⏳ Your subscription time: %s days"
   },
   "user_upgraded_premium": {
     "fa": "کاربر موردنظر طبق تعرفه تعیین شده شما به سطح پریمیوم ارتقا پیدا کرد.",
@@ -599,16 +615,20 @@
     "en": "Actually this account is already a free user and there is no need to downgrade it."
   },
   "add_bot_as_channel_admin": {
-    "fa": "🔹ابتدا لازم است (حتما) ربات را در کانال موردنظر مدیر کنید. (تمام اختیارها را فعال کنید) در غیر انصورت بات قادر به تعامل با کانال نخواهد بود.\n\n🔹 سپس لینک، آدرس یا تلگرام آیدی (عددی) کانال خود را ارسال کنید و یا یک پیام از کانال را به ربات فوروارد کنید: ",
-    "en": "🔹 First you must make the bot the administrator of the channel you have in mind. (Enable nearly all the previllages). Otherwise bot won't be able to interact wioth the channel.\n\n🔹 Then send the link, address or Telegram ID of your channel or easily forward a message from it to the bot:"
+    "fa": "🔹 ابتدا ربات را در کانال خود مدیر کنید.\n\n❗️ تمام اختیارها را فعال کنید، در غیر اینصورت ربات قادر به تعامل با کانال شما نخواهد بود.\n\n🔹 سپس لینک، آدرس، آیدی عددی یا یک پست از کانال خود را اینجا ارسال کنید:",
+    "en": "🔹 First you must make the bot an administrator in your channel.\n\n❗️ It's important to enable nearly all admin previllages, Otherwise bot may malfunction.\n\n🔹 Then send the Link, Address or Telegram ID of the channel or easily forward a message from it to the bot, so we can identify your channel:"
+  },
+  "add_bot_as_group_admin_n_go_premium": {
+    "fa": "⚠️ برای استفاده از قابلیت های ربات در گروه، ربات را در گروه مدیر کرده و اشتراک تهیه کنید.",
+    "en": "⚠️ To use our in-group features, First you should go premium (using any of our plans) and then add this bot in your group."
   },
   "add_bot_as_group_admin": {
-    "fa": "⚠️ برای استفاده از قابلیت های ربات در گروه، ربات را در گروه مدیر کرده و اشتراک تهیه کنید.\n\nجهت مشاوره و تهیه اشتراک به ادمین پاسخگویی پیام دهید:\n👩‍💻 @KSA_Admin",
-    "en": "⚠️ You can add this bot to your group to use this feature. Make you have purchased premium plan.\n\nTo consult and become premium you can chat with support group:\n👩‍💻 @KSA_Admin"
+    "fa": "⚠️ برای استفاده از قابلیت های ربات در گروه، ربات را در گروه مدیر کنید.",
+    "en": "⚠️ In order to use our in-group features, You should add this bot in your group."
   },
   "select_post_interval": {
-    "fa": "🔹 بازه زمانی بروزرسانی شدن قیمت در کانالتان را تعیین کنید؟\n\n(مثلا اگر می خواهید هر ۵ دقیقه یک بار قیمت ها بروز شوند و در کانالتان قرار بگیرد، باید گزینه 5m را انتخاب کنید)\n\n🔹 در صورتی که بازه زمانی مدنظر شما در لیست زیر نباشد می توانید بصورت دستی بنویسید:\n\n(مثلاً اگر می خواهید بازه زمانی شما [۱۵ دقیقه] تنظیم شود باید به زبان انگلیسی بنویسید: 15m)\n\n(دقیقه: m / ساعت: h / روز: d)",
-    "en": "🔹 Determine the price update interval in your channel?\n(For example, if you want the prices to be updated every 5 minutes and placed on your channel, you should choose the 5m option)\n\n🔹 If the period you are looking for is not in the list below, you can write it manually:\n\n(For example, if you want your time period to be set to [15 minutes], you must write in English: 15m)\n\n(minute: m / hour: h / day: d)"
+    "fa": "🔹 بازه زمانی بروزرسانی شدن قیمت در کانالتان را تعیین کنید؟\n\n❗️ مثلا اگر می‌خواهید هر ۵ دقیقه قیمت‌ها بروز شوند و در کانالتان ارسال شوند، باید گزینه 5m را انتخاب کنید\n\n❗️ در صورتی که بازه زمانی مدنظر شما در لیست زیر نباشد می‌توانید بصورت دستی بنویسید:\n\n❗️ مثلاً اگر می‌خواهید بازه زمانی شما [ ۱۵ دقیقه ] تنظیم شود باید به زبان انگلیسی بنویسید: 15m\n\n🕒 m = دقیقه\n🕒 h = ساعت\n🕒 d = روز",
+    "en": "🔹 Determine the price update interval in your channel?\n\n❗️ For example, if you want the prices to be updated every 5 minutes and placed on your channel, you should choose the 5m option\n\n❗️ If the period you are looking for is not in the list below, you can write it manually:\n\n❗️ For example, if you want your interval to be set to [15 minutes], you must write: 15m\n\n🕒 m = Minutes\n🕒 h = Hours\n🕒 d = Days"
   },
   "bot_connected_to_group": {
     "fa": "✅ ربات به گروه شما متصل شد.",
@@ -627,16 +647,16 @@
     "en": "✅ Timing successfully set to %s (every %s).\n\n🔹 Whenever you want to start posting in your channel, just click on [ Start ] option."
   },
   "channel_recognition_done": {
-    "fa": "✅ کانال مورد نظر با موفقیت شناسایی شد.",
-    "en": "✅ Channel successfully detected."
+    "fa": "✅ ربات به کانال شما متصل شد.",
+    "en": "✅ Bot successfully connected to your channel."
   },
   "channel_posting_started": {
     "fa": "✅ پست گذاری در کانال شما با موفقیت شروع شد.",
     "en": "✅ Posting in your channel has been started."
   },
   "go_premium_to_activate_feature": {
-    "fa": "⚠️ برای فعال سازی کامل قابلیت باید اکانتتان را پریمیوم کنید.\n\n⚠️ البته با توجه به اینکه شما ربات را اضافه کرده و ادمین نموده اید، می توانید شخصی سازی های این قابلیت را انجام دهید.",
-    "en": "⚠️ Go premium in order to activate this feature.\n\n⚠️ Although, since you've added the bot and made it admin, you can do feature customization."
+    "fa": "⚠️ برای استفاده از این قابلیت باید اکانتتان را پریمیوم کنید.",
+    "en": "⚠️ To use this feature you should upgrade to Premium."
   },
   "update_successful": {
     "fa": "✅ تغییر اعمال شد.",
@@ -727,16 +747,16 @@
     "en": "✅ %s %s is equivalent to:"
   },
   "announcement_fiat_header": {
-    "fa": "📌 #قیمت_لحظه_ای #بازار_ارز",
-    "en": "📌 #Currency_Market"
+    "fa": "📊 #بازار_ارز",
+    "en": "📊 #Currency_Market"
   },
   "announcement_gold_header": {
-    "fa": "📌 #قیمت_لحظه_ای #بازار_طلا",
-    "en": "📌 #Gold_Market"
+    "fa": "📊 #بازار_طلا",
+    "en": "📊 #Gold_Market"
   },
   "announcement_crypto_header": {
-    "fa": "📌 #قیمت_لحظه_ای #بازار_ارز_دیجیتال",
-    "en": "📌 #Cryptocurrency_Market"
+    "fa": "📊 #بازار_کریپتو",
+    "en": "📊 #Cryptocurrency_Market"
   },
   "announcement_post_interval": {
     "fa": "✅ بروزرسانی قیمت ها (هر %s دقیقه)",
@@ -772,7 +792,7 @@
   },
   "this_message_will_be_removed_after": {
     "fa": "(این پیام پس از %s روز بصورت خودکار از صفحه چت ربات تمام کاربران فعال پاک می گردد.)",
-    "en": "This message will be automatically removed after %s days from all active users chat."
+    "en": "(This message will be automatically removed after %s days from all active users chat.)"
   },
   "plan_expired": {
     "fa": "⚠️ اشتراک شما به پایان رسید.\n\nبرای تمدید اشتراک کافیست به ادمین پاسخگویی پیام دهید:\n👩‍💻 @KSA_Admin",
@@ -815,12 +835,12 @@
     "en": "Seems that bot was kicked from the group this account has connected to; To keep your group configuration, bot does not automatically disconnect from group, in case you want to re-connect the bot to so called group.\n\nBut if you are sure, that you never use the bot in so called group, you can use the disconnect or change group option in Group panel."
   },
   "which_english_language_state_u_prefer": {
-    "fa": "🔹 می خواهید زبان [ کل ربات ] انگلیسی شود یا فقط [ نام های اختصاری ] انگلیسی شوند؟\n* هشدار: عدم انتخاب این مورد، باعث عدم تغییر زبان بات می گردد.",
-    "en": "🔹 Do you prefer the whole bot be in english, or just the token names and numbers?\n* Warning: Not selecting this menu, will prevent the bot from changing language!"
+    "fa": "🔹 می خواهید زبان [ کل ربات ] انگلیسی شود یا فقط [ نام های اختصاری ] انگلیسی شوند؟\n\n❗️ نام‌های اختصاری مثل:\n\n🔸 بیت کوین = BTC\n🔸 دلار (آمریکا) = USD\n🔸 انس طلا = GOLD",
+    "en": "🔹 Do you prefer the whole bot be in english, or just the token names and numbers?\n\n❗️ Token examples:\n\n🔸 BTC = Bitcoin\n\n🔸 USD = US Dollors"
   },
   "channel_not_active": {
-    "fa": "⚠ با اینکه شما کانال خود را به ربات اضافه کرده اید اما تاکنون اقدام به فعال سازی آن نکرده اید. برای فعال سازی می توانید روی شروع کلیک کنید.",
-    "en": "⚠ Although you have added your channel to the bot, you haven't activated it yet. You can do so by clicking the Start button."
+    "fa": "❗️ پست گذاری در کانالتان هنوز شروع نشده.\n\n🔹 هر زمان که می‌خواهید پست گذاری در کانالتان شروع شود کافیست روی گزینه [ شروع ] کلیک کنید:",
+    "en": "❗️ Your channel posting is not started yet!\n\n🔹 You can start the procedure by clicking on [ Start ] anytime you want."
   },
   "user_is_admin_now": {
     "fa": "%s\n\n✅ کاربر فوق هم اکنون به سطح کاربری ادمین ارتقا پیدا کرد. در صورت عدم تمایل می توانید از منوی حذف ادمین، دسترسی او را لغو کنید.",

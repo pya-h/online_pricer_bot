@@ -390,17 +390,17 @@ class NavasanService(CurrencyService):
     def get_price_description_row(self, symbol: str, language: str = "fa", no_price_message: str | None = None) -> str:
         symbol_up = symbol.upper()
         try:
-            price: float
-            currency_data: Dict[str, float | int | bool | str]
-
             if (sym_lower := symbol.lower()) not in self.latest_data:
                 raise ValueError(f"{sym_lower} not found in Navasan response data!")
             currency_data = self.latest_data[sym_lower]
             price = float(currency_data["value"])
-            toman: float | str
+
+            try:
+                previous_price = float(self.pre_latest_data[sym_lower]['value'])
+            except:
+                previous_price = price
+
             usd: float | None = None
-            previous_price = self.pre_latest_data[sym_lower]['value'] if self.pre_latest_data and \
-                    sym_lower in self.pre_latest_data and 'value' in self.pre_latest_data[sym_lower] else price
             if "usd" not in currency_data or not currency_data["usd"]:
                 toman, _ = self.rounded_prices(price, False)
             else:

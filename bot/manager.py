@@ -607,7 +607,7 @@ class BotMan:
                     ),
                 ),
                 InlineKeyboardButton(
-                    f"({page+1}/{pages_count+1})" if language != "fa" else persianify(f"({page+1}/{pages_count+1})"),
+                    f"({pages_count+1}/{page+1})" if language != "fa" else persianify(f"({pages_count+1}/{page+1})"),
                     callback_data=jsonify(
                         {
                             "lt": list_type.value if list_type else None,
@@ -935,13 +935,13 @@ class BotMan:
             )
         return False
 
-    async def handle_possible_alarms(self, bot_ctx: CallbackContext) -> List[PriceAlarm]:
+    async def handle_possible_alarms(self, bot_ctx: CallbackContext):
         """Checks all user alarms and finds alarms that have been triggered"""
         triggered_alarms = list(filter(lambda alarm: self.is_alarm_triggered(alarm), PriceAlarm.get()))
-        # TODO: Define a pre_latest_data, check for currencies that have changed in 10m and then get alarms by currencies
-
+        # TODO: Now that there's a pre_latest_data, check for currencies that have changed in 10m and then get alarms by currencies
+        if not triggered_alarms:
+            return
         await asyncio.gather(*[self.trigger_alarm(alarm, bot_ctx, auto_disable=False) for alarm in triggered_alarms])
-
         PriceAlarm.batchDisable(triggered_alarms)
 
     async def trigger_alarm(self, alarm: PriceAlarm, bot_ctx: CallbackContext, auto_disable: bool = True):
@@ -983,12 +983,14 @@ class BotMan:
         except Exception as ex:
             log("Failed notifying user of triggered alarm:", ex, category_name="Alarm")
 
-    async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int):
+    async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int, feature_type: str = 'list_items'):
+        if account.language != 'en':
+            max_value = persianify(max_value)
         if not account.is_premium:
             await self.send_message_with_premium_button(
                 telegram_handle,
                 text=self.error("max_selection", account.language) % (max_value,)
-                + self.error("get_premium", account.language),
+                + self.error(f"get_premium_for_extra_{feature_type}", account.language),
             )
         else:
             await telegram_handle.message.reply_text(text=self.error("max_selection", account.language) % (max_value,))
@@ -1221,7 +1223,6 @@ class BotMan:
         post_interval, desc_en, desc_fa = PostInterval(minutes=channel.interval).timestamps
 
         if channel.owner.language == "fa":
-            post_interval = persianify(post_interval)
             interval_description = persianify(desc_fa)
         else:
             interval_description = desc_en

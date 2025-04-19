@@ -7,7 +7,7 @@ from typing import List, Tuple, override
 # Parent Class
 class CryptoCurrencyService(APIService):
     coinsInPersian: Dict[str, str] | None = None
-    defaults = ("BTC", "ETH", "USDT", "BNB", "SOL")
+    defaults = ("BTC", "ETH", "USDT", "BNB", "TON")
     userDefaults = ("BTC", "USDT")
 
     def __init__(self, url: str, source: str, params=None, cache_file_name: str = None) -> None:
@@ -213,11 +213,11 @@ class CoinMarketCapService(CryptoCurrencyService):
         try:
             if symbol not in self.latest_data:
                 raise ValueError(f"{symbol} not found in CoinMarketCap response data!")
-            price = self.latest_data[symbol]["price"]
-            if isinstance(price, str):
-                price = float(price)
-
-            previous_price = self.pre_latest_data[symbol]["price"] if self.pre_latest_data and symbol in self.pre_latest_data else price
+            price = float(self.latest_data[symbol]["price"])
+            try:
+                previous_price = float(self.pre_latest_data[symbol]["price"])
+            except:
+                previous_price = price
             if symbol != "USDT":
                 rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
             else:
