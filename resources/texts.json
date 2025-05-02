@@ -466,13 +466,9 @@
     "FA": "✅ زبان ربات فارسی همراه با توکن ها و اعداد انگلیسی انتخاب شد.",
     "en": "✅ Language switched to English."
   },
-  "price_alarm": {
-    "fa": "هشدار قیمت %s - %s %s",
-    "en": "Price Alarm: %s - %s %s"
-  },
-  "current_price_is": {
-    "fa": "قیمت %s هم اکنون %s %s می باشد.",
-    "en": "%s price is now %s %s"
+  "price_alarm_triggered": {
+    "fa": "🚨 هشدار قیمت\n\n%s %s: %s %s",
+    "en": "🚨 Price Alarm\n\n%s %s: %s %s"
   },
   "operation_canceled": {
     "fa": "☺️ رئیس، دستور جدید بده!",

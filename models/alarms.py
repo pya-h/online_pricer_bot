@@ -66,7 +66,7 @@ class PriceAlarm:
                 if isinstance(change_direction, PriceAlarm.ChangeDirection)
                 else PriceAlarm.ChangeDirection.which(change_direction)
             )
-            if (self.current_price) and not self.is_reasonable:
+            if self.current_price and not self.is_reasonable:
                 raise InvalidInputException(
                     "specified change direction and target price doesn't match with token's current price."
                 )
@@ -133,3 +133,7 @@ class PriceAlarm:
     def disableById(alarm_id):
         """Efficient way to disable alarms when there is just an id available"""
         PriceAlarm.database().delete_alarm(alarm_id)
+
+    @property
+    def change_icon(self) -> str:
+        return '🔴' if self.change_direction == PriceAlarm.ChangeDirection.DOWN else '🟢'

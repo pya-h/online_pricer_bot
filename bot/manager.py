@@ -947,38 +947,26 @@ class BotMan:
     async def trigger_alarm(self, alarm: PriceAlarm, bot_ctx: CallbackContext, auto_disable: bool = True):
         try:
             account = Account.getById(alarm.chat_id, no_fastmem=True)
-            target_price = cut_and_separate(alarm.target_price)
-            current_price = cut_and_separate(alarm.current_price)
-            currency_name, unit_name = (
-                (
-                    alarm.token.upper()
-                    if account.language != "fa"
-                    else (
-                        self.currency_serv if alarm.market == MarketOptions.CRYPTO else self.crypto_serv
-                    ).getPersianName(alarm.token.upper())
-                ),
-                self.currency_serv.majorPriceUnits[alarm.target_unit][account.language],
+            currency_name, unit_name, current_price = (
+                    alarm.token.upper(), alarm.target_unit.upper(), cut_and_separate(alarm.current_price)
+                ) if account.language != "fa" else (
+                    (self.currency_serv if alarm.market == MarketOptions.CRYPTO else self.crypto_serv).getPersianName(alarm.token.upper()),
+                    self.currency_serv.persianShortcuts[alarm.target_unit.upper()],
+                    persianify(cut_and_separate(alarm.current_price))
             )
 
-            if account.language == "fa":
-                target_price, current_price = persianify(target_price), persianify(current_price)
-            price_alarm_text = (
-                self.text("price_alarm", account.language)
-                % (
-                    currency_name,
-                    target_price,
-                    unit_name,
-                )
-                + "\n\n"
-                + self.text("current_price_is", account.language)
-                % (
-                    currency_name,
-                    current_price,
-                    unit_name,
-                )
+            price_alarm_text = self.text("price_alarm_triggered", account.language) % (
+                alarm.change_icon,
+                currency_name,
+                current_price,
+                unit_name
             )
+
             await bot_ctx.bot.send_message(chat_id=account.chat_id, text=price_alarm_text)
             if auto_disable:
+                alarm.disable()
+        except Forbidden:  # User had blocked the bot.
+            if alarm:
                 alarm.disable()
         except Exception as ex:
             log("Failed notifying user of triggered alarm:", ex, category_name="Alarm")
