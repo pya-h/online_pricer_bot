@@ -18,7 +18,7 @@
     },
     "create_alarm": {
       "fa": "🚨 هشدار قیمت",
-      "en": "Create a Price Alert"
+      "en": "Price Alert"
     },
     "list_alarms": {
       "fa": "📊 لیست هشدار قیمت",
@@ -471,8 +471,8 @@
     "en": "🚨 Price Alarm\n\n%s %s: %s %s"
   },
   "operation_canceled": {
-    "fa": "☺️ رئیس، دستور جدید بده!",
-    "en": "☺️ What can I do for you Boss?"
+    "fa": "✅ عملیات موردنظر لغو شد.",
+    "en": "✅ Canceled."
   },
   "sending_your_post": {
     "fa": "هم اکنون بات شروع به ارسال پست کرده است. این فرایند ممکن است دقایقی طول بکشد. پس از ارسال تمامی پیام ها بات به شما اطلاع می دهد.",
@@ -543,16 +543,16 @@
     "en": "❗️ Clicking on any of the following alrams, Will disable and remove it from your list:"
   },
   "factory_reset_confirmation": {
-    "fa": "🔹 آیا می خواهید ربات به حالت پیشفرض برگردد?\n\n❗️ با کلیک بر روی گزینه زیر، ربات به حالت پیشفرض برمیگردد و تمام داده های شما در این ربات حذف می شود.\n\n❗️ هیچ تغییری بر روی پریمیوم بودن اکانتتان اعمال نمی شود.",
-    "en": "🔹 Do you want the bot to go back to default mode?\n\n❗️ By clicking on the option below, the robot will return to the default mode and all your data will be deleted in this robot.\n\n❗️ No change will be applied to your premium status."
+    "fa": "🔹 آیا می‌خواهید ربات به حالت پیشفرض برگردد؟\n\n❗️ با کلیک بر روی گزینه زیر، ربات به حالت پیشفرض برمیگردد و تمام داده های شما در این ربات حذف می‌شود.\n\n❗️ اما هیچ تغییری بر روی پریمیوم بودن اکانتتان اعمال نمی‌شود.",
+    "en": "🔹 Are you sure to factory reset?\n\n❗️ By clicking on the option below, bot will return to the default mode and all your data will be deleted.\n\n❗️ Factory reset doesn't affect your premiumness."
   },
   "factory_reset_successful": {
     "fa": "✅ هم اکنون ربات به حالت پیشفرض برگشت.",
     "en": "✅ Now the bot is back to default mode."
   },
   "contact_support_hint": {
-    "fa": "🔸 جهت هرگونه انتقاد، رفع مشکل، اعلام باگ، ایده، پریمیوم کردن ربات و. می توانید با ادمین پاسخگویی مجموعه ما در ارتباط باشید:\n(۱۰ صبح الی 20 شب)\n👩‍💻 @%s",
-    "en": "🔸 For any criticism, problem solving, bug report, idea, bot premium, etc., you can contact the administrator of our collection:\n(10 am to 8 pm)\n👩‍💻 @%s"
+    "fa": "🔸 جهت هرگونه انتقاد، رفع مشکل، اعلام باگ، ایده، پریمیوم کردن ربات و ... می توانید با ادمین پاسخگویی مجموعه ما در ارتباط باشید:\n\n🕒 ۱۰ صبح الی ۲۰ شب\n\n👩‍💻 @%s",
+    "en": "🔸 For any Idea and criticism or anything regarding bug report, going premium, etc, you can contact the administrator of our collection:\n\n🕒 10 am to 8 pm\n\n👩‍💻 @%s"
   },
   "check_our_other_collections": {
     "fa": "🔸 برای مشاهده دیگر مجموعه های ما وارد کانال زیر شوید:\n⚜️ https://t.me/Crypto_AKSA/58",
@@ -567,8 +567,8 @@
     "en": "Specify the user being upgraded by one of these ways:\n1 Enter telegram chat id\n2 Enter username\n3 Forward message from the user [If he/she has not enabled the telegram hidden mode.]"
   },
   "continues_calculator_hint": {
-    "fa": "🔹 حالا می توانید دوباره با وارد کردن ورودی جدید، محاسبات جدیدی انجام بدهید و یا با استفاده از گزینه [ لغو ] از بخش ماشین حساب خارج شوید.",
-    "en": "🔹 Now you can enter your next input to perform another calculation, or you can use [ Cancel ] button to exit calculator section."
+    "fa": "🔹 حالا می توانید دوباره با وارد کردن ورودی جدید، محاسبات جدیدی انجام بدهید و یا با استفاده از گزینه [ بازگشت ] از بخش ماشین حساب خارج شوید.",
+    "en": "🔹 Now you can enter your next input to perform another calculation, or you can use [ Return ] button to exit calculator section."
   },
   "enter_upgrade_premium_duration": {
     "fa": "اگر اطلاعات نمایش داده شده کاربر انتخابی معتبر است، تعداد روز های پریمیوم بودن کاربر را به صورت یک عدد صحیح وارد کنید:",
@@ -718,25 +718,25 @@
     "fa": "بسیار خب! هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است. برای این منظور، وارد گروه جدید خود شوید و ربات را در گروه جدید اضافه و ادمین کنید. باقی فرایند بصورت خودکار انجام می شود.",
     "en": "Well! Now you should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete."
   },
-  "rusure_to_disconnect_group": {
-    "fa": "🔹 اگر می خواهید اتصال ربات با گروه شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n🔹 این کار باعث میشود اتصال گروه فعلی قطع شود و تمام تنظیمات این گروه در ربات لغو می شوند؛ پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
-    "en": "🔹 If you want to disconnect this bot from your group, click on the [ Disconnect ]:\n\n🔹 This will disconnect the current group, and clear its settings, so if you are not sure about this, click [ Cancel ]."
-  },
   "rusure_to_disconnect_channel": {
-    "fa": "🔹 اگر می خواهید اتصال ربات با کانال شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n🔹 این کار باعث میشود اتصال کانال فعلی قطع شود و تمام تنظیمات این کانال در ربات لغو می شوند؛ پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
-    "en": "🔹 If you want to disconnect this bot from your channel, click on the [ Disconnect ]:\n\n🔹 This will disconnect the current channel, and clear its settings, so if you are not sure about this, click [ Cancel ]."
+    "fa": "🔹 اگر میخواهید اتصال ربات با کانال شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n❗️ این کار باعث میشود اتصال کانال فعلی قطع شود، پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
+    "en": "🔹 If you want to disconnect this bot from your channel, click on [ Disconnect ].\n\n❗️ This will disconnect the current group, and clear its settings, so if you are not sure about this, click [ Cancel ]."
+  },
+  "rusure_to_disconnect_group": {
+        "fa": "🔹 اگر میخواهید اتصال ربات با گروه شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n❗️ این کار باعث میشود اتصال گروه فعلی قطع شود، پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
+    "en": "🔹 If you want to disconnect this bot from your group, click on [ Disconnect ].\n\n❗️ This will disconnect the current group, and clear its settings, so if you are not sure about this, click [ Cancel ]."
   },
   "successfully_disconnected": {
-    "fa": "✅ اتصال ربات به موفقیت قطع شد.",
+    "fa": "✅ اتصال ربات با موفقیت قطع شد.",
     "en": "✅ Bot successfully disconnected."
   },
   "rusure_to_reconnect_group": {
-    "fa": "🔹 اگر می خواهید ربات به این گروه دوباره متصل شود و تنظیماتش بازگردد، روی گزینه [ اتصال مجدد ] کلیک کنید:\n\n🔹 اگر از اینکار منصرف شده اید روی گزینه [ لغو ] کلیک کنید.\n\n🔹 توجه: درصورتی که هم اکنون ربات را به گروه دیگری متصل کرده باشید، عملیات اتصال مجدد صرفا تنظیمات گذشته ی شما را بازنشانی می کند و گروه را نغییر نمی دهد.",
-    "en": "🔹 If you want bot to reconnect to your group, click [ Reconnect ]:\n\n🔹 If you have given up on this, click on the [ Cancel ] option.\n\n🔹Notice: If you have already connected the bot to a new group, performing this action will only bring back the configurations of the previous group, and bot will be still connected to your new group."
+    "fa": "🔹 اگر می‌خواهید ربات به گروهتان دوباره متصل شود، روی گزینه [ اتصال مجدد ] کلیک کنید:\n\n❗️ در غیر اینصورت روی گزینه [ لغو ] کلیک کنید.\n\n❗️ توجه: درصورتی که هم اکنون ربات را به گروه دیگری متصل کرده باشید، عملیات اتصال مجدد صرفا تنظیمات گذشته شما را بازنشانی می‌کند و گروه را تغییر نمی‌دهد.",
+    "en": "🔹 If you want to reconnect the bot to your group, click [ Reconnect ].\n\n❗️ If you have given up on this, click on the [ Cancel ].\n\n❗️ Notice: If you have already connected the bot to a new group, performing this action will only restore the configurations."
   },
   "rusure_to_reconnect_channel": {
-    "fa": "🔹 اگر می خواهید ربات به این کانال دوباره متصل شود و تنظیماتش بازگردد، روی گزینه [ اتصال مجدد ] کلیک کنید:\n\n🔹 اگر از اینکار منصرف شده اید روی گزینه [ لغو ] کلیک کنید.\n\n🔹 توجه: درصورتی که هم اکنون ربات را به کانال دیگری متصل کرده باشید، عملیات اتصال مجدد صرفا تنظیمات گذشته ی شما را بازنشانی می کند و کانال را نغییر نمی دهد.",
-    "en": "🔹 If you want bot to reconnect to your channel, click [ Reconnect ]:\n\n🔹 If you have given up on this, click on the [ Cancel ] option.\n\n🔹Notice: If you have already connected the bot to a new channel, performing this action will only bring back the configurations of the previous group, and bot will be still connected to your new group."
+    "fa": "🔹 اگر می‌خواهید ربات به کانالتان دوباره متصل شود، روی گزینه [ اتصال مجدد ] کلیک کنید:\n\n❗️ در غیر اینصورت روی گزینه [ لغو ] کلیک کنید.\n\n❗️ توجه: درصورتی که هم اکنون ربات را به کانال دیگری متصل کرده باشید، عملیات اتصال مجدد صرفا تنظیمات گذشته شما را بازنشانی می‌کند و کانال را تغییر نمی‌دهد.",
+    "en": "🔹 If you want to reconnect the bot to your channel, click [ Reconnect ].\n\n❗️ If you have given up on this, click on the [ Cancel ].\n\n❗️ Notice: If you have already connected the bot to a new channel, performing this action will only restore the configurations."
   },
   "equalize_header": {
     "fa": "✅ درحال حاضر %s %s معادل است با:",
@@ -779,12 +779,12 @@
     "en": "✅ Scheduling posts for removal completed successfully.\n\n⚠️ Unfortunately, auto-removal scheduling encountered a problem! Contact developer to fix the problem for next posts."
   },
   "enter_remove_interval_in_days": {
-    "fa": "ابتدا مشخص کنید که می خواهید این پست چند روز بعد پاک شود؟ تعداد روزها را به صورت عددی وارد کنید.\n\n* توجه: درصورتی که این یک پست دائمی است: یا عدد صفر را وارد کنید و یا اینکه این مرحله را نادیده بگیرید و مستقیما متن پیام را تایپ کنید تا برای همه کاربران بصورت دائمی ارسال شود..",
+    "fa": "ابتدا مشخص کنید که می خواهید این پست چند روز بعد پاک شود؟ تعداد روزها را به صورت عددی وارد کنید.\n\n* توجه: درصورتی که این یک پست دائمی است: یا عدد صفر را وارد کنید و یا اینکه این مرحله را نادیده بگیرید و مستقیما متن پیام را تایپ کنید تا برای همه کاربران بصورت دائمی ارسال شود.",
     "en": "Enter the number of days you wish the message to be deleted after?\n* Notice: If this is a permenant post: you can either enter zero [0] here, or you simply ignore this step and directly type your post text to sent it automatically to all users."
   },
   "failed_retrieving_post_message": {
-    "fa": "مشکلی حین دریافت اطلاعات پیام پیش آمد؛ لطفا از اول تلاش کنید ...",
-    "en": "Something went wrong while retrieving Message data; Please retry the operation ..."
+    "fa": "مشکلی حین دریافت اطلاعات پیام پیش آمد؛ لطفا از اول تلاش کنید.",
+    "en": "Something went wrong while retrieving Message data; Please retry the operation."
   },
   "this_message_will_be_removed_after": {
     "fa": "(این پیام پس از %s روز بصورت خودکار از صفحه چت ربات تمام کاربران فعال پاک می گردد.)",

@@ -344,6 +344,7 @@ class BotMan:
                 [KeyboardButton(BotMan.Commands.RETURN_EN.value)],
             ],
         }
+        self.return_menu = lambda lang: ReplyKeyboardMarkup(self.return_key[lang.lower()], resize_keyboard=True)
 
     def markets_menu(self, lang: str) -> ReplyKeyboardMarkup:
         return ReplyKeyboardMarkup(
@@ -1654,7 +1655,6 @@ class BotMan:
     @staticmethod
     def getLongText(key: str, language: str = "fa"):
         import resources.longtext as long_texts
-
         return long_texts.TUTORIALS_TEXT[key][language.lower()]
 
     @staticmethod

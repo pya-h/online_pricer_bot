@@ -364,7 +364,7 @@ async def start_equalizing(func_send_message, account: Account, amounts: list, u
     account.delete_specific_cache("input_amounts", "input_symbols")
     await func_send_message(
         botman.text("continues_calculator_hint", account.language),
-        reply_markup=botman.cancel_menu(account.language),
+        reply_markup=botman.return_menu(account.language),
     )
 
 
@@ -1380,7 +1380,11 @@ async def handle_messages(update: Update, context: CallbackContext):
             await update.message.reply_text(
                 botman.text("contact_support_hint") % (Account.getHardcodeAdmin()["username"]))
         case BotMan.Commands.OUR_OTHERS_FA.value | BotMan.Commands.OUR_OTHERS_EN.value:
-            await update.message.reply_text(botman.text("check_our_other_collections"))
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=botman.text("check_our_other_collections", Account.get(update.message.chat).language),
+                disable_web_page_preview=True
+            )
         case BotMan.Commands.TUTORIALS_FA.value | BotMan.Commands.TUTORIALS_EN.value:
             account = Account.get(update.message.chat)
             await update.message.reply_text(
@@ -1394,8 +1398,8 @@ async def handle_messages(update: Update, context: CallbackContext):
                         "calculator": "calculator",
                         "list_alarms": "list_alarms",
                         "create_alarm": "create_alarm",
-                        "use_in_channel": "use_in_channel",
-                        "use_in_group": "use_in_group",
+                        "my_channels": "my_channels",
+                        "my_groups": "my_groups",
                         f"! {update.message.message_id}": "close",
                     },
                     language=account.language,
