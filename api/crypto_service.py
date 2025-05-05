@@ -184,7 +184,8 @@ class CoinMarketCapService(CryptoCurrencyService):
 
         return (self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos, language) if desired_cryptos else None,
                 absolute_amount,
-                self.to_irt_exact(absolute_amount, True))
+                self.to_irt_exact(absolute_amount, True)) if source_unit_symbol != self.tetherSymbol \
+                    else amount * self.tetherInTomans
 
 
     def get_single_price(self, crypto_symbol: str, price_unit: str = "usd", tether_instead_of_dollars: bool = True):

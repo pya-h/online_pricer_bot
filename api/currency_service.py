@@ -341,13 +341,8 @@ class NavasanService(CurrencyService):
             raise InvalidInputException(f"Currency/Gold symbol: {source_unit_symbol}!")
 
         # first row is the equivalent price in USD(the price unit selected by the bot configs.)
-        try:
-            absolute_amount: float = amount * (
-                float(self.latest_data[source_unit_symbol.lower()]["value"])
-                if source_unit_symbol != self.tomanSymbol
-                else 1
-            )
-        except:
+        usd_amount, absolute_amount = self.get_both_prices(source_unit_symbol, amount)
+        if usd_amount is None or absolute_amount is None:
             raise ValueError(f"{source_unit_symbol} has not been received from the API.")
         res_fiat, res_gold = (
             self.irt_to_currencies(absolute_amount, source_unit_symbol, target_currencies, language)
@@ -357,31 +352,49 @@ class NavasanService(CurrencyService):
         return (
             res_fiat,
             res_gold,
-            self.irt_to_usd(absolute_amount) if source_unit_symbol != self.dollarSymbol else amount,
+            usd_amount,
             absolute_amount,
         )
 
-    def get_single_price(self, currency_symbol: str, price_unit: str = "usd"):
-        curr = currency_symbol.lower()
-        price_unit = price_unit.lower()
-        if (
-            not isinstance(self.latest_data, dict)
-            or not curr in self.latest_data
-            or not "value" in self.latest_data[curr]
-        ):
-            return None
-        if curr == self.dollarSymbol:
+    def get_single_price(self, currency_symbol: str, price_unit: str = "usd", data_check_required: bool = True):
+        curr_upper = currency_symbol.upper()
+        currency_symbol = currency_symbol.lower()
+        if data_check_required:
+            price_unit = price_unit.lower()
+            if (
+                    not isinstance(self.latest_data, dict)
+                    or not currency_symbol in self.latest_data
+                    or not "value" in self.latest_data[currency_symbol]
+            ):
+                return None
+
+        if curr_upper == self.dollarSymbol:
             return self.usdInTomans if price_unit != "usd" else 1
+        if curr_upper == self.tomanSymbol:
+            return 1 if price_unit != "usd" else self.irt_to_usd(1)
 
-        currency_data = self.latest_data[curr]
-
-        if "usd" not in currency_data or not currency_data["usd"]:
-            toman = currency_data["value"]
-            return toman if price_unit != "usd" else self.irt_to_usd(toman)
-
+        if "usd" not in (currency_data := self.latest_data[currency_symbol]) or not currency_data["usd"]:
+            return currency_data["value"] if price_unit != "usd" else self.irt_to_usd(currency_data["value"])
         # if price is in $
-        usd_price = currency_data["value"]
-        return self.to_irt_exact(usd_price) if price_unit != "usd" else usd_price
+        return self.to_irt_exact(currency_data["value"]) if price_unit != "usd" else currency_data["value"]
+
+    # NOTICE: Any change on price calculation must be applied on both up and down functions.
+
+    def get_both_prices(self, currency_symbol: str, amount: int|float = 1) -> Tuple[int|float, int|float] | Tuple[None, None]:
+        try:
+            curr_upper = currency_symbol.upper()
+            currency_symbol = currency_symbol.lower()
+            if curr_upper == self.dollarSymbol:
+                return amount, amount * self.usdInTomans
+            if curr_upper == self.tomanSymbol:
+                return self.irt_to_usd(amount), amount
+            if "usd" not in (currency_data := self.latest_data[currency_symbol]) or not currency_data["usd"]:
+                return amount * self.irt_to_usd(currency_data["value"]), amount * currency_data["value"]
+            # if price is in $
+            return amount * currency_data["value"], amount * self.to_irt_exact(currency_data["value"])
+        except:
+            pass
+        return None, None
 
     @staticmethod
     def getEnglishTitle(symbol: str) -> str:
