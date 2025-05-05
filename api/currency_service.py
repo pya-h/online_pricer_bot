@@ -301,27 +301,26 @@ class NavasanService(CurrencyService):
     ) -> Tuple[str, str]:
         currencies = self.get_desired_ones(currencies)
         res_gold, res_fiat = "", ""
-        for slug in currencies:
-            if slug == source_unit_slug:
+        for target_slug in currencies:
+            if target_slug == source_unit_slug:
                 continue
-            slug_equalized_price = absolute_irt if slug == self.tomanSymbol \
-                else (absolute_irt / float(self.latest_data[slug.lower()]["value"])
-                    if (slug != self.dollarSymbol and source_unit_slug != self.tetherSymbol) or not absolute_usd
-                        else absolute_usd)
+            slug_equalized_price = absolute_irt if target_slug == self.tomanSymbol else (absolute_usd
+                if absolute_usd is not None and target_slug == self.dollarSymbol and source_unit_slug == self.tetherSymbol
+                        else absolute_irt / float(self.latest_data[target_slug.lower()]["value"]))
 
             slug_equalized_price = mathematix.cut_and_separate(slug_equalized_price)
-            if slug not in NavasanService.goldsInPersian:
+            if target_slug not in NavasanService.goldsInPersian:
                 if language != "fa":
-                    res_fiat += f"🔸 {slug_equalized_price} {slug}\n"
+                    res_fiat += f"🔸 {slug_equalized_price} {target_slug}\n"
                 else:
                     slug_equalized_price = mathematix.persianify(slug_equalized_price)
-                    res_fiat += f"🔸 {slug_equalized_price} {NavasanService.nationalCurrenciesInPersian[slug]}\n"
+                    res_fiat += f"🔸 {slug_equalized_price} {NavasanService.nationalCurrenciesInPersian[target_slug]}\n"
             else:
                 if language != "fa":
-                    res_gold += f"🔸 {slug_equalized_price} {NavasanService.goldsInEnglish[slug]}\n"
+                    res_gold += f"🔸 {slug_equalized_price} {NavasanService.goldsInEnglish[target_slug]}\n"
                 else:
                     slug_equalized_price = mathematix.persianify(slug_equalized_price)
-                    res_gold += f"🔸 {slug_equalized_price} {NavasanService.goldsInPersian[slug]}\n"
+                    res_gold += f"🔸 {slug_equalized_price} {NavasanService.goldsInPersian[target_slug]}\n"
         return res_fiat, res_gold
 
     def equalize(

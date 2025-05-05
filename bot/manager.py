@@ -951,7 +951,7 @@ class BotMan:
             currency_name, unit_name, current_price = (
                     alarm.token.upper(), alarm.target_unit.upper(), cut_and_separate(alarm.current_price)
                 ) if account.language != "fa" else (
-                    (self.currency_serv if alarm.market == MarketOptions.CRYPTO else self.crypto_serv).getPersianName(alarm.token.upper()),
+                    (self.currency_serv if alarm.market != MarketOptions.CRYPTO else self.crypto_serv).getPersianName(alarm.token.upper()),
                     self.currency_serv.persianShortcuts[alarm.target_unit.upper()],
                     persianify(cut_and_separate(alarm.current_price))
             )
