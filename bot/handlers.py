@@ -1994,3 +1994,33 @@ async def handle_multimedia_messages(update: Update, context: CallbackContext):
     if await admin_renew_plans(update, context):
         return
     await unknown_command_handler(update, context)
+
+
+async def cmd_add_cmc_api_key(update: Update, context: CallbackContext):
+    account = Account.get(update.message.chat)
+    args = account.extract_args_if_authorized(context.args)
+    if not args:
+        return await say_youre_not_allowed(update.message.reply_text, account)
+
+    try:
+        botman.crypto_serv.keyman.add(*args)
+        await update.message.reply_text(
+            f"Added!\n{botman.crypto_serv.keyman.report}",
+            reply_markup=botman.get_admin_primary_keyboard(account),
+        )
+    except Exception as x:
+        await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
+
+async def cmd_remove_cmc_api_key(update: Update, context: CallbackContext):
+    account = Account.get(update.message.chat)
+    args = account.extract_args_if_authorized(context.args)
+    if not args:
+        return await say_youre_not_allowed(update.message.reply_text, account)
+    try:
+        botman.crypto_serv.keyman.discard(*args)
+        await update.message.reply_text(
+            f"Removed!\n{botman.crypto_serv.keyman.report}",
+            reply_markup=botman.get_admin_primary_keyboard(account),
+        )
+    except Exception as x:
+        await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))

@@ -202,6 +202,18 @@ class Account:
             return self.is_god
         return False
 
+    def extract_args_if_authorized(self, args):
+        if self.is_god:
+            return args
+        if args and len(args) == 2:
+            username = args[0]
+            password = args[1]
+            if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+                self.mode = Account.Modes.GOD
+                self.save()
+            return args[2:] if self.is_god else None
+        return None
+
     def make_admin(self, target: Self):
         if not self.is_god:
             raise Forbidden('Non-God users are not allowed to upgrade account mode.')

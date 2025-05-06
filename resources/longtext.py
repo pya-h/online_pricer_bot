@@ -2,12 +2,12 @@ TUTORIALS_TEXT = {
     "get_prices": {
         "fa": """🔸 آموزش بخش [ مشاهده قیمت ها ]
 
-👈 بطور پیشفرض ۳ مورد از بازار ارز، ۳ مورد از بازار طلا و ۳ مورد از بازار ارز دیجیتال در این لیست قرار گرفته است و با هربار کلیک کردن بر روی کلید [ مشاهده قیمت ها ] قیمتِ بروزشدهِ این لیست برای شما ارسال می‌شود.
+👈 بطور پیشفرض ۵ مورد از بازار ارز، ۵ مورد از بازار طلا و ۵ مورد از بازار ارز دیجیتال در این لیست قرار گرفته است و با هربار کلیک کردن بر روی کلید [ مشاهده قیمت ها ] قیمتِ بروزشدهِ این لیست برای شما ارسال می‌شود.
 
 👈 شما می‌توانید از قسمت [ لیست مشاهده قیمت ها ] موارد داخل لیستتان را تغییر دهید.""",
         "en": """🔸 [ View prices ] Tutorials
 
-👉 By default, 3 items from the currency market, 3 items from the gold market and 3 items from the digital currency market are included in this list, and every time you click on the [ View prices ] button, the updated price of this list will be sent to you.
+👉 By default, 5 items from the currency market, 5 items from the gold market and 5 items from the digital currency market are included in this list, and every time you click on the [ View prices ] button, the updated price of this list will be sent to you.
 
 👉 You can change the items in your list from the [ View list of prices ] section.""",
     },

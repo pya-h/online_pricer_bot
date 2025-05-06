@@ -1,5 +1,8 @@
 import coinmarketcapapi as cmc_api
+from telegram.error import Conflict
+
 from api.base import *
+from api.key_manager import ApiKeyManager
 from tools.exceptions import NoLatestDataException, InvalidInputException
 from typing import List, Tuple, override
 
@@ -73,7 +76,7 @@ class CoinGeckoService(CryptoCurrencyService):
         pass
 
     def extract_api_response(self, desired_coins: List[str] | None = None, language: str = 'fa', no_price_message: str | None = None):
-        "Construct a text string consisting of each desired coin prices of a special user."
+        """Construct a text string consisting of each desired coin prices of a special user."""
         desired_coins: List[str] = self.get_desired_ones(desired_coins)
         res = ""
         for symbol in desired_coins:   
@@ -94,11 +97,14 @@ class CoinMarketCapService(CryptoCurrencyService):
             source="CoinMarketCap",
             cache_file_name="coinmarketcap.json",
         )
-        self.api_key: str = api_key
+        self.keyman = ApiKeyManager(api_key, self.update_cmc)
         self.price_unit: str = price_unit
-        self.cmc_api = cmc_api.CoinMarketCapAPI(self.api_key)
+        self.cmc_api = cmc_api.CoinMarketCapAPI(self.keyman.api_key)
         self.cmc_coin_fetch_limit = cmc_coin_fetch_limit
         self.pre_latest_data: dict | None = None
+
+    def update_cmc(self, api_key: str):
+        self.cmc_api = cmc_api.CoinMarketCapAPI(api_key)
 
     def set_price_unit(self, pu):
         self.price_unit = pu
@@ -108,7 +114,7 @@ class CoinMarketCapService(CryptoCurrencyService):
 
         for item in source_list:
             symbol = item[key_as].upper()
-            if symbol not in result: # TODO: Re-Check why this is required
+            if symbol not in result:  # since there are some tokens with the same symbol; One main impact of not checkin this the invalid price for btc!
                 result[symbol] = item["quote"][self.price_unit]
 
         return result
@@ -130,8 +136,10 @@ class CoinMarketCapService(CryptoCurrencyService):
             new_data = await self.get_request()  # update latest
             self.pre_latest_data = self.latest_data # only update pre_latest when api call was ok
             self.latest_data = new_data
+            self.keyman.ok()
         except Exception as x:
             manuwriter.log('Failed obtaining newest Cryptocurrency prices', x, category_name='CoinMarketCap')
+            self.keyman.fail()
         return self.extract_api_response(desired_ones, language, no_price_message)
 
     def extract_api_response(self, desired_coins: List[str] = None, language: str = 'fa', no_price_message: str | None = None):

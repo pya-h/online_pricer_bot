@@ -8,16 +8,11 @@ from telegram.ext import (
 )
 
 from tools.mathematix import seconds_to_next_minute
-from datetime import time
 from bot.handlers import *
 from decouple import config
 
 
 # FIXME: Some cmd_ methods are re-getting accounts, (admin or non-admin commands), do a full check on them, and check if they need changing, (cause we have fastmem of course)
-
-
-# TODO: disable old caching
-# FIXME: Empty Tags in Equalizing
 def main(run_webhook: bool = True):
     app = BotApplicationBuilder().token(botman.token).build()
     app.add_handler(CommandHandler("start", cmd_welcome))
@@ -42,6 +37,8 @@ def main(run_webhook: bool = True):
     app.add_handler(CommandHandler("schedule", cmd_schedule_channel_update))
     app.add_handler(CommandHandler("stop", cmd_stop_schedule))
     app.add_handler(CommandHandler("stats", cmd_report_statistics))
+    app.add_handler(CommandHandler("add_api", cmd_add_cmc_api_key))
+    app.add_handler(CommandHandler("rem_api", cmd_remove_cmc_api_key))
 
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
     app.add_handler(ChatMemberHandler(handle_new_group_members, ChatMemberHandler.MY_CHAT_MEMBER))
