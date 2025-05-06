@@ -306,7 +306,7 @@ class NavasanService(CurrencyService):
                 continue
             slug_equalized_price = absolute_irt if target_slug == self.tomanSymbol else (absolute_usd
                 if absolute_usd is not None and target_slug == self.dollarSymbol and source_unit_slug == self.tetherSymbol
-                        else absolute_irt / float(self.latest_data[target_slug.lower()]["value"]))
+                        else absolute_irt / self.get_single_price(target_slug, "irt", data_check_required=False))
 
             slug_equalized_price = mathematix.cut_and_separate(slug_equalized_price)
             if target_slug not in NavasanService.goldsInPersian:
@@ -373,9 +373,9 @@ class NavasanService(CurrencyService):
             return 1 if price_unit != "usd" else self.irt_to_usd(1)
 
         if "usd" not in (currency_data := self.latest_data[currency_symbol]) or not currency_data["usd"]:
-            return currency_data["value"] if price_unit != "usd" else self.irt_to_usd(currency_data["value"])
+            return float(currency_data["value"]) if price_unit != "usd" else self.irt_to_usd(float(currency_data["value"]))
         # if price is in $
-        return self.to_irt_exact(currency_data["value"]) if price_unit != "usd" else currency_data["value"]
+        return self.to_irt_exact(float(currency_data["value"])) if price_unit != "usd" else float(currency_data["value"])
 
     # NOTICE: Any change on price calculation must be applied on both up and down functions.
 
@@ -387,10 +387,11 @@ class NavasanService(CurrencyService):
                 return amount, amount * self.usdInTomans
             if curr_upper == self.tomanSymbol:
                 return self.irt_to_usd(amount), amount
+            price = float(currency_data["value"])
             if "usd" not in (currency_data := self.latest_data[currency_symbol]) or not currency_data["usd"]:
-                return amount * self.irt_to_usd(currency_data["value"]), amount * currency_data["value"]
+                return amount * self.irt_to_usd(price), amount * price
             # if price is in $
-            return amount * currency_data["value"], amount * self.to_irt_exact(currency_data["value"])
+            return amount * price, amount * self.to_irt_exact(price)
         except:
             pass
         return None, None
