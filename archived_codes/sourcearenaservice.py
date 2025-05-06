@@ -1,3 +1,4 @@
+from api.base import APIService
 from api.currency_service import CurrencyService, get_persian_currency_names
 from tools.exceptions import InvalidInputException
 from tools.mathematix import persianify
@@ -120,22 +121,22 @@ class SourceArenaService(CurrencyService):
         }
 
         if self.tether_service.recent_value:
-            self.set_tether_tomans(self.tether_service.recent_value)
+            APIService.set_tether_tomans(self.tether_service.recent_value)
             usd_t["TETHER"]["price"] = self.tether_service.recent_value
-        elif not self.tetherInTomans or self.tether_service.no_response_counts > SourceArenaService.maxExtraServicesFailure:
+        elif not APIService.tetherInTomans or self.tether_service.no_response_counts > SourceArenaService.maxExtraServicesFailure:
             try:
-                self.set_tether_tomans((float(usd_t["TETHER"]["price"]) / 10.0) or SourceArenaService.defaultTetherInTomans)
+                APIService.set_tether_tomans((float(usd_t["TETHER"]["price"]) / 10.0) or SourceArenaService.defaultTetherInTomans)
             except:
                 if not SourceArenaService.tetherInTomans:
                     SourceArenaService.tetherInTomans = SourceArenaService.defaultTetherInTomans
 
         try:
-            self.set_usd_price(
+            APIService.set_usd_price(
                 self.tether_service.guess_dollar_price()
                 or (float(usd_t["USD"]["price"]) / 10.0)
                 or SourceArenaService.defaultUsdInTomans
             )
-            usd_t["USD"]["price"] = self.usdInTomans * 10.0
+            usd_t["USD"]["price"] = APIService.usdInTomans * 10.0
         except:
             if not SourceArenaService.usdInTomans:
                 SourceArenaService.usdInTomans = SourceArenaService.defaultUsdInTomans

@@ -7,7 +7,7 @@ from api.tether_service import AbanTetherService, NobitexService
 from tools.manuwriter import log, load_json
 from tools.mathematix import persianify
 from tools.exceptions import NoLatestDataException
-from typing import Union, List, Tuple, Any, override
+from typing import List, Tuple, Any, override
 
 
 def get_gold_names(filename: str):
@@ -52,10 +52,10 @@ class CurrencyService(APIService):
         self.token = token
         self.tether_service_token = tether_service_token
         self.latest_data = []
-        if not self.usdInTomans:
-            self.usdInTomans = self.defaultUsdInTomans
-        if not self.tetherInTomans:
-            self.tetherInTomans = self.defaultTetherInTomans
+        if not APIService.usdInTomans:
+            APIService.usdInTomans = self.defaultUsdInTomans
+        if not APIService.tetherInTomans:
+            APIService.tetherInTomans = self.defaultTetherInTomans
 
 
 class GoldService(BaseAPIService):
@@ -238,18 +238,18 @@ class NavasanService(CurrencyService):
     async def select_best_tether_price(self):
         try:
             if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
-                self.set_tether_tomans(self.tether_service.recent_value)
+                APIService.set_tether_tomans(self.tether_service.recent_value)
                 return
 
             await self.alternate_tether_service.get()
             if self.alternate_tether_service.recent_value and self.alternate_tether_service.no_response_counts < 3:
-                self.set_tether_tomans(self.alternate_tether_service.recent_value)
+                APIService.set_tether_tomans(self.alternate_tether_service.recent_value)
                 return
 
         except Exception as x:
             log('Failed updating USDT-IRT price through tether services. Navasan prices will be used.', x, category_name='TetherService')
 
-        self.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
+        APIService.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
 
     async def get(
         self,
@@ -273,11 +273,11 @@ class NavasanService(CurrencyService):
         )
 
         try:
-            self.set_usd_price(self.latest_data["usd"]["value"])
+            APIService.set_usd_price(self.latest_data["usd"]["value"])
         except Exception as ex:
             log("Update USD Price Error", ex, "Navasan")
 
-        self.latest_data[self.tomanSymbol.lower()] = {"value": 1 / self.usdInTomans}
+        self.latest_data[self.tomanSymbol.lower()] = {"value": 1 / APIService.usdInTomans}
         self.cache_data(json.dumps(self.latest_data))
         return self.extract_api_response(desired_ones, language, no_price_message)
 
@@ -289,7 +289,7 @@ class NavasanService(CurrencyService):
         return self.latest_data
 
     def irt_to_usd(self, irt_price: float | int) -> float | int:
-        return irt_price / self.usdInTomans
+        return irt_price / APIService.usdInTomans
 
     def irt_to_currencies(
         self,
@@ -368,7 +368,7 @@ class NavasanService(CurrencyService):
                 return None
 
         if curr_upper == self.dollarSymbol:
-            return self.usdInTomans if price_unit != "usd" else 1
+            return APIService.usdInTomans if price_unit != "usd" else 1
         if curr_upper == self.tomanSymbol:
             return 1 if price_unit != "usd" else self.irt_to_usd(1)
 
@@ -384,7 +384,7 @@ class NavasanService(CurrencyService):
             curr_upper = currency_symbol.upper()
             currency_symbol = currency_symbol.lower()
             if curr_upper == self.dollarSymbol:
-                return amount, amount * self.usdInTomans
+                return amount, amount * APIService.usdInTomans
             if curr_upper == self.tomanSymbol:
                 return self.irt_to_usd(amount), amount
             price = float(currency_data["value"])

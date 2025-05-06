@@ -120,7 +120,7 @@ class APIService(BaseAPIService):
 
     def to_irt_exact(self, price: float | int, tether_as_unit_price: bool = False) -> float | int:
         try:
-            return price * (self.tetherInTomans if tether_as_unit_price and self.tetherInTomans else self.usdInTomans)
+            return price * (APIService.tetherInTomans if tether_as_unit_price and APIService.tetherInTomans else APIService.usdInTomans)
         except:
             pass
         return 0

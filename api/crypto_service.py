@@ -1,6 +1,4 @@
 import coinmarketcapapi as cmc_api
-from telegram.error import Conflict
-
 from api.base import *
 from api.key_manager import ApiKeyManager
 from tools.exceptions import NoLatestDataException, InvalidInputException
@@ -114,7 +112,7 @@ class CoinMarketCapService(CryptoCurrencyService):
 
         for item in source_list:
             symbol = item[key_as].upper()
-            if symbol not in result:  # since there are some tokens with the same symbol; One main impact of not checkin this the invalid price for btc!
+            if symbol not in result:  # since there are some tokens with the same symbol; One main impact of not checking this the invalid price for btc!
                 result[symbol] = item["quote"][self.price_unit]
 
         return result
@@ -193,7 +191,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         return (
             self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos, language) if desired_cryptos else None, 
             absolute_amount, 
-            self.to_irt_exact(absolute_amount, True) if source_unit_symbol != self.tetherSymbol else amount * self.tetherInTomans
+            self.to_irt_exact(absolute_amount, True) if source_unit_symbol != self.tetherSymbol else amount * APIService.tetherInTomans
         )
 
 
@@ -203,7 +201,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         coin = crypto_symbol.upper()
         price_unit = price_unit.lower()
         if coin == self.tetherSymbol and price_unit == "irt":
-            return self.tetherInTomans
+            return APIService.tetherInTomans
 
         if coin not in self.latest_data:
             return None
@@ -231,7 +229,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             if symbol != "USDT":
                 rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
             else:
-                rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(self.tetherInTomans)
+                rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(APIService.tetherInTomans)
 
             if language != 'fa':
                 return f"{self.getTokenState(price, previous_price)} {symbol}: {rp_toman} {self.tomanSymbol} / {rp_usd}$\n"
