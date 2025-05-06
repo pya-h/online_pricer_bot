@@ -13,7 +13,9 @@ class ApiKeyManager:
         self.change_event = change_event
 
     def use_next(self):
-        self.current = (self.current + 1) % len(self.keys)
+        if (count := len(self.keys)) <= 1:
+            return
+        self.current = (self.current + 1) % count
         self.change_event(self.keys[self.current])
         self.failures_count = 0
 
@@ -46,5 +48,5 @@ class ApiKeyManager:
         return f'''API Keys: {len(self.keys)}
 Current: {self.api_key}
 Current Index: {self.current + 1}
-Recent Failures: {self.failures_count}
+Recent Rapid Failures: {self.failures_count}
 '''
