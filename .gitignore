@@ -1,4 +1,3 @@
-venv
 .env
 env
 .env.local
@@ -6,15 +5,10 @@ test.py
 api.cache
 logs
 *pycache*
-main.env
 *.db
-bot-backup
-test.env
 v2/test.env
-*.sqbpro
 .idea
-CHECKOUTLOGS.zip
-important_logs
 telegram-responses.dat
 .vscode
 *.env*
+ecosystem.config.js
