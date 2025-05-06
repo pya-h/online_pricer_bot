@@ -1109,7 +1109,7 @@ async def admin_renew_plans(update: Update, context: CallbackContext, account: A
         return False
 
 
-async def unknown_command_handler(update: Update, _: CallbackContext):
+async def unknown_command_handler(update: Update, _: CallbackContext = None):
     account = Account.get(update.message.chat)
     await update.message.reply_text(
         botman.error("what_the_fuck", account.language),
@@ -1118,10 +1118,23 @@ async def unknown_command_handler(update: Update, _: CallbackContext):
     )
 
 
-async def go_to_community_panel(update: Update, account: Account, community: BotMan.CommunityType):
-    account.add_cache("community", community.value)
+async def go_to_community_panel(update: Update, account: Account, community_type: BotMan.CommunityType):
+    account.add_cache("community", community_type.value)
     if not account.is_premium:
-        await botman.send_message_with_premium_button(update, botman.text("go_premium_to_activate_feature", account.language))
+        await update.message.reply_text(
+            botman.text("go_premium_to_activate_feature", account.language),
+            reply_markup=botman.get_community_config_keyboard(community_type, account.language),
+        )
+        return
+
+    if not (community := community_type.to_class().getByOwner(account.chat_id, take=1)):
+        await unknown_command_handler(update)
+        return
+
+    await update.message.reply_text(
+        botman.text(f"{community_type.__str__()}_x_panel", account.language) % (community.title, ),
+        reply_markup=botman.get_community_config_keyboard(community_type, account.language),
+    )
 
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:

@@ -2,19 +2,19 @@
   "main_keyboard": {
     "get_prices": {
       "fa": "🟢 مشاهده قیمت ها",
-      "en": "View Prices"
+      "en": "🟢 View Prices"
     },
     "config_lists": {
       "fa": "📊 لیست قیمت ها",
-      "en": "View List of Prices"
+      "en": "📊 View List of Prices"
     },
     "calculator": {
       "fa": "🧮 ماشین حساب",
-      "en": "Calculator"
+      "en": "🧮 Calculator"
     },
     "config_calculator": {
       "fa": "📊 لیست ماشین حساب من",
-      "en": "My Calculator List"
+      "en": "📊 My Calculator List"
     },
     "create_alarm": {
       "fa": "🚨 هشدار قیمت",
@@ -30,11 +30,11 @@
     },
     "my_channels": {
       "fa": "📣 پنل کانال من",
-      "en": "My Channel Panel"
+      "en": "📣 My Channel Panel"
     },
     "my_groups": {
       "fa": "💬 پنل گروه من",
-      "en": "My Group Panel"
+      "en": "💬 My Group Panel"
     },
     "use_in_channel": {
       "fa": "اتصال ربات به کانال",
@@ -853,5 +853,13 @@
   "admin_downgraded_to_normal": {
     "fa": "کاربر %s به دوباره به دسترسی عادی بازگشت.",
     "en": "User %s is now downgraded to Normal access."
+  },
+  "channel_x_panel": {
+    "fa": "📣 کانال: %s",
+    "en": "📣 Channel: %s"
+  },
+  "group_x_panel": {
+    "fa": "💬 گروه: %s",
+    "en": "💬 Group: %s"
   }
 }
