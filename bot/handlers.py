@@ -163,7 +163,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
     await update.message.reply_text(
         botman.text("calculator_hint", account.language) + hint_examples + botman.text("calculator_hint_footnote",
                                                                                        account.language),
-        reply_markup=botman.cancel_menu(account.language),
+        reply_markup=botman.return_menu(account.language),
     )
 
 
