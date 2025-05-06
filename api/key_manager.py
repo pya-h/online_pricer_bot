@@ -5,7 +5,12 @@ from telegram.error import Conflict
 
 class ApiKeyManager:
 
-    def __init__(self, initial_api_key: str, change_event: Callable[[str], None], change_trigger: int = 3):
+    def __init__(
+        self,
+        initial_api_key: str,
+        change_event: Callable[[str], None],
+        change_trigger: int = 3,
+    ):
         self.keys = [initial_api_key] if initial_api_key else []
         self.current = 0
         self.failures_count = 0
@@ -45,8 +50,4 @@ class ApiKeyManager:
 
     @property
     def report(self) -> str:
-        return f'''API Keys: {len(self.keys)}
-Current: {self.api_key}
-Current Index: {self.current + 1}
-Recent Rapid Failures: {self.failures_count}
-'''
+        return f"API Keys: {len(self.keys)}\nCurrent: {self.api_key}\nCurrent Index: {self.current + 1}\nRecent Rapid Failures: {self.failures_count}"
