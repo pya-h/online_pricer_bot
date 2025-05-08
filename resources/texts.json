@@ -373,12 +373,12 @@
       "en": "Something went wrong while trying to config this channel. Please try again from scratch,"
     },
     "max_groups_reached": {
-      "fa": "شما هم اکنون در حال استفاده از این بات در یک گروه دیگر هستید. در حال حاضر کاربران مجاز به استفاده از بات در حداکثر یک گروه هستند. در صورت تمایل می توانید با حذف ربات از گروه قبلی و یا استفاده از گزینه تغییر گروه در تنظیمات گروه، ربات را در گروه جدیدتان فعال کنید.",
-      "en": "You already are using this bot in another group right now. Users are allowed to use our bot in at most 1 group for now. You can remove the bot from old group, or use the Change Group option in My Group Settings menu to activate the bot in your new group."
+      "fa": "❗️ شما هم اکنون در حال استفاده از ربات در یک گروه دیگر هستید. در حال حاضر کاربران مجاز به استفاده از بات در حداکثر یک گروه هستند. \n\n✅ در صورت تمایل می‌توانید با حذف ربات از گروه قبلی و یا استفاده از گزینه تغییر گروه در تنظیمات گروه، ربات را در گروه جدیدتان فعال کنید.",
+      "en": "❗️ You're using this bot in another group at this time; Users are allowed to use our bot in at most 1 group simultaneously.\n\n ✅ You can remove the bot from the old group or use 'Change Group' option in My Group Panel to activate the bot in your new group."
     },
     "max_channels_reached": {
-      "fa": "شما هم اکنون در حال استفاده از ربات در یک کانال دیگر می باشید. در حال حاضر کاربران مجاز به استفاده از بات در حداکثر یک کانال هستند. در صورت تمایل می توانید یا استفاده از گزینه تغییر کانال در تنظیمات کانال، ربات را در کانال جدیدتان فعال کنید.",
-      "en": "You are already using this bot in another channel right now. Users are allowed to use our bot in at most 1 channel for now. You can use the Change Channel option in My Channel Settings menu to activate the bot in your new channel."
+      "fa": "❗️ شما هم اکنون در حال استفاده از ربات در یک گروه دیگر هستید. در حال حاضر کاربران مجاز به استفاده از بات در حداکثر یک کانال هستند. \n\n✅ در صورت تمایل می‌توانید با استفاده از گزینه تغییر کانال در تنظیمات کانال، ربات را در کانال جدیدتان فعال کنید.",
+      "en": "❗️ You're using this bot in another channel at this time; Users are allowed to use our bot in at most 1 channel simultaneously.\n\n ✅ You could use 'Change Channel' option in My Channel Panel to activate the bot in your new channel."
     },
     "unsupported_input_format": {
       "fa": "ورودی شما مطابق فرمت ورودی مذکور نیست! لطفا ورودی را مطابق فرمت مربوطه وارد کنید و یا از گزینه های ارائه شده استفاده کنید.",
@@ -715,8 +715,8 @@
     "en": "⚠️ It seems that bot has been downgraded inside your group to a normal member; In this case, bot will only be able to respond to users which are 'Reply'ing bot messages.\n\nIt would be a better choice to re-upgrade the bot to admin to use it in full capability."
   },
   "add_bot_to_new_group": {
-    "fa": "بسیار خب! هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است. برای این منظور، وارد گروه جدید خود شوید و ربات را در گروه جدید اضافه و ادمین کنید. باقی فرایند بصورت خودکار انجام می شود.",
-    "en": "Well! Now you should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete."
+    "fa": "🔹 هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است! ربات را در گروه جدید اضافه و مدیر کنید؛ باقی فرایند بصورت خودکار انجام خواهد شد. هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است! ربات را در گروه جدید اضافه و مدیر کنید؛ باقی فرایند بصورت خودکار انجام خواهد شد.",
+    "en": "🔹 Now bot's ready for the change; You should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete."
   },
   "rusure_to_disconnect_channel": {
     "fa": "🔹 اگر میخواهید اتصال ربات با کانال شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n❗️ این کار باعث میشود اتصال کانال فعلی قطع شود، پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
