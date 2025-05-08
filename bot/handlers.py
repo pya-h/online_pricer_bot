@@ -2013,6 +2013,7 @@ async def handle_multimedia_messages(update: Update, context: CallbackContext):
     await unknown_command_handler(update, context)
 
 
+### Developer options:
 async def cmd_add_cmc_api_key(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     args = account.extract_args_if_authorized(context.args)
@@ -2041,3 +2042,15 @@ async def cmd_remove_cmc_api_key(update: Update, context: CallbackContext):
         )
     except Exception as x:
         await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
+
+async def cmd_list_cmc_api_key(update: Update, context: CallbackContext):
+    if not (account := Account.get(update.message.chat)).is_authorized(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account)
+    try:
+        await update.message.reply_text(
+            botman.crypto_serv.keyman.state,
+            reply_markup=botman.get_admin_primary_keyboard(account),
+        )
+    except Exception as x:
+        await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
+

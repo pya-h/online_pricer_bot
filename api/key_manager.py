@@ -94,3 +94,7 @@ class ApiKeyManager:
     @property
     def report(self) -> str:
         return f"API Keys: {len(self.keys)}\nCurrent: {self.api_key}\nCurrent Index: {self.current + 1}\nRecent Rapid Failures: {self.failures_count}"
+
+    @property
+    def state(self) -> str:
+        return "\n".join([(key if index != self.current else f'{key} ✅') for index,key in enumerate(self.keys)])

@@ -95,7 +95,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             source="CoinMarketCap",
             cache_file_name="coinmarketcap.json",
         )
-        self.keyman = ApiKeyManager(api_key, self.update_cmc)
+        self.keyman = ApiKeyManager(api_key, self.update_cmc, keystore_filename='cmc_keys')
         self.price_unit: str = price_unit
         self.cmc_api = cmc_api.CoinMarketCapAPI(self.keyman.api_key)
         self.cmc_coin_fetch_limit = cmc_coin_fetch_limit
