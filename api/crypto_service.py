@@ -166,9 +166,9 @@ class CoinMarketCapService(CryptoCurrencyService):
                 manuwriter.log('No Price Data:', x, 'CoinMarketCap')
                 coin_equalized_price = '?'
             if language != 'fa':
-                res += f"🔸 {coin_equalized_price} {coin}\n"
+                res += f"🟢 {coin_equalized_price} {coin}\n"
             else:
-                res += f"🔸 {mathematix.persianify(coin_equalized_price)} {CryptoCurrencyService.coinsInPersian[coin]}\n"
+                res += f"🟢 {mathematix.persianify(coin_equalized_price)} {CryptoCurrencyService.coinsInPersian[coin]}\n"
         return res
 
     def equalize(
@@ -238,5 +238,5 @@ class CoinMarketCapService(CryptoCurrencyService):
         except:
             pass
 
-        return f"🔸 {CryptoCurrencyService.coinsInPersian[symbol] if symbol in CryptoCurrencyService.coinsInPersian else symbol}: " + \
+        return f"⚪️ {CryptoCurrencyService.coinsInPersian[symbol] if symbol in CryptoCurrencyService.coinsInPersian else symbol}: " + \
             (no_price_message or "❗️") + "\n"

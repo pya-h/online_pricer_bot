@@ -69,7 +69,7 @@ class PostMan:
         no_price_message = self.get_default_no_price_message(language)
 
         try:
-            if desired_currencies or (not desired_coins and not desired_currencies):
+            if desired_currencies or not desired_coins:
                 # this condition is for preventing default values, when user has selected just cryptos
                 fiat, gold = (
                     await self.currency_service.get(desired_currencies, language, no_price_message)
@@ -80,7 +80,7 @@ class PostMan:
             log("Cannot obtain Currencies! ", ex, self.currency_service.Source)
             fiat, gold = self.currency_service.get_latest(desired_currencies, language, no_price_message)
         try:
-            if desired_coins or (not desired_coins and not desired_currencies):
+            if desired_coins or not desired_currencies:
                 # this condition is for preventing default values, when user has selected just currencies
                 cryptos = (
                     await self.crypto_service.get(desired_coins, language, no_price_message)
@@ -97,15 +97,18 @@ class PostMan:
         no_price_message = self.get_default_no_price_message(channel.language)
 
         try:
-            fiat, gold = self.currency_service.get_latest(
-                channel.selected_currencies, channel.language, no_price_message
-            )
+            if channel.selected_currencies or not channel.selected_coins:
+                # this condition is for preventing default values, when user has selected just cryptos
+                fiat, gold = self.currency_service.get_latest(
+                    channel.selected_currencies, channel.language, no_price_message
+                )
         except:
             if channel.selected_currencies and not fiat and not gold:
                 fiat = self.resourceman.error("failed_getting_currency_market", channel.language)
 
         try:
-            crypto = self.crypto_service.get_latest(channel.selected_coins, channel.language, no_price_message)
+            if channel.selected_coins or not channel.selected_currencies:
+                crypto = self.crypto_service.get_latest(channel.selected_coins, channel.language, no_price_message)
         except Exception as ex:
             if channel.selected_coins and not crypto:
                 crypto = self.resourceman.error("failed_getting_crypto_market", channel.language)

@@ -311,16 +311,16 @@ class NavasanService(CurrencyService):
             slug_equalized_price = mathematix.cut_and_separate(slug_equalized_price)
             if target_slug not in NavasanService.goldsInPersian:
                 if language != "fa":
-                    res_fiat += f"🔸 {slug_equalized_price} {target_slug}\n"
+                    res_fiat += f"🟢 {slug_equalized_price} {target_slug}\n"
                 else:
                     slug_equalized_price = mathematix.persianify(slug_equalized_price)
-                    res_fiat += f"🔸 {slug_equalized_price} {NavasanService.nationalCurrenciesInPersian[target_slug]}\n"
+                    res_fiat += f"🟢 {slug_equalized_price} {NavasanService.nationalCurrenciesInPersian[target_slug]}\n"
             else:
                 if language != "fa":
-                    res_gold += f"🔸 {slug_equalized_price} {NavasanService.goldsInEnglish[target_slug]}\n"
+                    res_gold += f"🟢 {slug_equalized_price} {NavasanService.goldsInEnglish[target_slug]}\n"
                 else:
                     slug_equalized_price = mathematix.persianify(slug_equalized_price)
-                    res_gold += f"🔸 {slug_equalized_price} {NavasanService.goldsInPersian[target_slug]}\n"
+                    res_gold += f"🟢 {slug_equalized_price} {NavasanService.goldsInPersian[target_slug]}\n"
         return res_fiat, res_gold
 
     def equalize(
@@ -432,9 +432,9 @@ class NavasanService(CurrencyService):
             log("Symbol not found!", x, "Navasan")
         try:
             return (
-                f"🔸 {NavasanService.getEnglishTitle(symbol_up) if language != 'fa' else NavasanService.goldsInPersian[symbol_up]}: "
+                f"⚪️ {NavasanService.getEnglishTitle(symbol_up) if language != 'fa' else NavasanService.goldsInPersian[symbol_up]}: "
                 + (no_price_message or "❗️")
             )
         except:
             pass
-        return f"🔸 {symbol}: " + (no_price_message or "❗️")
+        return f"⚪️ {symbol}: " + (no_price_message or "❗️")
