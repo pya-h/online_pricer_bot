@@ -12,12 +12,11 @@ LOG_FOLDER_PATH = "logs"
 def prepare_folder(folder_path):
     # Check if the folder exists
     main_folder_created = True
-    if not os.path.exists(folder_path):
-        # Create the folder if it doesn't exist
-        try:
+    try:
+        if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        except:
-            main_folder_created = False
+    except:
+        main_folder_created = False
     return main_folder_created
 
 def prepare_folder_with_subs(folder_path, sub_folder_path=None):
