@@ -991,6 +991,14 @@ class BotMan:
             reply_markup=self.inline_url([{"text_key": "premium", "url": link}]),
         )
 
+    async def send_message_with_premium_button_to(self, ctx: CallbackContext, target_chat_id: int, text: str):
+        link = f"https://t.me/{Account.getHardcodeAdmin()['username']}"
+        await ctx.bot.send_message(
+            chat_id=target_chat_id,
+            text=text,
+            reply_markup=self.inline_url([{"text_key": "premium", "url": link}]),
+        )
+
     async def show_settings_menu(self, update: Update):
         account = Account.get(update.message.chat)
         keyboard = ReplyKeyboardMarkup(

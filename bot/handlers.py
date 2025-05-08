@@ -1854,6 +1854,9 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
     if not update.my_chat_member or not update.my_chat_member.new_chat_member:
         return
 
+    if update.my_chat_member.chat.type not in [Chat.GROUP, Chat.SUPERGROUP]:
+        return  # Ignore channels and private chats; TODO: Modify this to also automatically handle channel joins in future.
+
     if update.my_chat_member.new_chat_member.user.id == context.bot.id:
         owner = Account.getById(update.my_chat_member.from_user.id)
         if update.my_chat_member.new_chat_member.status == ChatMemberMember.LEFT:
@@ -1920,9 +1923,10 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                     text=botman.text("group_is_active", owner.language) % (group.title,),
                 )
             else:
-                await context.bot.send_message(
-                    chat_id=owner.chat_id,
-                    text=botman.text("go_premium_for_group_activation", owner.language) % group.title,
+                await botman.send_message_with_premium_button_to(
+                    context,
+                    owner.chat_id,
+                    botman.text("go_premium_for_group_activation", owner.language) % group.title
                 )
         except MaxAddedCommunityException:
             await context.bot.send_message(

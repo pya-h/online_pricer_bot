@@ -199,7 +199,7 @@
       "en": "Change Channel"
     },
     "change_group": {
-      "fa": "تعییر گروه",
+      "fa": "تغییر گروه",
       "en": "Change Group"
     },
     "community_disconnect": {
@@ -373,7 +373,7 @@
       "en": "Something went wrong while trying to config this channel. Please try again from scratch,"
     },
     "max_groups_reached": {
-      "fa": "شما هک اکنون در حال استفاده از این بات در یک گروه دیگر هستید. در حال حاضر کاربران مجاز به استفاده از بات در حداکثر یک گروه هستند. در صورت تمایل می توانید با حذف ربات از گروه قبلی و یا استفاده از گزینه تغییر گروه در تنظیمات گروه، ربات را در گروه جدیدتان فعال کنید.",
+      "fa": "شما هم اکنون در حال استفاده از این بات در یک گروه دیگر هستید. در حال حاضر کاربران مجاز به استفاده از بات در حداکثر یک گروه هستند. در صورت تمایل می توانید با حذف ربات از گروه قبلی و یا استفاده از گزینه تغییر گروه در تنظیمات گروه، ربات را در گروه جدیدتان فعال کنید.",
       "en": "You already are using this bot in another group right now. Users are allowed to use our bot in at most 1 group for now. You can remove the bot from old group, or use the Change Group option in My Group Settings menu to activate the bot in your new group."
     },
     "max_channels_reached": {
@@ -631,12 +631,12 @@
     "en": "✅ Bot has connected to your group."
   },
   "group_is_active": {
-    "fa": "تبریک! شما گروه ربات قیمت زنده را وارد گروه '%s' نمودید. این ربات تا لحظه پایان اشتراک شما در گروه دستیار هوشمند شما و هم گروی هایتان خواهد بود.",
-    "en": "Congrats! You've added Online Pricer to your group called '%s'; From now until you're premium, this bot tries to be a smart assistant for you and your groupmates."
+    "fa": "🎉 تبریک! شما ربات قیمت زنده را وارد گروه '%s' نمودید.\n\n✅ این ربات تا لحظه پایان اشتراک شما در گروه دستیار هوشمند شما و هم گروهی هایتان خواهد بود.",
+    "en": "🎉 Congratulations! You've added Online Pricer to your group called '%s'.\n\n✅ This bot tries to be a smart assistant for you and your groupmates, while you're still premium."
   },
   "go_premium_for_group_activation": {
-    "fa": "به نظر می رسد شما ربات قیمت زنده را وارد گروه '%s' کرده اید، اما چون در حال حاضر از تعرفه رایگان استفاده می کنید این ربات قادر به فعالیت در گروه نیست. شما میتواند با تهیه اشتراک پریمیوم تهیه کنید تا ربات بصورت خودکار بعنوان دستیار هوشمند گروه مذکور فعال شود.",
-    "en": "Seems that you've added Online Pricer Bot to your group called '%s', but since you're currently using a free plan, but can not help you or your groupmates in the group. You can upgrade your account so that Online Pricer would automatically activate as smart assistanty in so called group."
+    "fa": "🎉 تبریک! به نظر می‌رسد شما ربات قیمت زنده را وارد گروه '%s' کرده‌اید.\n\n❗️ اما چون در حال حاضر از تعرفه رایگان استفاده می‌کنید این ربات قادر به فعالیت در گروه نیست! شما می‌توانید اشتراک تهیه کنید تا ربات بصورت خودکار به عنوان دستیار هوشمند فعال شود.",
+    "en": "🎉 Congratulations! It seems that you've added Online Pricer Bot to your group called '%s'\n\n❗️ Although, since you're currently using a free plan, bot can't operate in the group. You can upgrade your account so that Online Pricer would automatically activate as smart assistant in the group."
   },
   "click_to_start_channel_posting": {
     "fa": "✅ زمان بندی با موفقیت روی %s (هر %s) تنظیم شد.\n\n🔹 هر زمان که می خواهید پست گذاری در کانالتان شروع شود کافیست روی گزینه [ شروع ] کلیک کنید.",
@@ -671,7 +671,7 @@
     "en": "📌 #Gold_Market"
   },
   "markets_crypto": {
-    "fa": "📌 #بازار_ارز_دیجیتال",
+    "fa": "📌 #بازار_کریپتو",
     "en": "📌 #Cryptocurrency_Market"
   },
   "trigger_market_tags": {
