@@ -278,7 +278,6 @@ class NavasanService(CurrencyService):
             log("Update USD Price Error", ex, "Navasan")
 
         self.latest_data[self.tomanSymbol.lower()] = {"value": 1 / APIService.usdInTomans}
-        self.cache_data(json.dumps(self.latest_data))
         return self.extract_api_response(desired_ones, language, no_price_message)
 
     def load_cache(self) -> list | dict:

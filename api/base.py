@@ -4,11 +4,10 @@ from tools.exceptions import CacheFailureException
 import api.api_async as api
 from typing import Dict, List, Tuple
 
-CACHE_FOLDER_PATH = "api.cache"
-# CACHE_ARCHIVE_FOLDER_PATH = "archives"
-
 
 class BaseAPIService:
+    cacheFolderPath = "api/cache"
+    # cacheArchiveFolderPath = "archives"
     tetherSymbol = "USDT"
     dollarSymbol = "USD"
     tomanSymbol = "IRT"
@@ -28,15 +27,14 @@ class BaseAPIService:
     def cache_data(self, data: str, custom_file_name: str = None) -> None:
         if not self.cache_folder_created:
             try:
-                self.cache_folder_created = manuwriter.prepare_folder(CACHE_FOLDER_PATH)
+                self.cache_folder_created = manuwriter.prepare_folder(BaseAPIService.cacheFolderPath)
             except OSError as e:
                 manuwriter.log("api-cache folder creation failed!", e, "cache")
                 raise CacheFailureException("Cache Folder creation failed!")
         try:
             filename = self.cache_file_name if not custom_file_name else custom_file_name
-            manuwriter.fwrite_from_scratch(f"./{CACHE_FOLDER_PATH}/{filename}", data, self.Source)
-        except Exception as ex:  # caching is so important for the performance of second bot that :
-            # as soon as something goes wrong in caching, the admin must be informed.
+            manuwriter.fwrite_from_scratch(f"./{BaseAPIService.cacheFolderPath}/{filename}", data, self.Source)
+        except Exception as ex:
             manuwriter.log("Caching failure!", ex, category_name="CACHING")
             raise CacheFailureException(ex)
 
@@ -64,7 +62,7 @@ class BaseAPIService:
 
     def load_cache(self) -> list | dict:
         """Read cache and convert it to python dict/list."""
-        json_cache_file = open(f"./{CACHE_FOLDER_PATH}/{self.cache_file_name}", "r")
+        json_cache_file = open(f"./{BaseAPIService.cacheFolderPath}/{self.cache_file_name}", "r")
         str_json = json_cache_file.read()
         json_cache_file.close()
         self.latest_data = json.loads(str_json)
@@ -72,7 +70,7 @@ class BaseAPIService:
 
 
 class APIService(BaseAPIService):
-    usdInTomans = None  # not important, it is just a default value that will be updated at first api get from
+    usdInTomans = None
     tetherInTomans = None
 
     def __init__(self, url: str, source: str, params=None, cache_file_name: str = None) -> None:

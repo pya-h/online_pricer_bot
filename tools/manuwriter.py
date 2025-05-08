@@ -14,8 +14,10 @@ def prepare_folder(folder_path):
     main_folder_created = True
     if not os.path.exists(folder_path):
         # Create the folder if it doesn't exist
-        os.makedirs(folder_path)
-        return main_folder_created
+        try:
+            os.makedirs(folder_path)
+        except:
+            main_folder_created = False
     return main_folder_created
 
 def prepare_folder_with_subs(folder_path, sub_folder_path=None):

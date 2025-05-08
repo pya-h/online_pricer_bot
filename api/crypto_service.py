@@ -118,7 +118,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         return result
 
     @override
-    async def get_request(self, _headers: dict = None, no_cache: bool = False):
+    async def get_request(self, _headers: dict = None, no_cache: bool = True):
         """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService children"""
         latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=self.cmc_coin_fetch_limit)
         if not latest_cap or not latest_cap.data:

@@ -113,7 +113,7 @@ class SourceArenaService(CurrencyService):
         return response.data["data"] if "data" in response.data else [], response.text
 
     async def get(self, desired_ones: list = None) -> str:
-        self.latest_data, response_text = await self.get_request()  # update latest
+        self.latest_data, _ = await self.get_request()  # update latest
 
         usd_t = {
             curr["slug"]: curr
@@ -141,8 +141,7 @@ class SourceArenaService(CurrencyService):
             if not SourceArenaService.usdInTomans:
                 SourceArenaService.usdInTomans = SourceArenaService.defaultUsdInTomans
 
-        self.cache_data(response_text)
-        self.tether_service.cache_data(self.tether_service.summary(), custom_file_name="usd_t")
+        # self.tether_service.cache_data(self.tether_service.summary(), custom_file_name="usd_t")
         return self.extract_api_response(desired_ones)
 
     def load_cache(self) -> list | dict:

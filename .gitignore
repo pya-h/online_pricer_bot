@@ -2,7 +2,7 @@
 env
 .env.local
 test.py
-api.cache
+api/cache
 logs
 *pycache*
 *.db

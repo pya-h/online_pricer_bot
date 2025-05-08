@@ -1,7 +1,5 @@
 from typing import Callable
-
 from telegram.error import Conflict
-
 
 class ApiKeyManager:
 
@@ -43,6 +41,7 @@ class ApiKeyManager:
 
     def ok(self):
         self.failures_count = 0
+
 
     @property
     def api_key(self) -> str:
