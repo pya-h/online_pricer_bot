@@ -903,9 +903,12 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         page = 0
 
     if page == -1 or data["pg"] is None:
-        account.change_state()
-        account.delete_specific_cache("input_amounts", "input_symbols")
-        await query.message.edit_text(botman.text("list_updated", account.language))
+        # account.change_state()
+        # account.delete_specific_cache("input_amounts", "input_symbols") #TODO: remove if after testing we made sure these two lines weren't required at first.
+        if SelectionListTypes.which(data["lt"]) in [SelectionListTypes.EQUALIZER_UNIT, SelectionListTypes.ALARM]:
+            await query.message.delete()
+        else:
+            await query.message.edit_text(botman.text("list_updated", account.language))
         return
 
     if data["v"] and data["v"][0] == "$":
