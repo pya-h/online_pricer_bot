@@ -172,10 +172,14 @@ def plan_main_channel(context: CallbackContext | TelegramApplication, interval: 
         raise InvalidInputException('Command; Channel already planned!')
 
     botman.is_main_plan_on = True
+    if (first_run_offset := seconds_to_next_period(interval) - 1) > 60 and (
+        not botman.currency_serv.latest_data or not botman.crypto_serv.latest_data
+    ):
+        asyncio.run(botman.next_post())
     context.job_queue.run_repeating(
         update_markets,
         interval=interval * 60,
-        first=seconds_to_next_period(interval) - 1,
+        first=first_run_offset,
         name=botman.main_queue_id,
     )
 
