@@ -194,7 +194,6 @@ class CoinMarketCapService(CryptoCurrencyService):
             self.to_irt_exact(absolute_amount, True) if source_unit_symbol != self.tetherSymbol else amount * APIService.tetherInTomans
         )
 
-
     def get_single_price(self, crypto_symbol: str, price_unit: str = "usd", tether_instead_of_dollars: bool = True):
         if not isinstance(self.latest_data, dict):
             return None
@@ -238,5 +237,5 @@ class CoinMarketCapService(CryptoCurrencyService):
         except:
             pass
 
-        return f"⚪️ {CryptoCurrencyService.coinsInPersian[symbol] if symbol in CryptoCurrencyService.coinsInPersian else symbol}: " + \
+        return f"⚪️ {CryptoCurrencyService.coinsInPersian[symbol] if language == 'fa' and symbol in CryptoCurrencyService.coinsInPersian else symbol}: " + \
             (no_price_message or "❗️") + "\n"

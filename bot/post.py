@@ -52,7 +52,7 @@ class PostMan:
     def get_default_no_price_message(self, language: str = "fa"):
         no_price_message: str | None = None
         try:
-            no_price_message = self.resourceman.text("no_price_message", language)
+            no_price_message = self.resourceman.text_strict("no_price_message", language)
         except:
             pass
         return no_price_message

@@ -72,6 +72,9 @@ class ResourceManager:
     def text(self, text_key: str, language: str = "fa") -> str:
         return self.source[text_key][language.lower()]
 
+    def text_strict(self, text_key: str, language: str = "fa") -> str:
+        return self.source[text_key][language if language != 'FA' else 'en']
+
     def text_for_case_sensitive_key(self, text_key: str, language: str = "fa") -> str: # this is just for preventing the main func (text(...) always check a condition which only be True for 1 or 2 times in whole app)
         return self.source[text_key][language]
 

@@ -386,8 +386,9 @@ class NavasanService(CurrencyService):
                 return amount, amount * APIService.usdInTomans
             if curr_upper == self.tomanSymbol:
                 return self.irt_to_usd(amount), amount
+            currency_data = self.latest_data[currency_symbol]
             price = float(currency_data["value"])
-            if "usd" not in (currency_data := self.latest_data[currency_symbol]) or not currency_data["usd"]:
+            if "usd" not in currency_data or not currency_data["usd"]:
                 return amount * self.irt_to_usd(price), amount * price
             # if price is in $
             return amount * price, amount * self.to_irt_exact(price)
@@ -431,7 +432,7 @@ class NavasanService(CurrencyService):
             log("Symbol not found!", x, "Navasan")
         try:
             return (
-                f"⚪️ {NavasanService.getEnglishTitle(symbol_up) if language != 'fa' else NavasanService.goldsInPersian[symbol_up]}: "
+                f"⚪️ {NavasanService.currenciesInPersian[symbol_up] if language == 'fa' else NavasanService.getEnglishTitle(symbol_up)}: "
                 + (no_price_message or "❗️")
             )
         except:

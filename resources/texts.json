@@ -341,8 +341,8 @@
       "en": "❗️ Factory reset process was entrupted with an unknown errror. This means that there may be some of your options that are still not reset. Please try again some time later."
     },
     "list_type_not_specified": {
-      "fa": "❗️ متاسفانه شما مشخص نکرده اید که می خواهید کدام نوع لیست(دریافت قیمت، ماشین جساب، هشدار قیمت، کانال) را تنظیم کنید!",
-      "en": "❗️ Unfortunately you have not specified which type of list(Calculator, Price List, Price Alarm or Channels) you want to config!"
+      "fa": "❗️ لطفا از نو اقدام کنید.",
+      "en": "❗️ Please retry from scratch!"
     },
     "price_not_available": {
       "fa": "متاسفانه هم اکنون قیمت %s در دسترس نیست.",
@@ -421,7 +421,7 @@
       "en": "❗️ Unfortunately an unrecognized error happened. Please retry your operation from start again."
     },
     "failed_getting_crypto_market": {
-      "fa": "متاسفانه دریافت وضعیت بازار ارز دیجیتال ناموفق بود. لطفا لحظاتی دیگر تلاش کنید.",
+      "fa": "متاسفانه دریافت وضعیت بازار کریپتو ناموفق بود. لطفا لحظاتی دیگر تلاش کنید.",
       "en": "Unfurtunately getting cryptocurrency market data was unsuccessful. Please try again some time later."
     },
     "failed_getting_currency_market": {
@@ -663,20 +663,20 @@
     "en": "🔹 Do you prefer to show the current date tag at post headers?\n\nDate Tag Example:\n\n📆 2022/01/01 Thursday 12:30"
   },
   "markets_fiat": {
-    "fa": "📌 #بازار_ارز",
-    "en": "📌 #Currency_Market"
+    "fa": "📊 #بازار_ارز",
+    "en": "📊 #Currency_Market"
   },
   "markets_gold": {
-    "fa": "📌 #بازار_طلا",
-    "en": "📌 #Gold_Market"
+    "fa": "📊 #بازار_طلا",
+    "en": "📊 #Gold_Market"
   },
   "markets_crypto": {
-    "fa": "📌 #بازار_کریپتو",
-    "en": "📌 #Cryptocurrency_Market"
+    "fa": "📊 #بازار_کریپتو",
+    "en": "📊 #Cryptocurrency_Market"
   },
   "trigger_market_tags": {
-    "fa": "🔹 آیا می خواهید پیش نویس ها در پیام قرار بگیرند؟\n\nشکل قرار گیری:\n\n📌 #بازار_ارز\n\n📌 #بازار_طلا\n\n📌 #بازار_ارز_دیجیتال",
-    "en": "🔹 Do you want drafts to be included in the message?\n\nHere is how they seem in the message:\n\n📌#Currency_market\n\n📌#Gold_market\n\n📌 #Crypto_market"
+    "fa": "🔹 آیا می خواهید پیش نویس ها در پیام قرار بگیرند؟\n\nشکل قرار گیری:\n\n📊 #بازار_ارز\n\n📊 #بازار_طلا\n\n📊 #بازار_کریپتو",
+    "en": "🔹 Do you want drafts to be included in the message?\n\nHere is how they seem in the message:\n\n📊 #Currency_market\n\n📊 #Gold_market\n\n📊 #Crypto_market"
   },
   "price_source_changed_coingecko": {
     "fa": "منبع قیمت ها به کوین گکو تغییر یافت.",
@@ -715,12 +715,12 @@
     "en": "⚠️ It seems that bot has been downgraded inside your group to a normal member; In this case, bot will only be able to respond to users which are 'Reply'ing bot messages.\n\nIt would be a better choice to re-upgrade the bot to admin to use it in full capability."
   },
   "add_bot_to_new_group": {
-    "fa": "🔹 هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است! ربات را در گروه جدید اضافه و مدیر کنید؛ باقی فرایند بصورت خودکار انجام خواهد شد. هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است! ربات را در گروه جدید اضافه و مدیر کنید؛ باقی فرایند بصورت خودکار انجام خواهد شد.",
+    "fa": "🔹 هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است! ربات را در گروه جدید اضافه و مدیر کنید؛ باقی فرایند بصورت خودکار انجام خواهد شد.",
     "en": "🔹 Now bot's ready for the change; You should go the new group you've decided to use bot in, then Add the bot to the group and make it admin. Next procedures will automatically complete."
   },
   "rusure_to_disconnect_channel": {
     "fa": "🔹 اگر میخواهید اتصال ربات با کانال شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n❗️ این کار باعث میشود اتصال کانال فعلی قطع شود، پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
-    "en": "🔹 If you want to disconnect this bot from your channel, click on [ Disconnect ].\n\n❗️ This will disconnect the current group, and clear its settings, so if you are not sure about this, click [ Cancel ]."
+    "en": "🔹 Now bot is ready for group change; Add it to the new group and make it administrator; Rest will be handled automatically."
   },
   "rusure_to_disconnect_group": {
         "fa": "🔹 اگر میخواهید اتصال ربات با گروه شما قطع شود روی گزینه [ قطع اتصال ] کلیک کنید:\n\n❗️ این کار باعث میشود اتصال گروه فعلی قطع شود، پس اگر از این کار مطمئن نیستید روی گزینه [ لغو ] کلیک کنید.",
