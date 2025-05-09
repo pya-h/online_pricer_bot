@@ -615,12 +615,12 @@
     "en": "🔹 First you must make the bot an administrator in your channel.\n\n❗️ It's important to enable nearly all admin previllages, Otherwise bot may malfunction.\n\n🔹 Then send the Link, Address or Telegram ID of the channel or easily forward a message from it to the bot, so we can identify your channel:"
   },
   "add_bot_as_group_admin_n_go_premium": {
-    "fa": "⚠️ برای استفاده از قابلیت های ربات در گروه، ربات را در گروه مدیر کرده و اشتراک تهیه کنید.",
-    "en": "⚠️ To use our in-group features, First you should go premium (using any of our plans) and then add this bot in your group."
+    "fa": "⚠️ برای استفاده از قابلیت های ربات در گروه، ربات را در گروه مدیر کرده و اشتراک تهیه کنید.\n\n❗️ قبل از اضافه کردن ربات به گروه، اطمینان حاصل کنید که اکانتتان در حالت ناشناس نباشد.",
+    "en": "⚠️ To use our in-group features, First you should go premium (using any of our plans) and then add this bot in your group and make it administrator.\n\n❗️ To make sure everything works as expected, Before adding the bot, make sure the anonymous option for your account is OFF in group administrator settings."
   },
   "add_bot_as_group_admin": {
-    "fa": "⚠️ برای استفاده از قابلیت های ربات در گروه، ربات را در گروه مدیر کنید.",
-    "en": "⚠️ In order to use our in-group features, You should add this bot in your group."
+    "fa": "🔹 برای استفاده از قابلیت‌های ربات در گروه، ربات را در گروه اضافه و مدیر کنید.\n\n❗️ قبل از اضافه کردن ربات به گروه، اطمینان حاصل کنید که اکانتتان در حالت ناشناس نباشد.",
+    "en": "🔹 In order to use our in-group features, You should add this bot in your group and make it administrator.\n\n❗️ To make sure everything works as expected, Before adding the bot, make sure the anonymous option for your account is OFF in group administrator settings."
   },
   "select_post_interval": {
     "fa": "🔹 بازه زمانی بروزرسانی شدن قیمت در کانالتان را تعیین کنید؟\n\n❗️ مثلا اگر می‌خواهید هر ۵ دقیقه قیمت‌ها بروز شوند و در کانالتان ارسال شوند، باید گزینه 5m را انتخاب کنید\n\n❗️ در صورتی که بازه زمانی مدنظر شما در لیست زیر نباشد می‌توانید بصورت دستی بنویسید:\n\n❗️ مثلاً اگر می‌خواهید بازه زمانی شما [ ۱۵ دقیقه ] تنظیم شود باید به زبان انگلیسی بنویسید: 15m\n\n🕒 m = دقیقه\n🕒 h = ساعت\n🕒 d = روز",
@@ -711,8 +711,8 @@
     "en": "✅ Bot is now connected to the new group you've added it."
   },
   "group_admin_downgraded_bot": {
-    "fa": "️⚠️ به نظر می رسد ربات در گروه از حالت ادمین خارج شده و به کاربر عادی تبدیل شده است؛ دئر این صورت، ربات تنها درصورتی قادر به پاسخ گویی خواهد بود که کاربران، پیام ربات را 'Reply' کرده باشند؛\n\nبهتر است برای کارایی بهتر ربات را دوباره به حالت ادمین بازگردانید. ",
-    "en": "⚠️ It seems that bot has been downgraded inside your group to a normal member; In this case, bot will only be able to respond to users which are 'Reply'ing bot messages.\n\nIt would be a better choice to re-upgrade the bot to admin to use it in full capability."
+    "fa": "️⚠️ ربات در گروه شما از حالت مدیر خارج شده است.\n\n✅ برای فعال شدن ربات در گروهتان باید آن را مدیر کنید.",
+    "en": "⚠️ Bot has been downgraded to a normal member inside your group\n\n✅ You should make the bot admin to fully enable bot's features."
   },
   "add_bot_to_new_group": {
     "fa": "🔹 هم اکنون ربات آماده تغییر اتصال خود از گروه فعلی به گروه جدید است! ربات را در گروه جدید اضافه و مدیر کنید؛ باقی فرایند بصورت خودکار انجام خواهد شد.",

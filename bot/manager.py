@@ -571,11 +571,11 @@ class BotMan:
             }
         )
 
-    def inline_keyboard(
+    def create_tokens_menu(
         self,
         list_type: Enum,
         button_type: Enum,
-        choices: Dict[str, str],
+        choices_fa: Dict[str, str],
         selected_ones: List[str] | List[str] = None,
         page: int = 0,
         max_page_buttons: int = 90,
@@ -588,7 +588,7 @@ class BotMan:
             selected_ones = []
         buttons: List[List[InlineKeyboardButton]] = []
         pagination_menu: List[InlineKeyboardButton] | None = None
-        buttons_count = len(choices)
+        buttons_count = len(choices_fa)
 
         if buttons_count > max_page_buttons:
             idx_first, idx_last = page * max_page_buttons, (page + 1) * max_page_buttons
@@ -596,7 +596,7 @@ class BotMan:
                 idx_last = buttons_count
 
             pages_count = int(buttons_count / max_page_buttons)
-            choice_keys = list(choices.keys())[(idx_first if idx_first else choices_start_offset) : idx_last]
+            choice_keys = list(choices_fa.keys())[(idx_first if idx_first else choices_start_offset) : idx_last]
             pagination_menu = [
                 InlineKeyboardButton(
                     "<<", callback_data=BotMan.inlineKeyboardChoiceCallbackData(list_type, button_type, page=0)
@@ -630,12 +630,15 @@ class BotMan:
                 ),
             ]
         else:
-            choice_keys = choices.keys() if not choices_start_offset else list(choices.keys())[choices_start_offset:]
+            choice_keys = choices_fa.keys() if not choices_start_offset else list(choices_fa.keys())[choices_start_offset:]
 
         row_length: int = 0
         row: List[InlineKeyboardButton] = []
         for choice in choice_keys:
-            btn_text = choice if language != "fa" else choices[choice]
+            btn_text = (
+                choice if button_type.value == MarketOptions.CRYPTO.value 
+                else self.currency_serv.getEnglishTitle(choice)
+            ) if language != "fa" else choices_fa[choice]
             row_length += 1 + int(len(btn_text) / 5)
             if choice in selected_ones:
                 btn_text += "✅"

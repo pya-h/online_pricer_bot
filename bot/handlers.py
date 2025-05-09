@@ -57,7 +57,7 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
 
     await update.message.reply_text(
         botman.text("select_your_set", account.language),
-        reply_markup=botman.inline_keyboard(
+        reply_markup=botman.create_tokens_menu(
             list_type,
             market,
             (
@@ -942,7 +942,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         case SelectionListTypes.ALARM:
             if "v" not in data or not data["v"]:
                 await query.message.edit_reply_markup(
-                    reply_markup=botman.inline_keyboard(
+                    reply_markup=botman.create_tokens_menu(
                         list_type,
                         market,
                         (
@@ -985,7 +985,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
         selection_list = BotMan.handleMarketSelection(account, list_type, market, data["v"])
 
         await query.message.edit_reply_markup(
-            reply_markup=botman.inline_keyboard(
+            reply_markup=botman.create_tokens_menu(
                 list_type,
                 market,
                 (
