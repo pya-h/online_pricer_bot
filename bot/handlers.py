@@ -104,11 +104,9 @@ async def notify_source_change(context: CallbackContext):
 
 
 async def update_markets(context: CallbackContext):
-    res = await botman.next_post()
-    await asyncio.gather(
-        botman.handle_possible_alarms(context),
-        context.bot.send_message(chat_id=botman.channels[0]["id"], text=res)
-    )
+    # res = await botman.next_post()
+    await botman.update_markets()
+    await botman.handle_possible_alarms(context)
 
 
 async def cmd_welcome(update: Update | CallbackQuery, context: CallbackContext):
@@ -167,7 +165,7 @@ async def cmd_equalizer(update: Update, context: CallbackContext):
     )
 
 
-def plan_main_channel(context: CallbackContext | TelegramApplication, interval: float | int = 10):
+def plan_market_updates(context: CallbackContext | TelegramApplication, interval: float | int = 10):
     if botman.is_main_plan_on:
         raise InvalidInputException('Command; Channel already planned!')
 
@@ -200,7 +198,7 @@ async def cmd_schedule_channel_update(update: Update, context: CallbackContext):
         log("Something went wrong while scheduling: ", e)
 
     try:
-        plan_main_channel(context, botman.main_plan_interval)
+        plan_market_updates(context, botman.main_plan_interval)
         await update.message.reply_text(
             botman.text("channel_planning_started", account.language) % (botman.main_plan_interval,))
     except InvalidInputException:

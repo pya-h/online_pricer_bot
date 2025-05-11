@@ -251,12 +251,8 @@ class NavasanService(CurrencyService):
 
         APIService.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
 
-    async def get(
-        self,
-        desired_ones: List[str] = None,
-        language: str = "fa",
-        no_price_message: str | None = None,
-    ) -> Tuple[str, str]:
+
+    async def update(self):
         try:
             new_data = await self.get_request()
             self.pre_latest_data = self.latest_data # only update pre_latest when the api call was ok
@@ -265,7 +261,7 @@ class NavasanService(CurrencyService):
             log('Navasan API Error:', ex, 'Navasan')
 
         if not self.latest_data:
-            return '', ''  # TODO: Think on whats the best course of action?
+            return False
 
         await asyncio.gather(
             self.gold_service.append_gold_prices(self.latest_data),
@@ -278,6 +274,16 @@ class NavasanService(CurrencyService):
             log("Update USD Price Error", ex, "Navasan")
 
         self.latest_data[self.tomanSymbol.lower()] = {"value": 1 / APIService.usdInTomans}
+        return True
+
+    async def get(
+        self,
+        desired_ones: List[str] = None,
+        language: str = "fa",
+        no_price_message: str | None = None,
+    ) -> Tuple[str, str]:
+        if not (await self.update()):
+            return '', ''
         return self.extract_api_response(desired_ones, language, no_price_message)
 
     def load_cache(self) -> list | dict:

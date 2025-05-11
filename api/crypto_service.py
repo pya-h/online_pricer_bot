@@ -95,13 +95,13 @@ class CoinMarketCapService(CryptoCurrencyService):
             source="CoinMarketCap",
             cache_file_name="coinmarketcap.json",
         )
-        self.keyman = ApiKeyManager(api_key, self.update_cmc, keystore_filename='cmc_keys')
+        self.keyman = ApiKeyManager(api_key, self.update_cmc_api, keystore_filename='cmc_keys')
         self.price_unit: str = price_unit
         self.cmc_api = cmc_api.CoinMarketCapAPI(self.keyman.api_key)
         self.cmc_coin_fetch_limit = cmc_coin_fetch_limit
         self.pre_latest_data: dict | None = None
 
-    def update_cmc(self, api_key: str):
+    def update_cmc_api(self, api_key: str):
         self.cmc_api = cmc_api.CoinMarketCapAPI(api_key)
 
     def set_price_unit(self, pu):
@@ -128,8 +128,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             self.cache_data(json.dumps(result))
         return result
 
-    @override
-    async def get(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+    async def update(self):
         try:
             new_data = await self.get_request()  # update latest
             self.pre_latest_data = self.latest_data # only update pre_latest when api call was ok
@@ -138,6 +137,10 @@ class CoinMarketCapService(CryptoCurrencyService):
         except Exception as x:
             manuwriter.log('Failed obtaining newest Cryptocurrency prices', x, category_name='CoinMarketCap')
             self.keyman.fail()
+
+    @override
+    async def get(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+        await self.update()
         return self.extract_api_response(desired_ones, language, no_price_message)
 
     def extract_api_response(self, desired_coins: List[str] = None, language: str = 'fa', no_price_message: str | None = None):

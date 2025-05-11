@@ -917,6 +917,16 @@ class BotMan:
     async def next_post(self, language: str = "fa"):
         return await self.postman.create_post(post_interval=self.main_plan_interval, language=language)
 
+    async def update_markets(self):
+        try:
+            await self.currency_serv.update()
+        except Exception as ex:
+            log("CurrencyAPI failed:", ex, self.currency_serv.Source)
+        try:
+            await self.crypto_serv.update()
+        except Exception as ex:
+            log("CryptocurrencyAPI failed:", ex, self.crypto_serv.Source)
+
     def is_alarm_triggered(self, alarm: PriceAlarm) -> bool:
         try:
             alarm.current_price = (
