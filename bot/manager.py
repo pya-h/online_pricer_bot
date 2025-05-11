@@ -1136,6 +1136,8 @@ class BotMan:
         while i < finder.word_count:
             prev_word: str | float = words[i - 1] if i else 1.0
             slug, word_count = finder.search_around(self.crypto_serv.coinsInPersian, i)
+            if not slug:
+                slug, word_count = finder.search_around(self.crypto_serv.persianShortcuts, i, check_slug=False) # since slugs are checked in previous call
             if slug:
                 multiplier = BotMan.extractMultiplier(prev_word)
                 crypto_amounts.add(f"{multiplier} {slug}")
@@ -1143,9 +1145,9 @@ class BotMan:
                 slug, word_count = finder.search_around(self.currency_serv.currenciesInPersian, i)
 
                 if not slug:
-                    slug, word_count = finder.search_around(self.currency_serv.persianShortcuts, i)
+                    slug, word_count = finder.search_around(self.currency_serv.persianShortcuts, i, check_slug=False)
                     if not slug:
-                        slug, word_count = finder.search_around(self.currency_serv.goldsInEnglish, i)
+                        slug, word_count = finder.search_around(self.currency_serv.goldsInEnglish, i, check_slug=False)
                 if slug:
                     multiplier = BotMan.extractMultiplier(prev_word)
                     currency_amounts.add(f"{multiplier} {slug}")

@@ -1,7 +1,6 @@
 import asyncio
 
 from api.base import *
-import json
 from tools.exceptions import InvalidInputException
 from api.tether_service import AbanTetherService, NobitexService
 from tools.manuwriter import log, load_json
@@ -12,28 +11,28 @@ from typing import List, Tuple, Any, override
 
 def get_gold_names(filename: str):
     try:
-        return load_json(filename, "./api/data")
+        return load_json(filename, "api/data")
     except Exception as e:
-        log("Cannot get currency names", exception=e, category_name="SETUP")
-
+        log("Cannot load currency names", exception=e, category_name="SETUP")
+    return {}
 
 def get_persian_currency_names():
     try:
-        currency_names_fa = load_json("national-currencies.fa", "./api/data")
-        gold_names_fa = load_json("golds.fa", "./api/data")
-        gold_names_en = load_json("golds.en", "./api/data")
+        currency_names_fa = load_json("national-currencies.fa", "api/data")
+        gold_names_fa = load_json("golds.fa", "api/data")
+        gold_names_en = load_json("golds.en", "api/data")
         return currency_names_fa, gold_names_fa, gold_names_en
     except Exception as e:
         log("Cannot get currency names", exception=e, category_name="SETUP")
 
     return None, None, None
 
-
-def get_shortcuts():
+def get_currency_persian_shortcuts():
     try:
-        return load_json("fiat-shortcut.fa", "./api/data")
+        return load_json("fiat-shortcut.fa", "api/data")
     except Exception as e:
-        log("Cannot get currency names", exception=e, category_name="SETUP")
+        log("Cannot get currency persian shortcuts", exception=e, category_name="SETUP")
+    return {}
 
 
 class CurrencyService(APIService):
@@ -176,13 +175,6 @@ class NavasanService(CurrencyService):
         return selection or NavasanService.defaults
 
     @staticmethod
-    def find(word: str):
-        for slug in NavasanService.currenciesInPersian:
-            if slug == word or NavasanService.currenciesInPersian[slug] == word:
-                return slug
-        return None
-
-    @staticmethod
     def loadPersianNames():
         (
             NavasanService.nationalCurrenciesInPersian,
@@ -194,7 +186,7 @@ class NavasanService(CurrencyService):
             NavasanService.nationalCurrenciesInPersian, **NavasanService.goldsInPersian
         )
         NavasanService.goldsInEnglish = dict(GoldService.goldsInEnglish, **NavasanService.goldsInEnglish)
-        NavasanService.persianShortcuts = get_shortcuts()
+        NavasanService.persianShortcuts = get_currency_persian_shortcuts()
         NavasanService.majorPriceUnits = {
             "irt": {"fa": NavasanService.currenciesInPersian["IRT"], "FA": "IRT", "en": "IRT"},
             "usd": {"fa": NavasanService.currenciesInPersian["USD"], "FA": "USD", "en": "USD"},

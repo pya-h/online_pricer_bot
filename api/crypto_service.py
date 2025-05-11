@@ -3,6 +3,7 @@ from api.base import *
 from api.key_manager import ApiKeyManager
 from tools.exceptions import NoLatestDataException, InvalidInputException
 from typing import List, Tuple, override
+from tools.manuwriter import log, load_json
 
 
 # Parent Class
@@ -10,11 +11,14 @@ class CryptoCurrencyService(APIService):
     coinsInPersian: Dict[str, str] | None = None
     defaults = ("BTC", "ETH", "USDT", "BNB", "TON")
     userDefaults = ("BTC", "USDT")
+    persianShortcuts: Dict[str, str] | None = None
 
     def __init__(self, url: str, source: str, params=None, cache_file_name: str = None) -> None:
         super().__init__(url, source, params, cache_file_name)
         if not CryptoCurrencyService.coinsInPersian:
             CryptoCurrencyService.coinsInPersian = CryptoCurrencyService.loadPersianNames()
+        if not CryptoCurrencyService.persianShortcuts:
+            CryptoCurrencyService.persianShortcuts = CryptoCurrencyService.loadPersianShortcuts()
 
     @staticmethod
     def getDefaultCryptos():
@@ -28,28 +32,20 @@ class CryptoCurrencyService(APIService):
         return desired_ones or list(CryptoCurrencyService.defaults)
 
     @staticmethod
-    def find(words: List[str], index: int, word_count: int, max_name_word_count=4):
-        # word_count is for not calculating the words length every time.
-        word = words[index]
-        for coin in CryptoCurrencyService.coinsInPersian:
-            if coin == word or CryptoCurrencyService.coinsInPersian[coin] == word:
-                return coin
-            coin_words = CryptoCurrencyService.coinsInPersian[coin].split()
-            if word in CryptoCurrencyService.coinsInPersian[coin]:
-                # for multi-word coins
-                i = index + max_name_word_count if index + max_name_word_count < word_count else word_count - 1
-        return None
+    def loadPersianNames() -> dict:
+        try:
+            return load_json("coins.fa", "api/data")
+        except Exception as e:
+            log("Cannot load crypto currency names", exception=e, category_name="SETUP")
+        return {}
 
     @staticmethod
-    def loadPersianNames() -> dict:
-        coins_fa = "{}"
+    def loadPersianShortcuts():
         try:
-            persian_coin_names_file = open("./api/data/coins.fa.json", "r")
-            coins_fa = persian_coin_names_file.read()
-            persian_coin_names_file.close()
-        except:
-            pass
-        return json.loads(coins_fa)
+            return load_json("crypto-shortcut.fa", "api/data")
+        except Exception as e:
+            log("Cannot load crypto currency persian shortcuts", exception=e, category_name="SETUP")
+        return {}
 
     @staticmethod
     def getPersianName(symbol: str) -> str:
