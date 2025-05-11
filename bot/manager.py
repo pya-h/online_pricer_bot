@@ -1144,6 +1144,8 @@ class BotMan:
 
                 if not slug:
                     slug, word_count = finder.search_around(self.currency_serv.persianShortcuts, i)
+                    if not slug:
+                        slug, word_count = finder.search_around(self.currency_serv.goldsInEnglish, i)
                 if slug:
                     multiplier = BotMan.extractMultiplier(prev_word)
                     currency_amounts.add(f"{multiplier} {slug}")
