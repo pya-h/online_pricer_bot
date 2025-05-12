@@ -1882,7 +1882,7 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
             if owner.state == Account.States.CHANGE_GROUP:
                 old_group_id = owner.get_cache("changing_id")
                 old_group: Group
-                if not old_group_id or not (old_group := Group.get(old_group_id, no_fastmem=True)):
+                if not old_group_id or not (old_group := Group.get(old_group_id)):
                     await context.bot.send_message(
                         chat_id=owner.chat_id,
                         text=botman.error("unexpected_error", owner.language),

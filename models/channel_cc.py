@@ -80,6 +80,7 @@ class PostInterval(GroupInlineKeyboardButtonTemplate):
 
 
 class Channel:
+    Instances = {}
     _database: DatabaseInterface = None
 
     @staticmethod
@@ -91,7 +92,7 @@ class Channel:
     @staticmethod
     def GetHasPlanChannels():
         """return all channel table rows that has interval > 0"""
-        channels = dict()
+        Channel.Instances.clear()
         channels_as_row = Channel.database().get_channels_by_interval()  # fetch all positive interval channels
         for row in channels_as_row:
             channel = Channel(
@@ -102,8 +103,8 @@ class Channel:
                 channel_title=row[4],
                 owner_id=int(row[-1]),
             )
-            channels[channel.id] = channel
-        return channels
+            Channel.Instances[channel.id] = channel
+        return Channel.Instances
 
     SupportedIntervals: list[PostInterval] = [
         *[PostInterval(f"{m}m", minutes=m) for m in [1, 5, 10, 15, 30]],
@@ -172,8 +173,12 @@ class Channel:
 
     def plan(self) -> bool:
         if self.interval <= 0:
+            if self.id in Channel.Instances:
+                # plan and delete in database
+                del Channel.Instances[self.id]
             return False  # Plan removed
 
+        Channel.Instances[self.id] = self
         self.is_active = True
         Channel.database().set_channel_state(self.id, True)
         return True
@@ -219,6 +224,8 @@ class Channel:
         self.title = new_chat.title
 
         Channel.database().update_channel(self, old_chat_id=old_chat_id)
+        if old_chat_id in Channel.Instances:
+             del Channel.Instances[old_chat_id]
         return self
 
     def throw_in_trashcan(self):
@@ -288,6 +295,8 @@ class Channel:
     @staticmethod
     def get(channel_id):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
+        if channel_id in Channel.Instances:
+            return Channel.Instances[channel_id]
         row = Channel.database().get_channel(channel_id)
         if row:
             return Channel.extractQueryRowData(row)

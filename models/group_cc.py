@@ -18,7 +18,10 @@ from api.currency_service import NavasanService
 
 
 class Group:
+    fastMemInstances = {}
     _database: DatabaseInterface = None
+    PreviousFastMemGarbageCollectionTime: int = now_in_minute()
+    FastMemGarbageCollectionInterval: int = 5
 
     @staticmethod
     def database():
@@ -38,6 +41,7 @@ class Group:
         message_footnote: str | None = None,
         message_show_date_tag: bool = False,
         message_show_market_tags: bool = True,
+        no_fastmem: bool = False,
         owner: Account = None,
     ) -> None:
         self.owner_id: int = int(owner_id)
@@ -55,6 +59,14 @@ class Group:
         self.owner: Account | None = owner or Account.getFast(
             self.owner_id
         )  # TODO: Use SQL JOIN and Use it In case fastmem is empty
+        if not no_fastmem:
+            self.organize_fastmem()
+        # TODO: Maybe create a MessageSetting class? to use in group/channel
+        # TODO: Do the same for channels
+
+    def organize_fastmem(self):
+        Group.garbageCollect()
+        Group.fastMemInstances[self.id] = self
 
     def __str__(self) -> str:
         return f"Groupname:{self.name}\nId: {self.id}\nOwner Id: {self.owner_id}"
@@ -72,11 +84,15 @@ class Group:
         self.title = new_chat.title
 
         Group.database().update_group(self, old_chat_id=old_chat_id)
+        if Group.fastMemInstances[old_chat_id]:
+            del Group.fastMemInstances[old_chat_id]
         return self
 
     def delete(self) -> bool:
         try:
             Group.database().delete_group(self.id)
+            if self.id in Group.fastMemInstances:
+                del Group.fastMemInstances[self.id]
         except Exception as ex:
             log(f"Cannot remove Group:{self.id}", ex, category_name="Group")
             return False
@@ -85,6 +101,11 @@ class Group:
     @staticmethod
     def deleteAllUserGroups(user_id: int):
         Group.database().delete_all_user_groups(user_id)
+        Group.fastMemInstances = {
+            chat_id: group
+            for chat_id, group in Group.fastMemInstances.items()
+            if group.owner_id != user_id
+        }
 
     def throw_in_trashcan(self):
         self.database().trash_sth(
@@ -182,16 +203,21 @@ class Group:
         }
 
     @staticmethod
-    def get(group_id):
+    def get(group_id, no_fastmem: bool = False):
         # FIXME: Use SQL 'JOIN ON' keyword to load group and owner accounts simultaneously.
+        if group_id in Group.fastMemInstances:
+            Group.fastMemInstances[group_id].last_interaction = now_in_minute()
+            return Group.fastMemInstances[group_id]
         row = Group.database().get_group(group_id)
         if row:
-            return Group.extractQueryRowData(row)
+            return Group.extractQueryRowData(row, no_fastmem)
 
         return None
 
     @staticmethod
-    def extractQueryRowData(row: tuple, owner: Account | None = None):
+    def extractQueryRowData(
+        row: tuple, owner: Account | None = None, no_fastmem: bool = False
+    ):
         return Group(
             group_id=int(row[0]),
             group_name=row[1],
@@ -203,6 +229,7 @@ class Group:
             message_show_date_tag=bool(row[7]),
             message_show_market_tags=bool(row[8]),
             owner_id=int(row[-1]),
+            no_fastmem=no_fastmem,
             owner=owner,
         )
 
@@ -257,12 +284,43 @@ class Group:
         return group
 
     @staticmethod
+    def garbageCollect():
+        now = now_in_minute()
+        if (
+            now - Group.PreviousFastMemGarbageCollectionTime
+            <= Group.FastMemGarbageCollectionInterval
+        ):
+            return
+
+        Group.fastMemInstances = {
+            chat_id: group
+            for chat_id, group in Group.fastMemInstances.items()
+            if group.last_interaction < Group.FastMemGarbageCollectionInterval
+        }
+
+        Group.PreviousFastMemGarbageCollectionTime = now
+        gc.collect()
+
+    @staticmethod
+    def refreshFastMem():
+        Group.fastMemInstances.clear()
+        gc.collect()
+
+    @staticmethod
     def usersGroupCount(user_chat_id: int) -> int:
         return Group.database().user_groups_count(user_chat_id)
 
     @staticmethod
     def userHasAnyGroups(user_chat_id: int) -> bool:
         return bool(Group.database().get_user_groups(user_chat_id, take=1))
+
+    @staticmethod
+    def getFast(group_id: int):
+        return (
+            Group.fastMemInstances[group_id]
+            if group_id in Group.fastMemInstances
+            else None
+        )
 
     @staticmethod
     def restoreTrash(trash_identifier: int):
@@ -288,6 +346,7 @@ class Group:
             map(
                 lambda row: Group.extractQueryRowData(
                     row[:len(DatabaseInterface.GROUPS_COLUMNS)],
+                    no_fastmem=True,
                     owner=Account.extractQueryRowData(row[len(DatabaseInterface.GROUPS_COLUMNS):], no_fastmem=True),
                 ),
                 groups_query_data,
