@@ -1684,6 +1684,6 @@ class BotMan:
 
     @staticmethod
     def updateUserLanguage(account: Account, language: str):
-        Channel.updateUserChannels(account)
         account.language = language
+        Channel.updateUserChannels(account)
         account.save()
