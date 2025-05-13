@@ -1938,6 +1938,13 @@ async def handle_new_group_members(update: Update, context: CallbackContext):
                 chat_id=owner.chat_id,
                 text=botman.error("max_groups_reached", owner.language),
             )
+        except ValueError:
+            owner.change_state(clear_cache=True)
+            context.bot.send_message(
+                chat_id=owner.chat_id,
+                text=botman.error("unhandled_error_happened", owner.language),
+                reply_markup=botman.mainkeyboard(owner),
+            )
         return
 
 

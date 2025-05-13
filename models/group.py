@@ -243,7 +243,8 @@ class Group:
                 raise MaxAddedCommunityException("group")
         elif not allowed_group_count:
             raise UserNotAllowedException(owner_id, "have groups")
-
+        if chat.id >= 0:
+            raise ValueError('Invalid Group!')
         group = Group(
             owner_id=owner_id,
             group_id=chat.id,
