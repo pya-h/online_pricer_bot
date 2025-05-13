@@ -1,16 +1,18 @@
+
 from models.account import Account
 from api.crypto_service import CoinMarketCap
 from api.currency_service import SourceArena
 
 
+x = CoinMarketCap('fuck')
+y = SourceArena('1', '2')
 chats = Account.Everybody()
 
-x = CoinMarketCap()
-y = SourceArena()
 for chat_id in chats:
     try:
         acc = Account.Get(chat_id)
         changed = False
+        #print(acc.desired_coins, acc.desired_currencies)
         if acc.desired_coins:
             new_cryptos = list(filter(lambda token: token in CoinMarketCap.CoinsInPersian, acc.desired_coins))
             changed = len(new_cryptos) != len(acc.desired_coins)
