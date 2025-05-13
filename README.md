@@ -1,72 +1,173 @@
-# Crypto Price Bot
-# Language: Python
-Running at:<br>
-<h2><a href="https://t.me/online_pricer_bot">Online Pricer Bot v1: Production</a></h2>
-<br>
-<h3><a href="https://t.me/temp_the_next_bot">Online Pricer Bot v2: Staging</a></h3>
-<hr>
-This telegram bot is for obtaining last updates on cryptocurrncies.
-it also can work as an channel admin to post updates every five minutes.
+## 🪙 Online Pricer Bot
 
-# Requirements (.env file):
-* BOT API TOKEN: The token you got from the botfather
-* CMC_API-KEY: API KEY obtained from CoinMarketCap API section. (Free/VIP modes: CoinMarketCap.com)
-* CURRENCY_TOKEN: API KEY obtained from SourceArena. (You have to upgrade your account to VIP in sourcearena.ir)
-* ABAN_TETHER_TOKEN: This api key is used just for obtaining Tether price in tomans. (Free: abantether.com)
-* CHANNEL_ID: The id of the channel you want to add this bot as updater to it. you must give channel admin previllages to the bot.
-    Only users that subscribe this channel (and channel related to SECOND_CHANNEL_ID, if set) can use bot features.
-* ADMIN_USERNAME | ADMIN_PASWORD: desired admin credentials.
-* SECOND_CHANNEL_ID: if you set this, Only users that subscribe this bot (and channel related to CHANNEL_ID obviously!), can use bot features.
-* pip install -r requirements.txt
+**A Telegram bot for real-time crypto and currency price monitoring, alerts, and broadcasting — with advanced group, channel, and admin capabilities.**
 
-# Common Bot Commands:
-* /start : Start the bot
-* /get: get current prices as a response inside the bot
-* /crypto : select your desired coins that you want to keep track of their prices.
-    once you selected your desired coins, any message you'll get by
-    /get command will just show the price of your desired coins.
-    Note that the channel message containing the price list
-    will not be affected by your desired list.
-* /currency : select your desired currencies(Physical Money units, oil, gold, etc) that you want to keep track of their prices.
-    once you selected your desired currencies, any message you'll get by
-    /get command will just show the price of your desired currencies.
-    Note that the channel message containing the price list
-    will not be affected by your desired list.
-* /currency : select your desired golds that you want to keep track of their prices.
-    once you selected your desired currencies, any message you'll get by
-    /get command will just show the price of your desired golds.
-    Note that the channel message containing the price list
-    will not be affected by your desired list.
-* /god user password : tries to login you as admin by the username
-     and password you provied in the command arguments
+---
 
-# Bot Commands needing admin privillages
-* /schedule time_interval : start scheduling the channel update
-    by the interval you've sent in the argument.
-    if interval isnt provided, the default interval will be used (5 minutes.)
-* /gecko change the source of cryptocurrency prices to CoinGecko
-* /marketcap change the source of cryptocurrency prices to CoinMarketCap
-* /stop stop the channel update queue
-* /post : enables to send a post to all active users; just click the command, write a text message(voice/audio/photo/etc are supported too)
-    and send. Bot will start sending the post while showing you the progress as in percentage.
-* /stats: Shows a brief report of bot users; report consists of the number of users that have been active within: today/yesterday/last week/last year
-    and number of all users in total.
+## 📌 Overview
 
-# Admin Keyboard
-once you authenticated yourself as admin you will see 4 new options in keyboard below the bot.
-* Statistics: Shortcut for /stats command
-* Notify: Shortcut for /post command
-* Start Channel Scheduling: Shortcut for /schedule command
-* Stop Schedule: Shortcut for /stop command
-  
-# Note:
-* User who is authenticated as Admin, will be logged out after 30 minutes of inactivity; just for security purposes. and alongside that the admin keyboard will be hidden again.
-* For enhancing performance, active users data will be cached in memory; Also there is a GarbageCollector method running every hour to free memory from inactive users.
-* For now Using CoinGecko as source, may encounter some bugs that will be fixed soon.
-* Admin commands need authorization. but you can provide the admin credentials
-    alongside these commands, so you won't need to /god before them. like:
-/schedule username password interval
-/gecko username password
-   .
-    once you did one admin command as above, the further authorization
-        for other admin commands, won't be needed.
+Online Pricer Bot allows users to:
+
+- Track live prices of cryptocurrencies, currencies, and gold
+- Set price alerts
+- Use the bot in groups as a price calculator and announcer
+- Connect their own Telegram channels for automated posting
+- Upgrade to VIP for enhanced features
+- Administer and monitor usage with rich statistics and control
+- Supports Both Persian & English languages; And a middle stage: Persian with English symbols; Which user selects at bot start up.
+
+---
+
+## 💡 Features
+
+### 👥 For Users
+
+- 🔎 **Smart Price Search**:
+  - Search tokens or currencies by **symbol**, **Persian name**, or **English name**
+  - Works in both **private chat** and **groups**
+
+- 🛠️ **Customizable Watchlists**:
+  - Add specific coins, currencies, or gold types to monitor
+  - Use `/get` or the inline calculator keyboard to get your selected prices
+
+- 📢 **Group Integration**:
+  - Use the bot in groups as a **price announcer** or **price calculator**
+  - Each group can have a separate custom token list
+  - Group usage requires VIP status
+
+- 📡 **Channel Integration**:
+  - Users can link their own Telegram **channels** to schedule price updates
+  - Each user configures their own update interval and token list
+  - Channel activation requires VIP
+
+- 🚨 **Price Alerts**:
+  - Set alerts for specific tokens/currencies to notify you when they reach a desired price
+
+- 🌟 **VIP Upgrade**:
+  - Allows longer watchlists
+  - Enables group and channel integrations
+  - Required for advanced features
+
+---
+
+### 🛡️ For Admins
+
+- 📈 **Statistics Dashboard**:
+  - Daily, weekly, monthly, and yearly statistics on: [God Admin only]
+    - User messages
+    - New users
+    - VIP upgrades
+    - Group and channel activation
+
+- 🔧 **User Management**:
+  - Upgrade users to **staff admins** [God Admin only]
+  - View all VIP users [God Admin only]
+  - Manually upgrade users to VIP.
+
+- 📬 **Broadcast Tools**: [God Admin only]
+  - Send **ads or announcements** to all users
+  - Auto-delete Ads/Announcements too.
+  - Broadcasts can include text, images, audio, etc.
+
+- 🧾 **VIP Plan Management**: [God Admin only]
+  - Update the list of available VIP plans shown to users
+
+---
+
+## ⚙️ Setup
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/pya-h/online_pricer_bot.git
+   cd online_pricer_bot
+
+2. **Install Dependencies**:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Create `.env` File**:
+
+   ```env
+    BOT_TOKEN=
+    BOT_USERNAME=
+    CURRENCY_TOKEN=
+    ABAN_TETHER_TOKEN=
+    COINMARKETCAP_API_KEY=
+    CHANNEL_ID=
+    CHANNEL_USERNAME=
+    CHANNEL_URL=
+    SECOND_CHANNEL_ID=
+    SECOND_CHANNEL_USERNAME=
+    SECOND_CHANNEL_URL=
+    ADMIN_USERNAME=
+    ADMIN_PASSWORD=
+    HARDCODE_ADMIN_USERNAME=
+    HARDCODE_ADMIN_CHATID=
+    DATABASE_HOST=
+    DATABASE_USERNAME=
+    DATABASE_PASSWORD=
+    DATABASE_NAME=
+    HOST_URL=
+    BOT_TAG=
+    BOT_PORT=
+    RUN_METHOD=
+    MAIN_CHANNEL_DEFAULT_INTERVAL=
+   ```
+
+---
+
+## 💬 Commands
+
+> Some commands have been **shortened or revised** from earlier versions.
+
+### 🔓 General User Commands
+
+| Command         | Description                                         |
+| --------------- | --------------------------------------------------- |
+| `/start`        | Start the bot                                       |
+| `/get`          | Get current prices from your list                   |
+| `/equalizer`    | Enter calculator mode                               |
+| `/currency`     | Manage currency watchlist                           |
+| `/crypto`       | Manage cryptocurrency watchlist                     |
+| `/gold`         | Manage gold watchlist                               |
+| `/myplan`       | Set VIP user's current VIP state & remaining days   |
+| `/lang`         | Switch bot language between Persian & English       |
+| `/useinchannel` | Link a channel for automated updates (VIP required) |
+
+### 🧙 Admin Commands
+
+After login, these commands are available:
+
+| Command                | Description                                  |
+| ---------------------- | -------------------------------------------- |
+| `/stats`               | Show daily/weekly/monthly/yearly usage stats |
+| `/add_admin`           | Promote a user to staff Admin level (God)    |
+| `/rem_admin`           | Downgrade a staff Admin to Normal level (God)|
+| `/post`                | Broadcast a message to all users (God)       |
+| `/newplans`            | Update the VIP plan list (God)               |
+| `/up`                  | Promote a user to VIP                        |
+| `/down`                | Downgrade a user to free plan                |
+| `/api_keys`            | Show the list of free API keys bot is using  |
+| `/add_api {key}`       | Add new free CoinMarketCap API key.          |
+| `/rem_api {key}`       | Remove a free CoinMarketCap API key.         |
+
+---
+
+## 📌 Notes
+* Admin API key manager is for looping between free CoinMarketCap API keys, in order to prevent limitation. 
+* Persian language support is embedded but user can also use English or Persian with English symbols.
+* Inline keyboards are used for intuitive navigation
+* User state and settings are persisted for individual experience
+* Some features (group usage, channel linking, longer lists) require VIP status
+* There are other features that do not have /command input, but are easily accessed with ReplyMarkup keyboard.
+* Bot have force Channel membership support; Only allowing usage after user follows certain channels. 
+---
+
+## 📎 Example Use Cases
+
+* Use in a **crypto Telegram group** to fetch and announce price of ETH in Tomans
+* Connect a **personal channel** to post BTC and USD prices every 15 minutes
+* Set an alert to notify when **USDT price drops below 50,000 Tomans**
+* Admins can **send promotional messages** to all users with auto-deletion
