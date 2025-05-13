@@ -985,9 +985,11 @@ class BotMan:
         except Exception as ex:
             log("Failed notifying user of triggered alarm:", ex, category_name="Alarm")
 
-    async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int, feature_type: str = 'list_items'):
+    async def show_reached_max_error(self, telegram_handle: Update | CallbackQuery, account: Account, max_value: int | str, feature_type: str = 'list_items'):
         if account.language != 'en':
             max_value = persianify(max_value)
+        else:
+            max_value = str(max_value)
         if not account.is_premium:
             await self.send_message_with_premium_button(
                 telegram_handle,

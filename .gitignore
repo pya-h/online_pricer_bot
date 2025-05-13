@@ -12,3 +12,4 @@ telegram-responses.dat
 .vscode
 *.env*
 ecosystem.config.js
+docs
