@@ -131,14 +131,14 @@ class Account:
         username: str | None = None,
         firstname: str | None = None,
         no_fastmem: bool = False,
-        specific_last_interaction: datetime | None = None
+        specific_last_interaction: datetime | int | None = None
     ) -> None:
         self.chat_id: int = int(chat_id)
         self.desired_cryptos: List[str] = cryptos or []
         self.desired_currencies: List[str] = currencies or []
         self.calc_cryptos: List[str] = calc_cryptos or []
         self.calc_currencies: List[str] = calc_currencies or []
-        self.last_interaction: datetime = specific_last_interaction or tz_today()
+        self.last_interaction: datetime = (specific_last_interaction or tz_today()) if specific_last_interaction != -1 else None
         self.language: str = language
         self.state: Account.States = state
         self.cache: Dict[str, any] = cache or {}
@@ -598,17 +598,21 @@ class Account:
     @staticmethod
     def sqliteGet(chat_id):
         from db.sq_interface import DatabaseInterface
+        from dateutil.relativedelta import relativedelta
         row = DatabaseInterface.Get().get(chat_id)
         if not row:
             return None
     
         currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
         cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
+        last_interaction = datetime.strptime(row[3], DatabaseInterface.DATE_FORMAT) if row[3] else -1
+        join_date = last_interaction - relativedelta(months=6) if last_interaction != -1 else datetime(2024, 1, 1)
         return Account(
             chat_id=int(row[0]), 
             currencies=currs.split(";") if currs else None, 
             cryptos=cryptos.split(';') if cryptos else None,
-            specific_last_interaction=datetime.strptime(row[0], DatabaseInterface.DATE_FORMAT)
+            specific_last_interaction=datetime.strptime(row[3], DatabaseInterface.DATE_FORMAT) if row[3] else -1,
+            join_date=join_date
         )
 
     @staticmethod
