@@ -131,13 +131,14 @@ class Account:
         username: str | None = None,
         firstname: str | None = None,
         no_fastmem: bool = False,
+        specific_last_interaction: datetime | None = None
     ) -> None:
         self.chat_id: int = int(chat_id)
         self.desired_cryptos: List[str] = cryptos or []
         self.desired_currencies: List[str] = currencies or []
         self.calc_cryptos: List[str] = calc_cryptos or []
         self.calc_currencies: List[str] = calc_currencies or []
-        self.last_interaction: datetime = tz_today()
+        self.last_interaction: datetime = specific_last_interaction or tz_today()
         self.language: str = language
         self.state: Account.States = state
         self.cache: Dict[str, any] = cache or {}
@@ -593,3 +594,24 @@ class Account:
     @staticmethod
     def getPremiumUsersCount():
         return Account.database().get_premium_users_count()
+
+    @staticmethod
+    def sqliteGet(chat_id):
+        from db.sq_interface import DatabaseInterface
+        row = DatabaseInterface.Get().get(chat_id)
+        if not row:
+            return None
+    
+        currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
+        cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
+        return Account(
+            chat_id=int(row[0]), 
+            currencies=currs.split(";") if currs else None, 
+            cryptos=cryptos.split(';') if cryptos else None,
+            specific_last_interaction=datetime.strptime(row[0], DatabaseInterface.DATE_FORMAT)
+        )
+
+    @staticmethod
+    def sqliteEverybody():
+        from db.sq_interface import DatabaseInterface
+        return DatabaseInterface.Get().get_all()

@@ -102,6 +102,6 @@ class DatabaseInterface:
         connection.close()
 
     def __init__(self, name="data.db"):
-        print("CAlling with the name of ", name)
+        print("Calling with the name of ", name)
         self._name = name
         self.setup()
