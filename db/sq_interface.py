@@ -30,7 +30,7 @@ class DatabaseInterface:
                     f"{DatabaseInterface.ACCOUNT_CURRENCIES} TEXT, {DatabaseInterface.ACCOUNT_CRYPTOS} TEXT, {DatabaseInterface.ACCOUNT_LAST_INTERACTION} DATE, {DatabaseInterface.ACCOUNT_LANGUAGE} TEXT)"
                 # create table account
                 cursor.execute(query)
-                manuwriter.log(f"{DatabaseInterface.TABLE_ACCOUNTS} table created successfuly.", category_name='info')
+                manuwriter.log(f"{DatabaseInterface.TABLE_ACCOUNTS} table created successfully.", category_name='info')
 
             # else: # TEMP-*****
             #     cursor.execute(f'ALTER TABLE {DatabaseInterface.TABLE_ACCOUNTS} ADD {DatabaseInterface.ACCOUNT_LANGUAGE} TEXT')
