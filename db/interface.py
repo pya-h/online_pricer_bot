@@ -236,7 +236,7 @@ class DatabaseInterface:
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_ACCOUNTS} ({self.ACCOUNT_ID} BIGINT PRIMARY KEY,"
-                    + f"{self.ACCOUNT_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(1024), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(1024), {self.ACCOUNT_USERNAME} VARCHAR(32), {self.ACCOUNT_FIRSTNAME} VARCHAR(256) DEFAULT NULL,"
+                    + f"{self.ACCOUNT_CURRENCIES} VARCHAR(2048), {self.ACCOUNT_CRYPTOS} VARCHAR(4096), {self.ACCOUNT_CALC_CURRENCIES} VARCHAR(2048), {self.ACCOUNT_CALC_CRYPTOS} VARCHAR(4096), {self.ACCOUNT_USERNAME} VARCHAR(64), {self.ACCOUNT_FIRSTNAME} VARCHAR(256) DEFAULT NULL,"
                     + f"{self.ACCOUNT_JOIN_DATE} DATETIME, {self.ACCOUNT_LAST_INTERACTION} DATETIME, {self.ACCOUNT_PLUS_START_DATE} DATETIME, {self.ACCOUNT_PLUS_END_DATE} DATETIME, {self.ACCOUNT_STATE} INTEGER DEFAULT 0, {self.ACCOUNT_CACHE} JSON DEFAULT NULL, "
                     + f"{self.ACCOUNT_MODE} TINYINT DEFAULT 0, {self.ACCOUNT_LANGUAGE} CHAR(2)) {tables_common_charset};"
                 )
@@ -251,9 +251,9 @@ class DatabaseInterface:
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_CHANNELS} ({self.CHANNEL_ID} BIGINT PRIMARY KEY, "
-                    + f"{self.CHANNEL_NAME} VARCHAR(32), {self.CHANNEL_TITLE} VARCHAR(256), {self.CHANNEL_INTERVAL} INTEGER NOT NULL,"
-                    + f"{self.CHANNEL_IS_ACTIVE} TINYINT DEFAULT 0, {self.CHANNEL_COINS} VARCHAR(1024), {self.CHANNEL_CURRENCIES} VARCHAR(1024), "
-                    + f"{self.CHANNEL_MESSAGE_HEADER} VARCHAR(256), {self.CHANNEL_MESSAGE_FOOTNOTE} VARCHAR(256), "
+                    + f"{self.CHANNEL_NAME} VARCHAR(64), {self.CHANNEL_TITLE} VARCHAR(256), {self.CHANNEL_INTERVAL} INTEGER NOT NULL,"
+                    + f"{self.CHANNEL_IS_ACTIVE} TINYINT DEFAULT 0, {self.CHANNEL_COINS} VARCHAR(4096), {self.CHANNEL_CURRENCIES} VARCHAR(2048), "
+                    + f"{self.CHANNEL_MESSAGE_HEADER} VARCHAR(1024), {self.CHANNEL_MESSAGE_FOOTNOTE} VARCHAR(1024), "
                     + f"{self.CHANNEL_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.CHANNEL_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, "
                     + f"{self.CHANNEL_LANGUAGE} CHAR(2),{self.CHANNEL_LAST_POST_TIME} BIGINT DEFAULT NULL, "
                     + f"{self.CHANNEL_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.CHANNEL_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
@@ -269,9 +269,9 @@ class DatabaseInterface:
             if not cursor.fetchone():
                 query = (
                     f"CREATE TABLE {self.TABLE_GROUPS} ({self.GROUP_ID} BIGINT PRIMARY KEY, "
-                    + f"{self.GROUP_NAME} VARCHAR(32), {self.GROUP_TITLE} VARCHAR(256),"
-                    + f"{self.GROUP_COINS} VARCHAR(1024), {self.GROUP_CURRENCIES} VARCHAR(1024), "
-                    + f"{self.GROUP_MESSAGE_HEADER} VARCHAR(256), {self.GROUP_MESSAGE_FOOTNOTE} VARCHAR(256), "
+                    + f"{self.GROUP_NAME} VARCHAR(64), {self.GROUP_TITLE} VARCHAR(256),"
+                    + f"{self.GROUP_COINS} VARCHAR(4096), {self.GROUP_CURRENCIES} VARCHAR(2048), "
+                    + f"{self.GROUP_MESSAGE_HEADER} VARCHAR(1024), {self.GROUP_MESSAGE_FOOTNOTE} VARCHAR(1024), "
                     + f"{self.GROUP_MESSAGE_SHOW_DATE_TAG} BOOLEAN DEFAULT 0, {self.GROUP_MESSAGE_SHOW_MARKET_TAGS} BOOLEAN DEFAULT 1, "
                     + f"{self.GROUP_OWNER_ID} BIGINT NOT NULL, FOREIGN KEY({self.GROUP_OWNER_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
                 )
@@ -287,8 +287,8 @@ class DatabaseInterface:
                 query = (
                     f"CREATE TABLE {self.TABLE_PRICE_ALARMS} ("
                     + f"{self.PRICE_ALARM_ID} INTEGER PRIMARY KEY AUTO_INCREMENT, {self.PRICE_ALARM_TARGET_CHAT_ID} BIGINT NOT NULL, "
-                    + f"{self.PRICE_ALARM_TARGET_TOKEN} VARCHAR(16) NOT NULL, {self.PRICE_ALARM_TARGET_PRICE} DOUBLE NOT NULL, "
-                    + f"{self.PRICE_ALARM_MARKET} TINYINT(2), {self.PRICE_ALARM_CHANGE_DIRECTION} TINYINT(2), {self.PRICE_ALARM_PRICE_UNIT} CHAR(8) NOT NULL, "
+                    + f"{self.PRICE_ALARM_TARGET_TOKEN} VARCHAR(32) NOT NULL, {self.PRICE_ALARM_TARGET_PRICE} DOUBLE NOT NULL, "
+                    + f"{self.PRICE_ALARM_MARKET} TINYINT(2), {self.PRICE_ALARM_CHANGE_DIRECTION} TINYINT(2), {self.PRICE_ALARM_PRICE_UNIT} CHAR(16) NOT NULL, "
                     + f"FOREIGN KEY({self.PRICE_ALARM_TARGET_CHAT_ID}) REFERENCES {self.TABLE_ACCOUNTS}({self.ACCOUNT_ID})) {tables_common_charset};"
                 )
 
