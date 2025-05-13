@@ -13,3 +13,4 @@ telegram-responses.dat
 *.env*
 ecosystem.config.js
 docs
+resources/settings.json
