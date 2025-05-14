@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import List, Dict, Self
+from typing import List, Dict
+from typing_extensions import Self
 from db.interface import DatabaseInterface
 from .account import Account
 from tools.exceptions import InvalidInputException

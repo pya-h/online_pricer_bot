@@ -6,7 +6,8 @@ from datetime import datetime, date
 from tools.mathematix import tz_today, now_in_minute, from_now_time_diff
 from tools.manuwriter import log
 from enum import Enum
-from typing import List, Dict, Self
+from typing import List, Dict
+from typing_extensions import Self
 from bot.types import SelectionListTypes
 from json import loads as json_parse, dumps as jsonify
 from telegram import Chat, User
