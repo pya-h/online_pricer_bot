@@ -207,11 +207,11 @@
       "en": "Disconnect"
     },
     "yes_show_tag": {
-      "fa": "بله، قرار بکیرد",
+      "fa": "بله، قرار بگیرد",
       "en": "Yes, Show Tag"
     },
     "no_hide_tag": {
-      "fa": "خیر، قرار نکیرد",
+      "fa": "خیر، قرار نگیرد",
       "en": "No, Don't Show Tag"
     },
     "remove": {
