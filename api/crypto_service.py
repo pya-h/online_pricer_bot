@@ -2,7 +2,7 @@ import coinmarketcapapi as cmc_api
 from api.base import *
 from api.key_manager import ApiKeyManager
 from tools.exceptions import NoLatestDataException, InvalidInputException
-from typing import List, Tuple, override
+from typing import List, Tuple
 from tools.manuwriter import log, load_json
 
 
@@ -113,7 +113,6 @@ class CoinMarketCapService(CryptoCurrencyService):
 
         return result
 
-    @override
     async def get_request(self, _headers: dict = None, no_cache: bool = True):
         """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService children"""
         latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=self.cmc_coin_fetch_limit)
@@ -134,7 +133,6 @@ class CoinMarketCapService(CryptoCurrencyService):
             manuwriter.log('Failed obtaining newest Cryptocurrency prices', x, category_name='CoinMarketCap')
             self.keyman.fail()
 
-    @override
     async def get(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
         await self.update()
         return self.extract_api_response(desired_ones, language, no_price_message)

@@ -3,7 +3,7 @@ from random import randint
 from api.base import BaseAPIService
 from tools.mathematix import tz_today, from_now_time_diff
 from json import dumps as jsonify
-from typing import Dict, override
+from typing import Dict
 from tools.manuwriter import log
 
 
@@ -63,7 +63,6 @@ class AbanTetherService(TetherService):
         )
         self.headers = {"Authorization": f"Token {self.token}"}
 
-    @override
     @property
     def mid(self) -> float:
         if self.recent_response and AbanTetherService.tetherSymbol in self.recent_response:
@@ -72,7 +71,6 @@ class AbanTetherService(TetherService):
             return self.recent_value
         return 0.0
 
-    @override
     async def get(self):
         try:
             self.recent_response = await self.get_request(headers=self.headers)
@@ -96,7 +94,6 @@ class NobitexService(TetherService):
         )
         self.headers = {"Authorization": f"Bearer {self.token}"}
 
-    @override
     @property
     def mid(self) -> float:
         if self.recent_response and NobitexService.tetherFieldName in self.recent_response:
@@ -113,7 +110,6 @@ class NobitexService(TetherService):
             return response['stats']
         return None
 
-    @override
     async def get(self):
         try:
             self.recent_response = await self.fetch_prices()

@@ -6,7 +6,7 @@ from api.tether_service import AbanTetherService, NobitexService
 from tools.manuwriter import log, load_json
 from tools.mathematix import persianify
 from tools.exceptions import NoLatestDataException
-from typing import List, Tuple, Any, override
+from typing import List, Tuple, Any
 
 
 def get_gold_names(filename: str):
@@ -94,7 +94,6 @@ class GoldService(BaseAPIService):
                         "usd": True,
                     }
 
-    @override
     async def get_request(self, headers: dict = None, no_cache: bool = True):
         response = await super(GoldService, self).get_request(headers, no_cache)
         if "data" not in response:
