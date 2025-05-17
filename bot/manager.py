@@ -1580,7 +1580,6 @@ class BotMan:
     @staticmethod
     def refreshMemory():
         Account.fastMemInstances.clear()
-        Group.fastMemInstances.clear()
         BotSettings.refresh()  # this one calls gc.collect too
 
     @staticmethod
