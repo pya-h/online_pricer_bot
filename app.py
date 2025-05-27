@@ -11,22 +11,35 @@ from tools.mathematix import seconds_to_next_minute
 from bot.handlers import *
 from decouple import config
 
+async def open_price_list_section(update: Update, context: CallbackContext):
+    await show_market_types(update, context, Account.States.CONFIG_MARKETS)
+
+async def open_equalizer_list_section(update: Update, context: CallbackContext):
+    await show_market_types(update, context, Account.States.CONFIG_CALCULATOR_LIST)
+
+async def open_create_alarm_section(update: Update, context: CallbackContext):
+    await show_market_types(update, context, Account.States.CREATE_ALARM)
+
 
 # FIXME: Some cmd_ methods are re-getting accounts, (admin or non-admin commands), do a full check on them, and check if they need changing, (cause we have fastmem of course)
 def main(run_webhook: bool = True):
     app = BotApplicationBuilder().token(botman.token).build()
     app.add_handler(CommandHandler("start", cmd_welcome))
-    app.add_handler(CommandHandler("get", cmd_get_prices))
-    app.add_handler(CommandHandler("crypto", select_coin_menu))
-    app.add_handler(CommandHandler("currency", select_currency_menu))
-    app.add_handler(CommandHandler("gold", select_gold_menu))
-    app.add_handler(CommandHandler("equalizer", cmd_equalizer))
+    app.add_handler(CommandHandler("view", cmd_get_prices))
+    app.add_handler(CommandHandler("view_list", open_price_list_section))
+    app.add_handler(CommandHandler("calculator", cmd_equalizer))
+    app.add_handler(CommandHandler("calculator_list", open_equalizer_list_section))
+    app.add_handler(CommandHandler("alert", open_create_alarm_section))
+    app.add_handler(CommandHandler("alert_list", list_user_alarms))
+    app.add_handler(CommandHandler("channels", handle_cmd_channels))
+    app.add_handler(CommandHandler("groups", handle_cmd_groups))
+    app.add_handler(CommandHandler("vip", handle_cmd_show_premium_plans))
+    app.add_handler(CommandHandler("my_plan", handle_cmd_show_my_plan_status))
+    app.add_handler(CommandHandler("settings", handle_cmd_settings))
     app.add_handler(CommandHandler("lang", cmd_switch_language))
-    app.add_handler(CommandHandler("useinchannel", cmd_start_using_in_channel))
-    app.add_handler(CommandHandler("myplan", cmd_show_my_plan_status))
-    app.add_handler(CommandHandler("refresh", cmd_refresh))
 
     # ADMIN SECTION
+    app.add_handler(CommandHandler("refresh", cmd_refresh))
     app.add_handler(CommandHandler("god", cmd_admin_login))
     app.add_handler(CommandHandler("add_admin", cmd_add_admin))
     app.add_handler(CommandHandler("rem_admin", cmd_remove_admin))

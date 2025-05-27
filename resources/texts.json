@@ -13,7 +13,7 @@
       "en": "🧮 Calculator"
     },
     "config_calculator": {
-      "fa": "📊 لیست ماشین حساب من",
+      "fa": "📊 لیست ماشین حساب",
       "en": "📊 My Calculator List"
     },
     "create_alarm": {
@@ -739,8 +739,8 @@
     "en": "🔹 If you want to reconnect the bot to your channel, click [ Reconnect ].\n\n❗️ If you have given up on this, click on the [ Cancel ].\n\n❗️ Notice: If you have already connected the bot to a new channel, performing this action will only restore the configurations."
   },
   "equalize_header": {
-    "fa": "✅ درحال حاضر %s %s معادل است با:",
-    "en": "✅ %s %s is equivalent to:"
+    "fa": "✅ ارزش %s %s:",
+    "en": "✅ %s %s value:"
   },
   "announcement_fiat_header": {
     "fa": "📊 #بازار_ارز",
@@ -811,8 +811,8 @@
     "en": "Now send the New Premium Plans post with post image[optional].\n\n* The first letter of the text specifies the Post Language: First english character means this post is for english language, and otherwise it's for persians."
   },
   "no_token_selected": {
-    "fa": "شما هیچ توکنی را انتخاب نکرده اید که محاسبات بر حسب آن ها انجام بگیرد! از طریق منو می توانید توکن های مورد علاقه خود را انتخاب کنید.",
-    "en": "You have selected no tokens to do the calculations upon! You can select them with menu options."
+    "fa": "❗️ لیست ماشین حساب شما خالی است.\n\n✅ در بخش منو روی گزینه 'لیست ماشین حساب' کلیک کرده و لیست دلخواه خود را انتخاب کنید.",
+    "en": "❗️ Your calculation list is empty.\n\n✅ You can select your tokens in 'My Calculator List' section."
   },
   "group_description_template": {
     "fa": "شماره: %s:\nگروه: %s\nعنوان: %s\nمدیر: %s\nنام مدیر: %s\nمدت اشتراک باقی مانده: %s روز\n\n",

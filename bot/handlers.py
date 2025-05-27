@@ -1061,7 +1061,7 @@ async def cmd_start_using_in_channel(update: Update, _: CallbackContext):
     )
 
 
-async def cmd_show_my_plan_status(update: Update, context: CallbackContext):
+async def handle_cmd_show_my_plan_status(update: Update, context: CallbackContext):
     account = Account.get(update.message.chat)
     days_remaining = account.premium_days_remaining
     if days_remaining < 0:
@@ -1141,6 +1141,53 @@ async def go_to_community_panel(update: Update, account: Account, community_type
         reply_markup=botman.get_community_config_keyboard(community_type, account.language),
     )
 
+
+async def handle_cmd_channels(update: Update, context: CallbackContext):
+    account = Account.get(update.message.chat)
+    channel = Channel.getByOwner(account.chat_id, take=1)
+    if not channel:
+        await cmd_start_using_in_channel(update, context)
+        return
+    tasks = []
+    if not channel.is_active and account.is_premium:
+        tasks.append(update.message.reply_text(
+            text=botman.text("channel_not_active", account.language),
+            reply_markup=botman.action_inline_keyboard(
+                BotMan.QueryActions.START_CHANNEL_POSTING,
+                {channel.id: "start"},
+                account.language,
+                columns_in_a_row=1,
+            ),
+        ))
+    tasks.append(go_to_community_panel(update, account, BotMan.CommunityType.CHANNEL))
+    await asyncio.gather(*tasks)
+
+
+async def handle_cmd_groups(update: Update, _: CallbackContext):
+    account = Account.get(update.message.chat)
+    if not Group.userHasAnyGroups(account.chat_id):
+        if account.is_premium:
+            await update.message.reply_text(
+                botman.text("add_bot_as_group_admin", account.language)
+            )
+        else:
+            await botman.send_message_with_premium_button(update, botman.text("add_bot_as_group_admin_n_go_premium", account.language))
+        return
+    await go_to_community_panel(update, account, BotMan.CommunityType.GROUP)
+
+
+async def handle_cmd_show_premium_plans(update: Update, _: CallbackContext):
+    account = Account.get(update.message.chat)
+    post_text, post_photo = BotSettings.get().PREMIUM_PLANS_POST(account.language)
+    if post_photo:
+        await update.message.reply_photo(
+            photo=post_photo,
+            caption=post_text,
+            reply_markup=botman.mainkeyboard(account),
+        )
+        return
+    await update.message.reply_text(post_text, reply_markup=botman.mainkeyboard(account))
+
 async def handle_messages(update: Update, context: CallbackContext):
     if not update or not update.message:
         return
@@ -1160,50 +1207,15 @@ async def handle_messages(update: Update, context: CallbackContext):
         case BotMan.Commands.CALCULATOR_FA.value | BotMan.Commands.CALCULATOR_EN.value:
             await cmd_equalizer(update, context)
         case BotMan.Commands.MY_CHANNELS_FA.value | BotMan.Commands.MY_CHANNELS_EN.value:
-            account = Account.get(update.message.chat)
-            channel = Channel.getByOwner(account.chat_id, take=1)
-            if not channel:
-                await cmd_start_using_in_channel(update, context)
-                return
-            tasks = []
-            if not channel.is_active and account.is_premium:
-                tasks.append(update.message.reply_text(
-                    text=botman.text("channel_not_active", account.language),
-                    reply_markup=botman.action_inline_keyboard(
-                        BotMan.QueryActions.START_CHANNEL_POSTING,
-                        {channel.id: "start"},
-                        account.language,
-                        columns_in_a_row=1,
-                    ),
-                ))
-            tasks.append(go_to_community_panel(update, account, BotMan.CommunityType.CHANNEL))
-            await asyncio.gather(*tasks)
+            await handle_cmd_channels(update, context)
         case BotMan.Commands.MY_GROUPS_FA.value | BotMan.Commands.MY_GROUPS_EN.value:
-            account = Account.get(update.message.chat)
-            if not Group.userHasAnyGroups(account.chat_id):
-                if account.is_premium:
-                    await update.message.reply_text(
-                        botman.text("add_bot_as_group_admin", account.language)
-                    )
-                else:
-                    await botman.send_message_with_premium_button(update, botman.text("add_bot_as_group_admin_n_go_premium", account.language))
-                return
-            await go_to_community_panel(update, account, BotMan.CommunityType.GROUP)
+            await handle_cmd_groups(update, context)
         case BotMan.Commands.SETTINGS_FA.value | BotMan.Commands.SETTINGS_EN.value:
             await botman.show_settings_menu(update)
         case BotMan.Commands.GO_PREMIUM_FA.value | BotMan.Commands.GO_PREMIUM_EN.value:
-            account = Account.get(update.message.chat)
-            post_text, post_photo = BotSettings.get().PREMIUM_PLANS_POST(account.language)
-            if post_photo:
-                await update.message.reply_photo(
-                    photo=post_photo,
-                    caption=post_text,
-                    reply_markup=botman.mainkeyboard(account),
-                )
-                return
-            await update.message.reply_text(post_text, reply_markup=botman.mainkeyboard(account))
+            await handle_cmd_show_premium_plans(update, context)
         case BotMan.Commands.MY_PREMIUM_PLAN_DURATION_FA.value | BotMan.Commands.MY_PREMIUM_PLAN_DURATION_EN.value:
-            await cmd_show_my_plan_status(update, context)
+            await handle_cmd_show_my_plan_status(update, context)
         # Select market sub menu
         case BotMan.Commands.CRYPTOS_FA.value | BotMan.Commands.CRYPTOS_EN.value:
             if await list_type_is_selected(update):
@@ -2024,6 +2036,9 @@ async def handle_multimedia_messages(update: Update, context: CallbackContext):
         return
     await unknown_command_handler(update, context)
 
+async def handle_cmd_settings(update: Update, _: CallbackContext):
+    await botman.show_settings_menu(update)
+
 
 ### Developer options:
 async def cmd_add_cmc_api_key(update: Update, context: CallbackContext):
@@ -2065,4 +2080,3 @@ async def cmd_list_cmc_api_key(update: Update, context: CallbackContext):
         )
     except Exception as x:
         await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
-
