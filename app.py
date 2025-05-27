@@ -11,17 +11,19 @@ from tools.mathematix import seconds_to_next_minute
 from bot.handlers import *
 from decouple import config
 
+
 async def open_price_list_section(update: Update, context: CallbackContext):
     await show_market_types(update, context, Account.States.CONFIG_MARKETS)
 
+
 async def open_equalizer_list_section(update: Update, context: CallbackContext):
     await show_market_types(update, context, Account.States.CONFIG_CALCULATOR_LIST)
+
 
 async def open_create_alarm_section(update: Update, context: CallbackContext):
     await show_market_types(update, context, Account.States.CREATE_ALARM)
 
 
-# FIXME: Some cmd_ methods are re-getting accounts, (admin or non-admin commands), do a full check on them, and check if they need changing, (cause we have fastmem of course)
 def main(run_webhook: bool = True):
     app = BotApplicationBuilder().token(botman.token).build()
     app.add_handler(CommandHandler("start", cmd_welcome))

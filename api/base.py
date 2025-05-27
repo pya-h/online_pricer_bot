@@ -14,14 +14,18 @@ class BaseAPIService:
 
     """The very Base class for all api services"""
 
-    def __init__(self, url: str, source: str, timeout: int = 10, params: dict = None, cache_file_name: str = None) -> None:
+    def __init__(
+        self, url: str, source: str, timeout: int = 10, params: dict = None, cache_file_name: str = None
+    ) -> None:
         self.URL: str = url
         self.Source: str = source
         self.timeout: int = timeout
         self.params: dict = params or dict()
         self.cache_file_name: str = cache_file_name
         self.cache_folder_created: bool = False
-        self.latest_data = dict() # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
+        self.latest_data = (
+            dict()
+        )  # Latest loaded cache/API data; This is a helper object for preventing unnecessary Api Call or Cache file read
         # Causing: App enhancement, less APi Calls(For best management of non-free API uses), Less cache file read for improving bot performance and speed and prevention of lags
 
     def cache_data(self, data: str, custom_file_name: str = None) -> None:
@@ -43,7 +47,7 @@ class BaseAPIService:
         response = await request.get()
 
         if not response or not response.OK:
-            raise Exception(f'GET Failure @ {self.Source}.\nStatus Code: {response.status}\nError: {response.text}')
+            raise Exception(f"GET Failure @ {self.Source}.\nStatus Code: {response.status}\nError: {response.text}")
 
         if not no_cache and self.cache_file_name and response.text is not None:
             self.cache_data(response.text)
@@ -54,7 +58,7 @@ class BaseAPIService:
         request = api.Request(self.URL, headers=headers, payload=payload)
         response = await request.post()
         if not response or not response.OK:
-            raise Exception(f'POST Failure @ {self.Source}.\nStatus Code: {response.status}\nError: {response.text}')
+            raise Exception(f"POST Failure @ {self.Source}.\nStatus Code: {response.status}\nError: {response.text}")
 
         if not no_cache and self.cache_file_name and response.text is not None:
             self.cache_data(response.text)
@@ -87,14 +91,20 @@ class APIService(BaseAPIService):
     def get_desired_ones(self, desired_ones: List[str]) -> list:
         pass
 
-    def extract_api_response(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+    def extract_api_response(
+        self, desired_ones: List[str] = None, language: str = "fa", no_price_message: str | None = None
+    ) -> Tuple[str, str]:
         pass
 
-    async def get(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+    async def get(
+        self, desired_ones: List[str] = None, language: str = "fa", no_price_message: str | None = None
+    ) -> Tuple[str, str]:
         self.latest_data = await self.get_request()  # update latest
         return self.extract_api_response(desired_ones, language, no_price_message)
 
-    def get_latest(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+    def get_latest(
+        self, desired_ones: List[str] = None, language: str = "fa", no_price_message: str | None = None
+    ) -> Tuple[str, str]:
         return self.extract_api_response(desired_ones, language, no_price_message)
 
     def get_desired_cache(self, desired_ones: List[str] = None, force_reload: bool = False) -> Tuple[str, str]:
@@ -107,18 +117,28 @@ class APIService(BaseAPIService):
                 not self.latest_data
             ):  # if there is no cache, and the no latest data either, to prevent crashing, call the api for once
                 try:
-                    manuwriter.log("couldn't read cache; Using Direct api call to obtain data.", ex, category_name="CACHING")
-                    self.latest_data = self.get_request()  # the condition that is happened, may be due to lack of cache file,
+                    manuwriter.log(
+                        "couldn't read cache; Using Direct api call to obtain data.", ex, category_name="CACHING"
+                    )
+                    self.latest_data = (
+                        self.get_request()
+                    )  # the condition that is happened, may be due to lack of cache file,
                 except Exception as fex:
                     manuwriter.log(
-                        "Couldn't get cache and API both. There's something seriously wrong!!", fex, category_name="CACHING"
+                        "Couldn't get cache and API both. There's something seriously wrong!!",
+                        fex,
+                        category_name="CACHING",
                     )
 
         return self.extract_api_response(desired_ones)
 
     def to_irt_exact(self, price: float | int, tether_as_unit_price: bool = False) -> float | int:
         try:
-            return price * (APIService.tetherInTomans if tether_as_unit_price and APIService.tetherInTomans else APIService.usdInTomans)
+            return price * (
+                APIService.tetherInTomans
+                if tether_as_unit_price and APIService.tetherInTomans
+                else APIService.usdInTomans
+            )
         except:
             pass
         return 0
@@ -132,4 +152,4 @@ class APIService(BaseAPIService):
 
     @staticmethod
     def getTokenState(current_price: float | int, previous_price: float | int) -> str:
-        return '🟢' if current_price > previous_price else ('🔴' if current_price < previous_price else '⚪️')
+        return "🟢" if current_price > previous_price else ("🔴" if current_price < previous_price else "⚪️")

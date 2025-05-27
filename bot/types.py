@@ -18,6 +18,7 @@ class MarketOptions(Enum):
                 return option
         return None
 
+
 class SelectionListTypes(Enum):
     USER_TOKENS = 1
     CALCULATOR = 2
@@ -48,8 +49,9 @@ class SelectionListTypes(Enum):
         return market == MarketOptions.CURRENCY and self not in [
             SelectionListTypes.GROUP_TOKENS,
             SelectionListTypes.CALCULATOR,
-            SelectionListTypes.EQUALIZER_UNIT
+            SelectionListTypes.EQUALIZER_UNIT,
         ]
+
 
 class GroupInlineKeyboardButtonTemplate:
     @property
@@ -73,9 +75,13 @@ class ResourceManager:
         return self.source[text_key][language.lower()]
 
     def text_strict(self, text_key: str, language: str = "fa") -> str:
-        return self.source[text_key][language if language != 'FA' else 'en']
+        return self.source[text_key][language if language != "FA" else "en"]
 
-    def text_for_case_sensitive_key(self, text_key: str, language: str = "fa") -> str: # this is just for preventing the main func (text(...) always check a condition which only be True for 1 or 2 times in whole app)
+    def text_for_case_sensitive_key(
+        self, text_key: str, language: str = "fa"
+    ) -> (
+        str
+    ):  # this is just for preventing the main func (text(...) always check a condition which only be True for 1 or 2 times in whole app)
         return self.source[text_key][language]
 
     def get(self, text_key: str):

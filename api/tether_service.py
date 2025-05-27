@@ -77,7 +77,7 @@ class AbanTetherService(TetherService):
             self.no_response_counts = 0
         except Exception as x:
             self.no_response_counts += 1
-            log('AbanTether API Failure', x, category_name='AbanTether')
+            log("AbanTether API Failure", x, category_name="AbanTether")
         self.recent_value = self.mid
         return self.recent_value
 
@@ -86,7 +86,7 @@ class AbanTetherService(TetherService):
 
 
 class NobitexService(TetherService):
-    tetherFieldName = f'{TetherService.tetherSymbol}-{TetherService.tomanSymbol}'
+    tetherFieldName = f"{TetherService.tetherSymbol}-{TetherService.tomanSymbol}"
 
     def __init__(self, token: str) -> None:
         super(NobitexService, self).__init__(
@@ -106,8 +106,8 @@ class NobitexService(TetherService):
         response = await self.post_request(
             headers=self.headers, payload={"srcCurrency": self.tetherSymbol, "dstCurrency": self.tomanSymbol}
         )
-        if 'status' in response and response['status'].lower() == 'ok':
-            return response['stats']
+        if "status" in response and response["status"].lower() == "ok":
+            return response["stats"]
         return None
 
     async def get(self):
@@ -120,7 +120,7 @@ class NobitexService(TetherService):
             self.no_response_counts = 0
         except Exception as x:
             self.no_response_counts += 1
-            log('Nobitex API Failure', x, category_name='Nobitex')
+            log("Nobitex API Failure", x, category_name="Nobitex")
         self.recent_value = self.mid
         return self.recent_value
 

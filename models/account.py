@@ -90,14 +90,10 @@ class Account:
         States.CHANGE_CHANNEL,
         States.CHANGE_PREMIUM_PLANS,
         States.ADD_ADMIN,
-        States.REMOVE_ADMIN
+        States.REMOVE_ADMIN,
     )
 
-    UserModes = (
-        Modes.NORMAL,
-        Modes.ADMIN,
-        Modes.GOD
-    )
+    UserModes = (Modes.NORMAL, Modes.ADMIN, Modes.GOD)
 
     _database = None
     FastMemGarbageCollectionInterval = 5
@@ -132,14 +128,16 @@ class Account:
         username: str | None = None,
         firstname: str | None = None,
         no_fastmem: bool = False,
-        specific_last_interaction: datetime | int | None = None
+        specific_last_interaction: datetime | int | None = None,
     ) -> None:
         self.chat_id: int = int(chat_id)
         self.desired_cryptos: List[str] = cryptos or []
         self.desired_currencies: List[str] = currencies or []
         self.calc_cryptos: List[str] = calc_cryptos or []
         self.calc_currencies: List[str] = calc_currencies or []
-        self.last_interaction: datetime = (specific_last_interaction or tz_today()) if specific_last_interaction != -1 else None
+        self.last_interaction: datetime = (
+            (specific_last_interaction or tz_today()) if specific_last_interaction != -1 else None
+        )
         self.language: str = language
         self.state: Account.States = state
         self.cache: Dict[str, any] = cache or {}
@@ -218,13 +216,13 @@ class Account:
 
     def make_admin(self, target: Self):
         if not self.is_god:
-            raise Forbidden('Non-God users are not allowed to upgrade account mode.')
+            raise Forbidden("Non-God users are not allowed to upgrade account mode.")
         target.mode = Account.Modes.ADMIN
         target.save()
 
     def downgrade_to_normal(self, target: Self):
         if not self.is_god:
-            raise Forbidden('Non-God users are not allowed to downgrade account mode.')
+            raise Forbidden("Non-God users are not allowed to downgrade account mode.")
         target.mode = Account.Modes.NORMAL
         target.save()
 
@@ -429,9 +427,7 @@ class Account:
     @staticmethod
     def getById(chat_id: int, no_fastmem: bool = False, should_create: bool = True):
         if chat_id < 0:
-            raise ValueError(
-                "Account chat_id must be positive."
-            )
+            raise ValueError("Account chat_id must be positive.")
         if chat_id in Account.fastMemInstances:
             account: Account = Account.fastMemInstances[chat_id]
             account.last_interaction = tz_today()
@@ -527,7 +523,10 @@ class Account:
     def getGodUsers(just_hardcode_admin: bool = True):
         if not just_hardcode_admin:
             admins = list(
-                map(lambda data: Account.extractQueryRowData(data), Account.database().get_special_accounts(value=Account.Modes.GOD.value))
+                map(
+                    lambda data: Account.extractQueryRowData(data),
+                    Account.database().get_special_accounts(value=Account.Modes.GOD.value),
+                )
             )
 
             return admins
@@ -538,7 +537,10 @@ class Account:
     @staticmethod
     def getStaffAdmins():
         admins = list(
-            map(lambda data: Account.extractQueryRowData(data), Account.database().get_special_accounts(value=Account.Modes.ADMIN.value))
+            map(
+                lambda data: Account.extractQueryRowData(data),
+                Account.database().get_special_accounts(value=Account.Modes.ADMIN.value),
+            )
         )
 
         return admins
@@ -600,23 +602,25 @@ class Account:
     def sqliteGet(chat_id):
         from db.sq_interface import DatabaseInterface
         from dateutil.relativedelta import relativedelta
+
         row = DatabaseInterface.Get().get(chat_id)
         if not row:
             return None
-    
+
         currs = row[1] if not row[1] or row[1][-1] != ";" else row[1][:-1]
         cryptos = row[2] if not row[2] or row[2][-1] != ";" else row[2][:-1]
         last_interaction = datetime.strptime(row[3], DatabaseInterface.DATE_FORMAT) if row[3] else -1
         join_date = last_interaction - relativedelta(months=6) if last_interaction != -1 else datetime(2024, 1, 1)
         return Account(
-            chat_id=int(row[0]), 
-            currencies=currs.split(";") if currs else None, 
-            cryptos=cryptos.split(';') if cryptos else None,
+            chat_id=int(row[0]),
+            currencies=currs.split(";") if currs else None,
+            cryptos=cryptos.split(";") if cryptos else None,
             specific_last_interaction=datetime.strptime(row[3], DatabaseInterface.DATE_FORMAT) if row[3] else -1,
-            join_date=join_date
+            join_date=join_date,
         )
 
     @staticmethod
     def sqliteEverybody():
         from db.sq_interface import DatabaseInterface
+
         return DatabaseInterface.Get().get_all()

@@ -229,7 +229,9 @@ class DatabaseInterface:
         conn, cursor = self.set_timezone(close_connection=False)
 
         try:
-            table_exist_query_start = f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
+            table_exist_query_start = (
+                f"SELECT table_name from information_schema.tables WHERE table_schema = '{self.__name}' AND table_name"
+            )
             tables_common_charset = "CHARACTER SET utf8mb4 COLLATE utf8mb4_persian_ci"
             # check if the table accounts was created
             cursor.execute(f"{table_exist_query_start}='{self.TABLE_ACCOUNTS}'")
@@ -328,7 +330,9 @@ class DatabaseInterface:
             raise Exception("You must provide an Account to save")
         try:
             columns = ", ".join(self.ACCOUNT_COLUMNS)
-            query = f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})"
+            query = (
+                f"INSERT INTO {self.TABLE_ACCOUNTS} ({columns}) VALUES (%s{', %s' * (len(self.ACCOUNT_COLUMNS) - 1)})"
+            )
             self.execute(
                 False,
                 query,
@@ -402,9 +406,7 @@ class DatabaseInterface:
         conn = self.connection()
         cursor = conn.cursor()
         try:
-            columns_to_set = ", ".join(
-                [f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]]
-            )
+            columns_to_set = ", ".join([f"{field}=%s" for field in self.ACCOUNT_COLUMNS[1:]])
 
             cursor.execute(
                 f"UPDATE {self.TABLE_ACCOUNTS} SET {columns_to_set} WHERE {self.ACCOUNT_ID}=%s",
@@ -525,9 +527,7 @@ class DatabaseInterface:
         cursor = conn.cursor()
         try:
             channel_id = old_chat_id or channel.id
-            columns_to_set = ", ".join(
-                [f"{field}=%s" for field in self.CHANNELS_COLUMNS]
-            )
+            columns_to_set = ", ".join([f"{field}=%s" for field in self.CHANNELS_COLUMNS])
             cursor.execute(
                 f"UPDATE {self.TABLE_CHANNELS} SET {columns_to_set} WHERE {self.CHANNEL_ID}=%s",
                 (
@@ -918,9 +918,7 @@ class DatabaseInterface:
             trash_id,
         )
 
-    def schedule_messages_for_removal(
-        self, messages_data: List[Tuple[int, int, int, int]]
-    ):
+    def schedule_messages_for_removal(self, messages_data: List[Tuple[int, int, int, int]]):
         return self.bulk_query(
             f"INSERT INTO {self.TABLE_TRASH} ({self.TRASH_TYPE}, {self.TRASH_OWNER_ID}, {self.TRASH_IDENTIFIER}, {self.TRASH_DELETE_AT}) VALUES (%s, %s, %s, %s)",
             messages_data,
@@ -945,9 +943,7 @@ class DatabaseInterface:
         )
 
     def count_query(self, table: str, where: str | None = None):
-        res = self.execute(
-            True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else ""
-        )
+        res = self.execute(True, f"SELECT COUNT(*) FROM {table}" + f" WHERE {where}" if where else "")
         return res[0] if res else 0
 
     def set_timezone(
@@ -962,7 +958,7 @@ class DatabaseInterface:
             cursor.execute(f"SET time_zone=%s;", (tz,))
             conn.commit()
         except Exception as x:
-            log(f'Failed setting timezone to: {tz}', x, category_name='Admin')
+            log(f"Failed setting timezone to: {tz}", x, category_name="Admin")
         finally:
             if close_connection:
                 cursor.close()
@@ -971,9 +967,7 @@ class DatabaseInterface:
         return conn, cursor
 
     def get_user_stats(self):
-        conn, cursor = self.set_timezone(
-            close_connection=False, cursor_dictionary_param=True
-        )
+        conn, cursor = self.set_timezone(close_connection=False, cursor_dictionary_param=True)
         result = None
         try:
             cursor.execute(
@@ -1005,7 +999,7 @@ class DatabaseInterface:
             )
             result = cursor.fetchall()
         except Exception as x:
-            log('Failed calculating bot stats:', x, category_name='Admin')
+            log("Failed calculating bot stats:", x, category_name="Admin")
         finally:
             cursor.close()
             conn.close()
@@ -1024,9 +1018,7 @@ class DatabaseInterface:
 
     def get_all_groups_count(self):
         try:
-            result = self.execute(
-                True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;"
-            )
+            result = self.execute(True, f"SELECT COUNT(*) as all_groups FROM `{self.TABLE_GROUPS}`;")
             return result[0][0] if result and result[0] else 0
         except:
             pass
@@ -1043,12 +1035,8 @@ class DatabaseInterface:
             pass
         return 0
 
-    def select_accounts(
-        self, limit: int = 20, offset: int = 0, only_premiums: bool = True
-    ):
-        where: str = (
-            f"WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL" if only_premiums else ""
-        )
+    def select_accounts(self, limit: int = 20, offset: int = 0, only_premiums: bool = True):
+        where: str = f"WHERE {self.ACCOUNT_PLUS_END_DATE} IS NOT NULL" if only_premiums else ""
         return self.execute(
             True,
             f"SELECT * FROM `{self.TABLE_ACCOUNTS}` {where} LIMIT {limit} OFFSET {offset}",
@@ -1082,9 +1070,7 @@ class DatabaseInterface:
             user_id,
         )
 
-    def backup(
-        self, single_table_name: str = None, output_filename_suffix: str = "backup"
-    ):
+    def backup(self, single_table_name: str = None, output_filename_suffix: str = "backup"):
         tables = (
             [single_table_name]
             if single_table_name

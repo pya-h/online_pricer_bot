@@ -66,14 +66,16 @@ class CoinGeckoService(CryptoCurrencyService):
             url="https://api.coingecko.com/api/v3/coins/list", source="CoinGecko.com", cache_file_name="coingecko.json"
         )
 
-    def get_price_description_row(self, symbol: str, language: str = 'fa', no_price_message: str | None = None) -> str:
+    def get_price_description_row(self, symbol: str, language: str = "fa", no_price_message: str | None = None) -> str:
         pass
 
-    def extract_api_response(self, desired_coins: List[str] | None = None, language: str = 'fa', no_price_message: str | None = None):
+    def extract_api_response(
+        self, desired_coins: List[str] | None = None, language: str = "fa", no_price_message: str | None = None
+    ):
         """Construct a text string consisting of each desired coin prices of a special user."""
         desired_coins: List[str] = self.get_desired_ones(desired_coins)
         res = ""
-        for symbol in desired_coins:   
+        for symbol in desired_coins:
             res += self.get_price_description_row(symbol.upper(), language, no_price_message)
 
         return res
@@ -91,7 +93,7 @@ class CoinMarketCapService(CryptoCurrencyService):
             source="CoinMarketCap",
             cache_file_name="coinmarketcap.json",
         )
-        self.keyman = ApiKeyManager(api_key, self.update_cmc_api, keystore_filename='cmc_keys')
+        self.keyman = ApiKeyManager(api_key, self.update_cmc_api, keystore_filename="cmc_keys")
         self.price_unit: str = price_unit
         self.cmc_api = cmc_api.CoinMarketCapAPI(self.keyman.api_key)
         self.cmc_coin_fetch_limit = cmc_coin_fetch_limit
@@ -108,7 +110,9 @@ class CoinMarketCapService(CryptoCurrencyService):
 
         for item in source_list:
             symbol = item[key_as].upper()
-            if symbol not in result:  # since there are some tokens with the same symbol; One main impact of not checking this the invalid price for btc!
+            if (
+                symbol not in result
+            ):  # since there are some tokens with the same symbol; One main impact of not checking this the invalid price for btc!
                 result[symbol] = item["quote"][self.price_unit]
 
         return result
@@ -117,7 +121,7 @@ class CoinMarketCapService(CryptoCurrencyService):
         """Send request to coinmarketcap to receive the prices. This function differs from other .get_request methods from other BaseAPIService children"""
         latest_cap = self.cmc_api.cryptocurrency_listings_latest(limit=self.cmc_coin_fetch_limit)
         if not latest_cap or not latest_cap.data:
-            raise Exception('CoinMarketCap API Error: Missing data')
+            raise Exception("CoinMarketCap API Error: Missing data")
         result = self.raw_data_to_price_dict(latest_cap.data)
         if not no_cache:
             self.cache_data(json.dumps(result))
@@ -126,18 +130,22 @@ class CoinMarketCapService(CryptoCurrencyService):
     async def update(self):
         try:
             new_data = await self.get_request()  # update latest
-            self.pre_latest_data = self.latest_data # only update pre_latest when api call was ok
+            self.pre_latest_data = self.latest_data  # only update pre_latest when api call was ok
             self.latest_data = new_data
             self.keyman.ok()
         except Exception as x:
-            manuwriter.log('Failed obtaining newest Cryptocurrency prices', x, category_name='CoinMarketCap')
+            manuwriter.log("Failed obtaining newest Cryptocurrency prices", x, category_name="CoinMarketCap")
             self.keyman.fail()
 
-    async def get(self, desired_ones: List[str] = None, language: str = 'fa', no_price_message: str | None = None) -> Tuple[str, str]:
+    async def get(
+        self, desired_ones: List[str] = None, language: str = "fa", no_price_message: str | None = None
+    ) -> Tuple[str, str]:
         await self.update()
         return self.extract_api_response(desired_ones, language, no_price_message)
 
-    def extract_api_response(self, desired_coins: List[str] = None, language: str = 'fa', no_price_message: str | None = None):
+    def extract_api_response(
+        self, desired_coins: List[str] = None, language: str = "fa", no_price_message: str | None = None
+    ):
         """This function constructs a text string that in each row has the latest price of a
         cryptocurrency unit in two price units, dollars and Tomans"""
         desired_coins = self.get_desired_ones(desired_coins)
@@ -148,7 +156,13 @@ class CoinMarketCapService(CryptoCurrencyService):
             res += self.get_price_description_row(coin.upper(), language, no_price_message)
         return res
 
-    def usd_to_cryptos(self, absolute_amount: float | int, source_unit_symbol: str, cryptos: List[str] | None = None, language: str = 'fa') -> str:
+    def usd_to_cryptos(
+        self,
+        absolute_amount: float | int,
+        source_unit_symbol: str,
+        cryptos: List[str] | None = None,
+        language: str = "fa",
+    ) -> str:
         cryptos = self.get_desired_ones(cryptos)
         res: str = ""
         coin_equalized_price: str
@@ -160,19 +174,26 @@ class CoinMarketCapService(CryptoCurrencyService):
                     absolute_amount / float(self.latest_data[coin]["price"])
                 )
             except Exception as x:
-                manuwriter.log('No Price Data:', x, 'CoinMarketCap')
-                coin_equalized_price = '?'
-            if language != 'fa':
+                manuwriter.log("No Price Data:", x, "CoinMarketCap")
+                coin_equalized_price = "?"
+            if language != "fa":
                 res += f"🟢 {coin_equalized_price} {coin}\n"
             else:
-                res += f"🟢 {mathematix.persianify(coin_equalized_price)} {CryptoCurrencyService.coinsInPersian[coin]}\n"
+                res += (
+                    f"🟢 {mathematix.persianify(coin_equalized_price)} {CryptoCurrencyService.coinsInPersian[coin]}\n"
+                )
         return res
 
     def equalize(
-        self, source_unit_symbol: str, amount: float | int, desired_cryptos: List[str] | None = None, language: str = 'fa'
+        self,
+        source_unit_symbol: str,
+        amount: float | int,
+        desired_cryptos: List[str] | None = None,
+        language: str = "fa",
     ) -> Tuple[str | None, float, float | int]:
         """This function gets an amount param, alongside with a source_unit_symbol [and obviously with the users desired coins]
-        and it returns a text string, that in each row of that, shows that amount equivalent in another cryptocurrency unit."""
+        and it returns a text string, that in each row of that, shows that amount equivalent in another cryptocurrency unit.
+        """
         # First check the required data is prepared
         if not self.latest_data:
             raise NoLatestDataException("use for equalizing!")
@@ -186,9 +207,17 @@ class CoinMarketCapService(CryptoCurrencyService):
             raise ValueError(f"{source_unit_symbol} has not been received from the API.")
 
         return (
-            self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos, language) if desired_cryptos else None, 
-            absolute_amount, 
-            self.to_irt_exact(absolute_amount, True) if source_unit_symbol != self.tetherSymbol else amount * APIService.tetherInTomans
+            (
+                self.usd_to_cryptos(absolute_amount, source_unit_symbol, desired_cryptos, language)
+                if desired_cryptos
+                else None
+            ),
+            absolute_amount,
+            (
+                self.to_irt_exact(absolute_amount, True)
+                if source_unit_symbol != self.tetherSymbol
+                else amount * APIService.tetherInTomans
+            ),
         )
 
     def get_single_price(self, crypto_symbol: str, price_unit: str = "usd", tether_instead_of_dollars: bool = True):
@@ -207,13 +236,9 @@ class CoinMarketCapService(CryptoCurrencyService):
         if "price" not in data:
             return None
 
-        return (
-            self.to_irt_exact(data["price"], tether_instead_of_dollars)
-            if price_unit == "irt"
-            else data["price"]
-        )
+        return self.to_irt_exact(data["price"], tether_instead_of_dollars) if price_unit == "irt" else data["price"]
 
-    def get_price_description_row(self, symbol: str, language: str = 'fa', no_price_message: str | None = None) -> str:
+    def get_price_description_row(self, symbol: str, language: str = "fa", no_price_message: str | None = None) -> str:
         try:
             if symbol not in self.latest_data:
                 raise ValueError(f"{symbol} not found in CoinMarketCap response data!")
@@ -225,14 +250,21 @@ class CoinMarketCapService(CryptoCurrencyService):
             if symbol != "USDT":
                 rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
             else:
-                rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(APIService.tetherInTomans)
+                rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(
+                    APIService.tetherInTomans
+                )
 
-            if language != 'fa':
-                return f"{self.getTokenState(price, previous_price)} {symbol}: {rp_toman} {self.tomanSymbol} / {rp_usd}$\n"
+            if language != "fa":
+                return (
+                    f"{self.getTokenState(price, previous_price)} {symbol}: {rp_toman} {self.tomanSymbol} / {rp_usd}$\n"
+                )
             rp_toman = mathematix.persianify(rp_toman)
             return f"{self.getTokenState(price, previous_price)} {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
         except:
             pass
 
-        return f"⚪️ {CryptoCurrencyService.coinsInPersian[symbol] if language == 'fa' and symbol in CryptoCurrencyService.coinsInPersian else symbol}: " + \
-            (no_price_message or "❗️") + "\n"
+        return (
+            f"⚪️ {CryptoCurrencyService.coinsInPersian[symbol] if language == 'fa' and symbol in CryptoCurrencyService.coinsInPersian else symbol}: "
+            + (no_price_message or "❗️")
+            + "\n"
+        )

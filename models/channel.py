@@ -127,7 +127,7 @@ class Channel:
         message_show_date_tag: bool = False,
         message_show_market_tags: bool = True,
         language: str | None = "fa",
-        owner: Account | None = None
+        owner: Account | None = None,
     ) -> None:
         self.owner_id: int = int(owner_id)
         self.id: int = int(channel_id)

@@ -72,7 +72,9 @@ class Request:
         self.__method = method
         self.__headers = headers
         if not self.__headers and (
-            self.__method == RequestMethod.Post or self.__method == RequestMethod.Put or self.__method == RequestMethod.Patch
+            self.__method == RequestMethod.Post
+            or self.__method == RequestMethod.Put
+            or self.__method == RequestMethod.Patch
         ):
             self.__headers = {"Content-Type": "application/json"}
         self.__timeout = aiohttp.ClientTimeout(timeout)

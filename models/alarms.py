@@ -137,4 +137,4 @@ class PriceAlarm:
 
     @property
     def change_icon(self) -> str:
-        return '🔴' if self.change_direction == PriceAlarm.ChangeDirection.DOWN else '🟢'
+        return "🔴" if self.change_direction == PriceAlarm.ChangeDirection.DOWN else "🟢"

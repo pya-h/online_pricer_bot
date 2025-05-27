@@ -19,7 +19,7 @@ class ApiKeyManager:
         self.failures_count = 0
         self.change_trigger = change_trigger
         self.change_event = change_event
-        self.keystore_filename = keystore_filename if '.json' in keystore_filename else f"{keystore_filename}.json"
+        self.keystore_filename = keystore_filename if ".json" in keystore_filename else f"{keystore_filename}.json"
         if self.keystore_filename and self.load():
             self.change_event(self.keys[self.current])
             if initial_api_key not in self.keys:
@@ -60,13 +60,11 @@ class ApiKeyManager:
     def load(self) -> list | dict:
         """Read cache and convert it to python dict/list."""
         try:
-            keystore = open(
-                f"./{BaseAPIService.cacheFolderPath}/{self.keystore_filename}", "r"
-            )
+            keystore = open(f"./{BaseAPIService.cacheFolderPath}/{self.keystore_filename}", "r")
             str_json = keystore.read()
             keystore.close()
             saved_keys = json.loads(str_json)
-            if saved_keys and ('keys' in saved_keys) and saved_keys['keys']:
+            if saved_keys and ("keys" in saved_keys) and saved_keys["keys"]:
                 self.keys = saved_keys["keys"]
                 self.current = saved_keys["current"]
                 return len(self.keys) > 0
@@ -97,4 +95,4 @@ class ApiKeyManager:
 
     @property
     def state(self) -> str:
-        return "\n".join([(key if index != self.current else f'{key} ✅') for index,key in enumerate(self.keys)])
+        return "\n".join([(key if index != self.current else f"{key} ✅") for index, key in enumerate(self.keys)])

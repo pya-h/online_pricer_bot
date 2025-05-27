@@ -16,6 +16,7 @@ def get_gold_names(filename: str):
         log("Cannot load currency names", exception=e, category_name="SETUP")
     return {}
 
+
 def get_persian_currency_names():
     try:
         currency_names_fa = load_json("national-currencies.fa", "api/data")
@@ -26,6 +27,7 @@ def get_persian_currency_names():
         log("Cannot get currency names", exception=e, category_name="SETUP")
 
     return None, None, None
+
 
 def get_currency_persian_shortcuts():
     try:
@@ -149,7 +151,9 @@ class NavasanService(CurrencyService):
         aban_tether_service_token: str = None,
     ) -> None:
         self.tether_service = NobitexService(nobitex_tether_service_token)
-        self.alternate_tether_service = AbanTetherService(aban_tether_service_token) if aban_tether_service_token else None
+        self.alternate_tether_service = (
+            AbanTetherService(aban_tether_service_token) if aban_tether_service_token else None
+        )
         super().__init__(
             url=f"https://apis.sourcearena.ir/api/?token={token}&currency&v2",
             source="Navasan",
@@ -219,10 +223,7 @@ class NavasanService(CurrencyService):
 
     # --------- Currency -----------
     async def get_request(self, _: dict = None, __: bool = False):
-        _, response = await asyncio.gather(
-            self.tether_service.get(),
-            super(NavasanService, self).get_request()
-        )
+        _, response = await asyncio.gather(self.tether_service.get(), super(NavasanService, self).get_request())
 
         return response
 
@@ -238,18 +239,21 @@ class NavasanService(CurrencyService):
                 return
 
         except Exception as x:
-            log('Failed updating USDT-IRT price through tether services. Navasan prices will be used.', x, category_name='TetherService')
+            log(
+                "Failed updating USDT-IRT price through tether services. Navasan prices will be used.",
+                x,
+                category_name="TetherService",
+            )
 
         APIService.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
-
 
     async def update(self):
         try:
             new_data = await self.get_request()
-            self.pre_latest_data = self.latest_data # only update pre_latest when the api call was ok
+            self.pre_latest_data = self.latest_data  # only update pre_latest when the api call was ok
             self.latest_data = new_data
         except Exception as ex:
-            log('Navasan API Error:', ex, 'Navasan')
+            log("Navasan API Error:", ex, "Navasan")
 
         if not self.latest_data:
             return False
@@ -274,7 +278,7 @@ class NavasanService(CurrencyService):
         no_price_message: str | None = None,
     ) -> Tuple[str, str]:
         if not (await self.update()):
-            return '', ''
+            return "", ""
         return self.extract_api_response(desired_ones, language, no_price_message)
 
     def load_cache(self) -> list | dict:
@@ -300,9 +304,17 @@ class NavasanService(CurrencyService):
         for target_slug in currencies:
             if target_slug == source_unit_slug:
                 continue
-            slug_equalized_price = absolute_irt if target_slug == self.tomanSymbol else (absolute_usd
-                if absolute_usd is not None and target_slug == self.dollarSymbol and source_unit_slug == self.tetherSymbol
-                        else absolute_irt / self.get_single_price(target_slug, "irt", data_check_required=False))
+            slug_equalized_price = (
+                absolute_irt
+                if target_slug == self.tomanSymbol
+                else (
+                    absolute_usd
+                    if absolute_usd is not None
+                    and target_slug == self.dollarSymbol
+                    and source_unit_slug == self.tetherSymbol
+                    else absolute_irt / self.get_single_price(target_slug, "irt", data_check_required=False)
+                )
+            )
 
             slug_equalized_price = mathematix.cut_and_separate(slug_equalized_price)
             if target_slug not in NavasanService.goldsInPersian:
@@ -357,9 +369,9 @@ class NavasanService(CurrencyService):
         if data_check_required:
             price_unit = price_unit.lower()
             if (
-                    not isinstance(self.latest_data, dict)
-                    or not currency_symbol in self.latest_data
-                    or not "value" in self.latest_data[currency_symbol]
+                not isinstance(self.latest_data, dict)
+                or not currency_symbol in self.latest_data
+                or not "value" in self.latest_data[currency_symbol]
             ):
                 return None
 
@@ -369,13 +381,19 @@ class NavasanService(CurrencyService):
             return 1 if price_unit != "usd" else self.irt_to_usd(1)
 
         if "usd" not in (currency_data := self.latest_data[currency_symbol]) or not currency_data["usd"]:
-            return float(currency_data["value"]) if price_unit != "usd" else self.irt_to_usd(float(currency_data["value"]))
+            return (
+                float(currency_data["value"]) if price_unit != "usd" else self.irt_to_usd(float(currency_data["value"]))
+            )
         # if price is in $
-        return self.to_irt_exact(float(currency_data["value"])) if price_unit != "usd" else float(currency_data["value"])
+        return (
+            self.to_irt_exact(float(currency_data["value"])) if price_unit != "usd" else float(currency_data["value"])
+        )
 
     # NOTICE: Any change on price calculation must be applied on both up and down functions.
 
-    def get_both_prices(self, currency_symbol: str, amount: int|float = 1) -> Tuple[int|float, int|float] | Tuple[None, None]:
+    def get_both_prices(
+        self, currency_symbol: str, amount: int | float = 1
+    ) -> Tuple[int | float, int | float] | Tuple[None, None]:
         try:
             curr_upper = currency_symbol.upper()
             currency_symbol = currency_symbol.lower()
@@ -406,7 +424,7 @@ class NavasanService(CurrencyService):
             price = float(currency_data["value"])
 
             try:
-                previous_price = float(self.pre_latest_data[sym_lower]['value'])
+                previous_price = float(self.pre_latest_data[sym_lower]["value"])
             except:
                 previous_price = price
 
@@ -416,14 +434,16 @@ class NavasanService(CurrencyService):
             else:
                 usd, toman = self.rounded_prices(price)
             if language != "fa":
-                return f"{self.getTokenState(price, previous_price)} {NavasanService.getEnglishTitle(symbol_up)}: {toman} {self.tomanSymbol}" + (
-                    f" / {usd}$" if usd else ""
+                return (
+                    f"{self.getTokenState(price, previous_price)} {NavasanService.getEnglishTitle(symbol_up)}: {toman} {self.tomanSymbol}"
+                    + (f" / {usd}$" if usd else "")
                 )
             toman = persianify(toman)
             if price < 0:
                 toman = f"{toman[1:]}-"
-            return f"{self.getTokenState(price, previous_price)} {NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان" + (
-                f" / {usd}$" if usd else ""
+            return (
+                f"{self.getTokenState(price, previous_price)} {NavasanService.currenciesInPersian[symbol_up]}: {toman} تومان"
+                + (f" / {usd}$" if usd else "")
             )
         except Exception as x:
             log("Symbol not found!", x, "Navasan")

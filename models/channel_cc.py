@@ -128,7 +128,7 @@ class Channel:
         message_show_date_tag: bool = False,
         message_show_market_tags: bool = True,
         language: str | None = "fa",
-        owner: Account | None = None
+        owner: Account | None = None,
     ) -> None:
         self.owner_id: int = int(owner_id)
         self.id: int = int(channel_id)
@@ -225,7 +225,7 @@ class Channel:
 
         Channel.database().update_channel(self, old_chat_id=old_chat_id)
         if old_chat_id in Channel.Instances:
-             del Channel.Instances[old_chat_id]
+            del Channel.Instances[old_chat_id]
         return self
 
     def throw_in_trashcan(self):

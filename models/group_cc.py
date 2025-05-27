@@ -102,22 +102,16 @@ class Group:
     def deleteAllUserGroups(user_id: int):
         Group.database().delete_all_user_groups(user_id)
         Group.fastMemInstances = {
-            chat_id: group
-            for chat_id, group in Group.fastMemInstances.items()
-            if group.owner_id != user_id
+            chat_id: group for chat_id, group in Group.fastMemInstances.items() if group.owner_id != user_id
         }
 
     def throw_in_trashcan(self):
-        self.database().trash_sth(
-            self.owner_id, DatabaseInterface.TrashType.GROUP, self.id, self.as_dict
-        )
+        self.database().trash_sth(self.owner_id, DatabaseInterface.TrashType.GROUP, self.id, self.as_dict)
 
     def getTrashedCustomization(
         trash_identifier: int,
     ) -> Dict[str, int | float | str | bool]:
-        trash = Group.database().get_trash_by_identifier(
-            DatabaseInterface.TrashType.GROUP, trash_identifier
-        )
+        trash = Group.database().get_trash_by_identifier(DatabaseInterface.TrashType.GROUP, trash_identifier)
         try:
             return trash[-2]
         except:
@@ -126,34 +120,18 @@ class Group:
 
     def use_trash_data(self, trash: Dict[str, int | float | str | bool]):
         try:
-            self.selected_coins = (
-                DatabaseInterface.stringToList(trash["coins"])
-                if "coins" in trash
-                else None
-            ) or []
+            self.selected_coins = (DatabaseInterface.stringToList(trash["coins"]) if "coins" in trash else None) or []
             self.selected_currencies = (
-                DatabaseInterface.stringToList(trash["currencies"])
-                if "currencies" in trash
-                else None
+                DatabaseInterface.stringToList(trash["currencies"]) if "currencies" in trash else None
             ) or []
             self.name = trash["name"] if "name" in trash else None
             self.title = trash["title"] if "title" in trash else None
             msg_settings = trash["message"] if "message" in trash else None
             if msg_settings:
-                self.message_header = (
-                    msg_settings["header"] if "header" in msg_settings else None
-                )
-                self.message_footnote = (
-                    msg_settings["footnote"] if "footnote" in msg_settings else None
-                )
-                self.message_show_date_tag = (
-                    msg_settings["date_tag"] if "date_tag" in msg_settings else False
-                )
-                self.message_show_market_tags = (
-                    msg_settings["market_tags"]
-                    if "market_tags" in msg_settings
-                    else False
-                )
+                self.message_header = msg_settings["header"] if "header" in msg_settings else None
+                self.message_footnote = msg_settings["footnote"] if "footnote" in msg_settings else None
+                self.message_show_date_tag = msg_settings["date_tag"] if "date_tag" in msg_settings else False
+                self.message_show_market_tags = msg_settings["market_tags"] if "market_tags" in msg_settings else False
 
             self.last_interaction = now_in_minute()
         except:
@@ -215,9 +193,7 @@ class Group:
         return None
 
     @staticmethod
-    def extractQueryRowData(
-        row: tuple, owner: Account | None = None, no_fastmem: bool = False
-    ):
+    def extractQueryRowData(row: tuple, owner: Account | None = None, no_fastmem: bool = False):
         return Group(
             group_id=int(row[0]),
             group_name=row[1],
@@ -249,9 +225,7 @@ class Group:
         """
         db = Group.database()
         owner = Account.getById(owner_id)
-        allowed_group_count = BotSettings.get().EACH_COMMUNITY_COUNT_LIMIT(
-            owner.user_type
-        )
+        allowed_group_count = BotSettings.get().EACH_COMMUNITY_COUNT_LIMIT(owner.user_type)
         group_columns = db.get_group(chat.id)
         if group_columns:
             group = Group.extractQueryRowData(group_columns, owner=owner)
@@ -286,10 +260,7 @@ class Group:
     @staticmethod
     def garbageCollect():
         now = now_in_minute()
-        if (
-            now - Group.PreviousFastMemGarbageCollectionTime
-            <= Group.FastMemGarbageCollectionInterval
-        ):
+        if now - Group.PreviousFastMemGarbageCollectionTime <= Group.FastMemGarbageCollectionInterval:
             return
 
         Group.fastMemInstances = {
@@ -316,18 +287,12 @@ class Group:
 
     @staticmethod
     def getFast(group_id: int):
-        return (
-            Group.fastMemInstances[group_id]
-            if group_id in Group.fastMemInstances
-            else None
-        )
+        return Group.fastMemInstances[group_id] if group_id in Group.fastMemInstances else None
 
     @staticmethod
     def restoreTrash(trash_identifier: int):
         db = Group.database()
-        trash = db.get_trash_by_identifier(
-            DatabaseInterface.TrashType.GROUP, trash_identifier
-        )
+        trash = db.get_trash_by_identifier(DatabaseInterface.TrashType.GROUP, trash_identifier)
         if not trash:
             raise NoSuchThingException(trash_identifier, "Trashed Group")
         try:
@@ -341,13 +306,13 @@ class Group:
 
     @staticmethod
     def selectGroups(take: int = 10, page: int = 0):
-        groups_query_data = Group.database().select_groups_with_owner(limit=take, offset=take*page)
+        groups_query_data = Group.database().select_groups_with_owner(limit=take, offset=take * page)
         return list(
             map(
                 lambda row: Group.extractQueryRowData(
-                    row[:len(DatabaseInterface.GROUPS_COLUMNS)],
+                    row[: len(DatabaseInterface.GROUPS_COLUMNS)],
                     no_fastmem=True,
-                    owner=Account.extractQueryRowData(row[len(DatabaseInterface.GROUPS_COLUMNS):], no_fastmem=True),
+                    owner=Account.extractQueryRowData(row[len(DatabaseInterface.GROUPS_COLUMNS) :], no_fastmem=True),
                 ),
                 groups_query_data,
             )

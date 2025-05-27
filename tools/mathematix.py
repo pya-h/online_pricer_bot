@@ -75,9 +75,9 @@ def tz_today() -> datetime:  # today date in a specific timezone
 WEEKDAYS = ("دوشنبه", "سه شنبه", "چهارشنبه", "پنج شنبه", "جمعه", "شنبه", "یکشنبه")
 
 
-def timestamp(language: str = 'fa') -> str:
+def timestamp(language: str = "fa") -> str:
     now = tz_today()  # timezone.localize(datetime.now())
-    if language == 'en':
+    if language == "en":
         formatted_date = now.strftime("%Y/%m/%d %A %H:%M")
         return f"📆 {formatted_date}"
     # today date and time as persian
@@ -170,13 +170,16 @@ def jalali_to_gregorian(jy: int, jm: int, jd: int):
 def now_in_minute() -> int:
     return int(time() / 60)
 
+
 def n_months_later(n: int = 1) -> datetime:
     # this is used for plus end date calculation
     return datetime.now() + relativedelta(months=n)
 
+
 def n_days_later(n: int = 1) -> datetime:
     # this is used for plus end date calculation
     return datetime.now() + relativedelta(days=n)
+
 
 def n_days_later_timestamp(n: int = 1) -> int:
     # this is used for plus end date calculation
@@ -212,6 +215,7 @@ def minutes_to_timestamp(minutes: int) -> str:
         # else:
     return timestamp
 
+
 def from_now_time_diff(dt: datetime):
     """time passed from time:t in minutes"""
     now = tz_today()
@@ -229,18 +233,19 @@ if __name__ == "__main__":
         print("\t=> ", cut_and_separate(x))
 
 thousand_shortcuts = {
-    'k': 1e3,
-    'K': 1e3,
-    'M': 1e6,
-    'G': 1e9,
-    'T': 1e12,
-    'P': 1e15,
-    'm': 1e-3,
-    'u': 1e-6,
-    'n': 1e-9,
-    'p': 1e-12,
-    'f': 1e-15
+    "k": 1e3,
+    "K": 1e3,
+    "M": 1e6,
+    "G": 1e9,
+    "T": 1e12,
+    "P": 1e15,
+    "m": 1e-3,
+    "u": 1e-6,
+    "n": 1e-9,
+    "p": 1e-12,
+    "f": 1e-15,
 }
+
 
 def extract_thousands(num: str) -> Tuple:
     th = 1
@@ -251,17 +256,19 @@ def extract_thousands(num: str) -> Tuple:
         th *= thousand_shortcuts[num[-end_index]]
         end_index += 1
     if end_index > 1:
-        num = num[:-end_index+1]
+        num = num[: -end_index + 1]
     return th, (num or 1)
+
 
 def normal_float_display(number):
     abs_num = number if number >= 0 else -number
-    return str(number) if abs_num >= 1 else '{:.16f}'.format(number).rstrip('0').rstrip('.')
+    return str(number) if abs_num >= 1 else "{:.16f}".format(number).rstrip("0").rstrip(".")
+
 
 def seconds_to_next_minute():
     return 60 - tz_today().second
-    
-    
+
+
 def seconds_to_next_period(period_in_minutes: int | float = 10):
     now = tz_today()
 
