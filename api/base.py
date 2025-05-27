@@ -76,6 +76,7 @@ class BaseAPIService:
 class APIService(BaseAPIService):
     usdInTomans = None
     tetherInTomans = None
+    previousTetherInTomans = None
 
     def __init__(self, url: str, source: str, params=None, cache_file_name: str = None) -> None:
         super(APIService, self).__init__(url, source, params=params, cache_file_name=cache_file_name)
@@ -86,6 +87,7 @@ class APIService(BaseAPIService):
 
     @staticmethod
     def set_tether_tomans(value):
+        APIService.previousTetherInTomans = APIService.tetherInTomans if APIService.previousTetherInTomans is not None else float(value)
         APIService.tetherInTomans = float(value)
 
     def get_desired_ones(self, desired_ones: List[str]) -> list:

@@ -243,23 +243,26 @@ class CoinMarketCapService(CryptoCurrencyService):
             if symbol not in self.latest_data:
                 raise ValueError(f"{symbol} not found in CoinMarketCap response data!")
             price = float(self.latest_data[symbol]["price"])
-            try:
-                previous_price = float(self.pre_latest_data[symbol]["price"])
-            except:
-                previous_price = price
+
             if symbol != "USDT":
+                try:
+                    previous_price = float(self.pre_latest_data[symbol]["price"])
+                except:
+                    previous_price = price
+                token_state = self.getTokenState(price, previous_price)
                 rp_usd, rp_toman = self.rounded_prices(price, tether_as_unit_price=True)
             else:
+                token_state = self.getTokenState(APIService.tetherInTomans, APIService.previousTetherInTomans)
                 rp_usd, rp_toman = mathematix.cut_and_separate(price), mathematix.cut_and_separate(
                     APIService.tetherInTomans
                 )
 
             if language != "fa":
                 return (
-                    f"{self.getTokenState(price, previous_price)} {symbol}: {rp_toman} {self.tomanSymbol} / {rp_usd}$\n"
+                    f"{token_state} {symbol}: {rp_toman} {self.tomanSymbol} / {rp_usd}$\n"
                 )
             rp_toman = mathematix.persianify(rp_toman)
-            return f"{self.getTokenState(price, previous_price)} {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
+            return f"{token_state} {CryptoCurrencyService.coinsInPersian[symbol]}: {rp_toman} تومان / {rp_usd}$\n"
         except:
             pass
 
