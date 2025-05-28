@@ -144,7 +144,7 @@
     },
     "price_unit_usd": {
       "fa": "دلار",
-      "en": "Dollor(s)"
+      "en": "Dollar(s)"
     },
     "yes": {
       "fa": "آره",
@@ -504,7 +504,7 @@
   },
   "whats_price_unit": {
     "fa": "🔹 قیمت مورد نظر شما به تومان است یا دلار؟",
-    "en": "🔹 What's the price unit? Tomans or Dollors?"
+    "en": "🔹 What's the price unit? Tomans or Dollars?"
   },
   "alarm_set": {
     "fa": "✅ هشدار قیمت شما ثبت شد.\n\n🚨 زمانی که قیمت %s به %s %s رسید این ربات به شما اطلاع خواهد داد.",
@@ -516,7 +516,7 @@
   },
   "price_unit_usd": {
     "fa": "دلار",
-    "en": "Dollor(s)"
+    "en": "Dollar(s)"
   },
   "channel_planning_started": {
     "fa": "زمان بندی %d دقیقه ای شروع شد.",
@@ -832,7 +832,7 @@
   },
   "which_english_language_state_u_prefer": {
     "fa": "🔹 می خواهید زبان [ کل ربات ] انگلیسی شود یا فقط [ نام های اختصاری ] انگلیسی شوند؟\n\n❗️ نام‌های اختصاری مثل:\n\n🔸 بیت کوین = BTC\n🔸 دلار (آمریکا) = USD\n🔸 انس طلا = GOLD",
-    "en": "🔹 Do you prefer the whole bot be in english, or just the token names and numbers?\n\n❗️ Token examples:\n\n🔸 BTC = Bitcoin\n\n🔸 USD = US Dollors"
+    "en": "🔹 Do you prefer the whole bot be in english, or just the token names and numbers?\n\n❗️ Token examples:\n\n🔸 BTC = Bitcoin\n\n🔸 USD = US Dollars"
   },
   "channel_not_active": {
     "fa": "❗️ پست گذاری در کانالتان هنوز شروع نشده.\n\n🔹 هر زمان که می‌خواهید پست گذاری در کانالتان شروع شود کافیست روی گزینه [ شروع ] کلیک کنید:",
