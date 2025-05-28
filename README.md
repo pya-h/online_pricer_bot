@@ -124,17 +124,21 @@ Online Pricer Bot allows users to:
 
 ### 🔓 General User Commands
 
-| Command         | Description                                         |
-| --------------- | --------------------------------------------------- |
-| `/start`        | Start the bot                                       |
-| `/get`          | Get current prices from your list                   |
-| `/equalizer`    | Enter calculator mode                               |
-| `/currency`     | Manage currency watchlist                           |
-| `/crypto`       | Manage cryptocurrency watchlist                     |
-| `/gold`         | Manage gold watchlist                               |
-| `/myplan`       | Set VIP user's current VIP state & remaining days   |
-| `/lang`         | Switch bot language between Persian & English       |
-| `/useinchannel` | Link a channel for automated updates (VIP required) |
+| Command           | Description                                         |
+| ----------------- | --------------------------------------------------- |
+| `/start`          | Start the bot                                       |
+| `/view`           | Get current prices based on user list               |
+| `/view_list`      | Config user's view prices tokens list               |
+| `/calculator`     | Enter calculator mode                               |
+| `/calculator_list`| Config user's calculator tokens list                |
+| `/alert`          | Set a new price alert                               |
+| `/alert_list`     | View user's ongoing price alerts                    |
+| `/channels`       | Open channel's panel                                |
+| `/groups`         | Open group's panel                                  |
+| `/lang`           | Switch bot language between Persian & English       |
+| `/vip`            | Show available VIP plans                            |
+| `/my_plan`        | Show user's current plan                            |
+| `/settings`       | Open settings panel                                 |
 
 ### 🧙 Admin Commands
 
