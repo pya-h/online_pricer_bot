@@ -75,7 +75,7 @@ def main(run_webhook: bool = True):
         botman.do_hourly_check, name="HOURLY_REFRESH", interval=3600, first=seconds_to_next_period(period_in_minutes=60)
     )
     app.job_queue.run_once(
-        botman.disable_group_cmd_menu, name='DISABLE_GROUP_CMD'
+        botman.disable_group_cmd_menu, name='DISABLE_GROUP_CMD', when=1,
     )
     app.add_error_handler(unhandled_error_happened)
 
