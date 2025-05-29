@@ -1,6 +1,8 @@
 ## Priorities
     * Automatically Identify & Connect Channels (Just like groups); [In addition to old approaches]
 
+    * Set commands menu programmatically and language specific.
+
     * Admin option to switch USD/USDT price sources
         USD: Navasan, SourceArena, FromUSDT
         USDT: Nobitex, AbanTether, Navasan

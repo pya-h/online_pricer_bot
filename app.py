@@ -6,7 +6,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     ChatMemberHandler,
 )
-
+from telegram import BotCommandScopeAllGroupChats
 from tools.mathematix import seconds_to_next_minute
 from bot.handlers import *
 from decouple import config
@@ -67,6 +67,9 @@ def main(run_webhook: bool = True):
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_messages))
     app.add_handler(MessageHandler(filters.ALL & filters.ChatType.PRIVATE, handle_multimedia_messages))
     app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
+
+    app.bot.set_my_commands([], scope=BotCommandScopeAllGroupChats()) # disable commands menu in group chats
+
     plan_market_updates(app, float(config("MAIN_CHANNEL_DEFAULT_INTERVAL", 10)))
     app.job_queue.run_repeating(
         botman.process_channels, interval=30, first=seconds_to_next_minute() - 1, name="PROCESS_CHANNELS"
