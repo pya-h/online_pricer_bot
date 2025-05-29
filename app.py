@@ -6,12 +6,9 @@ from telegram.ext import (
     CallbackQueryHandler,
     ChatMemberHandler,
 )
-
-from telegram import BotCommandScopeAllGroupChats
 from tools.mathematix import seconds_to_next_minute
 from bot.handlers import *
 from decouple import config
-import asyncio
 
 
 async def open_price_list_section(update: Update, context: CallbackContext):
@@ -26,7 +23,7 @@ async def open_create_alarm_section(update: Update, context: CallbackContext):
     await show_market_types(update, context, Account.States.CREATE_ALARM)
 
 
-async def main(run_webhook: bool = True):
+def main(run_webhook: bool = True):
     app = BotApplicationBuilder().token(botman.token).build()
     app.add_handler(CommandHandler("start", cmd_welcome))
     app.add_handler(CommandHandler("view", cmd_get_prices))
@@ -70,14 +67,15 @@ async def main(run_webhook: bool = True):
     app.add_handler(MessageHandler(filters.ALL & filters.ChatType.PRIVATE, handle_multimedia_messages))
     app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
 
-    await app.bot.set_my_commands([], scope=BotCommandScopeAllGroupChats()) # disable commands menu in group chats)
-
     plan_market_updates(app, float(config("MAIN_CHANNEL_DEFAULT_INTERVAL", 10)))
     app.job_queue.run_repeating(
         botman.process_channels, interval=30, first=seconds_to_next_minute() - 1, name="PROCESS_CHANNELS"
     )
     app.job_queue.run_repeating(
         botman.do_hourly_check, name="HOURLY_REFRESH", interval=3600, first=seconds_to_next_period(period_in_minutes=60)
+    )
+    app.job_queue.run_once(
+        botman.disable_group_cmd_menu, name='DISABLE_GROUP_CMD'
     )
     app.add_error_handler(unhandled_error_happened)
 
@@ -97,7 +95,7 @@ async def main(run_webhook: bool = True):
 if __name__ == "__main__":
     try:
         run_method = config("RUN_METHOD", "webhook")
-        asyncio.run(main(run_webhook=run_method.lower() == "webhook"))
+        main(run_webhook=run_method.lower() == "webhook")
     except Exception as ex:
         print(ex)
         log("Server crashed because: ", ex, "FATALITY")

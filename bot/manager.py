@@ -15,6 +15,7 @@ from telegram import (
     CallbackQuery,
     Message,
     Chat,
+    BotCommandScopeAllGroupChats,
 )
 from telegram.ext import CallbackContext
 from telegram.error import BadRequest, Forbidden
@@ -1605,6 +1606,9 @@ class BotMan:
         if not self.last_daily_check or now_in_minute() - self.last_daily_check >= 1440:
             await self.do_daily_checks(context)
             log("Daily checks has been performed successfully.", category_name="INFO")
+
+    async def disable_group_cmd_menu(self, context: CallbackContext):
+        await context.bot.set_my_commands([], scope=BotCommandScopeAllGroupChats()) # disable commands menu in group chats
 
     async def do_daily_checks(self, context: CallbackContext):
         today = tz_today().date()
