@@ -5,8 +5,6 @@ from telegram.ext import (
     MessageHandler,
     CallbackQueryHandler,
     ChatMemberHandler,
-    Application,
-    ExtBot,
 )
 
 from telegram import BotCommandScopeAllGroupChats
@@ -28,11 +26,7 @@ async def open_create_alarm_section(update: Update, context: CallbackContext):
     await show_market_types(update, context, Account.States.CREATE_ALARM)
 
 
-async def disable_group_cmd_menu(app: Application[ExtBot[None],]):
-    await app.bot.set_my_commands([], scope=BotCommandScopeAllGroupChats()) # disable commands menu in group chats
-
-
-def main(run_webhook: bool = True):
+async def main(run_webhook: bool = True):
     app = BotApplicationBuilder().token(botman.token).build()
     app.add_handler(CommandHandler("start", cmd_welcome))
     app.add_handler(CommandHandler("view", cmd_get_prices))
@@ -76,7 +70,7 @@ def main(run_webhook: bool = True):
     app.add_handler(MessageHandler(filters.ALL & filters.ChatType.PRIVATE, handle_multimedia_messages))
     app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
 
-    asyncio.run(disable_group_cmd_menu(app))
+    await app.bot.set_my_commands([], scope=BotCommandScopeAllGroupChats()) # disable commands menu in group chats)
 
     plan_market_updates(app, float(config("MAIN_CHANNEL_DEFAULT_INTERVAL", 10)))
     app.job_queue.run_repeating(
@@ -103,7 +97,7 @@ def main(run_webhook: bool = True):
 if __name__ == "__main__":
     try:
         run_method = config("RUN_METHOD", "webhook")
-        main(run_webhook=run_method.lower() == "webhook")
+        asyncio.run(main(run_webhook=run_method.lower() == "webhook"))
     except Exception as ex:
         print(ex)
         log("Server crashed because: ", ex, "FATALITY")
