@@ -5,11 +5,15 @@ from telegram.ext import (
     MessageHandler,
     CallbackQueryHandler,
     ChatMemberHandler,
+    Application,
+    ExtBot,
 )
+
 from telegram import BotCommandScopeAllGroupChats
 from tools.mathematix import seconds_to_next_minute
 from bot.handlers import *
 from decouple import config
+import asyncio
 
 
 async def open_price_list_section(update: Update, context: CallbackContext):
@@ -22,6 +26,10 @@ async def open_equalizer_list_section(update: Update, context: CallbackContext):
 
 async def open_create_alarm_section(update: Update, context: CallbackContext):
     await show_market_types(update, context, Account.States.CREATE_ALARM)
+
+
+async def disable_group_cmd_menu(app: Application[ExtBot[None],]):
+    await app.bot.set_my_commands([], scope=BotCommandScopeAllGroupChats()) # disable commands menu in group chats
 
 
 def main(run_webhook: bool = True):
@@ -68,7 +76,7 @@ def main(run_webhook: bool = True):
     app.add_handler(MessageHandler(filters.ALL & filters.ChatType.PRIVATE, handle_multimedia_messages))
     app.add_handler(MessageHandler(filters.COMMAND & filters.ChatType.PRIVATE, unknown_command_handler))
 
-    app.bot.set_my_commands([], scope=BotCommandScopeAllGroupChats()) # disable commands menu in group chats
+    asyncio.run(disable_group_cmd_menu(app))
 
     plan_market_updates(app, float(config("MAIN_CHANNEL_DEFAULT_INTERVAL", 10)))
     app.job_queue.run_repeating(
