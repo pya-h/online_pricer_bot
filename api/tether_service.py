@@ -67,7 +67,11 @@ class AbanTetherService(TetherService):
     def mid(self) -> float:
         if self.recent_response and AbanTetherService.tetherSymbol in self.recent_response:
             value = self.recent_response[AbanTetherService.tetherSymbol]
-            self.recent_value = (float(value["irtPriceBuy"]) + float(value["irtPriceSell"])) / 2.0
+            self.recent_value = (
+                (float(value["irtPriceBuy"]) + float(value["irtPriceSell"])) / 2.0
+                if "irtPriceBuy" in value and value["irtPriceBuy"]
+                else float(value["irtPriceSell"])
+            )
             return self.recent_value
         return 0.0
 
@@ -98,7 +102,11 @@ class NobitexService(TetherService):
     def mid(self) -> float:
         if self.recent_response and NobitexService.tetherFieldName in self.recent_response:
             value = self.recent_response[NobitexService.tetherFieldName]
-            self.recent_value = (float(value["bestBuy"]) + float(value["bestSell"])) / 2.0
+            self.recent_value = (
+                (float(value["bestBuy"]) + float(value["bestSell"])) / 2.0
+                if "bestBuy" in value and value["bestBuy"]
+                else float(value["bestSell"])
+            )
             return self.recent_value
         return 0.0
 
