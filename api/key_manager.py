@@ -2,7 +2,6 @@ from typing import Callable
 from telegram.error import Conflict
 from api.base import BaseAPIService
 from tools import manuwriter
-from tools.exceptions import CacheFailureException
 import json
 
 
