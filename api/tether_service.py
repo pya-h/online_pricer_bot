@@ -88,15 +88,15 @@ class AbanTetherService(TetherService):
     def summary(self) -> str:
         return self.data_summary(self.recent_response[self.tetherSymbol], "irtMidPoint")
 
-
 class NobitexService(TetherService):
     tetherFieldName = f"{TetherService.tetherSymbol}-{TetherService.tomanSymbol}"
 
-    def __init__(self, token: str) -> None:
+    def __init__(self, token: str, use_latest_price: bool = True) -> None:
         super(NobitexService, self).__init__(
             url="https://api.nobitex.ir/market/stats", token=token, source="Nobitex", cache_name="Nobitex.json"
         )
         self.headers = {"Authorization": f"Bearer {self.token}"}
+        self.use_latest_price: bool = use_latest_price
 
     @property
     def mid(self) -> float:
@@ -107,6 +107,14 @@ class NobitexService(TetherService):
                 if "bestBuy" in value and value["bestBuy"]
                 else float(value["bestSell"])
             )
+            return self.recent_value
+        return 0.0
+    
+    @property
+    def latest(self) -> float:
+        if self.recent_response and AbanTetherService.tetherSymbol in self.recent_response:
+            value = self.recent_response[AbanTetherService.tetherSymbol]
+            self.recent_value = value["latest"] if "latest" in value and value["latest"] else value["mark"]
             return self.recent_value
         return 0.0
 
@@ -125,11 +133,14 @@ class NobitexService(TetherService):
             value = self.recent_response[NobitexService.tetherFieldName]
             value["bestBuy"] = float(value["bestBuy"]) / 10.0
             value["bestSell"] = float(value["bestSell"]) / 10.0
+            value["latest"] = float(value["latest"]) / 10.0
+            value["mark"] = float(value["mark"]) / 10.0
+
             self.no_response_counts = 0
         except Exception as x:
             self.no_response_counts += 1
             log("Nobitex API Failure", x, category_name="Nobitex")
-        self.recent_value = self.mid
+        self.recent_value = self.latest if self.use_latest_price else self.mid
         return self.recent_value
 
     def summary(self) -> str:
