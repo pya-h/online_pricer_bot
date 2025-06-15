@@ -5,7 +5,24 @@ from tools.mathematix import tz_today, from_now_time_diff
 from json import dumps as jsonify
 from typing import Dict
 from tools.manuwriter import log
+from enum import Enum
 
+class TomanUsdtSources(Enum):
+    ABAN_TETHER = 'aban',
+    NOBITEX = 'nobitex',
+    NAVASAN = 'navasan'
+    NONE = 'none'
+
+    @staticmethod
+    def which(value: str):
+        match value.lower():
+            case 'nobitex':
+                return TomanUsdtSources.NOBITEX
+            case 'aban':
+                return TomanUsdtSources.ABAN_TETHER
+            case 'navasan':
+                return TomanUsdtSources.NAVASAN
+        return TomanUsdtSources.NONE
 
 class TetherService(BaseAPIService):
     def __init__(self, url: str, token: str, source: str, cache_name: str | None = None) -> None:

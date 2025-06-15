@@ -2246,3 +2246,66 @@ async def cmd_list_cmc_api_key(update: Update, context: CallbackContext):
         )
     except Exception as x:
         await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
+
+async def cmd_switch_usdt_source(update: Update, context: CallbackContext):
+    if not (account := Account.get(update.message.chat)).is_authorized(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account)
+    try:
+        args = account.extract_args_if_authorized(context.args)
+        botman.currency_serv.switch_tether_toman_source(args[0])
+        await update.message.reply_text(
+            "Successfully switched tether price source.",
+            reply_markup=botman.get_admin_primary_keyboard(account),
+        )
+    except Exception as x:
+        await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
+
+async def cmd_set_manual_tether_price(update: Update, context: CallbackContext):
+    if not (account := Account.get(update.message.chat)).is_authorized(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account)
+    try:
+        args = account.extract_args_if_authorized(context.args)
+        botman.currency_serv.set_manual_tether_price(float(args[0]))
+        await update.message.reply_text(
+            "Successfully set tether price.",
+            reply_markup=botman.get_admin_primary_keyboard(account),
+        )
+    except Exception as x:
+        await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
+
+async def cmd_unset_manual_tether_price(update: Update, context: CallbackContext):
+    if not (account := Account.get(update.message.chat)).is_authorized(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account)
+    try:
+        botman.currency_serv.set_manual_tether_price()
+        await update.message.reply_text(
+            "Tether price source returned to normal mode.",
+            reply_markup=botman.get_admin_primary_keyboard(account),
+        )
+    except Exception as x:
+        await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
+
+async def cmd_set_manual_usd_price(update: Update, context: CallbackContext):
+    if not (account := Account.get(update.message.chat)).is_authorized(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account)
+    try:
+        args = account.extract_args_if_authorized(context.args)
+        botman.currency_serv.set_manual_usd_price(float(args[0]))
+        await update.message.reply_text(
+            "Successfully set dollar price.",
+            reply_markup=botman.get_admin_primary_keyboard(account),
+        )
+    except Exception as x:
+        await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))
+
+async def cmd_unset_manual_usd_price(update: Update, context: CallbackContext):
+    if not (account := Account.get(update.message.chat)).is_authorized(context.args):
+        return await say_youre_not_allowed(update.message.reply_text, account)
+    try:
+        botman.currency_serv.set_manual_usd_price()
+        await update.message.reply_text(
+            "Dollar price source returned to navasan.",
+            reply_markup=botman.get_admin_primary_keyboard(account),
+        )
+    except Exception as x:
+        await update.message.reply_text(x.__str__(), reply_markup=botman.get_admin_primary_keyboard(account))

@@ -54,6 +54,11 @@ def main(run_webhook: bool = True):
     app.add_handler(CommandHandler("add_api", cmd_add_cmc_api_key))
     app.add_handler(CommandHandler("rem_api", cmd_remove_cmc_api_key))
     app.add_handler(CommandHandler("api_keys", cmd_list_cmc_api_key))
+    app.add_handler(CommandHandler("set$", cmd_set_manual_usd_price))
+    app.add_handler(CommandHandler("set_usdt", cmd_set_manual_tether_price))
+    app.add_handler(CommandHandler("unset$", cmd_unset_manual_usd_price))
+    app.add_handler(CommandHandler("unset_usdt", cmd_unset_manual_tether_price))
+    app.add_handler(CommandHandler("switch_usdt_source", cmd_switch_usdt_source))
 
     app.add_handler(CallbackQueryHandler(handle_inline_keyboard_callbacks))
     app.add_handler(ChatMemberHandler(handle_new_group_members, ChatMemberHandler.MY_CHAT_MEMBER))

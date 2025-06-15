@@ -2,7 +2,7 @@ import asyncio
 
 from api.base import *
 from tools.exceptions import InvalidInputException
-from api.tether_service import AbanTetherService, NobitexService
+from api.tether_service import AbanTetherService, NobitexService, TomanUsdtSources
 from tools.manuwriter import log, load_json
 from tools.mathematix import persianify
 from tools.exceptions import NoLatestDataException
@@ -136,6 +136,9 @@ class NavasanService(CurrencyService):
     goldsInEnglish = None
     majorPriceUnits: Dict[str, Dict[str, str]] = None
 
+    manualTetherPrice: float | None = None
+    manualDollarPrice: float | None = None
+
     @staticmethod
     def getDefaultCurrencies():
         return list(NavasanService.defaults)
@@ -149,11 +152,11 @@ class NavasanService(CurrencyService):
         token: str,
         nobitex_tether_service_token: str,
         aban_tether_service_token: str = None,
+        tether_toman_source: TomanUsdtSources = TomanUsdtSources.NAVASAN,
     ) -> None:
-        self.tether_service = NobitexService(nobitex_tether_service_token)
-        self.alternate_tether_service = (
-            AbanTetherService(aban_tether_service_token) if aban_tether_service_token else None
-        )
+        self.tether_toman_source = tether_toman_source
+        
+        self.switch_tether_toman_source(tether_toman_source)
         super().__init__(
             url=f"https://apis.sourcearena.ir/api/?token={token}&currency&v2",
             source="Navasan",
@@ -174,8 +177,30 @@ class NavasanService(CurrencyService):
         ):
             NavasanService.loadPersianNames()
 
+        self.nobitex_tether_service_token = nobitex_tether_service_token
+        self.aban_tether_service_token = aban_tether_service_token
+
     def get_desired_ones(self, selection: List[str] | None) -> List[str]:
         return selection or NavasanService.defaults
+
+    def switch_tether_toman_source(self, source: TomanUsdtSources | str):
+        if not isinstance(source, TomanUsdtSources):
+            source = TomanUsdtSources.which(source)
+        match source:
+            case TomanUsdtSources.NOBITEX:
+                if isinstance(self.tether_service, NobitexService) and isinstance(self.alternate_tether_service, AbanTetherService):
+                    return
+                self.tether_service = NobitexService(self.nobitex_tether_service_token)
+                self.alternate_tether_service = (
+                    AbanTetherService(self.aban_tether_service_token) if self.aban_tether_service_token else None
+                )
+            case TomanUsdtSources.ABAN_TETHER:
+                if not self.aban_tether_service_token:
+                    raise ValueError('Aban tether API Key not provided!')
+                if isinstance(self.tether_service, AbanTetherService) and isinstance(self.alternate_tether_service, NobitexService):
+                    return
+                self.tether_service = AbanTetherService(self.aban_tether_service_token)
+                self.alternate_tether_service = NobitexService(self.nobitex_tether_service_token)
 
     @staticmethod
     def loadPersianNames():
@@ -228,17 +253,21 @@ class NavasanService(CurrencyService):
         return response
 
     async def select_best_tether_price(self):
+        if NavasanService.manualTetherPrice is not None:
+            if APIService.tetherInTomans != NavasanService.manualTetherPrice:
+                APIService.set_tether_tomans(NavasanService.manualTetherPrice)
+            return
         APIService.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
 
+        if self.tether_toman_source == TomanUsdtSources.NAVASAN:
+            return
         try:
             if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
-                self.cache_data(self.tether_service.recent_value)
                 APIService.set_tether_tomans(self.tether_service.recent_value)
                 return
 
             await self.alternate_tether_service.get()
             if self.alternate_tether_service.recent_value and self.alternate_tether_service.no_response_counts < 3:
-                self.cache_data(self.alternate_tether_service.recent_value)
                 APIService.set_tether_tomans(self.alternate_tether_service.recent_value)
                 return
 
@@ -248,7 +277,7 @@ class NavasanService(CurrencyService):
                 x,
                 category_name="TetherService",
             )
-        
+
     async def update(self):
         try:
             new_data = await self.get_request()
@@ -266,12 +295,22 @@ class NavasanService(CurrencyService):
         )
 
         try:
-            APIService.set_usd_price(self.latest_data["usd"]["value"])
+            APIService.set_usd_price(NavasanService.manualDollarPrice or self.latest_data["usd"]["value"])
         except Exception as ex:
             log("Update USD Price Error", ex, "Navasan")
 
         self.latest_data[self.tomanSymbol.lower()] = {"value": 1 / APIService.usdInTomans}
         return True
+
+    def set_manual_tether_price(self, price: float | None = None):
+        NavasanService.manualTetherPrice = price
+        if price is not None:
+            APIService.set_tether_tomans(price)
+
+    def set_manual_usd_price(self, price: float | None = None):
+        NavasanService.manualDollarPrice = price
+        if price is not None:
+            APIService.set_usd_price(price)
 
     async def get(
         self,
