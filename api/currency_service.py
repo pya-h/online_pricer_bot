@@ -232,11 +232,13 @@ class NavasanService(CurrencyService):
 
         try:
             if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
+                self.cache_data(self.tether_service.recent_value)
                 APIService.set_tether_tomans(self.tether_service.recent_value)
                 return
 
             await self.alternate_tether_service.get()
             if self.alternate_tether_service.recent_value and self.alternate_tether_service.no_response_counts < 3:
+                self.cache_data(self.alternate_tether_service.recent_value)
                 APIService.set_tether_tomans(self.alternate_tether_service.recent_value)
                 return
 
@@ -246,7 +248,7 @@ class NavasanService(CurrencyService):
                 x,
                 category_name="TetherService",
             )
-
+        
     async def update(self):
         try:
             new_data = await self.get_request()
