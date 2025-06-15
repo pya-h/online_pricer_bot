@@ -200,6 +200,7 @@ class NavasanService(CurrencyService):
                 self.alternate_tether_service = (
                     AbanTetherService(self.aban_tether_service_token) if self.aban_tether_service_token else None
                 )
+                self.tether_toman_source = TomanUsdtSources.NOBITEX
             case TomanUsdtSources.ABAN_TETHER:
                 if not self.aban_tether_service_token:
                     raise ValueError("Aban tether API Key not provided!")
@@ -209,6 +210,9 @@ class NavasanService(CurrencyService):
                     return
                 self.tether_service = AbanTetherService(self.aban_tether_service_token)
                 self.alternate_tether_service = NobitexService(self.nobitex_tether_service_token)
+                self.tether_toman_source = TomanUsdtSources.ABAN_TETHER
+            case TomanUsdtSources.NAVASAN:
+                self.tether_toman_source = TomanUsdtSources.NAVASAN
             case TomanUsdtSources.NONE:
                 raise ValueError(
                     f"Invalid source; Valid sources: {TomanUsdtSources.NAVASAN.value}, {TomanUsdtSources.NOBITEX.value}, {TomanUsdtSources.ABAN_TETHER.value}"
