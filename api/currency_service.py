@@ -152,16 +152,18 @@ class NavasanService(CurrencyService):
         token: str,
         nobitex_tether_service_token: str,
         aban_tether_service_token: str = None,
-        tether_toman_source: TomanUsdtSources = TomanUsdtSources.NAVASAN,
+        tether_toman_source: TomanUsdtSources = TomanUsdtSources.NOBITEX,
     ) -> None:
         self.tether_toman_source = tether_toman_source
         self.nobitex_tether_service_token = nobitex_tether_service_token
         self.aban_tether_service_token = aban_tether_service_token
 
-        self.tether_service: NobitexService | AbanTetherService | None = None
-        self.alternate_tether_service: AbanTetherService | NobitexService | None = None
-
-        self.switch_tether_toman_source(tether_toman_source)
+        self.tether_service = NobitexService(self.nobitex_tether_service_token)
+        self.alternate_tether_service = (
+            AbanTetherService(self.aban_tether_service_token) if self.aban_tether_service_token else None
+        )
+        if tether_toman_source != TomanUsdtSources.NOBITEX:
+            self.switch_tether_toman_source(tether_toman_source)
         super().__init__(
             url=f"https://apis.sourcearena.ir/api/?token={token}&currency&v2",
             source="Navasan",
