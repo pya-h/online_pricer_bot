@@ -192,7 +192,9 @@ class NavasanService(CurrencyService):
             source = TomanUsdtSources.which(source)
         match source:
             case TomanUsdtSources.NOBITEX:
-                if isinstance(self.tether_service, NobitexService) and isinstance(self.alternate_tether_service, AbanTetherService):
+                if isinstance(self.tether_service, NobitexService) and isinstance(
+                    self.alternate_tether_service, AbanTetherService
+                ):
                     return
                 self.tether_service = NobitexService(self.nobitex_tether_service_token)
                 self.alternate_tether_service = (
@@ -200,11 +202,17 @@ class NavasanService(CurrencyService):
                 )
             case TomanUsdtSources.ABAN_TETHER:
                 if not self.aban_tether_service_token:
-                    raise ValueError('Aban tether API Key not provided!')
-                if isinstance(self.tether_service, AbanTetherService) and isinstance(self.alternate_tether_service, NobitexService):
+                    raise ValueError("Aban tether API Key not provided!")
+                if isinstance(self.tether_service, AbanTetherService) and isinstance(
+                    self.alternate_tether_service, NobitexService
+                ):
                     return
                 self.tether_service = AbanTetherService(self.aban_tether_service_token)
                 self.alternate_tether_service = NobitexService(self.nobitex_tether_service_token)
+            case TomanUsdtSources.NONE:
+                raise ValueError(
+                    f"Invalid source; Valid sources: {TomanUsdtSources.NAVASAN.value}, {TomanUsdtSources.NOBITEX.value}, {TomanUsdtSources.ABAN_TETHER.value}"
+                )
 
     @staticmethod
     def loadPersianNames():
@@ -299,7 +307,9 @@ class NavasanService(CurrencyService):
         )
 
         try:
-            APIService.set_usd_price(NavasanService.manualDollarPrice or self.latest_data["usd"]["value"])
+            if NavasanService.manualDollarPrice is not None:
+                self.latest_data["usd"]["value"] = NavasanService.manualDollarPrice
+            APIService.set_usd_price(self.latest_data["usd"]["value"])
         except Exception as ex:
             log("Update USD Price Error", ex, "Navasan")
 
