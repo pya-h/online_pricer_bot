@@ -228,6 +228,8 @@ class NavasanService(CurrencyService):
         return response
 
     async def select_best_tether_price(self):
+        APIService.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
+
         try:
             if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
                 APIService.set_tether_tomans(self.tether_service.recent_value)
@@ -244,8 +246,6 @@ class NavasanService(CurrencyService):
                 x,
                 category_name="TetherService",
             )
-
-        APIService.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
 
     async def update(self):
         try:
