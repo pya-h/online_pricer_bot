@@ -230,22 +230,22 @@ class NavasanService(CurrencyService):
     async def select_best_tether_price(self):
         APIService.set_tether_tomans(self.latest_data["usd_usdt"]["value"])
 
-        # try:
-        #     if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
-        #         APIService.set_tether_tomans(self.tether_service.recent_value)
-        #         return
+        try:
+            if self.tether_service.recent_value and self.tether_service.no_response_counts < 3:
+                APIService.set_tether_tomans(self.tether_service.recent_value)
+                return
 
-        #     await self.alternate_tether_service.get()
-        #     if self.alternate_tether_service.recent_value and self.alternate_tether_service.no_response_counts < 3:
-        #         APIService.set_tether_tomans(self.alternate_tether_service.recent_value)
-        #         return
+            await self.alternate_tether_service.get()
+            if self.alternate_tether_service.recent_value and self.alternate_tether_service.no_response_counts < 3:
+                APIService.set_tether_tomans(self.alternate_tether_service.recent_value)
+                return
 
-        # except Exception as x:
-        #     log(
-        #         "Failed updating USDT-IRT price through tether services. Navasan prices will be used.",
-        #         x,
-        #         category_name="TetherService",
-        #     )
+        except Exception as x:
+            log(
+                "Failed updating USDT-IRT price through tether services. Navasan prices will be used.",
+                x,
+                category_name="TetherService",
+            )
 
     async def update(self):
         try:

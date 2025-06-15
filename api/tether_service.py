@@ -112,8 +112,8 @@ class NobitexService(TetherService):
     
     @property
     def latest(self) -> float:
-        if self.recent_response and AbanTetherService.tetherSymbol in self.recent_response:
-            value = self.recent_response[AbanTetherService.tetherSymbol]
+        if self.recent_response and NobitexService.tetherFieldName in self.recent_response:
+            value = self.recent_response[NobitexService.tetherFieldName]
             self.recent_value = value["latest"] if "latest" in value and value["latest"] else value["mark"]
             return self.recent_value
         return 0.0
@@ -122,6 +122,7 @@ class NobitexService(TetherService):
         response = await self.post_request(
             headers=self.headers, payload={"srcCurrency": self.tetherSymbol, "dstCurrency": self.tomanSymbol}
         )
+
         if "status" in response and response["status"].lower() == "ok":
             return response["stats"]
         return None
