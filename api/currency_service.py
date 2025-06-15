@@ -155,7 +155,12 @@ class NavasanService(CurrencyService):
         tether_toman_source: TomanUsdtSources = TomanUsdtSources.NAVASAN,
     ) -> None:
         self.tether_toman_source = tether_toman_source
-        
+        self.nobitex_tether_service_token = nobitex_tether_service_token
+        self.aban_tether_service_token = aban_tether_service_token
+
+        self.tether_service: NobitexService | AbanTetherService | None = None
+        self.alternate_tether_service: AbanTetherService | NobitexService | None = None
+
         self.switch_tether_toman_source(tether_toman_source)
         super().__init__(
             url=f"https://apis.sourcearena.ir/api/?token={token}&currency&v2",
@@ -176,9 +181,6 @@ class NavasanService(CurrencyService):
             or not NavasanService.persianShortcuts
         ):
             NavasanService.loadPersianNames()
-
-        self.nobitex_tether_service_token = nobitex_tether_service_token
-        self.aban_tether_service_token = aban_tether_service_token
 
     def get_desired_ones(self, selection: List[str] | None) -> List[str]:
         return selection or NavasanService.defaults
