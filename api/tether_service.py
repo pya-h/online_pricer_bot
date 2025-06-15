@@ -8,8 +8,8 @@ from tools.manuwriter import log
 from enum import Enum
 
 class TomanUsdtSources(Enum):
-    ABAN_TETHER = 'aban',
-    NOBITEX = 'nobitex',
+    ABAN_TETHER = 'aban'
+    NOBITEX = 'nobitex'
     NAVASAN = 'navasan'
     NONE = 'none'
 

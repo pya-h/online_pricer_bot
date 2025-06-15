@@ -325,6 +325,10 @@ class NavasanService(CurrencyService):
         NavasanService.manualDollarPrice = price
         if price is not None:
             APIService.set_usd_price(price)
+            try:
+                self.latest_data["usd"]["value"] = NavasanService.manualDollarPrice
+            except:
+                pass
 
     async def get(
         self,
