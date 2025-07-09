@@ -66,7 +66,7 @@ class GoldService(BaseAPIService):
 
     def __init__(self, token: str) -> None:
         super().__init__(
-            url=f"https://apis.sourcearena.ir/api/?token={token}&currency",
+            url=f"https://api-cdn.sourcearena.ir/api/?token={token}&currency",
             source="GoldService.ir",
             cache_file_name="SourceArenaGolds.json",
         )
