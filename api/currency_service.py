@@ -165,7 +165,7 @@ class NavasanService(CurrencyService):
         if tether_toman_source != TomanUsdtSources.NOBITEX:
             self.switch_tether_toman_source(tether_toman_source)
         super().__init__(
-            url=f"https://apis.sourcearena.ir/api/?token={token}&currency&v2",
+            url=f"https://api-cdn.sourcearena.ir/api/?token={token}&currency&v2",
             source="Navasan",
             cache_file_name="Navasan.json",
             tether_service_token=self.tether_service.token,
