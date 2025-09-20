@@ -950,6 +950,7 @@ async def handle_action_queries(
 
 async def handle_inline_keyboard_callbacks(update: Update, context: CallbackContext):
     query = update.callback_query
+    
     if not query.data:
         return
 
