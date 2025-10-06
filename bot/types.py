@@ -45,7 +45,7 @@ class SelectionListTypes(Enum):
                 return option
         return None
 
-    def should_show_irt(self, market: MarketOptions) -> bool:
+    def should_hide_irt(self, market: MarketOptions) -> bool:
         return market == MarketOptions.CURRENCY and self not in [
             SelectionListTypes.GROUP_TOKENS,
             SelectionListTypes.CALCULATOR,

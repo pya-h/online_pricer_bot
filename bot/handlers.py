@@ -62,7 +62,7 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
     list_type: SelectionListTypes | None = account.match_state_with_selection_type()
 
     await update.message.reply_text(
-        botman.text("select_your_set", account.language),
+        botman.text("select_your_set" if list_type != SelectionListTypes.EQUALIZER_UNIT else "which_token_to_equalize", account.language),
         reply_markup=botman.create_tokens_menu(
             list_type,
             market,
@@ -78,7 +78,7 @@ async def prepare_market_selection_menu(update: Update, context: CallbackContext
             BotMan.handleMarketSelection(account, list_type, market),
             close_button=True,
             language=account.language,
-            choices_start_offset=int(list_type.should_show_irt(market)),
+            choices_start_offset=int(list_type.should_hide_irt(market))
         ),
     )
 
@@ -999,6 +999,23 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
     list_type = SelectionListTypes.which(data["lt"])
     match list_type:
         case SelectionListTypes.EQUALIZER_UNIT:
+            if "v" not in data or not data["v"]:
+                await query.message.edit_reply_markup(
+                    reply_markup=botman.create_tokens_menu(
+                        list_type,
+                        market,
+                        (
+                            botman.crypto_serv.coinsInPersian,
+                            botman.currency_serv.nationalCurrenciesInPersian,
+                            botman.currency_serv.goldsInPersian,
+                        )[market.value - 1],
+                        page=page,
+                        language=account.language,
+                        close_button=True,
+                        choices_start_offset=0
+                    )
+                )
+                return
             input_amounts = account.get_cache("input_amounts")
             if input_amounts:
                 unit_symbol = data["v"].upper()
@@ -1074,7 +1091,7 @@ async def handle_inline_keyboard_callbacks(update: Update, context: CallbackCont
                 page=page,
                 language=account.language,
                 close_button=True,
-                choices_start_offset=int(list_type.should_show_irt(market)),
+                choices_start_offset=int(list_type.should_hide_irt(market))
             )
         )
 

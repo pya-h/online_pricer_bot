@@ -449,6 +449,10 @@
     "fa": "🔹 بر روی گزینه های مدنظرتان کلیک کنید تا در لیستتان اضافه شوند:",
     "en": "🔹 Click on the options you want to add to your list:"
   },
+  "which_token_to_equalize": {
+    "fa": "🔹 کدام یک از گزینه های زیر را می خواهید تبدیل کنید؟",
+    "en": "🔹 Which token do you whish to equalize?"
+  },
   "calculator_hint": {
     "fa": "🔹 مقدار مدنظرتان را همراه با نام اختصاریِ مدنظرتان (به انگلیسی) بنویسید: \n❗️ نکته: بین مقدار و نام اختصاری یک فاصله قرار دهید.\n❗️ نکته: شما می توانید در یک سطر یک الی چند مورد مانند مثال های زیر بنویسید:\nمثال:\n",
     "en": "🔹 Write the amount you want along with the abbreviated name you want (in English):\n\n❗️ Notice: Put a space between the value and the short name\n\n❗️ Notice: You can write one to several items in one line like the examples below:\nExamples:\n"
