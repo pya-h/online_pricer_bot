@@ -92,7 +92,7 @@ Online Pricer Bot allows users to:
    ```env
     BOT_TOKEN=
     BOT_USERNAME=
-    CURRENCY_TOKEN=
+    NAVASAN_API_KEY=
     ABAN_TETHER_TOKEN=
     COINMARKETCAP_API_KEY=
     CHANNEL_ID=

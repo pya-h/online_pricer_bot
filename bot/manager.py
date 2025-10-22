@@ -256,7 +256,8 @@ class BotMan:
 
         self.postman = PostMan(
             resourceman,
-            source_arena_api_key=config("CURRENCY_TOKEN", cast=str),
+            navasan_api_key=config("NAVASAN_API_KEY", cast=str),
+            source_arena_api_key=config("SOURCE_ARENA_API_KEY", cast=str),
             coinmarketcap_api_key=config("COINMARKETCAP_API_KEY", cast=str),
             nobitex_api_token=config("NOBITEX_TOKEN", cast=str),
             aban_tether_api_token=config("ABAN_TETHER_TOKEN", cast=str),

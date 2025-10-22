@@ -13,6 +13,7 @@ class PostMan:
     def __init__(
         self,
         resourceman: ResourceManager,
+        navasan_api_key: str,
         source_arena_api_key: str,
         coinmarketcap_api_key: str,
         nobitex_api_token: str,
@@ -20,6 +21,7 @@ class PostMan:
     ) -> None:
         self.resourceman = resourceman
         self.source_arena_api_key: str = source_arena_api_key
+        self.navasan_api_key: str = navasan_api_key
         self.nobitex_api_token: str = nobitex_api_token
         self.aban_tether_api_token: str = aban_tether_api_token
 
@@ -29,7 +31,7 @@ class PostMan:
             self.coinmarketcap_api_key
         )  # api service object: instance of CoinGecko or CoinMarketCap
         self.currency_service: NavasanService = NavasanService(
-            self.source_arena_api_key, self.nobitex_api_token, self.aban_tether_api_token
+            self.source_arena_api_key, self.navasan_api_key, self.nobitex_api_token, self.aban_tether_api_token
         )
 
     def arrange_post_sections(
