@@ -31,7 +31,7 @@ class PostMan:
             self.coinmarketcap_api_key
         )  # api service object: instance of CoinGecko or CoinMarketCap
         self.currency_service: NavasanService = NavasanService(
-            self.source_arena_api_key, self.navasan_api_key, self.nobitex_api_token, self.aban_tether_api_token
+            self.navasan_api_key, self.source_arena_api_key, self.nobitex_api_token, self.aban_tether_api_token
         )
 
     def arrange_post_sections(
