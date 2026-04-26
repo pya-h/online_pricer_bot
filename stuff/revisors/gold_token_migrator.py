@@ -21,6 +21,7 @@ TOKEN_MAP = {
     "PALA": None,
     "ONSPALA": None,
     "OIL": None,
+    "BUB_24AYAR": None,
 }
 
 OLD_TOKENS = set(TOKEN_MAP.keys())
