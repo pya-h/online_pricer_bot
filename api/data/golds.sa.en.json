@@ -1,15 +1,15 @@
 {
-    "ONS": "GOLD",
-    "ONSNOGHRE": "SILVER",
-    "PALA": "PLATINUM",
-    "ONSPALA": "PALLADIUM",
-    "OIL": "USOIL",
-    "TALA_18": "18AYAR",
-    "TALA_24": "24AYAR",
-    "TALA_MESGHAL": "MESGHAL",
-    "SEKE_EMAMI": "EMAMI",
-    "SEKE_BAHAR": "BAHARAZADI",
-    "SEKE_NIM": "NIM",
-    "SEKE_ROB": "ROB",
-    "SEKE_GERAMI": "GRAM"
+  "ONS": "GOLD",
+  "ONSNOGHRE": "SILVER",
+  "PALA": "PLATINUM",
+  "ONSPALA": "PALLADIUM",
+  "OIL": "USOIL",
+  "TALA_18": "18AYAR",
+  "TALA_24": "24AYAR",
+  "TALA_MESGHAL": "MESGHAL",
+  "SEKE_EMAMI": "EMAMI",
+  "SEKE_BAHAR": "BAHARAZADI",
+  "SEKE_NIM": "NIM",
+  "SEKE_ROB": "ROB",
+  "SEKE_GERAMI": "GRAM"
 }

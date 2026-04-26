@@ -123,17 +123,16 @@ class NavasanService(CurrencyService):
         "AED",
         "GBP",
         "TRY",
-        "ONS",
-        "TALA_18",
-        "TALA_MESGHAL",
-        "SEKE_EMAMI",
-        "SEKE_GERAMI",
+        "18AYAR",
+        "ABSHODEH",
+        "SEKKEH",
+        "GERAMI",
     )
     userDefaults = (
         "USD",
         "EUR",
-        "TALA_18",
-        "SEKE_EMAMI",
+        "18AYAR",
+        "SEKKEH",
     )
     persianShortcuts: Dict[str, str] | None = None
     currenciesInPersian = None
@@ -184,7 +183,7 @@ class NavasanService(CurrencyService):
             ),
             token=navasan_api_key,
         )
-        self.gold_service: GoldService = GoldService(source_arena_api_key)
+        # self.gold_service: GoldService = GoldService(source_arena_api_key)
         self.pre_latest_data: dict | None = None
 
         if (
@@ -244,15 +243,17 @@ class NavasanService(CurrencyService):
             NavasanService.goldsInPersian,
             NavasanService.goldsInEnglish,
         ) = get_persian_currency_names()
-        NavasanService.goldsInPersian = dict(
-            GoldService.goldsInPersian, **NavasanService.goldsInPersian
-        )
+        if GoldService.goldsInPersian:
+            NavasanService.goldsInPersian = dict(
+                GoldService.goldsInPersian, **NavasanService.goldsInPersian
+            )
         NavasanService.currenciesInPersian = dict(
             NavasanService.nationalCurrenciesInPersian, **NavasanService.goldsInPersian
         )
-        NavasanService.goldsInEnglish = dict(
-            GoldService.goldsInEnglish, **NavasanService.goldsInEnglish
-        )
+        if GoldService.goldsInEnglish:
+            NavasanService.goldsInEnglish = dict(
+                GoldService.goldsInEnglish, **NavasanService.goldsInEnglish
+            )
         NavasanService.persianShortcuts = get_currency_persian_shortcuts()
         NavasanService.majorPriceUnits = {
             "irt": {
@@ -353,10 +354,8 @@ class NavasanService(CurrencyService):
         if not self.latest_data:
             return False
 
-        await asyncio.gather(
-            self.gold_service.append_gold_prices(self.latest_data),
-            self.select_best_tether_price(),
-        )
+        # await self.gold_service.append_gold_prices(self.latest_data),
+        await self.select_best_tether_price(),
 
         try:
             if NavasanService.manualDollarPrice is not None:
