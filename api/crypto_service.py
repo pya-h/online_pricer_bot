@@ -137,6 +137,19 @@ class CoinMarketCapService(CryptoCurrencyService):
             manuwriter.log("Failed obtaining newest Cryptocurrency prices", x, category_name="CoinMarketCap")
             self.keyman.fail()
 
+        try:
+            if self.latest_data and isinstance(self.latest_data, dict):
+                self.cache_data(json.dumps(self.latest_data))
+        except:
+            pass
+
+    def load_cache(self) -> dict:
+        try:
+            self.latest_data = super(CoinMarketCapService, self).load_cache()
+        except:
+            self.latest_data = {}
+        return self.latest_data
+
     async def get(
         self, desired_ones: List[str] = None, language: str = "fa", no_price_message: str | None = None
     ) -> Tuple[str, str]:

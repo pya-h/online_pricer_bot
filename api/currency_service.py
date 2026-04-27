@@ -350,6 +350,12 @@ class NavasanService(CurrencyService):
         except Exception as ex:
             log("Navasan API Error:", ex, "Navasan")
 
+        try:
+            if self.latest_data and isinstance(self.latest_data, dict):
+                self.cache_data(json.dumps(self.latest_data))
+        except:
+            pass
+
         if not self.latest_data:
             return False
 
@@ -394,9 +400,9 @@ class NavasanService(CurrencyService):
 
     def load_cache(self) -> list | dict:
         try:
-            self.latest_data = super(NavasanService, self).load_cache()["data"]
+            self.latest_data = super(NavasanService, self).load_cache()
         except:
-            self.latest_data = []
+            self.latest_data = {}
         return self.latest_data
 
     def irt_to_usd(self, irt_price: float | int) -> float | int:

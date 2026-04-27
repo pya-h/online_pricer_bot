@@ -33,6 +33,8 @@ class PostMan:
         self.currency_service: NavasanService = NavasanService(
             self.navasan_api_key, self.source_arena_api_key, self.nobitex_api_token, self.aban_tether_api_token
         )
+        self.crypto_service.load_cache()
+        self.currency_service.load_cache()
 
     def arrange_post_sections(
         self, fiat_body: str, gold_body: str, crypto_body: str, post_interval: float | None = None, language: str = "fa"
