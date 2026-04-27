@@ -190,6 +190,7 @@ class BotMan:
         QueryActions.LIST_ENTITY,
         QueryActions.IVE_SUBSCRIBED,
         QueryActions.REMOVE_ADMIN,
+        QueryActions.SHOW_PREMIUM_PLANS,
     )
 
     class CommunityType(Enum):

@@ -122,9 +122,7 @@ class APIService(BaseAPIService):
                     manuwriter.log(
                         "couldn't read cache; Using Direct api call to obtain data.", ex, category_name="CACHING"
                     )
-                    self.latest_data = (
-                        self.get_request()
-                    )  # the condition that is happened, may be due to lack of cache file,
+                    self.latest_data = self.get_request() # the condition that is happened, may be due to lack of cache file,
                 except Exception as fex:
                     manuwriter.log(
                         "Couldn't get cache and API both. There's something seriously wrong!!",

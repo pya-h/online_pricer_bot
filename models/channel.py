@@ -47,7 +47,7 @@ class PostInterval(GroupInlineKeyboardButtonTemplate):
         mins = self.minutes - hours * 60
         if hours < 24:
             return (
-                (f"{hours}h", "{hours} hours", f"{hours} ساعت")
+                (f"{hours}h", f"{hours} hours", f"{hours} ساعت")
                 if not mins
                 else (f"{hours}h, {mins}m", f"{hours} hours and {mins} minutes", f"{hours} ساعت و {mins} دقیقه")
             )
@@ -74,8 +74,10 @@ class PostInterval(GroupInlineKeyboardButtonTemplate):
                 interval_in_mins += int(term[:-1]) * 60
             elif term[-1].lower() == "d":
                 interval_in_mins += int(term[:-1]) * 24 * 60
-            elif term[-1].lower() == "m" or term[-1].isdigit():
+            elif term[-1].lower() == "m":
                 interval_in_mins += int(term[:-1])
+            elif term[-1].isdigit():  # if there is no suffix, consider it as minute
+                interval_in_mins += int(term)
         return interval_in_mins
 
 

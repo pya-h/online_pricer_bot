@@ -224,7 +224,6 @@ async def cmd_stop_schedule(update: Update, context: CallbackContext):
     for job in current_jobs:
         job.schedule_removal()
     botman.is_main_plan_on = False
-    botman.crypto_serv.latest_prices = ""
     await update.message.reply_text(botman.text("channel_planning_stopped", account.language))
 
 

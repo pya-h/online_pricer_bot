@@ -189,7 +189,6 @@ class NavasanService(CurrencyService):
         if (
             not NavasanService.currenciesInPersian
             or not NavasanService.nationalCurrenciesInPersian
-            or not NavasanService.currenciesInPersian
             or not NavasanService.goldsInPersian
             or not NavasanService.goldsInEnglish
             or not NavasanService.persianShortcuts
@@ -355,7 +354,7 @@ class NavasanService(CurrencyService):
             return False
 
         # await self.gold_service.append_gold_prices(self.latest_data),
-        await self.select_best_tether_price(),
+        await self.select_best_tether_price()
 
         try:
             if NavasanService.manualDollarPrice is not None:
