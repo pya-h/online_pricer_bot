@@ -134,6 +134,7 @@ class NavasanService(CurrencyService):
         "18AYAR",
         "SEKKEH",
     )
+    x1000_tokens = ("sekkeh", "bahar", "abshodeh", "gerami", "rob", "nim")
     persianShortcuts: Dict[str, str] | None = None
     currenciesInPersian = None
     nationalCurrenciesInPersian = None
@@ -350,14 +351,12 @@ class NavasanService(CurrencyService):
         except Exception as ex:
             log("Navasan API Error:", ex, "Navasan")
 
-        try:
-            if self.latest_data and isinstance(self.latest_data, dict):
-                self.cache_data(json.dumps(self.latest_data))
-        except:
-            pass
-
         if not self.latest_data:
             return False
+
+        for token in NavasanService.x1000_tokens:
+            if token in self.latest_data and "value" in self.latest_data[token]:
+                self.latest_data[token]["value"] = float(self.latest_data[token]["value"]) * 1000
 
         # await self.gold_service.append_gold_prices(self.latest_data),
         await self.select_best_tether_price()
@@ -372,6 +371,12 @@ class NavasanService(CurrencyService):
         self.latest_data[self.tomanSymbol.lower()] = {
             "value": 1 / APIService.usdInTomans
         }
+
+        try:
+            self.cache_data(json.dumps(self.latest_data))
+        except:
+            pass
+
         return True
 
     def set_manual_tether_price(self, price: float | None = None):
