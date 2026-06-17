@@ -9,7 +9,7 @@ from tools.manuwriter import log, load_json
 # Parent Class
 class CryptoCurrencyService(APIService):
     coinsInPersian: Dict[str, str] | None = None
-    defaults = ("BTC", "ETH", "USDT", "BNB", "TON")
+    defaults = ("BTC", "ETH", "USDT", "BNB", "GRAM")
     userDefaults = ("BTC", "USDT")
     persianShortcuts: Dict[str, str] | None = None
 
